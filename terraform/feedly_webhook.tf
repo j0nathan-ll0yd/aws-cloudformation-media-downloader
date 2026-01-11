@@ -196,6 +196,11 @@ data "aws_iam_policy_document" "MultipartUpload" {
       values   = ["MediaDownloader"]
     }
   }
+  # Read YouTube cookies from Secrets Manager (refreshed by RefreshYouTubeCookies Lambda)
+  statement {
+    actions   = ["secretsmanager:GetSecretValue"]
+    resources = [aws_secretsmanager_secret.YouTubeCookies.arn]
+  }
 }
 
 resource "aws_iam_role" "StartFileUpload" {
@@ -415,6 +420,80 @@ resource "aws_lambda_layer_version" "Bgutil" {
   description = "bgutil-ytdlp-pot-provider for PO token generation to bypass YouTube bot detection"
 }
 
+# Deno layer (JavaScript runtime required for yt-dlp 2025.11.12+ YouTube support)
+# Must be built before deploy with: pnpm run build:deno-layer
+# @see https://github.com/yt-dlp/yt-dlp/issues/15012
+# @see https://github.com/yt-dlp/yt-dlp/wiki/EJS
+resource "null_resource" "DownloadDenoBinary" {
+  triggers = {
+    version = fileexists("${path.module}/../layers/deno/VERSION") ? trimspace(file("${path.module}/../layers/deno/VERSION")) : "none"
+  }
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      set -e
+
+      VERSION="${trimspace(file("${path.module}/../layers/deno/VERSION"))}"
+      LAYER_DIR="${path.module}/../layers/deno"
+      BUILD_DIR="$${LAYER_DIR}/build"
+      ZIP_NAME="deno-x86_64-unknown-linux-gnu.zip"
+
+      echo "Downloading Deno $${VERSION}..."
+      mkdir -p "$${BUILD_DIR}/bin"
+
+      wget -q "https://github.com/denoland/deno/releases/download/v$${VERSION}/$${ZIP_NAME}" -O "/tmp/$${ZIP_NAME}"
+      wget -q "https://github.com/denoland/deno/releases/download/v$${VERSION}/$${ZIP_NAME}.sha256sum" -O /tmp/deno.sha256sum
+
+      echo "Verifying checksum..."
+      cd /tmp
+      if command -v shasum >/dev/null 2>&1; then
+        shasum -a 256 -c deno.sha256sum
+      elif sha256sum --version 2>&1 | grep -q GNU; then
+        sha256sum --check deno.sha256sum
+      else
+        echo "WARNING: No compatible checksum utility found, skipping verification"
+      fi
+      cd - > /dev/null
+
+      echo "Extracting binary..."
+      unzip -o "/tmp/$${ZIP_NAME}" -d "$${BUILD_DIR}/bin"
+      chmod +x "$${BUILD_DIR}/bin/deno"
+
+      if [ "$(uname -s)" = "Linux" ]; then
+        echo "Testing binary..."
+        BINARY_VERSION=$("$${BUILD_DIR}/bin/deno" --version | head -1 | awk '{print $2}')
+        if [ "$${BINARY_VERSION}" != "$${VERSION}" ]; then
+          echo "ERROR: Binary version mismatch (expected: $${VERSION}, got: $${BINARY_VERSION})"
+          exit 1
+        fi
+        echo "✅ Binary version verified: $${BINARY_VERSION}"
+      else
+        echo "⏭️  Skipping binary test (Linux binary, non-Linux host)"
+      fi
+
+      rm -f "/tmp/$${ZIP_NAME}" /tmp/deno.sha256sum
+      echo "✅ Deno $${VERSION} downloaded and verified successfully"
+    EOT
+  }
+}
+
+data "archive_file" "DenoLayer" {
+  type        = "zip"
+  source_dir  = "./../layers/deno/build"
+  output_path = "./../build/layers/deno.zip"
+
+  depends_on = [null_resource.DownloadDenoBinary]
+}
+
+resource "aws_lambda_layer_version" "Deno" {
+  filename            = data.archive_file.DenoLayer.output_path
+  layer_name          = "deno-runtime"
+  source_code_hash    = data.archive_file.DenoLayer.output_base64sha256
+  compatible_runtimes = ["nodejs24.x"]
+
+  description = "Deno ${trimspace(file("${path.module}/../layers/deno/VERSION"))} JavaScript runtime for yt-dlp YouTube JS challenges"
+}
+
 resource "aws_lambda_function" "StartFileUpload" {
   description                    = "Downloads videos to temp file then streams to S3 using yt-dlp"
   function_name                  = local.start_file_upload_function_name
@@ -428,11 +507,13 @@ resource "aws_lambda_function" "StartFileUpload" {
   reserved_concurrent_executions = 10 # Prevent YouTube rate limiting
   filename                       = data.archive_file.StartFileUpload.output_path
   source_code_hash               = data.archive_file.StartFileUpload.output_base64sha256
+  # NOTE: Total unzipped layer size must be < 250MB. With Deno (138MB) + ffmpeg + yt-dlp + bgutil,
+  # we're at the limit. ADOT layer removed to stay within limits. Consider container images for future.
   layers = [
     aws_lambda_layer_version.YtDlp.arn,
     aws_lambda_layer_version.Ffmpeg.arn,
     aws_lambda_layer_version.Bgutil.arn, # PO token provider for YouTube bot detection bypass
-    local.adot_layer_arn_x86_64          # Must use x86_64 ADOT layer to match Lambda architecture
+    aws_lambda_layer_version.Deno.arn    # JavaScript runtime for yt-dlp 2025.11.12+ YouTube JS challenges
   ]
 
   # 10GB ephemeral storage for temp file downloads (handles 1+ hour 1080p videos)
@@ -446,16 +527,17 @@ resource "aws_lambda_function" "StartFileUpload" {
 
   environment {
     variables = merge(local.common_lambda_env, {
-      BUCKET                = aws_s3_bucket.Files.id
-      CLOUDFRONT_DOMAIN     = aws_cloudfront_distribution.MediaFiles.domain_name
-      SNS_QUEUE_URL         = aws_sqs_queue.SendPushNotification.id
-      EVENT_BUS_NAME        = aws_cloudwatch_event_bus.MediaDownloader.name
-      YTDLP_BINARY_PATH     = "/opt/bin/yt-dlp_linux"
-      PATH                  = "/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin"
-      PYTHONPATH            = "/opt/python" # bgutil plugin path for PO token generation
-      GITHUB_PERSONAL_TOKEN = data.sops_file.secrets.data["github.issue.token"]
-      OTEL_SERVICE_NAME     = local.start_file_upload_function_name
-      DSQL_ACCESS_LEVEL     = "readwrite"
+      BUCKET                    = aws_s3_bucket.Files.id
+      CLOUDFRONT_DOMAIN         = aws_cloudfront_distribution.MediaFiles.domain_name
+      SNS_QUEUE_URL             = aws_sqs_queue.SendPushNotification.id
+      EVENT_BUS_NAME            = aws_cloudwatch_event_bus.MediaDownloader.name
+      YTDLP_BINARY_PATH         = "/opt/bin/yt-dlp_linux"
+      PATH                      = "/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin"
+      PYTHONPATH                = "/opt/python" # bgutil plugin path for PO token generation
+      GITHUB_PERSONAL_TOKEN     = data.sops_file.secrets.data["github.issue.token"]
+      OTEL_SERVICE_NAME         = local.start_file_upload_function_name
+      DSQL_ACCESS_LEVEL         = "readwrite"
+      YOUTUBE_COOKIES_SECRET_ID = aws_secretsmanager_secret.YouTubeCookies.id # Fresh cookies from RefreshYouTubeCookies
     })
   }
 

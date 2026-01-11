@@ -15,6 +15,7 @@ export interface InfrastructureD {
     provider:  Provider;
     resource:  Resource;
     terraform: Terraform[];
+    variable:  Variable;
 }
 
 export interface Data {
@@ -56,6 +57,7 @@ export interface AwsIamPolicyDocument {
     LamdbaEdgeAssumeRole:           AssumeRole[];
     MultipartUpload:                MultipartUpload[];
     PruneDevices:                   PruneDevice[];
+    RefreshYouTubeCookies:          APIGatewayAuthorizerInvocationElement[];
     RegisterDevice:                 RegisterDevice[];
     S3ObjectCreated:                APIGatewayAuthorizerInvocationElement[];
     SNSAssumeRole:                  AssumeRole[];
@@ -174,10 +176,10 @@ export interface Icanhazip {
 }
 
 export interface LocalFile {
-    DefaultFile: LocalFileDefaultFile[];
+    DefaultFile: DefaultFile[];
 }
 
-export interface LocalFileDefaultFile {
+export interface DefaultFile {
     filename: string;
 }
 
@@ -214,6 +216,7 @@ export interface Local {
     migrate_dsql_function_name?:            string;
     prune_devices_function_name?:           string;
     refresh_token_function_name?:           string;
+    refresh_youtube_cookies_function_name?: string;
     register_device_function_name?:         string;
     register_user_function_name?:           string;
     send_push_notification_function_name?:  string;
@@ -237,23 +240,25 @@ export interface CommonTags {
 }
 
 export interface Output {
-    api_gateway_api_key:             APIGatewayAPIKey[];
-    api_gateway_stage:               APIGatewayStage[];
-    api_gateway_subdomain:           APIGatewayStage[];
-    cloudfront_distribution_domain:  APIGatewayStage[];
-    cloudfront_media_files_domain:   APIGatewayStage[];
-    cloudwatch_dashboard_url:        APIGatewayStage[];
-    download_queue_arn:              APIGatewayStage[];
-    download_queue_url:              APIGatewayStage[];
-    dsql_cluster_arn:                APIGatewayStage[];
-    dsql_cluster_endpoint:           APIGatewayStage[];
-    event_bus_arn:                   APIGatewayStage[];
-    event_bus_name:                  APIGatewayStage[];
-    idempotency_table_arn:           APIGatewayStage[];
-    idempotency_table_name:          APIGatewayStage[];
-    migration_result:                APIGatewayStage[];
-    operations_alerts_sns_topic_arn: APIGatewayStage[];
-    public_ip:                       APIGatewayStage[];
+    api_gateway_api_key:                APIGatewayAPIKey[];
+    api_gateway_stage:                  APIGatewayStage[];
+    api_gateway_subdomain:              APIGatewayStage[];
+    cloudfront_distribution_domain:     APIGatewayStage[];
+    cloudfront_media_files_domain:      APIGatewayStage[];
+    cloudwatch_dashboard_url:           APIGatewayStage[];
+    download_queue_arn:                 APIGatewayStage[];
+    download_queue_url:                 APIGatewayStage[];
+    dsql_cluster_arn:                   APIGatewayStage[];
+    dsql_cluster_endpoint:              APIGatewayStage[];
+    event_bus_arn:                      APIGatewayStage[];
+    event_bus_name:                     APIGatewayStage[];
+    idempotency_table_arn:              APIGatewayStage[];
+    idempotency_table_name:             APIGatewayStage[];
+    migration_result:                   APIGatewayStage[];
+    operations_alerts_sns_topic_arn:    APIGatewayStage[];
+    public_ip:                          APIGatewayStage[];
+    refresh_youtube_cookies_lambda_arn: APIGatewayStage[];
+    youtube_cookies_secret_arn:         APIGatewayStage[];
 }
 
 export interface APIGatewayAPIKey {
@@ -311,9 +316,12 @@ export interface Resource {
     aws_lambda_permission:                           { [key: string]: AwsLambdaPermission[] };
     aws_s3_bucket:                                   AwsS3Bucket;
     aws_s3_bucket_intelligent_tiering_configuration: AwsS3BucketIntelligentTieringConfiguration;
+    aws_s3_bucket_lifecycle_configuration:           AwsS3BucketLifecycleConfiguration;
     aws_s3_bucket_notification:                      AwsS3BucketNotification;
     aws_s3_bucket_policy:                            AwsS3BucketPolicy;
+    aws_s3_bucket_versioning:                        AwsS3BucketVersioning;
     aws_s3_object:                                   AwsS3Object;
+    aws_secretsmanager_secret:                       AwsSecretsmanagerSecret;
     aws_sns_platform_application:                    AwsSnsPlatformApplication;
     aws_sns_topic:                                   AwsSnsTopic;
     aws_sqs_queue:                                   AwsSqsQueue;
@@ -335,12 +343,13 @@ export interface AwsAPIGatewayAPIKey {
 }
 
 export interface IOSApp {
-    description?:         string;
-    enabled?:             boolean;
-    name:                 string;
-    tags:                 Tags;
-    schedule_expression?: string;
-    state?:               string;
+    description?:             string;
+    enabled?:                 boolean;
+    name:                     string;
+    tags:                     Tags;
+    schedule_expression?:     string;
+    state?:                   string;
+    recovery_window_in_days?: number;
 }
 
 export enum Tags {
@@ -692,6 +701,7 @@ export interface AwsCloudwatchEventRule {
     CleanupExpiredRecords: IOSApp[];
     DownloadRequested:     DownloadRequested[];
     PruneDevices:          IOSApp[];
+    RefreshYouTubeCookies: IOSApp[];
 }
 
 export interface DownloadRequested {
@@ -705,6 +715,7 @@ export interface AwsCloudwatchEventTarget {
     CleanupExpiredRecords:  AwsCloudwatchEventTargetCleanupExpiredRecord[];
     DownloadRequestedToSQS: DownloadRequestedToSQ[];
     PruneDevices:           AwsCloudwatchEventTargetCleanupExpiredRecord[];
+    RefreshYouTubeCookies:  AwsCloudwatchEventTargetCleanupExpiredRecord[];
 }
 
 export interface AwsCloudwatchEventTargetCleanupExpiredRecord {
@@ -937,6 +948,7 @@ export interface AwsLambdaFunction {
     MigrateDSQL:           LoginUserElement[];
     PruneDevices:          LoginUserElement[];
     RefreshToken:          LoginUserElement[];
+    RefreshYouTubeCookies: LoginUserElement[];
     RegisterDevice:        DeviceEventElement[];
     RegisterUser:          DeviceEventElement[];
     S3ObjectCreated:       DeviceEventElement[];
@@ -1007,7 +1019,7 @@ export interface LoginUserElement {
     handler:                         Handler;
     layers:                          string[];
     role:                            string;
-    runtime:                         Runtime;
+    runtime:                         string;
     source_code_hash:                string;
     tags:                            string;
     timeout:                         number;
@@ -1036,9 +1048,11 @@ export interface CloudfrontMiddleware {
 }
 
 export interface AwsLambdaLayerVersion {
-    Bgutil: Bgutil[];
-    Ffmpeg: Bgutil[];
-    YtDlp:  Bgutil[];
+    Bgutil:     Bgutil[];
+    Deno:       Bgutil[];
+    Ffmpeg:     Bgutil[];
+    Playwright: Playwright[];
+    YtDlp:      Bgutil[];
 }
 
 export interface Bgutil {
@@ -1047,6 +1061,15 @@ export interface Bgutil {
     filename:            string;
     layer_name:          string;
     source_code_hash:    string;
+}
+
+export interface Playwright {
+    compatible_runtimes: string[];
+    description:         string;
+    layer_name:          string;
+    s3_bucket:           string;
+    s3_key:              string;
+    s3_object_version:   string;
 }
 
 export interface AwsLambdaPermission {
@@ -1067,10 +1090,11 @@ export enum PrincipalEnum {
 }
 
 export interface AwsS3Bucket {
-    Files: AwsS3BucketFile[];
+    DeploymentArtifacts: DeploymentArtifact[];
+    Files:               DeploymentArtifact[];
 }
 
-export interface AwsS3BucketFile {
+export interface DeploymentArtifact {
     bucket: string;
     tags:   Tags;
 }
@@ -1090,11 +1114,30 @@ export interface Tiering {
     days:        number;
 }
 
-export interface AwsS3BucketNotification {
-    Files: AwsS3BucketNotificationFile[];
+export interface AwsS3BucketLifecycleConfiguration {
+    DeploymentArtifactsLifecycle: DeploymentArtifactsLifecycle[];
 }
 
-export interface AwsS3BucketNotificationFile {
+export interface DeploymentArtifactsLifecycle {
+    bucket: string;
+    rule:   Rule[];
+}
+
+export interface Rule {
+    id:                            string;
+    noncurrent_version_expiration: NoncurrentVersionExpiration[];
+    status:                        string;
+}
+
+export interface NoncurrentVersionExpiration {
+    noncurrent_days: number;
+}
+
+export interface AwsS3BucketNotification {
+    Files: File[];
+}
+
+export interface File {
     bucket:          string;
     lambda_function: LambdaFunction[];
 }
@@ -1113,16 +1156,34 @@ export interface CloudfrontAccess {
     policy: string;
 }
 
-export interface AwsS3Object {
-    DefaultFile: AwsS3ObjectDefaultFile[];
+export interface AwsS3BucketVersioning {
+    DeploymentArtifactsVersioning: DeploymentArtifactsVersioning[];
 }
 
-export interface AwsS3ObjectDefaultFile {
-    bucket:       string;
-    content_type: string;
-    etag:         string;
-    key:          string;
-    source:       string;
+export interface DeploymentArtifactsVersioning {
+    bucket:                   string;
+    versioning_configuration: VersioningConfiguration[];
+}
+
+export interface VersioningConfiguration {
+    status: string;
+}
+
+export interface AwsS3Object {
+    DefaultFile:     PlaywrightLayerElement[];
+    PlaywrightLayer: PlaywrightLayerElement[];
+}
+
+export interface PlaywrightLayerElement {
+    bucket:        string;
+    content_type?: string;
+    etag:          string;
+    key:           string;
+    source:        string;
+}
+
+export interface AwsSecretsmanagerSecret {
+    YouTubeCookies: IOSApp[];
 }
 
 export interface AwsSnsPlatformApplication {
@@ -1193,13 +1254,14 @@ export interface DownloadQueueEventBridge {
 }
 
 export interface NullResource {
+    DownloadDenoBinary:   DownloadBinary[];
     DownloadFfmpegBinary: DownloadBinary[];
     DownloadYtDlpBinary:  DownloadBinary[];
 }
 
 export interface DownloadBinary {
     provisioner: Provisioner;
-    triggers:    DownloadFfmpegBinaryTriggers;
+    triggers:    DownloadDenoBinaryTriggers;
 }
 
 export interface Provisioner {
@@ -1210,7 +1272,7 @@ export interface LocalExec {
     command: string;
 }
 
-export interface DownloadFfmpegBinaryTriggers {
+export interface DownloadDenoBinaryTriggers {
     version: string;
 }
 
@@ -1236,6 +1298,18 @@ export interface RequiredProvider {
 export interface AwsClass {
     source:  string;
     version: string;
+}
+
+export interface Variable {
+    youtube_email:    Youtube[];
+    youtube_password: Youtube[];
+}
+
+export interface Youtube {
+    default:     string;
+    description: string;
+    sensitive:   boolean;
+    type:        string;
 }
 
 // Converts JSON strings to/from your types
@@ -1410,6 +1484,7 @@ const typeMap: any = {
         { json: "provider", js: "provider", typ: r("Provider") },
         { json: "resource", js: "resource", typ: r("Resource") },
         { json: "terraform", js: "terraform", typ: a(r("Terraform")) },
+        { json: "variable", js: "variable", typ: r("Variable") },
     ], false),
     "Data": o([
         { json: "archive_file", js: "archive_file", typ: m(a(r("ArchiveFile"))) },
@@ -1442,6 +1517,7 @@ const typeMap: any = {
         { json: "LamdbaEdgeAssumeRole", js: "LamdbaEdgeAssumeRole", typ: a(r("AssumeRole")) },
         { json: "MultipartUpload", js: "MultipartUpload", typ: a(r("MultipartUpload")) },
         { json: "PruneDevices", js: "PruneDevices", typ: a(r("PruneDevice")) },
+        { json: "RefreshYouTubeCookies", js: "RefreshYouTubeCookies", typ: a(r("APIGatewayAuthorizerInvocationElement")) },
         { json: "RegisterDevice", js: "RegisterDevice", typ: a(r("RegisterDevice")) },
         { json: "S3ObjectCreated", js: "S3ObjectCreated", typ: a(r("APIGatewayAuthorizerInvocationElement")) },
         { json: "SNSAssumeRole", js: "SNSAssumeRole", typ: a(r("AssumeRole")) },
@@ -1537,9 +1613,9 @@ const typeMap: any = {
         { json: "url", js: "url", typ: "" },
     ], false),
     "LocalFile": o([
-        { json: "DefaultFile", js: "DefaultFile", typ: a(r("LocalFileDefaultFile")) },
+        { json: "DefaultFile", js: "DefaultFile", typ: a(r("DefaultFile")) },
     ], false),
-    "LocalFileDefaultFile": o([
+    "DefaultFile": o([
         { json: "filename", js: "filename", typ: "" },
     ], false),
     "SopsFile": o([
@@ -1573,6 +1649,7 @@ const typeMap: any = {
         { json: "migrate_dsql_function_name", js: "migrate_dsql_function_name", typ: u(undefined, "") },
         { json: "prune_devices_function_name", js: "prune_devices_function_name", typ: u(undefined, "") },
         { json: "refresh_token_function_name", js: "refresh_token_function_name", typ: u(undefined, "") },
+        { json: "refresh_youtube_cookies_function_name", js: "refresh_youtube_cookies_function_name", typ: u(undefined, "") },
         { json: "register_device_function_name", js: "register_device_function_name", typ: u(undefined, "") },
         { json: "register_user_function_name", js: "register_user_function_name", typ: u(undefined, "") },
         { json: "send_push_notification_function_name", js: "send_push_notification_function_name", typ: u(undefined, "") },
@@ -1610,6 +1687,8 @@ const typeMap: any = {
         { json: "migration_result", js: "migration_result", typ: a(r("APIGatewayStage")) },
         { json: "operations_alerts_sns_topic_arn", js: "operations_alerts_sns_topic_arn", typ: a(r("APIGatewayStage")) },
         { json: "public_ip", js: "public_ip", typ: a(r("APIGatewayStage")) },
+        { json: "refresh_youtube_cookies_lambda_arn", js: "refresh_youtube_cookies_lambda_arn", typ: a(r("APIGatewayStage")) },
+        { json: "youtube_cookies_secret_arn", js: "youtube_cookies_secret_arn", typ: a(r("APIGatewayStage")) },
     ], false),
     "APIGatewayAPIKey": o([
         { json: "description", js: "description", typ: "" },
@@ -1662,9 +1741,12 @@ const typeMap: any = {
         { json: "aws_lambda_permission", js: "aws_lambda_permission", typ: m(a(r("AwsLambdaPermission"))) },
         { json: "aws_s3_bucket", js: "aws_s3_bucket", typ: r("AwsS3Bucket") },
         { json: "aws_s3_bucket_intelligent_tiering_configuration", js: "aws_s3_bucket_intelligent_tiering_configuration", typ: r("AwsS3BucketIntelligentTieringConfiguration") },
+        { json: "aws_s3_bucket_lifecycle_configuration", js: "aws_s3_bucket_lifecycle_configuration", typ: r("AwsS3BucketLifecycleConfiguration") },
         { json: "aws_s3_bucket_notification", js: "aws_s3_bucket_notification", typ: r("AwsS3BucketNotification") },
         { json: "aws_s3_bucket_policy", js: "aws_s3_bucket_policy", typ: r("AwsS3BucketPolicy") },
+        { json: "aws_s3_bucket_versioning", js: "aws_s3_bucket_versioning", typ: r("AwsS3BucketVersioning") },
         { json: "aws_s3_object", js: "aws_s3_object", typ: r("AwsS3Object") },
+        { json: "aws_secretsmanager_secret", js: "aws_secretsmanager_secret", typ: r("AwsSecretsmanagerSecret") },
         { json: "aws_sns_platform_application", js: "aws_sns_platform_application", typ: r("AwsSnsPlatformApplication") },
         { json: "aws_sns_topic", js: "aws_sns_topic", typ: r("AwsSnsTopic") },
         { json: "aws_sqs_queue", js: "aws_sqs_queue", typ: r("AwsSqsQueue") },
@@ -1688,6 +1770,7 @@ const typeMap: any = {
         { json: "tags", js: "tags", typ: r("Tags") },
         { json: "schedule_expression", js: "schedule_expression", typ: u(undefined, "") },
         { json: "state", js: "state", typ: u(undefined, "") },
+        { json: "recovery_window_in_days", js: "recovery_window_in_days", typ: u(undefined, 0) },
     ], false),
     "AwsAPIGatewayAuthorizer": o([
         { json: "ApiGatewayAuthorizer", js: "ApiGatewayAuthorizer", typ: a(r("APIGatewayAuthorizer")) },
@@ -1972,6 +2055,7 @@ const typeMap: any = {
         { json: "CleanupExpiredRecords", js: "CleanupExpiredRecords", typ: a(r("IOSApp")) },
         { json: "DownloadRequested", js: "DownloadRequested", typ: a(r("DownloadRequested")) },
         { json: "PruneDevices", js: "PruneDevices", typ: a(r("IOSApp")) },
+        { json: "RefreshYouTubeCookies", js: "RefreshYouTubeCookies", typ: a(r("IOSApp")) },
     ], false),
     "DownloadRequested": o([
         { json: "description", js: "description", typ: "" },
@@ -1983,6 +2067,7 @@ const typeMap: any = {
         { json: "CleanupExpiredRecords", js: "CleanupExpiredRecords", typ: a(r("AwsCloudwatchEventTargetCleanupExpiredRecord")) },
         { json: "DownloadRequestedToSQS", js: "DownloadRequestedToSQS", typ: a(r("DownloadRequestedToSQ")) },
         { json: "PruneDevices", js: "PruneDevices", typ: a(r("AwsCloudwatchEventTargetCleanupExpiredRecord")) },
+        { json: "RefreshYouTubeCookies", js: "RefreshYouTubeCookies", typ: a(r("AwsCloudwatchEventTargetCleanupExpiredRecord")) },
     ], false),
     "AwsCloudwatchEventTargetCleanupExpiredRecord": o([
         { json: "arn", js: "arn", typ: "" },
@@ -2183,6 +2268,7 @@ const typeMap: any = {
         { json: "MigrateDSQL", js: "MigrateDSQL", typ: a(r("LoginUserElement")) },
         { json: "PruneDevices", js: "PruneDevices", typ: a(r("LoginUserElement")) },
         { json: "RefreshToken", js: "RefreshToken", typ: a(r("LoginUserElement")) },
+        { json: "RefreshYouTubeCookies", js: "RefreshYouTubeCookies", typ: a(r("LoginUserElement")) },
         { json: "RegisterDevice", js: "RegisterDevice", typ: a(r("DeviceEventElement")) },
         { json: "RegisterUser", js: "RegisterUser", typ: a(r("DeviceEventElement")) },
         { json: "S3ObjectCreated", js: "S3ObjectCreated", typ: a(r("DeviceEventElement")) },
@@ -2225,7 +2311,7 @@ const typeMap: any = {
         { json: "handler", js: "handler", typ: r("Handler") },
         { json: "layers", js: "layers", typ: a("") },
         { json: "role", js: "role", typ: "" },
-        { json: "runtime", js: "runtime", typ: r("Runtime") },
+        { json: "runtime", js: "runtime", typ: "" },
         { json: "source_code_hash", js: "source_code_hash", typ: "" },
         { json: "tags", js: "tags", typ: "" },
         { json: "timeout", js: "timeout", typ: 0 },
@@ -2252,7 +2338,9 @@ const typeMap: any = {
     ], false),
     "AwsLambdaLayerVersion": o([
         { json: "Bgutil", js: "Bgutil", typ: a(r("Bgutil")) },
+        { json: "Deno", js: "Deno", typ: a(r("Bgutil")) },
         { json: "Ffmpeg", js: "Ffmpeg", typ: a(r("Bgutil")) },
+        { json: "Playwright", js: "Playwright", typ: a(r("Playwright")) },
         { json: "YtDlp", js: "YtDlp", typ: a(r("Bgutil")) },
     ], false),
     "Bgutil": o([
@@ -2262,6 +2350,14 @@ const typeMap: any = {
         { json: "layer_name", js: "layer_name", typ: "" },
         { json: "source_code_hash", js: "source_code_hash", typ: "" },
     ], false),
+    "Playwright": o([
+        { json: "compatible_runtimes", js: "compatible_runtimes", typ: a("") },
+        { json: "description", js: "description", typ: "" },
+        { json: "layer_name", js: "layer_name", typ: "" },
+        { json: "s3_bucket", js: "s3_bucket", typ: "" },
+        { json: "s3_key", js: "s3_key", typ: "" },
+        { json: "s3_object_version", js: "s3_object_version", typ: "" },
+    ], false),
     "AwsLambdaPermission": o([
         { json: "action", js: "action", typ: r("Action") },
         { json: "function_name", js: "function_name", typ: "" },
@@ -2269,9 +2365,10 @@ const typeMap: any = {
         { json: "source_arn", js: "source_arn", typ: u(undefined, "") },
     ], false),
     "AwsS3Bucket": o([
-        { json: "Files", js: "Files", typ: a(r("AwsS3BucketFile")) },
+        { json: "DeploymentArtifacts", js: "DeploymentArtifacts", typ: a(r("DeploymentArtifact")) },
+        { json: "Files", js: "Files", typ: a(r("DeploymentArtifact")) },
     ], false),
-    "AwsS3BucketFile": o([
+    "DeploymentArtifact": o([
         { json: "bucket", js: "bucket", typ: "" },
         { json: "tags", js: "tags", typ: r("Tags") },
     ], false),
@@ -2287,10 +2384,25 @@ const typeMap: any = {
         { json: "access_tier", js: "access_tier", typ: "" },
         { json: "days", js: "days", typ: 0 },
     ], false),
-    "AwsS3BucketNotification": o([
-        { json: "Files", js: "Files", typ: a(r("AwsS3BucketNotificationFile")) },
+    "AwsS3BucketLifecycleConfiguration": o([
+        { json: "DeploymentArtifactsLifecycle", js: "DeploymentArtifactsLifecycle", typ: a(r("DeploymentArtifactsLifecycle")) },
     ], false),
-    "AwsS3BucketNotificationFile": o([
+    "DeploymentArtifactsLifecycle": o([
+        { json: "bucket", js: "bucket", typ: "" },
+        { json: "rule", js: "rule", typ: a(r("Rule")) },
+    ], false),
+    "Rule": o([
+        { json: "id", js: "id", typ: "" },
+        { json: "noncurrent_version_expiration", js: "noncurrent_version_expiration", typ: a(r("NoncurrentVersionExpiration")) },
+        { json: "status", js: "status", typ: "" },
+    ], false),
+    "NoncurrentVersionExpiration": o([
+        { json: "noncurrent_days", js: "noncurrent_days", typ: 0 },
+    ], false),
+    "AwsS3BucketNotification": o([
+        { json: "Files", js: "Files", typ: a(r("File")) },
+    ], false),
+    "File": o([
         { json: "bucket", js: "bucket", typ: "" },
         { json: "lambda_function", js: "lambda_function", typ: a(r("LambdaFunction")) },
     ], false),
@@ -2305,15 +2417,29 @@ const typeMap: any = {
         { json: "bucket", js: "bucket", typ: "" },
         { json: "policy", js: "policy", typ: "" },
     ], false),
-    "AwsS3Object": o([
-        { json: "DefaultFile", js: "DefaultFile", typ: a(r("AwsS3ObjectDefaultFile")) },
+    "AwsS3BucketVersioning": o([
+        { json: "DeploymentArtifactsVersioning", js: "DeploymentArtifactsVersioning", typ: a(r("DeploymentArtifactsVersioning")) },
     ], false),
-    "AwsS3ObjectDefaultFile": o([
+    "DeploymentArtifactsVersioning": o([
         { json: "bucket", js: "bucket", typ: "" },
-        { json: "content_type", js: "content_type", typ: "" },
+        { json: "versioning_configuration", js: "versioning_configuration", typ: a(r("VersioningConfiguration")) },
+    ], false),
+    "VersioningConfiguration": o([
+        { json: "status", js: "status", typ: "" },
+    ], false),
+    "AwsS3Object": o([
+        { json: "DefaultFile", js: "DefaultFile", typ: a(r("PlaywrightLayerElement")) },
+        { json: "PlaywrightLayer", js: "PlaywrightLayer", typ: a(r("PlaywrightLayerElement")) },
+    ], false),
+    "PlaywrightLayerElement": o([
+        { json: "bucket", js: "bucket", typ: "" },
+        { json: "content_type", js: "content_type", typ: u(undefined, "") },
         { json: "etag", js: "etag", typ: "" },
         { json: "key", js: "key", typ: "" },
         { json: "source", js: "source", typ: "" },
+    ], false),
+    "AwsSecretsmanagerSecret": o([
+        { json: "YouTubeCookies", js: "YouTubeCookies", typ: a(r("IOSApp")) },
     ], false),
     "AwsSnsPlatformApplication": o([
         { json: "OfflineMediaDownloader", js: "OfflineMediaDownloader", typ: a(r("OfflineMediaDownloader")) },
@@ -2373,12 +2499,13 @@ const typeMap: any = {
         { json: "queue_url", js: "queue_url", typ: "" },
     ], false),
     "NullResource": o([
+        { json: "DownloadDenoBinary", js: "DownloadDenoBinary", typ: a(r("DownloadBinary")) },
         { json: "DownloadFfmpegBinary", js: "DownloadFfmpegBinary", typ: a(r("DownloadBinary")) },
         { json: "DownloadYtDlpBinary", js: "DownloadYtDlpBinary", typ: a(r("DownloadBinary")) },
     ], false),
     "DownloadBinary": o([
         { json: "provisioner", js: "provisioner", typ: r("Provisioner") },
-        { json: "triggers", js: "triggers", typ: r("DownloadFfmpegBinaryTriggers") },
+        { json: "triggers", js: "triggers", typ: r("DownloadDenoBinaryTriggers") },
     ], false),
     "Provisioner": o([
         { json: "local-exec", js: "local-exec", typ: a(r("LocalExec")) },
@@ -2386,7 +2513,7 @@ const typeMap: any = {
     "LocalExec": o([
         { json: "command", js: "command", typ: "" },
     ], false),
-    "DownloadFfmpegBinaryTriggers": o([
+    "DownloadDenoBinaryTriggers": o([
         { json: "version", js: "version", typ: "" },
     ], false),
     "TimeSleep": o([
@@ -2407,6 +2534,16 @@ const typeMap: any = {
     "AwsClass": o([
         { json: "source", js: "source", typ: "" },
         { json: "version", js: "version", typ: "" },
+    ], false),
+    "Variable": o([
+        { json: "youtube_email", js: "youtube_email", typ: a(r("Youtube")) },
+        { json: "youtube_password", js: "youtube_password", typ: a(r("Youtube")) },
+    ], false),
+    "Youtube": o([
+        { json: "default", js: "default", typ: "" },
+        { json: "description", js: "description", typ: "" },
+        { json: "sensitive", js: "sensitive", typ: true },
+        { json: "type", js: "type", typ: "" },
     ], false),
     "Type": [
         "zip",

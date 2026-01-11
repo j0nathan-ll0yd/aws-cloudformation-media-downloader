@@ -17,11 +17,20 @@ const awsSdkExternals = [
   '@aws-sdk/client-eventbridge',
   '@aws-sdk/client-lambda',
   '@aws-sdk/client-s3',
+  '@aws-sdk/client-secrets-manager',
   '@aws-sdk/client-sns',
   '@aws-sdk/client-sqs',
   '@aws-sdk/lib-dynamodb',
   '@aws-sdk/lib-storage',
   '@aws-sdk/util-dynamodb'
+]
+
+// Lambda layer externals - these come from deployed layers, not bundled
+const layerExternals = [
+  'puppeteer-core', // RefreshYouTubeCookies: Puppeteer in Lambda layer
+  'puppeteer-extra', // RefreshYouTubeCookies: Puppeteer with plugin support
+  'puppeteer-extra-plugin-stealth', // RefreshYouTubeCookies: Bot detection evasion
+  '@sparticuz/chromium' // RefreshYouTubeCookies: Chromium binary in Lambda layer
 ]
 
 const isAnalyze = process.env['ANALYZE'] === 'true'
@@ -65,7 +74,7 @@ async function build() {
       format: 'esm', // ESM for Node.js 24
       outfile: `${lambdaDir}/index.mjs`,
       outExtension: {'.js': '.mjs'}, // Explicit .mjs extension
-      external: awsSdkExternals,
+      external: [...awsSdkExternals, ...layerExternals],
       minify: true,
       legalComments: 'none', // Strip license comments from minified output
       drop: ['debugger'], // Remove debugger statements in production

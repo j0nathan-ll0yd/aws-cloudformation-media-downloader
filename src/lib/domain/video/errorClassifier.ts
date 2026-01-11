@@ -45,6 +45,14 @@ const TRANSIENT_ERROR_PATTERNS = [
   'http error 504'
 ]
 
+/**
+ * SABR (Server-side Ad Blocking Response) streaming error patterns.
+ * When YouTube enforces SABR, separate video/audio streams fail with 403.
+ * These are treated as transient errors since format fallback can resolve them.
+ * @see https://github.com/yt-dlp/yt-dlp/issues/12482
+ */
+const SABR_ERROR_PATTERNS = ['sabr streaming', 'missing a url', 'formats have been skipped', 'youtube is forcing sabr']
+
 /** Patterns indicating scheduled content (used as hints alongside release_timestamp) */
 const SCHEDULED_CONTENT_PATTERNS = ['premieres in', 'scheduled for', 'upcoming', 'will be available']
 
@@ -199,6 +207,18 @@ export function classifyVideoError(error: Error, videoInfo?: SchedulingVideoInfo
       retryAfter: calculateExponentialBackoff(retryCount),
       maxRetries: DEFAULT_MAX_RETRIES.transient,
       reason: `Transient error detected: ${errorMessage.substring(0, 100)}`,
+      createIssue: false
+    }
+  }
+
+  // Priority 5b: SABR streaming errors (treated as transient, format fallback can resolve)
+  if (matchesPattern(errorMessage, SABR_ERROR_PATTERNS)) {
+    return {
+      category: 'transient',
+      retryable: true,
+      retryAfter: calculateExponentialBackoff(retryCount),
+      maxRetries: DEFAULT_MAX_RETRIES.transient,
+      reason: `SABR streaming restriction detected - format fallback may resolve: ${errorMessage.substring(0, 100)}`,
       createIssue: false
     }
   }

@@ -25,6 +25,8 @@ import {APIGateway} from '@aws-sdk/client-api-gateway'
 import type {APIGatewayClientConfig} from '@aws-sdk/client-api-gateway'
 import {EventBridgeClient} from '@aws-sdk/client-eventbridge'
 import type {EventBridgeClientConfig} from '@aws-sdk/client-eventbridge'
+import {SecretsManagerClient} from '@aws-sdk/client-secrets-manager'
+import type {SecretsManagerClientConfig} from '@aws-sdk/client-secrets-manager'
 
 const LOCALSTACK_ENDPOINT = 'http://localhost:4566'
 const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
@@ -37,6 +39,7 @@ let testSNSClient: SNSClient | null = null
 let testEventBridgeClient: EventBridgeClient | null = null
 let testDynamoDBClient: DynamoDBClient | null = null
 let testLambdaClient: LambdaClient | null = null
+let testSecretsManagerClient: SecretsManagerClient | null = null
 
 /* c8 ignore start - Test-only code */
 /** @internal Set test S3 client for unit tests */
@@ -62,6 +65,10 @@ export function setTestDynamoDBClient(client: DynamoDBClient | null): void {
 /** @internal Set test Lambda client for unit tests */
 export function setTestLambdaClient(client: LambdaClient | null): void {
   testLambdaClient = client
+}
+/** @internal Set test SecretsManager client for unit tests */
+export function setTestSecretsManagerClient(client: SecretsManagerClient | null): void {
+  testSecretsManagerClient = client
 }
 /* c8 ignore stop */
 
@@ -174,4 +181,17 @@ export function createEventBridgeClient(): EventBridgeClient {
   }
   const config: EventBridgeClientConfig = getBaseConfig()
   return new EventBridgeClient(config)
+}
+
+/**
+ * Create a SecretsManager client instance
+ * Configured for LocalStack when USE_LOCALSTACK=true, otherwise production AWS
+ * Automatically traced via OpenTelemetry AwsInstrumentation
+ */
+export function createSecretsManagerClient(): SecretsManagerClient {
+  if (testSecretsManagerClient) {
+    return testSecretsManagerClient
+  }
+  const config: SecretsManagerClientConfig = getBaseConfig()
+  return new SecretsManagerClient(config)
 }

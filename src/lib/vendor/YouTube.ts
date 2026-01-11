@@ -1,37 +1,106 @@
 import {spawn} from 'child_process'
 import {createReadStream} from 'fs'
-import {copyFile, stat, unlink} from 'fs/promises'
+import {copyFile, stat, unlink, writeFile} from 'fs/promises'
 import type {YtDlpVideoInfo} from '#types/youtube'
 import {metrics, MetricUnit} from '#lib/vendor/Powertools'
-import {logDebug, logError} from '#lib/system/logging'
+import {logDebug, logError, logInfo} from '#lib/system/logging'
 import {CookieExpirationError, UnexpectedError} from '#lib/system/errors'
 import {createS3Upload} from '../vendor/AWS/S3'
-import {getRequiredEnv} from '#lib/system/env'
+import {getOptionalEnv, getRequiredEnv} from '#lib/system/env'
+import {getSecretValue} from '#lib/vendor/AWS/SecretsManager'
 
 /**
  * yt-dlp configuration constants
  */
 const YTDLP_CONFIG = {
-  /** Cookies source path (read-only in Lambda) */
+  /** Cookies source path (read-only in Lambda layer - fallback only) */
   COOKIES_SOURCE: '/opt/cookies/youtube-cookies.txt',
   /** Cookies destination path (writable in Lambda) */
   COOKIES_DEST: '/tmp/youtube-cookies.txt',
-  /**
-   * Use mweb client with PO token - recommended for bot detection bypass.
-   * The bgutil plugin (when installed via PYTHONPATH) will automatically
-   * generate PO tokens for this client.
-   * @see https://github.com/yt-dlp/yt-dlp/wiki/PO-Token-Guide
-   */
-  EXTRACTOR_ARGS: 'youtube:player_client=mweb',
-  /** Format selection: best mp4 video + m4a audio, fallback to best mp4 or best available */
-  FORMAT_SELECTOR: 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
   /** Output container format */
   MERGE_FORMAT: 'mp4',
   /** Number of concurrent fragment downloads for speed */
   CONCURRENT_FRAGMENTS: '4',
   /** bgutil plugin path in Lambda layer (set via PYTHONPATH env var) */
-  PLUGIN_PATH: '/opt/python'
+  PLUGIN_PATH: '/opt/python',
+  /** Sleep between requests during data extraction (seconds) - helps avoid rate limiting */
+  SLEEP_REQUESTS: process.env.YTDLP_SLEEP_REQUESTS || '1',
+  /** Minimum sleep between downloads (seconds) */
+  SLEEP_INTERVAL: process.env.YTDLP_SLEEP_INTERVAL || '2',
+  /** Maximum sleep between downloads (seconds) - random delay between min and max */
+  MAX_SLEEP_INTERVAL: process.env.YTDLP_MAX_SLEEP_INTERVAL || '5'
 } as const
+
+/**
+ * Prepare cookies for yt-dlp usage.
+ * Primary source: AWS Secrets Manager (refreshed by RefreshYouTubeCookies Lambda)
+ * Fallback source: Static cookie file in Lambda layer (/opt/cookies/)
+ *
+ * @returns Path to the writable cookie file
+ * @throws Error if neither source is available
+ */
+async function prepareCookies(): Promise<string> {
+  const secretId = getOptionalEnv('YOUTUBE_COOKIES_SECRET_ID', '')
+
+  // Primary path: Secrets Manager (for automated cookie refresh)
+  if (secretId) {
+    try {
+      logDebug('Fetching cookies from Secrets Manager', {secretId})
+      const response = await getSecretValue({SecretId: secretId})
+
+      if (response.SecretString) {
+        const secret = JSON.parse(response.SecretString) as {cookies: string; extractedAt: string; cookieCount: number}
+        logDebug('Cookies retrieved from Secrets Manager', {extractedAt: secret.extractedAt, cookieCount: secret.cookieCount})
+
+        // Write cookies to writable /tmp directory
+        await writeFile(YTDLP_CONFIG.COOKIES_DEST, secret.cookies, 'utf-8')
+        return YTDLP_CONFIG.COOKIES_DEST
+      }
+    } catch (error) {
+      logInfo('Failed to fetch cookies from Secrets Manager, falling back to layer', {
+        secretId,
+        error: error instanceof Error ? error.message : String(error)
+      })
+    }
+  }
+
+  // Fallback path: Lambda layer (static cookies from deployment)
+  try {
+    logDebug('Using fallback cookies from Lambda layer')
+    await copyFile(YTDLP_CONFIG.COOKIES_SOURCE, YTDLP_CONFIG.COOKIES_DEST)
+    return YTDLP_CONFIG.COOKIES_DEST
+  } catch (copyError) {
+    logError('Failed to copy cookies from layer', copyError)
+    throw copyError instanceof Error ? copyError : new Error(String(copyError))
+  }
+}
+
+/**
+ * Player clients to try in order of preference.
+ * mweb is primary (best bot detection bypass with PO tokens).
+ * android_vr and ios are fallbacks if mweb fails.
+ * @see https://github.com/yt-dlp/yt-dlp/wiki/PO-Token-Guide
+ */
+const PLAYER_CLIENTS = ['mweb', 'android_vr', 'ios'] as const
+
+/**
+ * Format selectors in order of preference (SABR fallback strategy).
+ * When YouTube enforces SABR streaming, separate streams (video+audio) return 403.
+ * Combined formats bypass SABR restrictions.
+ * @see https://github.com/yt-dlp/yt-dlp/issues/12482
+ */
+const FORMAT_SELECTORS = [
+  'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best', // Primary: separate streams (best quality)
+  'best[ext=mp4]/best', // Fallback 1: combined format (bypasses SABR)
+  'bestvideo+bestaudio/best' // Fallback 2: any format
+] as const
+
+/**
+ * Get extractor args for a specific player client
+ */
+function getExtractorArgs(client: string): string {
+  return `youtube:player_client=${client}`
+}
 
 /**
  * Cookie error patterns categorized by severity.
@@ -56,6 +125,29 @@ const COOKIE_ERROR_PATTERNS = {
   ],
   rate_limited: ['HTTP Error 429', 'Too many requests', 'rate limit', 'temporarily blocked']
 } as const
+
+/**
+ * SABR (Server-side Ad Blocking Response) streaming error patterns.
+ * When YouTube enforces SABR, separate video/audio streams fail with 403.
+ * Solution: Use combined format selectors instead of separate streams.
+ * @see https://github.com/yt-dlp/yt-dlp/issues/12482
+ */
+const SABR_ERROR_PATTERNS = [
+  'SABR streaming',
+  'missing a url',
+  'formats have been skipped',
+  'YouTube is forcing SABR'
+] as const
+
+/**
+ * Check if an error indicates SABR streaming enforcement
+ * @param errorMessage - Error message from yt-dlp
+ * @returns true if error is SABR-related
+ */
+export function isSabrError(errorMessage: string): boolean {
+  const lowerMessage = errorMessage.toLowerCase()
+  return SABR_ERROR_PATTERNS.some((p) => lowerMessage.includes(p.toLowerCase()))
+}
 
 /** Cookie error severity type */
 export type CookieErrorSeverity = 'bot_detection' | 'cookie_expired' | 'rate_limited' | null
@@ -126,11 +218,14 @@ function getVideoInfo(binaryPath: string, args: string[]): Promise<YtDlpVideoInf
 }
 
 /**
- * Safely fetch video metadata using yt-dlp.
+ * Safely fetch video metadata using yt-dlp with player client rotation.
  *
  * This function is designed to be "safe" - it never throws, instead returning
  * a result object with success/failure status and optional error details.
  * This enables callers to handle errors gracefully (e.g., scheduling retries).
+ *
+ * Implements player client rotation: tries mweb first, then android_vr, then ios
+ * if previous clients fail with non-cookie errors.
  *
  * @param uri - YouTube video URL
  * @returns Result object with video info (if successful) or error details
@@ -138,48 +233,78 @@ function getVideoInfo(binaryPath: string, args: string[]): Promise<YtDlpVideoInf
 export async function fetchVideoInfo(uri: string): Promise<FetchVideoInfoResult> {
   const ytdlpBinaryPath = getRequiredEnv('YTDLP_BINARY_PATH')
   logDebug('fetchVideoInfo =>', {uri, binaryPath: ytdlpBinaryPath})
+
+  // Prepare cookies (from Secrets Manager or fallback to layer)
   try {
-    // Copy cookies from read-only /opt to writable /tmp (yt-dlp needs write access)
-    await copyFile(YTDLP_CONFIG.COOKIES_SOURCE, YTDLP_CONFIG.COOKIES_DEST)
-
-    // Configure yt-dlp with flags to work around YouTube restrictions
-    const ytdlpFlags = [
-      '--extractor-args',
-      YTDLP_CONFIG.EXTRACTOR_ARGS,
-      '--no-warnings',
-      '--cookies',
-      YTDLP_CONFIG.COOKIES_DEST,
-      '--ignore-errors',
-      uri
-    ]
-
-    // Get video info in JSON format
-    const info = await getVideoInfo(ytdlpBinaryPath, ytdlpFlags)
-
-    logDebug('fetchVideoInfo <=', {
-      id: info?.id,
-      title: info?.title,
-      formatCount: info?.formats?.length || 0,
-      release_timestamp: info?.release_timestamp,
-      live_status: info?.live_status
-    })
-
-    return {success: true, info}
-  } catch (error) {
-    const err = error instanceof Error ? error : new Error(String(error))
-    logDebug('fetchVideoInfo error', {uri, error: err.message})
-
-    const cookieError = isCookieExpirationError(err.message)
-    if (cookieError) {
-      logError('Cookie expiration detected', {message: err.message})
-      // Track auth failure with error type for CloudWatch alarm
-      const errorSeverity = classifyCookieError(err.message)
-      metrics.addDimension('ErrorType', errorSeverity || 'unknown')
-      metrics.addMetric('YouTubeAuthFailure', MetricUnit.Count, 1)
-    }
-
-    return {success: false, error: err, isCookieError: cookieError}
+    await prepareCookies()
+  } catch (cookieError) {
+    logError('Failed to prepare cookies', cookieError)
+    return {success: false, error: cookieError instanceof Error ? cookieError : new Error(String(cookieError)), isCookieError: false}
   }
+
+  // Try each player client in order
+  let lastError: Error | undefined
+  for (const client of PLAYER_CLIENTS) {
+    try {
+      logDebug('Trying player client', {client, uri})
+
+      // Configure yt-dlp with flags to work around YouTube restrictions
+      const ytdlpFlags = [
+        '--extractor-args',
+        getExtractorArgs(client),
+        '--no-warnings',
+        '--cookies',
+        YTDLP_CONFIG.COOKIES_DEST,
+        '--sleep-requests',
+        YTDLP_CONFIG.SLEEP_REQUESTS,
+        '--ignore-errors',
+        uri
+      ]
+
+      // Get video info in JSON format
+      const info = await getVideoInfo(ytdlpBinaryPath, ytdlpFlags)
+
+      logDebug('fetchVideoInfo <=', {
+        id: info?.id,
+        title: info?.title,
+        formatCount: info?.formats?.length || 0,
+        release_timestamp: info?.release_timestamp,
+        live_status: info?.live_status,
+        client
+      })
+
+      // Track which client succeeded
+      metrics.addDimension('PlayerClient', client)
+      metrics.addMetric('YouTubeClientSuccess', MetricUnit.Count, 1)
+
+      return {success: true, info}
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error))
+      lastError = err
+      logDebug('Player client failed', {client, uri, error: err.message})
+
+      // Track client failure
+      metrics.addDimension('PlayerClient', client)
+      metrics.addMetric('YouTubeClientFailure', MetricUnit.Count, 1)
+
+      // If it's a cookie error, don't try other clients - the issue is auth, not client
+      const cookieError = isCookieExpirationError(err.message)
+      if (cookieError) {
+        logError('Cookie expiration detected', {message: err.message, client})
+        const errorSeverity = classifyCookieError(err.message)
+        metrics.addDimension('ErrorType', errorSeverity || 'unknown')
+        metrics.addMetric('YouTubeAuthFailure', MetricUnit.Count, 1)
+        return {success: false, error: err, isCookieError: true}
+      }
+
+      // Try next client
+      logDebug('Trying next player client', {failedClient: client})
+    }
+  }
+
+  // All clients failed
+  logError('All player clients failed', {uri, lastError: lastError?.message})
+  return {success: false, error: lastError || new Error('All player clients failed'), isCookieError: false}
 }
 
 /**
@@ -289,13 +414,14 @@ function execYtDlp(ytdlpBinaryPath: string, args: string[]): Promise<void> {
 }
 
 /**
- * Download video to temp file then stream to S3.
+ * Download video to temp file then stream to S3 with format fallback.
  *
  * Two-phase approach:
  * 1. yt-dlp downloads to /tmp with proper video+audio merging (uses ffmpeg internally)
  * 2. Stream completed file to S3
  *
- * This solves the stdout merge bug where yt-dlp concatenates instead of muxing streams.
+ * Implements SABR fallback: tries separate streams first (best quality), then falls
+ * back to combined formats if YouTube enforces SABR streaming restrictions.
  *
  * @param uri - YouTube video URL
  * @param bucket - Target S3 bucket name
@@ -311,32 +437,80 @@ export async function downloadVideoToS3(uri: string, bucket: string, key: string
   const startTime = Date.now()
 
   try {
-    // Copy cookies from read-only /opt to writable /tmp
-    await copyFile(YTDLP_CONFIG.COOKIES_SOURCE, YTDLP_CONFIG.COOKIES_DEST)
+    // Prepare cookies (from Secrets Manager or fallback to layer)
+    await prepareCookies()
 
-    // Phase 1: Download to temp file with proper merging (yt-dlp uses ffmpeg internally)
-    const ytdlpArgs = [
-      '-f',
-      YTDLP_CONFIG.FORMAT_SELECTOR,
-      '--merge-output-format',
-      YTDLP_CONFIG.MERGE_FORMAT,
-      '--cookies',
-      YTDLP_CONFIG.COOKIES_DEST,
-      '--extractor-args',
-      YTDLP_CONFIG.EXTRACTOR_ARGS,
-      '--no-warnings',
-      '--concurrent-fragments',
-      YTDLP_CONFIG.CONCURRENT_FRAGMENTS,
-      '--progress',
-      '--newline',
-      '-o',
-      tempFile,
-      uri
-    ]
+    // Try each format selector in order (SABR fallback strategy)
+    let downloadError: Error | undefined
+    let usedFormat: string | undefined
 
-    logDebug('Phase 1: Downloading to temp file', {args: ytdlpArgs})
-    await execYtDlp(ytdlpBinaryPath, ytdlpArgs)
-    logDebug('Phase 1 complete: Download finished')
+    for (const formatSelector of FORMAT_SELECTORS) {
+      try {
+        logDebug('Trying format selector', {formatSelector})
+
+        // Phase 1: Download to temp file with proper merging (yt-dlp uses ffmpeg internally)
+        const ytdlpArgs = [
+          '-f',
+          formatSelector,
+          '--merge-output-format',
+          YTDLP_CONFIG.MERGE_FORMAT,
+          '--cookies',
+          YTDLP_CONFIG.COOKIES_DEST,
+          '--extractor-args',
+          getExtractorArgs(PLAYER_CLIENTS[0]), // Use primary client for downloads
+          '--no-warnings',
+          '--concurrent-fragments',
+          YTDLP_CONFIG.CONCURRENT_FRAGMENTS,
+          '--sleep-interval',
+          YTDLP_CONFIG.SLEEP_INTERVAL,
+          '--max-sleep-interval',
+          YTDLP_CONFIG.MAX_SLEEP_INTERVAL,
+          '--progress',
+          '--newline',
+          '-o',
+          tempFile,
+          uri
+        ]
+
+        logDebug('Phase 1: Downloading to temp file', {args: ytdlpArgs, formatSelector})
+        await execYtDlp(ytdlpBinaryPath, ytdlpArgs)
+        logDebug('Phase 1 complete: Download finished', {formatSelector})
+
+        // Track which format succeeded
+        usedFormat = formatSelector
+        metrics.addDimension('FormatSelector', formatSelector === FORMAT_SELECTORS[0] ? 'primary' : 'fallback')
+        metrics.addMetric('YouTubeFormatSuccess', MetricUnit.Count, 1)
+
+        break // Success, exit the loop
+      } catch (error) {
+        downloadError = error instanceof Error ? error : new Error(String(error))
+        const errorMessage = downloadError.message
+
+        // Track format failure
+        metrics.addDimension('FormatSelector', formatSelector === FORMAT_SELECTORS[0] ? 'primary' : 'fallback')
+        metrics.addMetric('YouTubeFormatFailure', MetricUnit.Count, 1)
+
+        // If it's a SABR error or 403 on download, try next format
+        if (isSabrError(errorMessage) || (errorMessage.includes('403') && !isCookieExpirationError(errorMessage))) {
+          logDebug('Format failed with SABR/403, trying next format', {formatSelector, error: errorMessage})
+          // Clean up partial temp file before retry
+          try {
+            await unlink(tempFile)
+          } catch {
+            // File may not exist
+          }
+          continue
+        }
+
+        // For other errors (cookie, auth, etc.), don't try other formats
+        throw error
+      }
+    }
+
+    // If all formats failed, throw the last error
+    if (!usedFormat) {
+      throw downloadError || new Error('All format selectors failed')
+    }
 
     // Phase 2: Stream file to S3
     logDebug('Phase 2: Streaming to S3', {bucket, key})
