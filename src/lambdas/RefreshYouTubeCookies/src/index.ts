@@ -26,20 +26,10 @@ import {getRequiredEnv} from '#lib/system/env'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapScheduledHandler} from '#lib/lambda/middleware/internal'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
+import type {RefreshCookiesResult} from '#types/youtube'
 
 // Enable stealth plugin to evade bot detection
 puppeteer.use(StealthPlugin())
-
-export interface RefreshCookiesResult {
-  success: boolean
-  cookieCount: number
-  extractedAt: string
-  errors: string[]
-  isAuthenticated: boolean
-  browserUsed: string
-  sessionRefreshed: boolean
-  requiresLogin: boolean
-}
 
 interface StoredCookieData {
   cookies: string
