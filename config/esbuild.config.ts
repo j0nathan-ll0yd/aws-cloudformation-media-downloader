@@ -12,7 +12,6 @@ if (process.env['LOG_LEVEL']?.toUpperCase() === 'SILENT') {
 // AWS SDK v3 is available in Lambda runtime - externalize to reduce bundle size
 const awsSdkExternals = [
   '@aws-sdk/client-api-gateway',
-  '@aws-sdk/client-cloudwatch',
   '@aws-sdk/client-dynamodb',
   '@aws-sdk/client-eventbridge',
   '@aws-sdk/client-lambda',
@@ -20,8 +19,7 @@ const awsSdkExternals = [
   '@aws-sdk/client-sns',
   '@aws-sdk/client-sqs',
   '@aws-sdk/lib-dynamodb',
-  '@aws-sdk/lib-storage',
-  '@aws-sdk/util-dynamodb'
+  '@aws-sdk/lib-storage'
 ]
 
 const isAnalyze = process.env['ANALYZE'] === 'true'
