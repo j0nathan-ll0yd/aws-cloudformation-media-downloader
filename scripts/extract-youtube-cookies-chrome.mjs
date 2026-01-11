@@ -4,22 +4,19 @@
  * Extract YouTube cookies using Chrome browser
  *
  * This script opens Chrome, lets you manually login to YouTube,
- * then extracts and uploads cookies to AWS Secrets Manager.
+ * then saves cookies to the Lambda layer for deployment.
  *
  * Usage: node scripts/extract-youtube-cookies-chrome.mjs
  *
  * Requirements:
  * - Chrome browser installed
- * - AWS CLI configured with credentials
  * - pnpm install (for puppeteer-core)
  */
 
 import puppeteer from 'puppeteer-core'
-import {exec} from 'child_process'
-import {promisify} from 'util'
+import * as fs from 'fs'
+import * as path from 'path'
 import * as readline from 'readline'
-
-const execAsync = promisify(exec)
 
 // Find Chrome executable based on OS
 function findChromeExecutable() {
@@ -69,37 +66,17 @@ function prompt(question) {
   })
 }
 
-// Upload cookies to Secrets Manager
-async function uploadToSecretsManager(cookies, netscapeCookies) {
-  const secretId = 'media-downloader/youtube-cookies'
-  const region = 'us-west-2'
-
-  const payload = {
-    cookies: netscapeCookies,
-    extractedAt: new Date().toISOString(),
-    cookieCount: cookies.length,
-    browserUsed: 'chrome-manual',
-    userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-    isAuthenticated: true
-  }
-
-  const secretString = JSON.stringify(payload)
-
-  // Escape for shell
-  const escapedSecret = secretString.replace(/'/g, "'\\''")
-
-  const command = `aws secretsmanager put-secret-value --secret-id "${secretId}" --secret-string '${escapedSecret}' --region ${region}`
+// Save cookies to Lambda layer file
+async function saveCookiesToLayer(netscapeCookies, cookieCount) {
+  const cookiePath = path.join(process.cwd(), 'layers/yt-dlp/cookies/youtube-cookies.txt')
 
   try {
-    await execAsync(command)
-    console.log('\n✓ Cookies uploaded to Secrets Manager')
-    console.log(`  Secret ID: ${secretId}`)
-    console.log(`  Region: ${region}`)
-    console.log(`  Cookie count: ${cookies.length}`)
+    await fs.promises.writeFile(cookiePath, netscapeCookies, 'utf-8')
+    console.log('\n✓ Cookies saved to Lambda layer')
+    console.log(`  Path: ${cookiePath}`)
+    console.log(`  Cookie count: ${cookieCount}`)
   } catch (error) {
-    console.error('\n✗ Failed to upload to Secrets Manager:', error.message)
-    console.log('\nYou can manually upload with:')
-    console.log(`  aws secretsmanager put-secret-value --secret-id "${secretId}" --secret-string '<payload>' --region ${region}`)
+    console.error('\n✗ Failed to save cookies:', error.message)
     throw error
   }
 }
@@ -116,7 +93,7 @@ async function main() {
   console.log('  2. Navigate to YouTube')
   console.log('  3. Wait for you to login manually')
   console.log('  4. Extract cookies after login')
-  console.log('  5. Upload cookies to AWS Secrets Manager\n')
+  console.log('  5. Save cookies to Lambda layer for deployment\n')
 
   await prompt('Press Enter to start...')
 
@@ -200,15 +177,14 @@ async function main() {
     // Convert to Netscape format
     const netscapeCookies = convertToNetscapeFormat(youtubeCookies)
 
-    // Upload to Secrets Manager
-    console.log('\nUploading to AWS Secrets Manager...')
-    await uploadToSecretsManager(youtubeCookies, netscapeCookies)
+    // Save to Lambda layer
+    console.log('\nSaving to Lambda layer...')
+    await saveCookiesToLayer(netscapeCookies, youtubeCookies.length)
 
-    console.log('\n✓ Done! Cookies extracted and uploaded successfully.')
+    console.log('\n✓ Done! Cookies extracted and saved successfully.')
     console.log('\nNext steps:')
-    console.log('  1. Merge PR #340')
-    console.log('  2. Run: pnpm run deploy')
-    console.log('  3. The Lambda will use these cookies for YouTube downloads')
+    console.log('  1. Run: pnpm run deploy')
+    console.log('  2. The Lambda will use these cookies for YouTube downloads')
   } catch (error) {
     console.error('\n✗ Error:', error.message)
     process.exit(1)

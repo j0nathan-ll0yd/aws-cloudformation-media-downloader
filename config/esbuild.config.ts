@@ -17,7 +17,6 @@ const awsSdkExternals = [
   '@aws-sdk/client-eventbridge',
   '@aws-sdk/client-lambda',
   '@aws-sdk/client-s3',
-  '@aws-sdk/client-secrets-manager',
   '@aws-sdk/client-sns',
   '@aws-sdk/client-sqs',
   '@aws-sdk/lib-dynamodb',
