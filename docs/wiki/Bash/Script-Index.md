@@ -46,7 +46,6 @@ Complete reference for all shell scripts in the project.
 | Script | Purpose | Usage |
 |--------|---------|-------|
 | `bin/update-yt-dlp.sh` | Update yt-dlp binary | `./bin/update-yt-dlp.sh` |
-| `bin/update-youtube-cookies.sh` | Update YouTube auth cookies | `./bin/update-youtube-cookies.sh` |
 | `bin/update-agents-prs.sh` | Update AGENTS.md with PR history | `./bin/update-agents-prs.sh` |
 
 ### Infrastructure

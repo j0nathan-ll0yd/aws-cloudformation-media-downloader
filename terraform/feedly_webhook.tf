@@ -196,11 +196,6 @@ data "aws_iam_policy_document" "MultipartUpload" {
       values   = ["MediaDownloader"]
     }
   }
-  # Read YouTube cookies from Secrets Manager (refreshed by RefreshYouTubeCookies Lambda)
-  statement {
-    actions   = ["secretsmanager:GetSecretValue"]
-    resources = [aws_secretsmanager_secret.YouTubeCookies.arn]
-  }
 }
 
 resource "aws_iam_role" "StartFileUpload" {
@@ -535,9 +530,8 @@ resource "aws_lambda_function" "StartFileUpload" {
       PATH                      = "/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin"
       PYTHONPATH                = "/opt/python" # bgutil plugin path for PO token generation
       GITHUB_PERSONAL_TOKEN     = data.sops_file.secrets.data["github.issue.token"]
-      OTEL_SERVICE_NAME         = local.start_file_upload_function_name
-      DSQL_ACCESS_LEVEL         = "readwrite"
-      YOUTUBE_COOKIES_SECRET_ID = aws_secretsmanager_secret.YouTubeCookies.id # Fresh cookies from RefreshYouTubeCookies
+      OTEL_SERVICE_NAME = local.start_file_upload_function_name
+      DSQL_ACCESS_LEVEL = "readwrite"
     })
   }
 

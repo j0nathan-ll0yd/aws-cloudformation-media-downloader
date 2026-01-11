@@ -38,13 +38,11 @@ import {EventBridgeClient} from '@aws-sdk/client-eventbridge'
 import {S3Client} from '@aws-sdk/client-s3'
 import {DynamoDBClient} from '@aws-sdk/client-dynamodb'
 import {LambdaClient} from '@aws-sdk/client-lambda'
-import {SecretsManagerClient} from '@aws-sdk/client-secrets-manager'
 import {
   setTestDynamoDBClient,
   setTestEventBridgeClient,
   setTestLambdaClient,
   setTestS3Client,
-  setTestSecretsManagerClient,
   setTestSNSClient,
   setTestSQSClient
 } from '#lib/vendor/AWS/clients'
@@ -125,17 +123,6 @@ export function createLambdaMock(): AwsClientStub<LambdaClient> {
 }
 
 /**
- * Creates a mock SecretsManager client and injects it into the client factory.
- * @returns The mock client instance for configuring responses and assertions
- */
-export function createSecretsManagerMock(): AwsClientStub<SecretsManagerClient> {
-  const mock = mockClient(SecretsManagerClient)
-  mockInstances.push(mock)
-  setTestSecretsManagerClient(mock as unknown as SecretsManagerClient)
-  return mock
-}
-
-/**
  * Resets all AWS mock clients and clears the test client injections.
  * Call this in afterAll() to clean up between test files.
  */
@@ -153,7 +140,6 @@ export function resetAllAwsMocks(): void {
   setTestS3Client(null)
   setTestDynamoDBClient(null)
   setTestLambdaClient(null)
-  setTestSecretsManagerClient(null)
 }
 
 // Re-export types for convenience

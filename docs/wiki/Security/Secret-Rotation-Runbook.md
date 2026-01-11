@@ -11,7 +11,7 @@ This runbook documents all secrets used in the media downloader infrastructure, 
 | APNS Signing Key | secrets.enc.yaml | Certificate renewal | 2027-01-03 | Apple Developer Account |
 | APNS Certificate | secrets.enc.yaml | Certificate renewal | 2027-01-03 | Apple Developer Account |
 | GitHub PAT | secrets.enc.yaml | 90 days recommended | Check GitHub | GitHub Account |
-| YouTube Cookies | layers/yt-dlp/cookies/ | 30-60 days | Auto-detected | Firefox Browser |
+| YouTube Cookies | layers/yt-dlp/cookies/ | 3-5 days | Auto-detected | Chrome Browser |
 
 ## Expiration Calendar
 
@@ -20,7 +20,7 @@ This runbook documents all secrets used in the media downloader infrastructure, 
 | APNS Signing Key | 2027-01-03 | 2026-12-01 | Renew in Apple Developer Portal |
 | APNS Certificate | 2027-01-03 | 2026-12-01 | Renew in Apple Developer Portal |
 | GitHub PAT | Varies | Check GitHub settings | Regenerate token |
-| YouTube Cookies | ~30-60 days | Auto-detected via 403 error | Run update script |
+| YouTube Cookies | ~3-5 days | Auto-detected via 403 error | Run extraction script |
 
 ---
 
@@ -28,30 +28,33 @@ This runbook documents all secrets used in the media downloader infrastructure, 
 
 ### YouTube Cookies
 
-**Frequency**: Every 30-60 days, or when downloads fail with 403 errors.
+**Frequency**: Every 3-5 days, or when downloads fail with 403 errors.
 
 **Auto-detection**: The system automatically detects cookie expiration via 403 errors and creates a GitHub issue with priority label.
 
 **Procedure**:
-1. Log into YouTube in Firefox browser
-2. Close Firefox completely
-3. Run the update script:
+1. Run the extraction script:
    ```bash
-   pnpm run update-cookies
+   pnpm run extract-cookies:chrome
    ```
-4. Verify the cookies were extracted:
+2. Follow the prompts:
+   - Chrome will open automatically
+   - Log into YouTube when prompted
+   - Press Enter when logged in (avatar visible)
+   - Script extracts and saves cookies to layer
+3. Verify the cookies were extracted:
    ```bash
    cat layers/yt-dlp/cookies/youtube-cookies.txt | head -10
    ```
-5. Deploy the updated layer:
+4. Deploy the updated layer:
    ```bash
    pnpm run deploy
    ```
 
 **Troubleshooting**:
-- If extraction fails, ensure you're logged into YouTube in Firefox
-- Firefox must be completely closed during extraction
-- Check that yt-dlp is installed: `brew install yt-dlp`
+- If Chrome doesn't open, verify Chrome is installed at the expected path
+- If login fails, try signing out of all Google accounts first
+- The script requires `puppeteer-core` - run `pnpm install` if missing
 
 ---
 
@@ -216,7 +219,7 @@ If a secret is suspected to be compromised:
 
 | Secret | Detection | Rotation | Notes |
 |--------|-----------|----------|-------|
-| YouTube Cookies | Automated (403 detection) | Manual | GitHub issue created automatically |
+| YouTube Cookies | Automated (403 detection) | Manual | GitHub issue created, deploy after extraction |
 | GitHub PAT | Manual | Manual | Set calendar reminder |
 | APNS Credentials | Manual | Manual | Set calendar reminder for 2026-12-01 |
 | Better Auth | Manual | Manual | Only rotate on compromise |

@@ -1,19 +1,18 @@
 import {spawn} from 'child_process'
 import {createReadStream} from 'fs'
-import {copyFile, stat, unlink, writeFile} from 'fs/promises'
+import {copyFile, stat, unlink} from 'fs/promises'
 import type {YtDlpVideoInfo} from '#types/youtube'
 import {metrics, MetricUnit} from '#lib/vendor/Powertools'
-import {logDebug, logError, logInfo} from '#lib/system/logging'
+import {logDebug, logError} from '#lib/system/logging'
 import {CookieExpirationError, UnexpectedError} from '#lib/system/errors'
 import {createS3Upload} from '../vendor/AWS/S3'
-import {getOptionalEnv, getRequiredEnv} from '#lib/system/env'
-import {getSecretValue} from '#lib/vendor/AWS/SecretsManager'
+import {getRequiredEnv} from '#lib/system/env'
 
 /**
  * yt-dlp configuration constants
  */
 const YTDLP_CONFIG = {
-  /** Cookies source path (read-only in Lambda layer - fallback only) */
+  /** Cookies source path (read-only in Lambda layer) */
   COOKIES_SOURCE: '/opt/cookies/youtube-cookies.txt',
   /** Cookies destination path (writable in Lambda) */
   COOKIES_DEST: '/tmp/youtube-cookies.txt',
@@ -33,46 +32,15 @@ const YTDLP_CONFIG = {
 
 /**
  * Prepare cookies for yt-dlp usage.
- * Primary source: AWS Secrets Manager (refreshed by RefreshYouTubeCookies Lambda)
- * Fallback source: Static cookie file in Lambda layer (/opt/cookies/)
+ * Copies static cookies from Lambda layer to writable /tmp directory.
  *
  * @returns Path to the writable cookie file
- * @throws Error if neither source is available
+ * @throws Error if copy fails
  */
 async function prepareCookies(): Promise<string> {
-  const secretId = getOptionalEnv('YOUTUBE_COOKIES_SECRET_ID', '')
-
-  // Primary path: Secrets Manager (for automated cookie refresh)
-  if (secretId) {
-    try {
-      logDebug('Fetching cookies from Secrets Manager', {secretId})
-      const response = await getSecretValue({SecretId: secretId})
-
-      if (response.SecretString) {
-        const secret = JSON.parse(response.SecretString) as {cookies: string; extractedAt: string; cookieCount: number}
-        logDebug('Cookies retrieved from Secrets Manager', {extractedAt: secret.extractedAt, cookieCount: secret.cookieCount})
-
-        // Write cookies to writable /tmp directory
-        await writeFile(YTDLP_CONFIG.COOKIES_DEST, secret.cookies, 'utf-8')
-        return YTDLP_CONFIG.COOKIES_DEST
-      }
-    } catch (error) {
-      logInfo('Failed to fetch cookies from Secrets Manager, falling back to layer', {
-        secretId,
-        error: error instanceof Error ? error.message : String(error)
-      })
-    }
-  }
-
-  // Fallback path: Lambda layer (static cookies from deployment)
-  try {
-    logDebug('Using fallback cookies from Lambda layer')
-    await copyFile(YTDLP_CONFIG.COOKIES_SOURCE, YTDLP_CONFIG.COOKIES_DEST)
-    return YTDLP_CONFIG.COOKIES_DEST
-  } catch (copyError) {
-    logError('Failed to copy cookies from layer', copyError)
-    throw copyError instanceof Error ? copyError : new Error(String(copyError))
-  }
+  logDebug('Copying cookies from Lambda layer')
+  await copyFile(YTDLP_CONFIG.COOKIES_SOURCE, YTDLP_CONFIG.COOKIES_DEST)
+  return YTDLP_CONFIG.COOKIES_DEST
 }
 
 /**
@@ -234,7 +202,7 @@ export async function fetchVideoInfo(uri: string): Promise<FetchVideoInfoResult>
   const ytdlpBinaryPath = getRequiredEnv('YTDLP_BINARY_PATH')
   logDebug('fetchVideoInfo =>', {uri, binaryPath: ytdlpBinaryPath})
 
-  // Prepare cookies (from Secrets Manager or fallback to layer)
+  // Prepare cookies from Lambda layer
   try {
     await prepareCookies()
   } catch (cookieError) {
@@ -437,7 +405,7 @@ export async function downloadVideoToS3(uri: string, bucket: string, key: string
   const startTime = Date.now()
 
   try {
-    // Prepare cookies (from Secrets Manager or fallback to layer)
+    // Prepare cookies from Lambda layer
     await prepareCookies()
 
     // Try each format selector in order (SABR fallback strategy)

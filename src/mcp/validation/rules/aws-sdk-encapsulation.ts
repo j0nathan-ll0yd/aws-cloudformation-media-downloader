@@ -42,7 +42,6 @@ const VENDOR_SUGGESTIONS: Record<string, string> = {
   '@aws-sdk/client-sns': 'lib/vendor/AWS/SNS',
   '@aws-sdk/client-sqs': 'lib/vendor/AWS/SQS',
   '@aws-sdk/client-cloudwatch-logs': 'lib/vendor/AWS/CloudWatch',
-  '@aws-sdk/client-secrets-manager': 'lib/vendor/AWS/SecretsManager',
   // AWS Lambda Powertools
   '@aws-lambda-powertools/logger': 'lib/vendor/Powertools',
   '@aws-lambda-powertools/metrics': 'lib/vendor/Powertools',

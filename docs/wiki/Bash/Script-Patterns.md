@@ -196,7 +196,6 @@ The project has 20+ scripts in `bin/` covering CI, testing, documentation, and m
 
 | Script | Purpose | Key Features |
 |--------|---------|--------------|
-| `update-youtube-cookies.sh` | Cookie refresh | Interactive, AWS Secrets |
 | `update-yt-dlp.sh` | yt-dlp updates | Lambda layer management |
 | `update-ffmpeg.sh` | ffmpeg updates | Lambda layer management |
 | `update-agents-prs.sh` | AI agent context | PR history for AGENTS.md |
