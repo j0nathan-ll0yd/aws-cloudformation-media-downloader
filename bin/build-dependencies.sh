@@ -36,6 +36,9 @@ main() {
 
   echo "infrastructure_files = ${infrastructure_files[*]}"
 
+  # Ensure build directory exists
+  mkdir -p "$(dirname "${infrastructure_hcl_file_path}")"
+
   echo 'Concatenating infrastructure files'
   cat "${infrastructure_files[@]}" > "${infrastructure_hcl_file_path}"
 
