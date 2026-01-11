@@ -30,6 +30,10 @@
       "trigger": "API Gateway",
       "purpose": "Refresh authentication token"
     },
+    "RefreshYouTubeCookies": {
+      "trigger": "CloudWatch Events",
+      "purpose": "Refresh YouTube session cookies from Secrets Manager"
+    },
     "RegisterDevice": {
       "trigger": "API Gateway",
       "purpose": "Register iOS device for push notifications"
