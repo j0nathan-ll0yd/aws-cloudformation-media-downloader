@@ -466,12 +466,12 @@ pnpm run localstack:start        # Start LocalStack
 pnpm run test:integration        # Run integration tests (assumes LocalStack running)
 
 # Remote testing
-pnpm run test-remote-list        # Test file listing
-pnpm run test-remote-hook        # Test Feedly webhook
-pnpm run test-remote-registerDevice  # Test device registration
+pnpm run test:remote:list        # Test file listing
+pnpm run test:remote:hook        # Test Feedly webhook
+pnpm run test:remote:register:device  # Test device registration
 
 # Documentation
-pnpm run document-source         # Generate TSDoc documentation
+pnpm run document:source         # Generate TSDoc documentation
 
 # AI Context
 pnpm run pack:context    # Pack codebase into repomix-output.xml for context

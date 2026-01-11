@@ -128,7 +128,7 @@ TypeDoc was last generated 5 days ago. Source files have been modified since.
 
 **Fix**:
 ```bash
-pnpm run document-source
+pnpm run document:source
 ```
 
 #### Orphaned References (3)
@@ -166,8 +166,8 @@ All 19 conventions have wiki documentation.
 
 The following can be auto-fixed:
 
-- [ ] Regenerate TypeDoc: `pnpm run document-source`
-- [ ] Regenerate Terraform docs: `pnpm run document-terraform`
+- [ ] Regenerate TypeDoc: `pnpm run document:source`
+- [ ] Regenerate Terraform docs: `pnpm run document:terraform`
 - [ ] Update AGENTS.md Lambda table
 
 Run with `--fix` to apply auto-fixes.
@@ -237,7 +237,7 @@ jobs:
 
       - name: Check TypeDoc Currency
         run: |
-          pnpm run document-source
+          pnpm run document:source
           git diff --exit-code docs/api/
 
       - name: Check Terraform Docs
@@ -259,13 +259,13 @@ jobs:
 pnpm run cleanup
 
 # TypeDoc only
-pnpm run document-source
+pnpm run document:source
 
 # Terraform docs only
-pnpm run document-terraform
+pnpm run document:terraform
 
 # API docs (OpenAPI)
-pnpm run document-api
+pnpm run document:api
 
 # LLM context files
 pnpm run generate:llms

@@ -91,10 +91,10 @@ npm install -g pnpm
 pnpm install
 
 # Build the AWS Lambda functions (using esbuild)
-pnpm run build
+ppnpm run build
 
 # Run the tests to ensure everything is working
-pnpm run test
+ppnpm run test
 
 # Use OpenTofu to deploy the infrastructure
 cd terraform
@@ -102,8 +102,8 @@ tofu init
 tofu apply
 
 # Once complete, verify the application works remotely
-pnpm run test-remote-list
-pnpm run test-remote-hook
+ppnpm run test:remote:list
+ppnpm run test:remote:hook
 ```
 
 ## Quick Start
@@ -118,13 +118,13 @@ aws configure
 
 # Install Node dependencies and deploy project
 pnpm install
-pnpm run build-dependencies
-pnpm run build
-pnpm run test
-pnpm run deploy
+ppnpm run build:dependencies
+ppnpm run build
+ppnpm run test
+ppnpm run deploy
 
 # Confirm everything is working as expected
-pnpm run test-remote-list
+ppnpm run test:remote:list
 ```
 
 
@@ -285,7 +285,7 @@ tofu plan
 
 # 6. Continue using npm scripts as before
 cd ..
-npm run deploy
+pnpm run deploy
 ```
 
 **Note**: The `.terraform/` directory name and `.tf` file extensions remain unchanged - OpenTofu maintains backward compatibility with these conventions.
@@ -323,30 +323,30 @@ Once generated, store it as `githubPersonalToken.txt` in the `secure` directory 
 * Deploy Code - To deploy code changes only, this command will build the distribution files and trigger an OpenTofu **auto approval**.
 
 ```bash
-npm run build
-npm run deploy
+pnpm run build
+pnpm run deploy
 ```
 
 ### Production Testing
 
-In order to test your endpoint in production, you can use the npm commands below.
+In order to test your endpoint in production, you can use the pnpm commands below.
 
 Remotely test the listing of files
 
 ```bash
-npm run test-remote-list
+ppnpm run test:remote:list
 ```
 
 Remotely test the feedly webhook
 
 ```bash
-npm run test-remote-hook
+ppnpm run test:remote:hook
 ```
 
 Remotely test the register device method for registering for push notifications on iOS
 
 ```bash
-npm run test-remote-registerDevice
+ppnpm run test:remote:register:device
 ```
 
 ### Integration Testing with LocalStack
@@ -368,23 +368,23 @@ brew install docker jq
 
 ```bash
 # Full CI with integration tests (handles LocalStack lifecycle)
-pnpm run ci:local:full
+ppnpm run ci:local:full
 
 # Or manually manage LocalStack:
-pnpm run localstack:start
-pnpm run test:integration
-pnpm run localstack:stop
+ppnpm run localstack:start
+ppnpm run test:integration
+ppnpm run localstack:stop
 ```
 
 **Available Commands:**
 
-- `pnpm run ci:local` - Fast local CI checks (~2-3 min, no integration tests)
-- `pnpm run ci:local:full` - Full local CI (~5-10 min, manages LocalStack lifecycle)
-- `pnpm run test:integration` - Run integration tests only (~30s, for fast iteration when developing tests)
-- `pnpm run localstack:start` - Start LocalStack container in detached mode
-- `pnpm run localstack:stop` - Stop and remove LocalStack container
-- `pnpm run localstack:logs` - Stream LocalStack logs
-- `pnpm run localstack:health` - Check LocalStack service health
+- `ppnpm run ci:local` - Fast local CI checks (~2-3 min, no integration tests)
+- `ppnpm run ci:local:full` - Full local CI (~5-10 min, manages LocalStack lifecycle)
+- `ppnpm run test:integration` - Run integration tests only (~30s, for fast iteration when developing tests)
+- `ppnpm run localstack:start` - Start LocalStack container in detached mode
+- `ppnpm run localstack:stop` - Stop and remove LocalStack container
+- `ppnpm run localstack:logs` - Stream LocalStack logs
+- `ppnpm run localstack:health` - Check LocalStack service health
 
 > **Note:** Use `ci:local:full` for comprehensive pre-push validation. Use `test:integration` with manually-started LocalStack for rapid iteration when developing integration tests.
 
@@ -459,16 +459,16 @@ To manually check for and apply yt-dlp updates:
 
 ```bash
 # Check for updates
-npm run update-yt-dlp check
+ppnpm run update:ytdlp:check
 
 # Update VERSION file (if update available)
-npm run update-yt-dlp update
+ppnpm run update:ytdlp
 
 # Review the change
 git diff layers/yt-dlp/VERSION
 
 # Test locally with OpenTofu
-npm run plan  # Should show null_resource.DownloadYtDlpBinary will run
+ppnpm run plan  # Should show null_resource.DownloadYtDlpBinary will run
 
 # Commit and push
 git add layers/yt-dlp/VERSION
@@ -480,7 +480,7 @@ git push
 
 When a VERSION update is merged:
 
-1. **Deploy**: Run `npm run deploy` to apply infrastructure changes
+1. **Deploy**: Run `ppnpm run deploy` to apply infrastructure changes
 2. **Binary Download**: OpenTofu's `null_resource.DownloadYtDlpBinary` executes:
    - Downloads binary from yt-dlp GitHub releases
    - Verifies SHA256 checksum
@@ -505,7 +505,7 @@ git commit -am "chore(deps): revert yt-dlp to 2025.11.10"
 git push
 
 # Deploy with OpenTofu
-npm run deploy  # Downloads and deploys the previous version
+pnpm run deploy  # Downloads and deploys the previous version
 ```
 
 Alternatively, use git revert:
@@ -516,7 +516,7 @@ git revert <commit-hash>
 git push
 
 # Redeploy
-npm run deploy
+pnpm run deploy
 ```
 
 #### Monitoring yt-dlp Updates
@@ -552,7 +552,7 @@ This project uses multiple documentation approaches:
 The API is documented using [TypeSpec](https://typespec.io/), a language for defining APIs that generates OpenAPI specifications. To generate and view API documentation:
 
 ```bash
-npm run document-api
+ppnpm run document:api
 ```
 
 This command will:
@@ -570,7 +570,7 @@ See `tsp/README.md` for more details about the TypeSpec definitions.
 This project uses [TSDoc](https://tsdoc.org) for documenting the source code. To generate this documentation:
 
 ```bash
-npm run document-source
+ppnpm run document:source
 ```
 
 The resulting output is located in `docs/source` and can open viewed by running:
