@@ -76,6 +76,10 @@ const excludedSourceVariables: Record<string, number> = {
   POWERTOOLS_METRICS_DISABLED: 1,
   // Python/Plugin infrastructure variables (set by Terraform, not source code)
   PYTHONPATH: 1, // bgutil plugin path for PO token generation
+  // yt-dlp optional config variables (have sensible defaults in code)
+  YTDLP_SLEEP_REQUESTS: 1, // Optional: rate limiting between requests (default: '1')
+  YTDLP_SLEEP_INTERVAL: 1, // Optional: sleep interval seconds (default: '2')
+  YTDLP_MAX_SLEEP_INTERVAL: 1, // Optional: max sleep interval (default: '5')
   // OpenTelemetry infrastructure variables (set by ADOT layer, not in source)
   OTEL_SERVICE_NAME: 1,
   OTEL_EXPORTER_OTLP_COMPRESSION: 1,

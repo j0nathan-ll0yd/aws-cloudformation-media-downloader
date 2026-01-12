@@ -15,7 +15,6 @@
  */
 import {getDevice as getDeviceRecord, getUserDevicesByUserId} from '#entities/queries'
 import {publishSnsEvent} from '#lib/vendor/AWS/SNS'
-import type {PublishInput} from '#lib/vendor/AWS/SNS'
 import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
 import type {Device} from '#types/domainModels'
 import type {DeviceNotificationResult, FileNotificationType} from '#types/notificationTypes'
@@ -26,7 +25,7 @@ import {metrics, MetricUnit, withPowertools} from '#lib/lambda/middleware/powert
 import {wrapSqsBatchHandler} from '#lib/lambda/middleware/sqs'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 import {providerFailureErrorMessage, UnexpectedError} from '#lib/system/errors'
-import {transformToAPNSNotification} from '#lib/services/notification/transformers'
+import {transformToAPNSAlertNotification, transformToAPNSNotification} from '#lib/services/notification/transformers'
 import {cleanupDisabledEndpoints} from '#lib/services/notification/endpointCleanup'
 
 // Validation now handled by pushNotificationAttributesSchema in processSQSRecord
@@ -53,6 +52,7 @@ async function getDevice(deviceId: string): Promise<Device> {
 
 /**
  * Send notification to a single device with error handling
+ * Routes to alert or background notification based on type
  * Returns result object instead of throwing
  */
 async function sendNotificationToDevice(device: Device, messageBody: string, notificationType: FileNotificationType): Promise<DeviceNotificationResult> {
@@ -62,7 +62,12 @@ async function sendNotificationToDevice(device: Device, messageBody: string, not
   }
   try {
     logInfo(`Sending ${notificationType} to device`, {deviceId: device.deviceId})
-    const publishParams = transformToAPNSNotification(messageBody, targetArn) as PublishInput
+
+    // Route to alert notification for FailureNotification, background for others
+    const publishParams = notificationType === 'FailureNotification'
+      ? transformToAPNSAlertNotification(messageBody, targetArn)
+      : transformToAPNSNotification(messageBody, targetArn)
+
     logDebug('publishSnsEvent <=', publishParams)
     const publishResponse = await publishSnsEvent(publishParams)
     logDebug('publishSnsEvent =>', publishResponse)
@@ -186,7 +191,11 @@ async function processSQSRecord({record, messageAttributes}: SqsRecordParams<str
 
 /**
  * Dispatches push notifications to all user devices.
- * Supports MetadataNotification and DownloadReadyNotification types.
+ * Supports MetadataNotification, DownloadReadyNotification, and FailureNotification types.
+ *
+ * Routes notifications based on type:
+ * - FailureNotification: Alert notification (visible to user)
+ * - MetadataNotification & DownloadReadyNotification: Background notification (silent)
  *
  * Returns SQSBatchResponse with failed message IDs for partial batch failure handling.
  * Failed messages will be retried by SQS and eventually sent to DLQ after maxReceiveCount.

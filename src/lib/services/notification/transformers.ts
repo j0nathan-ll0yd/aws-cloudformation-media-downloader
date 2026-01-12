@@ -5,7 +5,7 @@
  * This is an adapter layer that bridges domain models to infrastructure message formats.
  */
 import type {File} from '#types/domainModels'
-import type {DownloadReadyNotification, MetadataNotification} from '#types/notificationTypes'
+import type {DownloadReadyNotification, FailureNotification, MetadataNotification} from '#types/notificationTypes'
 import type {YtDlpVideoInfo} from '#types/youtube'
 import type {PublishInput} from '#lib/vendor/AWS/SNS'
 import {stringAttribute} from '#lib/vendor/AWS/SQS'
@@ -70,11 +70,36 @@ export function createDownloadReadyNotification(
 }
 
 /**
- * Transform SQS message body (JSON) to APNS push notification
- * Supports both MetadataNotification and DownloadReadyNotification types
+ * Creates FailureNotification - sent when download permanently fails
+ * @param fileId - The video ID
+ * @param errorCategory - Error category (e.g., 'permanent', 'cookie_expired')
+ * @param errorMessage - Human-readable error message
+ * @param retryExhausted - Whether retry attempts have been exhausted
+ * @param userId - User ID to send notification to
+ * @param title - Optional video title (if available from metadata fetch)
+ * @returns SQS message body and attributes for routing
+ */
+export function createFailureNotification(
+  fileId: string,
+  errorCategory: string,
+  errorMessage: string,
+  retryExhausted: boolean,
+  userId: string,
+  title?: string
+): {messageBody: string; messageAttributes: Record<string, MessageAttributeValue>} {
+  const file: FailureNotification = {fileId, title, errorCategory, errorMessage, retryExhausted}
+  return {
+    messageBody: JSON.stringify({file, notificationType: 'FailureNotification'}),
+    messageAttributes: {userId: stringAttribute(userId), notificationType: stringAttribute('FailureNotification')}
+  }
+}
+
+/**
+ * Transform SQS message body (JSON) to APNS background push notification
+ * Supports MetadataNotification and DownloadReadyNotification types
  * @param messageBody - JSON string containing file and notificationType
  * @param targetArn - SNS endpoint ARN for the device
- * @returns SNS PublishInput for APNS
+ * @returns SNS PublishInput for APNS background notification
  */
 export function transformToAPNSNotification(messageBody: string, targetArn: string): PublishInput {
   const payload = JSON.parse(messageBody)
@@ -86,6 +111,42 @@ export function transformToAPNSNotification(messageBody: string, targetArn: stri
     MessageAttributes: {
       'AWS.SNS.MOBILE.APNS.PRIORITY': {DataType: 'String', StringValue: '5'},
       'AWS.SNS.MOBILE.APNS.PUSH_TYPE': {DataType: 'String', StringValue: 'background'}
+    },
+    MessageStructure: 'json',
+    TargetArn: targetArn
+  }
+}
+
+/**
+ * Transform SQS message body (JSON) to APNS alert push notification
+ * Used for FailureNotification types that require user attention
+ * @param messageBody - JSON string containing file and notificationType
+ * @param targetArn - SNS endpoint ARN for the device
+ * @returns SNS PublishInput for APNS alert notification
+ */
+export function transformToAPNSAlertNotification(messageBody: string, targetArn: string): PublishInput {
+  const payload = JSON.parse(messageBody)
+  const file = payload.file as FailureNotification
+
+  // Construct user-friendly alert message
+  const title = 'Download Failed'
+  const subtitle = file.title || file.fileId
+  const body = file.retryExhausted
+    ? `Failed after multiple attempts: ${file.errorMessage}`
+    : `Unable to download: ${file.errorMessage}`
+
+  return {
+    Message: JSON.stringify({
+      APNS_SANDBOX: JSON.stringify({
+        aps: {alert: {title, subtitle, body}, sound: 'default'},
+        notificationType: payload.notificationType,
+        file: payload.file
+      }),
+      default: 'Default message'
+    }),
+    MessageAttributes: {
+      'AWS.SNS.MOBILE.APNS.PRIORITY': {DataType: 'String', StringValue: '10'},
+      'AWS.SNS.MOBILE.APNS.PUSH_TYPE': {DataType: 'String', StringValue: 'alert'}
     },
     MessageStructure: 'json',
     TargetArn: targetArn

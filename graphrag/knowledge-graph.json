@@ -698,11 +698,6 @@
       "relationship": "implemented_by"
     },
     {
-      "source": "apiendpoint:listFiles",
-      "target": "apimodel:FileListResponse",
-      "relationship": "returns"
-    },
-    {
       "source": "apiendpoint:registerDevice",
       "target": "lambda:RegisterDevice",
       "relationship": "implemented_by"

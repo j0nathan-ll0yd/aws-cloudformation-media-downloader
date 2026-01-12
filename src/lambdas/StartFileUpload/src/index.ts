@@ -27,7 +27,7 @@ import {closeCookieExpirationIssueIfResolved, createCookieExpirationIssue, creat
 import {metrics, MetricUnit, withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapSqsBatchHandler} from '#lib/lambda/middleware/sqs'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
-import {createMetadataNotification} from '#lib/services/notification/transformers'
+import {createFailureNotification, createMetadataNotification} from '#lib/services/notification/transformers'
 import {classifyVideoError, isRetryExhausted} from '#lib/domain/video/errorClassifier'
 import {youtubeCircuitBreaker} from '#lib/system/circuitBreaker'
 import {upsertFile} from './file-helpers'
@@ -158,6 +158,44 @@ async function dispatchMetadataNotifications(fileId: string, videoInfo: YtDlpVid
 }
 
 /**
+ * Dispatch FailureNotification to all users waiting for this file.
+ * Sends alert notifications via SQS to the push notification queue.
+ * @param fileId - The video ID
+ * @param errorCategory - Error category (e.g., 'permanent', 'cookie_expired')
+ * @param errorMessage - Human-readable error message
+ * @param retryExhausted - Whether retry attempts have been exhausted
+ * @param title - Optional video title (if available from metadata fetch)
+ */
+async function dispatchFailureNotifications(
+  fileId: string,
+  errorCategory: string,
+  errorMessage: string,
+  retryExhausted: boolean,
+  title?: string
+): Promise<void> {
+  const queueUrl = getRequiredEnv('SNS_QUEUE_URL')
+
+  // Get all users waiting for this file
+  const userFiles = await getUserFilesByFileId(fileId)
+  const userIds = userFiles.map((uf) => uf.userId)
+
+  if (userIds.length === 0) {
+    logDebug('No users waiting for file, skipping FailureNotification')
+    return
+  }
+
+  // Send FailureNotification to each user
+  // Use Promise.allSettled so one SQS error doesn't stop other user notifications
+  const results = await Promise.allSettled(userIds.map((userId) => {
+    const {messageBody, messageAttributes} = createFailureNotification(fileId, errorCategory, errorMessage, retryExhausted, userId, title)
+    return sendMessage({QueueUrl: queueUrl, MessageBody: messageBody, MessageAttributes: messageAttributes})
+  }))
+  const failed = results.filter((r) => r.status === 'rejected').length
+
+  logInfo('Dispatched FailureNotifications', {fileId, succeeded: userIds.length - failed, failed})
+}
+
+/**
  * Handle download failure: classify error, update state, publish event, and determine next action.
  *
  * For SQS-triggered downloads:
@@ -237,6 +275,10 @@ async function handleDownloadFailure(
     const message = updateError instanceof Error ? updateError.message : String(updateError)
     logDebug('Failed to update File entity status', message)
   }
+
+  // Dispatch FailureNotification to all users waiting for this file
+  const videoTitle = videoInfoResult.info?.title
+  await dispatchFailureNotifications(fileId, classification.category, classification.reason, isRetryExhausted(newRetryCount, maxRetries), videoTitle)
 
   const failureMetric = metrics.singleMetric()
   failureMetric.addDimension('ErrorType', error.constructor.name)

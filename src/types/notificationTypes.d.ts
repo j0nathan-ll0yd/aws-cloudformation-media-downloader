@@ -12,7 +12,7 @@
  * Discriminated union type for file notification payloads.
  * Used in SQS message attributes to route to appropriate handler.
  */
-export type FileNotificationType = 'MetadataNotification' | 'DownloadReadyNotification'
+export type FileNotificationType = 'MetadataNotification' | 'DownloadReadyNotification' | 'FailureNotification'
 
 /**
  * Notification sent when video metadata is fetched but download not yet complete.
@@ -58,6 +58,26 @@ export interface DownloadReadyNotification {
   size: number
   /** CloudFront URL for streaming (uses transfer acceleration) */
   url: string
+}
+
+/**
+ * Notification sent when a download permanently fails.
+ * Displayed as an alert notification to notify the user of the failure.
+ *
+ * Sent by: StartFileUpload Lambda (when download fails permanently)
+ * Received by: iOS app to display failure alert
+ */
+export interface FailureNotification {
+  /** YouTube video ID (e.g., 'dQw4w9WgXcQ') */
+  fileId: string
+  /** Video title (optional, if available from metadata fetch) */
+  title?: string
+  /** Error category (e.g., 'permanent', 'cookie_expired', 'rate_limited') */
+  errorCategory: string
+  /** Human-readable error message */
+  errorMessage: string
+  /** Whether retry attempts have been exhausted */
+  retryExhausted: boolean
 }
 
 /**
