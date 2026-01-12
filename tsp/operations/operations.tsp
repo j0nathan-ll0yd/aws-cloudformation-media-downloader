@@ -21,6 +21,10 @@ interface Files {
    * - Anonymous users: returns a demo file for training purposes
    * - Unauthenticated users: returns 401 Unauthorized
    *
+   * Query parameters:
+   * - status=all: Returns files in all statuses (Queued, Downloading, Downloaded, Failed)
+   * - status=downloaded (default): Returns only downloaded files
+   *
    * Example response: See `tsp/examples/list-files-response.json`
    */
   @get
@@ -28,6 +32,7 @@ interface Files {
   listFiles(
     @header("Authorization") authorization: string,
     @header("X-API-Key") apiKey: string,
+    @query status?: "all" | "downloaded",
   ): {
     @doc("List of available files")
     @statusCode statusCode: 200;
