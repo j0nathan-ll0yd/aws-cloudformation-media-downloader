@@ -1,13 +1,13 @@
 openapi: 3.0.0
 info:
-  title: aws-cloudformation-media-downloader
+  title: Offline Media Downloader API
   description: |-
     Offline Media Downloader API
 
     A serverless AWS media downloader service that downloads media content
     (primarily YouTube videos) and integrates with a companion iOS app for
     offline playback.
-  version: 1.0.0
+  version: 0.0.0
 tags:
   - name: Files
   - name: Devices
@@ -262,6 +262,10 @@ paths:
         - Anonymous users: returns a demo file for training purposes
         - Unauthenticated users: returns 401 Unauthorized
 
+        Query parameters:
+        - status=all: Returns files in all statuses (Queued, Downloading, Downloaded, Failed)
+        - status=downloaded (default): Returns only downloaded files
+
         Example response: See `tsp/examples/list-files-response.json`
       parameters:
         - name: Authorization
@@ -274,6 +278,15 @@ paths:
           required: true
           schema:
             type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - all
+              - downloaded
+          explode: false
       responses:
         '200':
           description: The request has succeeded.

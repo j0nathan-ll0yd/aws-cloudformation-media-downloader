@@ -33,9 +33,13 @@ async function getFilesByUser(userId: string): Promise<File[]> {
  * - In an anonymous state, returns a single demo file (for training purposes)
  * - Unauthenticated users (invalid token) are rejected with 401 by wrapOptionalAuthHandler
  *
+ * Query parameters:
+ * - status=all: Returns files in all statuses (Queued, Downloading, Downloaded, Failed)
+ * - status=downloaded (default): Returns only downloaded files
+ *
  * @notExported
  */
-export const handler = withPowertools(wrapOptionalAuthHandler(async ({context, userId, userStatus}) => {
+export const handler = withPowertools(wrapOptionalAuthHandler(async ({event, context, userId, userStatus}) => {
   // wrapOptionalAuthHandler already rejected Unauthenticated users with 401
   const myResponse = {contents: [] as File[], keyCount: 0}
 
@@ -45,10 +49,18 @@ export const handler = withPowertools(wrapOptionalAuthHandler(async ({context, u
     return buildValidatedResponse(context, 200, myResponse, fileListResponseSchema)
   }
 
+  // Extract status query parameter (default to 'downloaded' for backwards compatibility)
+  const statusParam = event.queryStringParameters?.status || 'downloaded'
+  const showAllStatuses = statusParam === 'all'
+
   const files = await getFilesByUser(userId as string)
-  myResponse.contents = files.filter((file) => file.status === FileStatus.Downloaded).sort((a, b) =>
-    new Date(b.publishDate).getTime() - new Date(a.publishDate).getTime()
-  )
+
+  // Filter based on status parameter
+  const filteredFiles = showAllStatuses
+    ? files
+    : files.filter((file) => file.status === FileStatus.Downloaded)
+
+  myResponse.contents = filteredFiles.sort((a, b) => new Date(b.publishDate).getTime() - new Date(a.publishDate).getTime())
   myResponse.keyCount = myResponse.contents.length
   return buildValidatedResponse(context, 200, myResponse, fileListResponseSchema)
 }))
