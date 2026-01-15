@@ -24,7 +24,7 @@ import type {WebhookProcessingInput, WebhookProcessingResult} from '#types/lambd
 import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/apiGateway'
 import {getRequiredEnv} from '#lib/system/env'
 import {buildValidatedResponse} from '#lib/lambda/responses'
-import {withPowertools} from '#lib/lambda/middleware/powertools'
+import {metrics, MetricUnit, withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapAuthenticatedHandler} from '#lib/lambda/middleware/api'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 import {createDownloadReadyNotification} from '#lib/services/notification/transformers'
@@ -158,6 +158,9 @@ function getIdempotentProcessor() {
  * @notExported
  */
 export const handler = withPowertools(wrapAuthenticatedHandler(async ({event, context, userId, metadata}) => {
+  // Track webhook received
+  metrics.addMetric('WebhookReceived', MetricUnit.Count, 1)
+
   // Use correlation ID from middleware for end-to-end request tracing
   const {correlationId, traceId} = metadata
   logInfo('Processing request', {correlationId, traceId})
@@ -168,6 +171,9 @@ export const handler = withPowertools(wrapAuthenticatedHandler(async ({event, co
 
   // Process webhook with idempotency protection
   const result = await getIdempotentProcessor()({fileId, userId, articleURL: requestBody.articleURL, correlationId})
+
+  // Track webhook processed
+  metrics.addMetric('WebhookProcessed', MetricUnit.Count, 1)
 
   return buildValidatedResponse(context, result.statusCode, {status: result.status as 'Dispatched' | 'Initiated' | 'Accepted'}, webhookResponseSchema)
 }))

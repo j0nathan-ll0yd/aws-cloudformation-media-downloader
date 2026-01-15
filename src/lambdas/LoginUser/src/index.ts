@@ -12,6 +12,7 @@
 
 import {getAuth} from '#lib/vendor/BetterAuth/config'
 import {assertTokenResponse, getSessionExpirationISO} from '#lib/vendor/BetterAuth/helpers'
+import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
 import {userLoginRequestSchema, userLoginResponseSchema} from '#types/api-schema'
 import type {UserLoginRequest} from '#types/api-schema'
 import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/apiGateway'
@@ -40,44 +41,55 @@ export const handler = withPowertools(wrapApiHandler(async ({event, context}) =>
   // Track login attempt
   metrics.addMetric('LoginAttempt', MetricUnit.Count, 1)
 
-  // 1. Validate request body
-  const requestBody = getPayloadFromEvent(event) as UserLoginRequest
-  validateRequest(requestBody, userLoginRequestSchema)
+  const span = startSpan('login-user-auth')
+  addAnnotation(span, 'provider', 'apple')
 
-  // 2. Sign in using Better Auth with ID token from iOS app
-  // Better Auth handles:
-  // - ID token verification (signature, expiration, issuer using Apple's public JWKS)
-  // - User lookup by Apple ID
-  // - Session creation with device tracking
-  // - Account linking if needed
-  const ipAddress = event.requestContext?.identity?.sourceIp
-  const userAgent = event.headers?.['User-Agent'] || ''
+  try {
+    // 1. Validate request body
+    const requestBody = getPayloadFromEvent(event) as UserLoginRequest
+    validateRequest(requestBody, userLoginRequestSchema)
 
-  const auth = await getAuth()
-  const rawResult = await auth.api.signInSocial({
-    headers: {'user-agent': userAgent, 'x-forwarded-for': ipAddress || ''},
-    body: {
-      provider: 'apple',
-      idToken: {
-        token: requestBody.idToken
-        // No accessToken needed - we only have the ID token from iOS
+    // 2. Sign in using Better Auth with ID token from iOS app
+    // Better Auth handles:
+    // - ID token verification (signature, expiration, issuer using Apple's public JWKS)
+    // - User lookup by Apple ID
+    // - Session creation with device tracking
+    // - Account linking if needed
+    const ipAddress = event.requestContext?.identity?.sourceIp
+    const userAgent = event.headers?.['User-Agent'] || ''
+
+    const auth = await getAuth()
+    const rawResult = await auth.api.signInSocial({
+      headers: {'user-agent': userAgent, 'x-forwarded-for': ipAddress || ''},
+      body: {
+        provider: 'apple',
+        idToken: {
+          token: requestBody.idToken
+          // No accessToken needed - we only have the ID token from iOS
+        }
       }
-    }
-  })
+    })
 
-  // Assert token response (throws if redirect)
-  const result = assertTokenResponse(rawResult)
+    // Assert token response (throws if redirect)
+    const result = assertTokenResponse(rawResult)
 
-  // Track successful login
-  metrics.addMetric('LoginSuccess', MetricUnit.Count, 1)
+    // Track successful login
+    metrics.addMetric('LoginSuccess', MetricUnit.Count, 1)
+    addAnnotation(span, 'userId', result.user?.id || 'unknown')
+    addMetadata(span, 'success', true)
+    endSpan(span)
 
-  logInfo('LoginUser: Better Auth sign-in successful', {userId: result.user?.id, sessionToken: result.token ? 'present' : 'missing'})
+    logInfo('LoginUser: Better Auth sign-in successful', {userId: result.user?.id, sessionToken: result.token ? 'present' : 'missing'})
 
-  // 3. Return session token (Better Auth format)
-  return buildValidatedResponse(context, 200, {
-    token: result.token,
-    expiresAt: getSessionExpirationISO(result.session),
-    sessionId: result.session?.id || '',
-    userId: result.user?.id || ''
-  }, userLoginResponseSchema)
+    // 3. Return session token (Better Auth format)
+    return buildValidatedResponse(context, 200, {
+      token: result.token,
+      expiresAt: getSessionExpirationISO(result.session),
+      sessionId: result.session?.id || '',
+      userId: result.user?.id || ''
+    }, userLoginResponseSchema)
+  } catch (error) {
+    endSpan(span, error as Error)
+    throw error
+  }
 }))

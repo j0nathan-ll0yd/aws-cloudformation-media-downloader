@@ -17,9 +17,17 @@ vi.mock('#lib/vendor/Drizzle/schema',
   }))
 
 // Mock middleware
-vi.mock('#lib/lambda/middleware/powertools', () => ({withPowertools: vi.fn(<T extends (...args: never[]) => unknown>(handler: T) => handler)}))
+vi.mock('#lib/lambda/middleware/powertools',
+  () => ({
+    withPowertools: vi.fn(<T extends (...args: never[]) => unknown>(handler: T) => handler),
+    metrics: {addMetric: vi.fn()},
+    MetricUnit: {Count: 'Count'}
+  }))
 
 vi.mock('#lib/lambda/middleware/internal', () => ({wrapScheduledHandler: vi.fn(<T extends (...args: never[]) => unknown>(handler: T) => handler)}))
+
+// Mock OpenTelemetry
+vi.mock('#lib/vendor/OpenTelemetry', () => ({startSpan: vi.fn(() => ({})), endSpan: vi.fn(), addAnnotation: vi.fn(), addMetadata: vi.fn()}))
 
 // Mock drizzle-orm operators using helper
 vi.mock('drizzle-orm', () => createDrizzleOperatorMocks())

@@ -21,9 +21,17 @@ const operatorMocks = createDrizzleOperatorMocks()
 vi.mock('drizzle-orm', () => ({sql: operatorMocks.sql}))
 
 // Mock middleware - pass through the handler function
-vi.mock('#lib/lambda/middleware/powertools', () => ({withPowertools: vi.fn(<T extends (...args: never[]) => unknown>(handler: T) => handler)}))
+vi.mock('#lib/lambda/middleware/powertools',
+  () => ({
+    withPowertools: vi.fn(<T extends (...args: never[]) => unknown>(handler: T) => handler),
+    metrics: {addMetric: vi.fn()},
+    MetricUnit: {Count: 'Count'}
+  }))
 
 vi.mock('#lib/lambda/middleware/internal', () => ({wrapLambdaInvokeHandler: vi.fn(<T extends (...args: never[]) => unknown>(handler: T) => handler)}))
+
+// Mock OpenTelemetry
+vi.mock('#lib/vendor/OpenTelemetry', () => ({startSpan: vi.fn(() => ({})), endSpan: vi.fn(), addAnnotation: vi.fn(), addMetadata: vi.fn()}))
 
 const {handler} = await import('./../src')
 

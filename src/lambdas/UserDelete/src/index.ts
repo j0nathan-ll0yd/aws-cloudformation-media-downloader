@@ -9,12 +9,13 @@
  * Output: APIGatewayProxyResult confirming deletion
  */
 import {deleteUser as deleteUserRecord, deleteUserDevicesByUserId, deleteUserFilesByUserId, getDevicesBatch} from '#entities/queries'
+import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
 import type {Device} from '#types/domainModels'
 import {deleteDevice, getUserDevices} from '#lib/services/device/deviceService'
 import {providerFailureErrorMessage, UnexpectedError} from '#lib/system/errors'
 import {createFailedUserDeletionIssue} from '#lib/integrations/github/issueService'
 import {buildValidatedResponse} from '#lib/lambda/responses'
-import {withPowertools} from '#lib/lambda/middleware/powertools'
+import {metrics, MetricUnit, withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapAuthenticatedHandler} from '#lib/lambda/middleware/api'
 import {logDebug, logError} from '#lib/system/logging'
 
@@ -46,58 +47,75 @@ async function deleteUser(userId: string): Promise<void> {
  * @param context - An AWS Context object
  */
 export const handler = withPowertools(wrapAuthenticatedHandler(async ({context, userId}) => {
-  const deletableDevices: Device[] = []
+  // Track user delete attempt
+  metrics.addMetric('UserDeleteAttempt', MetricUnit.Count, 1)
 
-  const userDevices = await getUserDevices(userId)
-  logDebug('Found userDevices', userDevices.length.toString())
-  if (userDevices.length > 0) {
-    const deviceIds = userDevices.map((userDevice) => userDevice.deviceId)
-    const devices = await getDevicesBatch(deviceIds)
-    logDebug('Found devices', devices.length.toString())
-    if (devices.length === 0) {
-      throw new UnexpectedError(providerFailureErrorMessage)
-    }
-    deletableDevices.push(...(devices as Device[]))
-  }
+  const span = startSpan('user-delete-cascade')
+  addAnnotation(span, 'userId', userId)
 
-  // Delete children FIRST (correct cascade order), then parent LAST
-  // 1. Delete junction/child tables first
-  const relationResults = await Promise.allSettled([
-    deleteUserFiles(userId),
-    deleteUserDevicesRelations(userId)
-  ])
-  logDebug('Promise.allSettled (relations)', relationResults)
-
-  // Check for failures in relations
-  const relationFailures = relationResults.filter((r) => r.status === 'rejected')
-  if (relationFailures.length > 0) {
-    logError('Cascade deletion partial failure (relations)', relationFailures)
-    return buildValidatedResponse(context, 207, {
-      message: 'Partial deletion - some child records could not be removed',
-      failedOperations: relationFailures.length
-    })
-  }
-
-  // 2. Delete devices (parents of UserDevices)
-  const deviceResults = await Promise.allSettled(deletableDevices.map((device) => deleteDevice(device)))
-  logDebug('Promise.allSettled (devices)', deviceResults)
-
-  const deviceFailures = deviceResults.filter((r) => r.status === 'rejected')
-  if (deviceFailures.length > 0) {
-    logError('Cascade deletion partial failure (devices)', deviceFailures)
-    return buildValidatedResponse(context, 207, {message: 'Partial deletion - some devices could not be removed', failedOperations: deviceFailures.length})
-  }
-
-  // Delete parent LAST - only if all children succeeded
   try {
-    await deleteUser(userId)
-    logDebug('deleteUser completed')
-  } catch (error) {
-    const err = error instanceof Error ? error : new Error(String(error))
-    logError(`Failed to properly remove user ${userId}`, err.message)
-    await createFailedUserDeletionIssue(userId, deletableDevices, err, context.awsRequestId)
-    throw new UnexpectedError('Operation failed unexpectedly; but logged for resolution')
-  }
+    const deletableDevices: Device[] = []
 
-  return buildValidatedResponse(context, 204)
+    const userDevices = await getUserDevices(userId)
+    logDebug('Found userDevices', userDevices.length.toString())
+    if (userDevices.length > 0) {
+      const deviceIds = userDevices.map((userDevice) => userDevice.deviceId)
+      const devices = await getDevicesBatch(deviceIds)
+      logDebug('Found devices', devices.length.toString())
+      if (devices.length === 0) {
+        throw new UnexpectedError(providerFailureErrorMessage)
+      }
+      deletableDevices.push(...(devices as Device[]))
+    }
+
+    // Delete children FIRST (correct cascade order), then parent LAST
+    // 1. Delete junction/child tables first
+    const relationResults = await Promise.allSettled([
+      deleteUserFiles(userId),
+      deleteUserDevicesRelations(userId)
+    ])
+    logDebug('Promise.allSettled (relations)', relationResults)
+
+    // Check for failures in relations
+    const relationFailures = relationResults.filter((r) => r.status === 'rejected')
+    if (relationFailures.length > 0) {
+      logError('Cascade deletion partial failure (relations)', relationFailures)
+      return buildValidatedResponse(context, 207, {
+        message: 'Partial deletion - some child records could not be removed',
+        failedOperations: relationFailures.length
+      })
+    }
+
+    // 2. Delete devices (parents of UserDevices)
+    const deviceResults = await Promise.allSettled(deletableDevices.map((device) => deleteDevice(device)))
+    logDebug('Promise.allSettled (devices)', deviceResults)
+
+    const deviceFailures = deviceResults.filter((r) => r.status === 'rejected')
+    if (deviceFailures.length > 0) {
+      logError('Cascade deletion partial failure (devices)', deviceFailures)
+      return buildValidatedResponse(context, 207, {message: 'Partial deletion - some devices could not be removed', failedOperations: deviceFailures.length})
+    }
+
+    // Delete parent LAST - only if all children succeeded
+    try {
+      await deleteUser(userId)
+      logDebug('deleteUser completed')
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error))
+      logError(`Failed to properly remove user ${userId}`, err.message)
+      await createFailedUserDeletionIssue(userId, deletableDevices, err, context.awsRequestId)
+      throw new UnexpectedError('Operation failed unexpectedly; but logged for resolution')
+    }
+
+    // Track successful deletion
+    metrics.addMetric('UserDeleteSuccess', MetricUnit.Count, 1)
+    addMetadata(span, 'success', true)
+    addMetadata(span, 'devicesDeleted', deletableDevices.length)
+    endSpan(span)
+
+    return buildValidatedResponse(context, 204)
+  } catch (error) {
+    endSpan(span, error as Error)
+    throw error
+  }
 }))

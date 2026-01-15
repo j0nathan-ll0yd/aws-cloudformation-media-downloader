@@ -9,7 +9,7 @@
  * - Uses same IAM auth as production Lambdas
  * - Reads migrations from bundled SQL files
  * - Supports CREATE INDEX ASYNC for DSQL compatibility
- * - Supports \${VAR_NAME} substitution for environment variables (e.g., AWS_ACCOUNT_ID)
+ * - Supports `${VAR_NAME}` substitution for environment variables (e.g., AWS_ACCOUNT_ID)
  *
  * @see docs/wiki/Conventions/Database-Migrations.md
  */
@@ -18,8 +18,9 @@ import {dirname, join} from 'path'
 import {fileURLToPath} from 'url'
 import {sql} from '#lib/vendor/Drizzle/types'
 import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
+import {addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
 import type {MigrationFile, MigrationResult} from '#types/lambda'
-import {withPowertools} from '#lib/lambda/middleware/powertools'
+import {metrics, MetricUnit, withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapLambdaInvokeHandler} from '#lib/lambda/middleware/internal'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 
@@ -28,7 +29,7 @@ const __dirname = dirname(__filename)
 
 /**
  * Substitutes environment variables in SQL content.
- * Supports \${VAR_NAME} syntax for variables like AWS_ACCOUNT_ID.
+ * Supports `${VAR_NAME}` syntax for variables like AWS_ACCOUNT_ID.
  * @param sqlContent - Raw SQL content with placeholders
  * @returns SQL content with environment variables substituted
  */
@@ -199,6 +200,11 @@ async function applyMigration(migration: MigrationFile): Promise<void> {
  * @returns MigrationResult with lists of applied, skipped, and errored migrations
  */
 export const handler = withPowertools(wrapLambdaInvokeHandler<{source?: string}, MigrationResult>(async (): Promise<MigrationResult> => {
+  // Track migration run
+  metrics.addMetric('MigrationRun', MetricUnit.Count, 1)
+
+  const span = startSpan('migrate-dsql')
+
   const result: MigrationResult = {applied: [], skipped: [], errors: []}
 
   logInfo('MigrateDSQL starting')
@@ -233,6 +239,15 @@ export const handler = withPowertools(wrapLambdaInvokeHandler<{source?: string},
       break
     }
   }
+
+  // Track successful migrations applied
+  if (result.errors.length === 0) {
+    metrics.addMetric('MigrationSuccess', MetricUnit.Count, 1)
+  }
+  addMetadata(span, 'applied', result.applied.length)
+  addMetadata(span, 'skipped', result.skipped.length)
+  addMetadata(span, 'errors', result.errors.length)
+  endSpan(span)
 
   logInfo('MigrateDSQL completed', result)
   return result

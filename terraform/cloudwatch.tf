@@ -474,6 +474,8 @@ resource "aws_cloudwatch_metric_alarm" "LambdaErrorsApi" {
 
   alarm_actions = [aws_sns_topic.OperationsAlerts.arn]
   ok_actions    = [aws_sns_topic.OperationsAlerts.arn]
+
+  tags = local.common_tags
 }
 
 # Lambda Errors Alarm (Background) - triggers when total errors across background Lambdas exceed threshold
@@ -510,6 +512,8 @@ resource "aws_cloudwatch_metric_alarm" "LambdaErrorsBackground" {
 
   alarm_actions = [aws_sns_topic.OperationsAlerts.arn]
   ok_actions    = [aws_sns_topic.OperationsAlerts.arn]
+
+  tags = local.common_tags
 }
 
 # Lambda Throttles Alarm (API) - any throttle is concerning
@@ -546,6 +550,8 @@ resource "aws_cloudwatch_metric_alarm" "LambdaThrottlesApi" {
 
   alarm_actions = [aws_sns_topic.OperationsAlerts.arn]
   ok_actions    = [aws_sns_topic.OperationsAlerts.arn]
+
+  tags = local.common_tags
 }
 
 # Lambda Throttles Alarm (Background) - any throttle is concerning
@@ -582,6 +588,8 @@ resource "aws_cloudwatch_metric_alarm" "LambdaThrottlesBackground" {
 
   alarm_actions = [aws_sns_topic.OperationsAlerts.arn]
   ok_actions    = [aws_sns_topic.OperationsAlerts.arn]
+
+  tags = local.common_tags
 }
 
 # SQS DLQ Alarm - any message in DLQ requires investigation
@@ -603,6 +611,8 @@ resource "aws_cloudwatch_metric_alarm" "SqsDlqMessages" {
 
   alarm_actions = [aws_sns_topic.OperationsAlerts.arn]
   ok_actions    = [aws_sns_topic.OperationsAlerts.arn]
+
+  tags = local.common_tags
 }
 
 # SQS Queue Age Alarm - messages shouldn't be stuck in queue
@@ -624,6 +634,8 @@ resource "aws_cloudwatch_metric_alarm" "SqsQueueAge" {
 
   alarm_actions = [aws_sns_topic.OperationsAlerts.arn]
   ok_actions    = [aws_sns_topic.OperationsAlerts.arn]
+
+  tags = local.common_tags
 }
 
 # =============================================================================
@@ -651,6 +663,8 @@ resource "aws_cloudwatch_metric_alarm" "EventBridgeFailedInvocations" {
 
   alarm_actions = [aws_sns_topic.OperationsAlerts.arn]
   ok_actions    = [aws_sns_topic.OperationsAlerts.arn]
+
+  tags = local.common_tags
 }
 
 # EventBridge Throttled Alarm
@@ -673,6 +687,8 @@ resource "aws_cloudwatch_metric_alarm" "EventBridgeThrottled" {
 
   alarm_actions = [aws_sns_topic.OperationsAlerts.arn]
   ok_actions    = [aws_sns_topic.OperationsAlerts.arn]
+
+  tags = local.common_tags
 }
 
 # =============================================================================
@@ -700,6 +716,8 @@ resource "aws_cloudwatch_metric_alarm" "YouTubeAuthFailureBotDetection" {
 
   alarm_actions = [aws_sns_topic.OperationsAlerts.arn]
   ok_actions    = [aws_sns_topic.OperationsAlerts.arn]
+
+  tags = local.common_tags
 }
 
 # YouTube Auth Failure Alarm (Cookie Expired)
@@ -722,6 +740,8 @@ resource "aws_cloudwatch_metric_alarm" "YouTubeAuthFailureCookieExpired" {
 
   alarm_actions = [aws_sns_topic.OperationsAlerts.arn]
   ok_actions    = [aws_sns_topic.OperationsAlerts.arn]
+
+  tags = local.common_tags
 }
 
 # YouTube Auth Failure Alarm (Rate Limited)
@@ -744,4 +764,35 @@ resource "aws_cloudwatch_metric_alarm" "YouTubeAuthFailureRateLimited" {
 
   alarm_actions = [aws_sns_topic.OperationsAlerts.arn]
   ok_actions    = [aws_sns_topic.OperationsAlerts.arn]
+
+  tags = local.common_tags
+}
+
+# =============================================================================
+# API Gateway Alarms
+# Monitors API Gateway errors that indicate Lambda or integration failures
+# =============================================================================
+
+# API Gateway 5xx Errors Alarm
+# Triggers when API Gateway returns 5xx errors (Lambda failures, integration errors)
+resource "aws_cloudwatch_metric_alarm" "ApiGateway5xxErrors" {
+  alarm_name          = "MediaDownloader-API-Gateway-5xx-Errors"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "5XXError"
+  namespace           = "AWS/ApiGateway"
+  period              = 300
+  statistic           = "Sum"
+  threshold           = 1
+  alarm_description   = "API Gateway 5xx errors detected - check Lambda execution logs"
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    ApiName = aws_api_gateway_rest_api.Main.name
+  }
+
+  alarm_actions = [aws_sns_topic.OperationsAlerts.arn]
+  ok_actions    = [aws_sns_topic.OperationsAlerts.arn]
+
+  tags = local.common_tags
 }

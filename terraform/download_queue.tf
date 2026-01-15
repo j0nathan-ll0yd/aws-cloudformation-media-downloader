@@ -75,6 +75,11 @@ resource "aws_cloudwatch_metric_alarm" "DownloadDLQMessages" {
   dimensions = {
     QueueName = aws_sqs_queue.DownloadDLQ.name
   }
+
+  alarm_actions = [aws_sns_topic.OperationsAlerts.arn]
+  ok_actions    = [aws_sns_topic.OperationsAlerts.arn]
+
+  tags = local.common_tags
 }
 
 output "download_queue_url" {
