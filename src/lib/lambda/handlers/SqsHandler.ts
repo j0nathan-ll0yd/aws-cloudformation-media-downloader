@@ -4,34 +4,12 @@
  * Base class for SQS batch processing handlers with partial failure support.
  * Processes each record individually, collecting failures for SQS retry.
  */
-import type {Context, SQSBatchResponse, SQSEvent, SQSMessageAttributes, SQSRecord} from 'aws-lambda'
+import type {Context, SQSBatchResponse, SQSEvent} from 'aws-lambda'
+import type {SqsBatchOptions, SqsRecordContext} from '#types/lambda'
 import {BaseHandler, InjectContext, logger, LogMetrics, metrics, MetricUnit, Traced} from './BaseHandler'
 import {extractCorrelationId} from '../correlation'
 import {logIncomingFixture} from '#lib/system/observability'
-import {addAnnotation, addMetadata} from '#lib/vendor/OpenTelemetry'
-import type {Span} from '@opentelemetry/api'
-
-/** Options for SQS batch processing */
-export interface SqsBatchOptions {
-  /** Whether to parse record body as JSON (default: true) */
-  parseBody?: boolean
-  /** Whether to stop processing on first error (default: false) */
-  stopOnError?: boolean
-}
-
-/** Parameters passed to the record processor */
-export interface SqsRecordContext<TBody> {
-  /** The SQS record being processed */
-  record: SQSRecord
-  /** Parsed body (if parseBody is true) */
-  body: TBody
-  /** Lambda context */
-  context: Context
-  /** Correlation metadata */
-  metadata: {traceId: string; correlationId: string}
-  /** SQS message attributes */
-  messageAttributes: SQSMessageAttributes
-}
+import {addAnnotation, addMetadata, type Span} from '#lib/vendor/OpenTelemetry'
 
 /**
  * Abstract base class for SQS batch processing handlers
@@ -45,19 +23,7 @@ export interface SqsRecordContext<TBody> {
  *
  * TBody - The expected body type after JSON parsing
  *
- * @example
- * ```typescript
- * class SendPushNotificationHandler extends SqsHandler<NotificationPayload> {
- *   readonly operationName = 'SendPushNotification'
- *
- *   protected async processRecord({body}: SqsRecordContext<NotificationPayload>): Promise<void> {
- *     await sendNotification(body.userId, body.message)
- *   }
- * }
- *
- * const handlerInstance = new SendPushNotificationHandler()
- * export const handler = handlerInstance.handler.bind(handlerInstance)
- * ```
+ * @example See SendPushNotification Lambda for a complete implementation example
  */
 export abstract class SqsHandler<TBody = unknown> extends BaseHandler<SQSEvent, SQSBatchResponse> {
   /** Active span for tracing */

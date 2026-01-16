@@ -13,8 +13,7 @@
  */
 import type {Context} from 'aws-lambda'
 import {logger, metrics, MetricUnit} from '#lib/vendor/Powertools'
-import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
-import type {Span} from '@opentelemetry/api'
+import {addAnnotation, addMetadata, endSpan, type Span, startSpan} from '#lib/vendor/OpenTelemetry'
 
 /**
  * Traced decorator for class methods

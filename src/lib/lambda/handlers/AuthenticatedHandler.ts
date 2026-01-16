@@ -15,8 +15,7 @@ import {logIncomingFixture, logOutgoingFixture} from '#lib/system/observability'
 import {UnauthorizedError} from '#lib/system/errors'
 import {UserStatus} from '#types/enums'
 import {BaseHandler, InjectContext, logger, LogMetrics, metrics, MetricUnit, Traced} from './BaseHandler'
-import {addAnnotation} from '#lib/vendor/OpenTelemetry'
-import type {Span} from '@opentelemetry/api'
+import {addAnnotation, type Span} from '#lib/vendor/OpenTelemetry'
 
 /**
  * Abstract base class for authenticated API Gateway handlers
@@ -27,21 +26,7 @@ import type {Span} from '@opentelemetry/api'
  * - User ID annotation in traces
  * - Automatic error-to-response conversion
  *
- * @example
- * ```typescript
- * class UserDeleteHandler extends AuthenticatedHandler {
- *   readonly operationName = 'UserDelete'
- *
- *   protected async handleAuthenticated(event, context): Promise<APIGatewayProxyResult> {
- *     // this.userId is guaranteed to be a valid string
- *     await deleteUser(this.userId)
- *     return buildValidatedResponse(context, 204)
- *   }
- * }
- *
- * const handlerInstance = new UserDeleteHandler()
- * export const handler = handlerInstance.handler.bind(handlerInstance)
- * ```
+ * @example See UserDelete Lambda for a complete implementation example
  */
 export abstract class AuthenticatedHandler extends BaseHandler<
   CustomAPIGatewayRequestAuthorizerEvent,

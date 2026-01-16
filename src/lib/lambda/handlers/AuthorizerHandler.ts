@@ -9,7 +9,7 @@ import type {APIGatewayRequestAuthorizerEvent, Context, CustomAuthorizerResult} 
 import {BaseHandler, InjectContext, logger, LogMetrics, metrics, MetricUnit, Traced} from './BaseHandler'
 import {extractCorrelationId} from '../correlation'
 import {logIncomingFixture} from '#lib/system/observability'
-import type {Span} from '@opentelemetry/api'
+import type {Span} from '#lib/vendor/OpenTelemetry'
 
 /**
  * Abstract base class for API Gateway custom authorizers
@@ -19,27 +19,7 @@ import type {Span} from '@opentelemetry/api'
  * - Correlation ID extraction
  * - Lets 'Unauthorized' errors propagate (API Gateway returns 401)
  *
- * @example
- * ```typescript
- * class ApiGatewayAuthorizerHandler extends AuthorizerHandler {
- *   readonly operationName = 'ApiGatewayAuthorizer'
- *
- *   protected async authorize(event, context): Promise<CustomAuthorizerResult> {
- *     // Validate API key and session
- *     if (!event.queryStringParameters?.ApiKey) {
- *       throw new Error('Unauthorized')  // Returns 401
- *     }
- *     // Return Allow policy
- *     return {
- *       principalId: userId,
- *       policyDocument: { ... }
- *     }
- *   }
- * }
- *
- * const handlerInstance = new ApiGatewayAuthorizerHandler()
- * export const handler = handlerInstance.handler.bind(handlerInstance)
- * ```
+ * @example See ApiGatewayAuthorizer Lambda for a complete implementation example
  */
 export abstract class AuthorizerHandler extends BaseHandler<APIGatewayRequestAuthorizerEvent, CustomAuthorizerResult> {
   /** Active span for tracing */

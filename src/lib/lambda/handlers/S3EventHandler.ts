@@ -4,22 +4,12 @@
  * Base class for S3 event processing handlers.
  * Processes each S3 record individually, continuing even if some fail.
  */
-import type {Context, S3Event, S3EventRecord} from 'aws-lambda'
+import type {Context, S3Event} from 'aws-lambda'
+import type {S3RecordContext} from '#types/lambda'
 import {BaseHandler, InjectContext, logger, LogMetrics, metrics, MetricUnit, Traced} from './BaseHandler'
 import {extractCorrelationId} from '../correlation'
 import {logIncomingFixture} from '#lib/system/observability'
-import {addAnnotation, addMetadata} from '#lib/vendor/OpenTelemetry'
-import type {Span} from '@opentelemetry/api'
-
-/** Parameters passed to the record processor */
-export interface S3RecordContext {
-  /** The S3 event record being processed */
-  record: S3EventRecord
-  /** Lambda context */
-  context: Context
-  /** Correlation metadata */
-  metadata: {traceId: string; correlationId: string}
-}
+import {addAnnotation, addMetadata, type Span} from '#lib/vendor/OpenTelemetry'
 
 /**
  * Abstract base class for S3 event processing handlers
@@ -30,20 +20,7 @@ export interface S3RecordContext {
  * - Correlation ID tracking
  * - Processing statistics in metrics
  *
- * @example
- * ```typescript
- * class S3ObjectCreatedHandler extends S3EventHandler {
- *   readonly operationName = 'S3ObjectCreated'
- *
- *   protected async processRecord({record}: S3RecordContext): Promise<void> {
- *     const key = record.s3.object.key
- *     await processObject(key)
- *   }
- * }
- *
- * const handlerInstance = new S3ObjectCreatedHandler()
- * export const handler = handlerInstance.handler.bind(handlerInstance)
- * ```
+ * @example See S3ObjectCreated Lambda for a complete implementation example
  */
 export abstract class S3EventHandler extends BaseHandler<S3Event, void> {
   /** Active span for tracing */

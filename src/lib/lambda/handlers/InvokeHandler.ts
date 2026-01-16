@@ -6,7 +6,7 @@
  */
 import type {Context} from 'aws-lambda'
 import {BaseHandler, InjectContext, logger, LogMetrics, metrics, MetricUnit, Traced} from './BaseHandler'
-import type {Span} from '@opentelemetry/api'
+import type {Span} from '#lib/vendor/OpenTelemetry'
 
 /**
  * Abstract base class for directly invoked Lambda handlers
@@ -19,26 +19,7 @@ import type {Span} from '@opentelemetry/api'
  * TInput - The expected input type
  * TResult - The result type returned
  *
- * @example
- * ```typescript
- * interface MigrationResult {
- *   applied: string[]
- *   skipped: string[]
- *   errors: string[]
- * }
- *
- * class MigrateDSQLHandler extends InvokeHandler<{source?: string}, MigrationResult> {
- *   readonly operationName = 'MigrateDSQL'
- *
- *   protected async executeInvoke(event, context): Promise<MigrationResult> {
- *     // Apply migrations
- *     return {applied: [], skipped: [], errors: []}
- *   }
- * }
- *
- * const handlerInstance = new MigrateDSQLHandler()
- * export const handler = handlerInstance.handler.bind(handlerInstance)
- * ```
+ * @example See MigrateDSQL Lambda for a complete implementation example
  */
 export abstract class InvokeHandler<TInput = unknown, TResult = unknown> extends BaseHandler<TInput, TResult> {
   /** Active span for tracing */

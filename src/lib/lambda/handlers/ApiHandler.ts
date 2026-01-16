@@ -10,7 +10,7 @@ import {extractCorrelationId} from '#lib/lambda/correlation'
 import {buildErrorResponse} from '#lib/lambda/responses'
 import {logIncomingFixture, logOutgoingFixture} from '#lib/system/observability'
 import {BaseHandler, InjectContext, logger, LogMetrics, metrics, MetricUnit, Traced} from './BaseHandler'
-import type {Span} from '@opentelemetry/api'
+import type {Span} from '#lib/vendor/OpenTelemetry'
 
 /**
  * Abstract base class for unauthenticated API Gateway handlers
@@ -20,20 +20,7 @@ import type {Span} from '@opentelemetry/api'
  * - Automatic error-to-response conversion
  * - Fixture logging for debugging
  *
- * @example
- * ```typescript
- * class LoginUserHandler extends ApiHandler {
- *   readonly operationName = 'LoginUser'
- *
- *   protected async handleRequest(event, context): Promise<APIGatewayProxyResult> {
- *     // Business logic here
- *     return buildValidatedResponse(context, 200, {token: '...'})
- *   }
- * }
- *
- * const handlerInstance = new LoginUserHandler()
- * export const handler = handlerInstance.handler.bind(handlerInstance)
- * ```
+ * @example See WebhookFeedly Lambda for a complete implementation example
  */
 export abstract class ApiHandler<TEvent = APIGatewayProxyEvent> extends BaseHandler<
   TEvent,

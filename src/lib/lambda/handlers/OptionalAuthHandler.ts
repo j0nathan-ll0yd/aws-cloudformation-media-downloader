@@ -15,8 +15,7 @@ import {logIncomingFixture, logOutgoingFixture} from '#lib/system/observability'
 import {UnauthorizedError} from '#lib/system/errors'
 import {UserStatus} from '#types/enums'
 import {BaseHandler, InjectContext, logger, LogMetrics, metrics, MetricUnit, Traced} from './BaseHandler'
-import {addAnnotation} from '#lib/vendor/OpenTelemetry'
-import type {Span} from '@opentelemetry/api'
+import {addAnnotation, type Span} from '#lib/vendor/OpenTelemetry'
 
 /**
  * Abstract base class for optionally authenticated API Gateway handlers
@@ -27,23 +26,7 @@ import type {Span} from '@opentelemetry/api'
  * - User ID annotation in traces when available
  * - Automatic error-to-response conversion
  *
- * @example
- * ```typescript
- * class ListFilesHandler extends OptionalAuthHandler {
- *   readonly operationName = 'ListFiles'
- *
- *   protected async handleRequest(event, context): Promise<APIGatewayProxyResult> {
- *     if (this.userStatus === UserStatus.Anonymous) {
- *       return buildValidatedResponse(context, 200, {files: getDefaultFiles()})
- *     }
- *     const files = await getFilesByUser(this.userId!)
- *     return buildValidatedResponse(context, 200, {files})
- *   }
- * }
- *
- * const handlerInstance = new ListFilesHandler()
- * export const handler = handlerInstance.handler.bind(handlerInstance)
- * ```
+ * @example See ListFiles Lambda for a complete implementation example
  */
 export abstract class OptionalAuthHandler extends BaseHandler<
   CustomAPIGatewayRequestAuthorizerEvent,

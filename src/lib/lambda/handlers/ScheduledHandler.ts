@@ -5,19 +5,9 @@
  * Provides logging of schedule source and standard observability.
  */
 import type {Context, ScheduledEvent} from 'aws-lambda'
+import type {ScheduledResult} from '#types/lambda'
 import {BaseHandler, InjectContext, logger, LogMetrics, metrics, MetricUnit, Traced} from './BaseHandler'
-import {addAnnotation} from '#lib/vendor/OpenTelemetry'
-import type {Span} from '@opentelemetry/api'
-
-/** Result type for scheduled handlers */
-export interface ScheduledResult {
-  /** Number of items processed */
-  processed?: number
-  /** Number of items deleted/cleaned up */
-  deleted?: number
-  /** Any additional result data */
-  [key: string]: unknown
-}
+import {addAnnotation, type Span} from '#lib/vendor/OpenTelemetry'
 
 /**
  * Abstract base class for CloudWatch scheduled event handlers
@@ -29,27 +19,7 @@ export interface ScheduledResult {
  *
  * TResult - The result type returned by the scheduled task
  *
- * @example
- * ```typescript
- * interface MyCleanupResult {
- *   devicesChecked: number
- *   devicesPruned: number
- *   errors: string[]
- * }
- *
- * class PruneDevicesHandler extends ScheduledHandler<MyCleanupResult> {
- *   readonly operationName = 'PruneDevices'
- *
- *   protected async executeScheduled(event, context): Promise<MyCleanupResult> {
- *     const devices = await getInactiveDevices()
- *     await deleteDevices(devices)
- *     return {devicesChecked: devices.length, devicesPruned: devices.length, errors: []}
- *   }
- * }
- *
- * const handlerInstance = new PruneDevicesHandler()
- * export const handler = handlerInstance.handler.bind(handlerInstance)
- * ```
+ * @example See PruneDevices Lambda for a complete implementation example
  */
 export abstract class ScheduledHandler<TResult = ScheduledResult> extends BaseHandler<ScheduledEvent, TResult> {
   /** Active span for tracing */
