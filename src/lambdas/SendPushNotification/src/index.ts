@@ -18,11 +18,10 @@ import {publishSnsEvent} from '#lib/vendor/AWS/SNS'
 import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
 import type {Device} from '#types/domainModels'
 import type {DeviceNotificationResult, FileNotificationType} from '#types/notificationTypes'
-import type {SqsRecordParams} from '#types/lambda'
 import {pushNotificationAttributesSchema} from '#types/schemas'
 import {validateSchema} from '#lib/validation/constraints'
-import {metrics, MetricUnit, withPowertools} from '#lib/lambda/middleware/powertools'
-import {wrapSqsBatchHandler} from '#lib/lambda/middleware/sqs'
+import {metrics, MetricUnit, SqsHandler} from '#lib/lambda/handlers'
+import type {SqsRecordContext} from '#lib/lambda/handlers'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 import {providerFailureErrorMessage, UnexpectedError} from '#lib/system/errors'
 import {transformToAPNSAlertNotification, transformToAPNSNotification} from '#lib/services/notification/transformers'
@@ -83,123 +82,115 @@ async function sendNotificationToDevice(device: Device, messageBody: string, not
 }
 
 /**
- * Process a single SQS record - send push notifications to all user devices.
+ * Handler for sending push notifications to user devices.
  * Uses per-device error handling to maximize successful deliveries.
- * Only throws if ALL devices fail (partial success = message processed).
- * @notExported
+ * Only fails if ALL devices fail (partial success = message processed).
  */
-async function processSQSRecord({record, messageAttributes}: SqsRecordParams<string>): Promise<void> {
-  // Validate message attributes using Zod schema
-  const rawAttributes = {notificationType: messageAttributes.notificationType?.stringValue, userId: messageAttributes.userId?.stringValue}
-  const validationErrors = validateSchema(pushNotificationAttributesSchema, rawAttributes)
-  if (validationErrors) {
-    logError('Invalid SQS message attributes - discarding', {messageId: record.messageId, errors: validationErrors.errors})
-    return
-  }
+class SendPushNotificationHandler extends SqsHandler<string> {
+  readonly operationName = 'SendPushNotification'
+  protected readonly batchOptions = {parseBody: false}
 
-  const validatedAttrs = pushNotificationAttributesSchema.parse(rawAttributes)
-  const notificationType = validatedAttrs.notificationType as FileNotificationType
-  const userId = validatedAttrs.userId
-
-  const span = startSpan('send-push')
-  addAnnotation(span, 'userId', userId)
-  addAnnotation(span, 'notificationType', notificationType)
-
-  try {
-    const deviceIds = await getDeviceIdsForUser(userId)
-    addMetadata(span, 'deviceCount', deviceIds.length)
-
-    if (deviceIds.length == 0) {
-      logInfo('No devices registered for user', userId)
-      endSpan(span)
+  protected async processRecord({record, messageAttributes}: SqsRecordContext<string>): Promise<void> {
+    // Validate message attributes using Zod schema
+    const rawAttributes = {notificationType: messageAttributes.notificationType?.stringValue, userId: messageAttributes.userId?.stringValue}
+    const validationErrors = validateSchema(pushNotificationAttributesSchema, rawAttributes)
+    if (validationErrors) {
+      logError('Invalid SQS message attributes - discarding', {messageId: record.messageId, errors: validationErrors.errors})
       return
     }
 
-    logInfo('Sending notifications to devices', {userId, deviceCount: deviceIds.length})
+    const validatedAttrs = pushNotificationAttributesSchema.parse(rawAttributes)
+    const notificationType = validatedAttrs.notificationType as FileNotificationType
+    const userId = validatedAttrs.userId
 
-    // Process all devices in parallel with individual error handling
-    const results = await Promise.allSettled(deviceIds.map(async (deviceId) => {
-      const device = await getDevice(deviceId)
-      return sendNotificationToDevice(device, record.body, notificationType)
-    }))
+    const span = startSpan('send-push')
+    addAnnotation(span, 'userId', userId)
+    addAnnotation(span, 'notificationType', notificationType)
 
-    // Collect results
-    const deviceResults: DeviceNotificationResult[] = results.map((result, index) => {
-      if (result.status === 'fulfilled') {
-        return result.value
+    try {
+      const deviceIds = await getDeviceIdsForUser(userId)
+      addMetadata(span, 'deviceCount', deviceIds.length)
+
+      if (deviceIds.length == 0) {
+        logInfo('No devices registered for user', userId)
+        endSpan(span)
+        return
       }
-      return {deviceId: deviceIds[index], success: false, error: result.reason instanceof Error ? result.reason.message : String(result.reason)}
-    })
 
-    const succeeded = deviceResults.filter((r) => r.success)
-    const failed = deviceResults.filter((r) => !r.success)
-    const disabledEndpoints = deviceResults.filter((r) => r.endpointDisabled)
+      logInfo('Sending notifications to devices', {userId, deviceCount: deviceIds.length})
 
-    // Emit metrics for observability
-    metrics.addMetric('PushNotificationsSent', MetricUnit.Count, succeeded.length)
-    addMetadata(span, 'notificationsSent', succeeded.length)
-    addMetadata(span, 'notificationsFailed', failed.length)
-    addMetadata(span, 'disabledEndpoints', disabledEndpoints.length)
+      // Process all devices in parallel with individual error handling
+      const results = await Promise.allSettled(deviceIds.map(async (deviceId) => {
+        const device = await getDevice(deviceId)
+        return sendNotificationToDevice(device, record.body, notificationType)
+      }))
 
-    if (failed.length > 0) {
-      metrics.addMetric('PushNotificationsFailed', MetricUnit.Count, failed.length)
-    }
-    if (disabledEndpoints.length > 0) {
-      metrics.addMetric('DisabledEndpointsDetected', MetricUnit.Count, disabledEndpoints.length)
-    }
-
-    // Log results
-    if (failed.length > 0) {
-      logInfo('Push notification results', {
-        userId,
-        total: deviceIds.length,
-        succeeded: succeeded.length,
-        failed: failed.length,
-        disabledEndpoints: disabledEndpoints.length
+      // Collect results
+      const deviceResults: DeviceNotificationResult[] = results.map((result, index) => {
+        if (result.status === 'fulfilled') {
+          return result.value
+        }
+        return {deviceId: deviceIds[index], success: false, error: result.reason instanceof Error ? result.reason.message : String(result.reason)}
       })
 
-      failed.forEach((r) => {
-        logError('Device notification failed', {deviceId: r.deviceId, error: r.error, endpointDisabled: r.endpointDisabled})
-      })
-    }
+      const succeeded = deviceResults.filter((r) => r.success)
+      const failed = deviceResults.filter((r) => !r.success)
+      const disabledEndpoints = deviceResults.filter((r) => r.endpointDisabled)
 
-    // Clean up disabled endpoints (best-effort, don't fail the message)
-    if (disabledEndpoints.length > 0) {
-      logInfo('Cleaning up disabled endpoints', {userId, deviceIds: disabledEndpoints.map((r) => r.deviceId)})
+      // Emit metrics for observability
+      metrics.addMetric('PushNotificationsSent', MetricUnit.Count, succeeded.length)
+      addMetadata(span, 'notificationsSent', succeeded.length)
+      addMetadata(span, 'notificationsFailed', failed.length)
+      addMetadata(span, 'disabledEndpoints', disabledEndpoints.length)
 
-      // Run cleanup asynchronously (fire-and-forget to not block message processing)
-      // Errors are logged within cleanupDisabledEndpoints, won't affect message success
-      cleanupDisabledEndpoints(disabledEndpoints.map((r) => r.deviceId)).catch((err) => {
-        logError('Async endpoint cleanup failed', {error: err instanceof Error ? err.message : String(err)})
-      })
-    }
+      if (failed.length > 0) {
+        metrics.addMetric('PushNotificationsFailed', MetricUnit.Count, failed.length)
+      }
+      if (disabledEndpoints.length > 0) {
+        metrics.addMetric('DisabledEndpointsDetected', MetricUnit.Count, disabledEndpoints.length)
+      }
 
-    // Only fail the SQS message if ALL devices failed
-    // Partial success = message processed successfully (don't retry for succeeded devices)
-    if (succeeded.length === 0 && failed.length > 0) {
-      const error = new Error(`All ${failed.length} device notifications failed`)
-      endSpan(span, error)
+      // Log results
+      if (failed.length > 0) {
+        logInfo('Push notification results', {
+          userId,
+          total: deviceIds.length,
+          succeeded: succeeded.length,
+          failed: failed.length,
+          disabledEndpoints: disabledEndpoints.length
+        })
+
+        failed.forEach((r) => {
+          logError('Device notification failed', {deviceId: r.deviceId, error: r.error, endpointDisabled: r.endpointDisabled})
+        })
+      }
+
+      // Clean up disabled endpoints (best-effort, don't fail the message)
+      if (disabledEndpoints.length > 0) {
+        logInfo('Cleaning up disabled endpoints', {userId, deviceIds: disabledEndpoints.map((r) => r.deviceId)})
+
+        // Run cleanup asynchronously (fire-and-forget to not block message processing)
+        // Errors are logged within cleanupDisabledEndpoints, won't affect message success
+        cleanupDisabledEndpoints(disabledEndpoints.map((r) => r.deviceId)).catch((err) => {
+          logError('Async endpoint cleanup failed', {error: err instanceof Error ? err.message : String(err)})
+        })
+      }
+
+      // Only fail the SQS message if ALL devices failed
+      // Partial success = message processed successfully (don't retry for succeeded devices)
+      if (succeeded.length === 0 && failed.length > 0) {
+        const error = new Error(`All ${failed.length} device notifications failed`)
+        endSpan(span, error)
+        throw error
+      }
+
+      endSpan(span)
+    } catch (error) {
+      endSpan(span, error as Error)
       throw error
     }
-
-    endSpan(span)
-  } catch (error) {
-    endSpan(span, error as Error)
-    throw error
   }
 }
 
-/**
- * Dispatches push notifications to all user devices.
- * Supports MetadataNotification, DownloadReadyNotification, and FailureNotification types.
- *
- * Routes notifications based on type:
- * - FailureNotification: Alert notification (visible to user)
- * - MetadataNotification & DownloadReadyNotification: Background notification (silent)
- *
- * Returns SQSBatchResponse with failed message IDs for partial batch failure handling.
- * Failed messages will be retried by SQS and eventually sent to DLQ after maxReceiveCount.
- *
- * @notExported
- */
-export const handler = withPowertools(wrapSqsBatchHandler(processSQSRecord, {parseBody: false}))
+const handlerInstance = new SendPushNotificationHandler()
+export const handler = handlerInstance.handler.bind(handlerInstance)

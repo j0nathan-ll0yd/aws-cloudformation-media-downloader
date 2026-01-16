@@ -12,7 +12,7 @@
  * @see src/types/resilience.ts for type definitions
  */
 import {logDebug, logInfo} from '#lib/system/logging'
-import {metrics, MetricUnit} from '#lib/lambda/middleware/powertools'
+import {metrics, MetricUnit} from '#lib/lambda/handlers'
 import type {CircuitBreakerConfig, CircuitState} from '#types/resilience'
 
 export type { CircuitBreakerConfig, CircuitState }

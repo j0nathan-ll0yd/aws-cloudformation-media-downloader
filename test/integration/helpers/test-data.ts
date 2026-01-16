@@ -5,7 +5,7 @@
  * Reduces inline JSON and provides consistent test data patterns.
  */
 
-import type {APIGatewayProxyEvent, APIGatewayRequestAuthorizerEvent, S3Event, ScheduledEvent, SQSEvent} from 'aws-lambda'
+import type {APIGatewayRequestAuthorizerEvent, S3Event, ScheduledEvent, SQSEvent} from 'aws-lambda'
 import {FileStatus, UserStatus} from '#types/enums'
 import type {Device, File, User} from '#types/domainModels'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
@@ -174,12 +174,12 @@ export function createMockS3Event(objectKey: string, options?: {bucket?: string;
 }
 
 /**
- * Creates a basic API Gateway proxy event (for endpoints without custom authorizer context)
+ * Creates a basic API Gateway proxy event with authorizer context
  * @param options - Event configuration
  */
 export function createMockAPIGatewayProxyEvent(
-  options: {path: string; httpMethod: string; headers?: Record<string, string>; body?: string | null}
-): APIGatewayProxyEvent {
+  options: {path: string; httpMethod: string; headers?: Record<string, string>; body?: string | null; userId?: string}
+): CustomAPIGatewayRequestAuthorizerEvent {
   return {
     body: options.body ?? null,
     headers: options.headers ?? {},
@@ -220,10 +220,10 @@ export function createMockAPIGatewayProxyEvent(
         user: null,
         userArn: null
       },
-      authorizer: null
+      authorizer: {integrationLatency: 0, principalId: options.userId ?? 'unknown'}
     },
     resource: options.path
-  } as APIGatewayProxyEvent
+  } as CustomAPIGatewayRequestAuthorizerEvent
 }
 
 /**

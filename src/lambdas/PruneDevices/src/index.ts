@@ -15,8 +15,7 @@ import type {ApplePushNotificationResponse, PruneDevicesResult} from '#types/lam
 import {deleteDevice} from '#lib/services/device/deviceService'
 import {getOptionalEnv, getRequiredEnv} from '#lib/system/env'
 import {Apns2Error, UnexpectedError} from '#lib/system/errors'
-import {metrics, MetricUnit, withPowertools} from '#lib/lambda/middleware/powertools'
-import {wrapScheduledHandler} from '#lib/lambda/middleware/internal'
+import {metrics, MetricUnit, ScheduledHandler} from '#lib/lambda/handlers'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 
 // Re-export types for external consumers
@@ -68,58 +67,58 @@ async function dispatchHealthCheckNotificationToDeviceToken(token: string): Prom
 }
 
 /**
- * Removes Devices and related data if the device is no longer active.
- * Activity is determined by directly querying the APNS.
- * - If the device is disabled, remove the platform endpoint and device data
- * - If the device is associated with a user, remove it from UserDevices
- * {@label PRUNE_DEVICES_HANDLER}
- * @param event - An AWS ScheduledEvent; happening daily
- * @param context - An AWS Context object
- * @returns PruneDevicesResult with counts of devices checked, pruned, and any errors
- * @notExported
+ * Handler for scheduled device cleanup.
+ * Removes devices with disabled APNS endpoints and their user associations.
  */
-export const handler = withPowertools(wrapScheduledHandler(async (): Promise<PruneDevicesResult> => {
-  // Track prune devices run
-  metrics.addMetric('PruneDevicesRun', MetricUnit.Count, 1)
+class PruneDevicesHandler extends ScheduledHandler<PruneDevicesResult> {
+  readonly operationName = 'PruneDevices'
 
-  const span = startSpan('prune-devices-cleanup')
+  protected async executeScheduled(): Promise<PruneDevicesResult> {
+    // Track prune devices run
+    metrics.addMetric('PruneDevicesRun', MetricUnit.Count, 1)
 
-  const result: PruneDevicesResult = {devicesChecked: 0, devicesPruned: 0, errors: []}
+    const span = startSpan('prune-devices-cleanup')
 
-  const devices = await getDevices()
-  result.devicesChecked = devices.length
+    const result: PruneDevicesResult = {devicesChecked: 0, devicesPruned: 0, errors: []}
 
-  for (const device of devices) {
-    const deviceId = device.deviceId
-    logInfo('Verifying device', deviceId)
-    if (await isDeviceDisabled(device.token)) {
-      try {
-        // Delete UserDevices junction records first (children before parent)
-        await deleteUserDevicesByDeviceId(deviceId)
+    const devices = await getDevices()
+    result.devicesChecked = devices.length
 
-        // Then delete the Device itself
-        await deleteDevice(device)
+    for (const device of devices) {
+      const deviceId = device.deviceId
+      logInfo('Verifying device', deviceId)
+      if (await isDeviceDisabled(device.token)) {
+        try {
+          // Delete UserDevices junction records first (children before parent)
+          await deleteUserDevicesByDeviceId(deviceId)
 
-        result.devicesPruned++
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error)
-        const errorMessage = `Failed to properly remove device ${deviceId}: ${message}`
-        logError(errorMessage)
-        result.errors.push(errorMessage)
-        // Severe alarm needed: device orphaned in DynamoDB after cascade delete failure
-        // Should trigger manual intervention to delete device record with ID and requestId
-        // Tracking: Monitor CloudWatch for orphaned device cleanup patterns
+          // Then delete the Device itself
+          await deleteDevice(device)
+
+          result.devicesPruned++
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error)
+          const errorMessage = `Failed to properly remove device ${deviceId}: ${message}`
+          logError(errorMessage)
+          result.errors.push(errorMessage)
+          // Severe alarm needed: device orphaned in DynamoDB after cascade delete failure
+          // Should trigger manual intervention to delete device record with ID and requestId
+          // Tracking: Monitor CloudWatch for orphaned device cleanup patterns
+        }
       }
     }
+
+    // Track devices pruned
+    metrics.addMetric('DevicesPruned', MetricUnit.Count, result.devicesPruned)
+    addMetadata(span, 'devicesChecked', result.devicesChecked)
+    addMetadata(span, 'devicesPruned', result.devicesPruned)
+    addMetadata(span, 'errors', result.errors.length)
+    endSpan(span)
+
+    logInfo('PruneDevices completed', result)
+    return result
   }
+}
 
-  // Track devices pruned
-  metrics.addMetric('DevicesPruned', MetricUnit.Count, result.devicesPruned)
-  addMetadata(span, 'devicesChecked', result.devicesChecked)
-  addMetadata(span, 'devicesPruned', result.devicesPruned)
-  addMetadata(span, 'errors', result.errors.length)
-  endSpan(span)
-
-  logInfo('PruneDevices completed', result)
-  return result
-}))
+const handlerInstance = new PruneDevicesHandler()
+export const handler = handlerInstance.handler.bind(handlerInstance)

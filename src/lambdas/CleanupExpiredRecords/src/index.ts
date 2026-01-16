@@ -15,8 +15,7 @@ import {fileDownloads, sessions, verification} from '#lib/vendor/Drizzle/schema'
 import {addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
 import type {CleanupResult} from '#types/lambda'
 import {DownloadStatus} from '#types/enums'
-import {metrics, MetricUnit, withPowertools} from '#lib/lambda/middleware/powertools'
-import {wrapScheduledHandler} from '#lib/lambda/middleware/internal'
+import {metrics, MetricUnit, ScheduledHandler} from '#lib/lambda/handlers'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 import {secondsAgo, TIME} from '#lib/system/time'
 
@@ -66,62 +65,63 @@ async function cleanupVerificationTokens(): Promise<number> {
 }
 
 /**
- * Scheduled handler that cleans up expired records.
- *
- * Runs daily at 3 AM UTC to delete:
- * - FileDownloads: Completed/Failed older than 24 hours
- * - Sessions: expiresAt in the past
- * - Verification: expiresAt in the past
- *
- * @returns CleanupResult with counts of deleted records
+ * Handler for scheduled expired record cleanup.
+ * Deletes expired FileDownloads, Sessions, and Verification tokens.
  */
-export const handler = withPowertools(wrapScheduledHandler(async (): Promise<CleanupResult> => {
-  // Track cleanup run
-  metrics.addMetric('CleanupRun', MetricUnit.Count, 1)
+class CleanupExpiredRecordsHandler extends ScheduledHandler<CleanupResult> {
+  readonly operationName = 'CleanupExpiredRecords'
 
-  const span = startSpan('cleanup-records')
+  protected async executeScheduled(): Promise<CleanupResult> {
+    // Track cleanup run
+    metrics.addMetric('CleanupRun', MetricUnit.Count, 1)
 
-  const result: CleanupResult = {fileDownloadsDeleted: 0, sessionsDeleted: 0, verificationTokensDeleted: 0, errors: []}
+    const span = startSpan('cleanup-records')
 
-  logInfo('CleanupExpiredRecords starting')
+    const result: CleanupResult = {fileDownloadsDeleted: 0, sessionsDeleted: 0, verificationTokensDeleted: 0, errors: []}
 
-  try {
-    result.fileDownloadsDeleted = await cleanupFileDownloads()
-    logDebug('Cleaned up file downloads', {count: result.fileDownloadsDeleted})
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    logError('Failed to cleanup file downloads', {error: message})
-    result.errors.push(`FileDownloads cleanup failed: ${message}`)
+    logInfo('CleanupExpiredRecords starting')
+
+    try {
+      result.fileDownloadsDeleted = await cleanupFileDownloads()
+      logDebug('Cleaned up file downloads', {count: result.fileDownloadsDeleted})
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      logError('Failed to cleanup file downloads', {error: message})
+      result.errors.push(`FileDownloads cleanup failed: ${message}`)
+    }
+
+    try {
+      result.sessionsDeleted = await cleanupSessions()
+      logDebug('Cleaned up sessions', {count: result.sessionsDeleted})
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      logError('Failed to cleanup sessions', {error: message})
+      result.errors.push(`Sessions cleanup failed: ${message}`)
+    }
+
+    try {
+      result.verificationTokensDeleted = await cleanupVerificationTokens()
+      logDebug('Cleaned up verification tokens', {count: result.verificationTokensDeleted})
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      logError('Failed to cleanup verification tokens', {error: message})
+      result.errors.push(`Verification cleanup failed: ${message}`)
+    }
+
+    // Track total records cleaned up
+    const totalDeleted = result.fileDownloadsDeleted + result.sessionsDeleted + result.verificationTokensDeleted
+    metrics.addMetric('RecordsCleanedUp', MetricUnit.Count, totalDeleted)
+    addMetadata(span, 'fileDownloadsDeleted', result.fileDownloadsDeleted)
+    addMetadata(span, 'sessionsDeleted', result.sessionsDeleted)
+    addMetadata(span, 'verificationTokensDeleted', result.verificationTokensDeleted)
+    addMetadata(span, 'totalDeleted', totalDeleted)
+    addMetadata(span, 'errors', result.errors.length)
+    endSpan(span)
+
+    logInfo('CleanupExpiredRecords completed', result)
+    return result
   }
+}
 
-  try {
-    result.sessionsDeleted = await cleanupSessions()
-    logDebug('Cleaned up sessions', {count: result.sessionsDeleted})
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    logError('Failed to cleanup sessions', {error: message})
-    result.errors.push(`Sessions cleanup failed: ${message}`)
-  }
-
-  try {
-    result.verificationTokensDeleted = await cleanupVerificationTokens()
-    logDebug('Cleaned up verification tokens', {count: result.verificationTokensDeleted})
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    logError('Failed to cleanup verification tokens', {error: message})
-    result.errors.push(`Verification cleanup failed: ${message}`)
-  }
-
-  // Track total records cleaned up
-  const totalDeleted = result.fileDownloadsDeleted + result.sessionsDeleted + result.verificationTokensDeleted
-  metrics.addMetric('RecordsCleanedUp', MetricUnit.Count, totalDeleted)
-  addMetadata(span, 'fileDownloadsDeleted', result.fileDownloadsDeleted)
-  addMetadata(span, 'sessionsDeleted', result.sessionsDeleted)
-  addMetadata(span, 'verificationTokensDeleted', result.verificationTokensDeleted)
-  addMetadata(span, 'totalDeleted', totalDeleted)
-  addMetadata(span, 'errors', result.errors.length)
-  endSpan(span)
-
-  logInfo('CleanupExpiredRecords completed', result)
-  return result
-}))
+const handlerInstance = new CleanupExpiredRecordsHandler()
+export const handler = handlerInstance.handler.bind(handlerInstance)

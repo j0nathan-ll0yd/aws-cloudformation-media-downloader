@@ -15,7 +15,7 @@ import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTe
 import {downloadVideoToS3, fetchVideoInfo} from '#lib/vendor/YouTube'
 import type {File} from '#types/domainModels'
 import type {DownloadCompletedDetail, DownloadFailedDetail} from '#types/events'
-import type {DownloadFailureResult, SqsRecordParams} from '#types/lambda'
+import type {DownloadFailureResult} from '#types/lambda'
 import type {FetchVideoInfoResult, VideoErrorClassification} from '#types/video'
 import type {YtDlpVideoInfo} from '#types/youtube'
 import {downloadQueueMessageSchema, type ValidatedDownloadQueueMessage} from '#types/schemas'
@@ -24,8 +24,8 @@ import {validateSchema} from '#lib/validation/constraints'
 import {getRequiredEnv} from '#lib/system/env'
 import {UnexpectedError} from '#lib/system/errors'
 import {closeCookieExpirationIssueIfResolved, createCookieExpirationIssue, createVideoDownloadFailureIssue} from '#lib/integrations/github/issueService'
-import {metrics, MetricUnit, withPowertools} from '#lib/lambda/middleware/powertools'
-import {wrapSqsBatchHandler} from '#lib/lambda/middleware/sqs'
+import {metrics, MetricUnit, SqsHandler} from '#lib/lambda/handlers'
+import type {SqsRecordContext} from '#lib/lambda/handlers'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 import {createFailureNotification, createMetadataNotification} from '#lib/services/notification/transformers'
 import {classifyVideoError, isRetryExhausted} from '#lib/domain/video/errorClassifier'
@@ -440,35 +440,29 @@ async function processDownloadRequest(message: ValidatedDownloadQueueMessage, re
 }
 
 /**
- * Process a single SQS record containing a download request.
- * Validates the message and delegates to processDownloadRequest.
- * @notExported
+ * Handler for video download requests from SQS.
+ * Consumes messages from DownloadQueue (routed via EventBridge from WebhookFeedly).
+ * Uses ReportBatchItemFailures to enable partial batch success.
  */
-async function processSqsRecord({record, body}: SqsRecordParams<unknown>): Promise<void> {
-  // SQS provides ApproximateReceiveCount - how many times this message has been received
-  const receiveCount = parseInt(record.attributes?.ApproximateReceiveCount ?? '1', 10)
+class StartFileUploadHandler extends SqsHandler<unknown> {
+  readonly operationName = 'StartFileUpload'
 
-  // Validate body against schema
-  const validationErrors = validateSchema(downloadQueueMessageSchema, body)
-  if (validationErrors) {
-    // Log invalid message format and return (don't throw - malformed messages will never succeed)
-    logError('Invalid SQS message format - discarding', {messageId: record.messageId, errors: validationErrors.errors})
-    return
+  protected async processRecord({record, body}: SqsRecordContext<unknown>): Promise<void> {
+    // SQS provides ApproximateReceiveCount - how many times this message has been received
+    const receiveCount = parseInt(record.attributes?.ApproximateReceiveCount ?? '1', 10)
+
+    // Validate body against schema
+    const validationErrors = validateSchema(downloadQueueMessageSchema, body)
+    if (validationErrors) {
+      // Log invalid message format and return (don't throw - malformed messages will never succeed)
+      logError('Invalid SQS message format - discarding', {messageId: record.messageId, errors: validationErrors.errors})
+      return
+    }
+
+    const message = downloadQueueMessageSchema.parse(body)
+    await processDownloadRequest(message, receiveCount)
   }
-
-  const message = downloadQueueMessageSchema.parse(body)
-  await processDownloadRequest(message, receiveCount)
 }
 
-/**
- * SQS handler for video download requests.
- *
- * Consumes messages from DownloadQueue (routed via EventBridge from WebhookFeedly).
- * Uses ReportBatchItemFailures to enable partial batch success - failed messages
- * are returned to the queue for retry, successful ones are removed.
- *
- * @param event - SQS event containing download requests
- * @returns SQSBatchResponse with failed message IDs
- * @notExported
- */
-export const handler = withPowertools(wrapSqsBatchHandler(processSqsRecord))
+const handlerInstance = new StartFileUploadHandler()
+export const handler = handlerInstance.handler.bind(handlerInstance)

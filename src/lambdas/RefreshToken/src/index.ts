@@ -7,50 +7,35 @@
  * Request: POST with Authorization Bearer header, empty body
  * Response: 200 with token, expiresAt, sessionId; 401 for invalid session; 500 for errors
  */
-
-import type {APIGatewayProxyEvent, APIGatewayProxyResult} from 'aws-lambda'
-import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
-import type {ApiHandlerParams} from '#types/lambda'
+import type {APIGatewayProxyResult, Context} from 'aws-lambda'
+import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
 import {userLoginResponseSchema} from '#types/api-schema'
+import {ApiHandler} from '#lib/lambda/handlers'
 import {buildValidatedResponse} from '#lib/lambda/responses'
-import {metrics, MetricUnit, withPowertools} from '#lib/lambda/middleware/powertools'
-import {wrapApiHandler} from '#lib/lambda/middleware/api'
 import {logDebug, logInfo} from '#lib/system/logging'
 import {refreshSession, validateSessionToken} from '#lib/domain/auth/sessionService'
 import {extractBearerToken} from '#lib/lambda/auth-helpers'
 
 /**
- * Lambda handler for refreshing session tokens.
- *
- * Validates the current session token from the Authorization header,
- * extends the session expiration, and returns the updated expiration.
- *
- * @param event - API Gateway proxy event
- * @param context - Lambda context
- * @returns API Gateway proxy result with refreshed session info
+ * Handler for refreshing session tokens
+ * Validates the current session and extends its expiration
  */
-export const handler = withPowertools(wrapApiHandler(async ({event, context}: ApiHandlerParams<APIGatewayProxyEvent>): Promise<APIGatewayProxyResult> => {
-  // Track refresh attempt
-  metrics.addMetric('TokenRefreshAttempt', MetricUnit.Count, 1)
-  const span = startSpan('refresh-token-session')
-  try {
+class RefreshTokenHandler extends ApiHandler<CustomAPIGatewayRequestAuthorizerEvent> {
+  readonly operationName = 'RefreshToken'
+
+  protected async handleRequest(event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> {
     // Extract Bearer token from Authorization header
     const token = extractBearerToken(event.headers || {})
 
     // Validate the session token
     logDebug('RefreshToken: validating session token')
     const sessionPayload = await validateSessionToken(token)
-    addAnnotation(span, 'userId', sessionPayload.userId)
-    addAnnotation(span, 'sessionId', sessionPayload.sessionId)
+    this.addAnnotation('userId', sessionPayload.userId)
+    this.addAnnotation('sessionId', sessionPayload.sessionId)
 
     // Refresh the session (extend expiration)
     logDebug('RefreshToken: refreshing session', {sessionId: sessionPayload.sessionId})
     const {expiresAt} = await refreshSession(sessionPayload.sessionId)
-
-    // Track successful refresh
-    metrics.addMetric('TokenRefreshSuccess', MetricUnit.Count, 1)
-    addMetadata(span, 'success', true)
-    endSpan(span)
 
     // Return success with updated session info
     const responseData = {
@@ -63,8 +48,8 @@ export const handler = withPowertools(wrapApiHandler(async ({event, context}: Ap
     logInfo('RefreshToken: session refreshed successfully', {sessionId: sessionPayload.sessionId, expiresAt})
 
     return buildValidatedResponse(context, 200, responseData, userLoginResponseSchema)
-  } catch (error) {
-    endSpan(span, error as Error)
-    throw error
   }
-}))
+}
+
+const handlerInstance = new RefreshTokenHandler()
+export const handler = handlerInstance.handler.bind(handlerInstance)

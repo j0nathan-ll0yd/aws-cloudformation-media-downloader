@@ -6,6 +6,7 @@
  * Valid patterns:
  * - export const handler = withPowertools(...)
  * - export const handler = wrapLambdaInvokeHandler(...)
+ * - export const handler = handlerInstance.handler.bind(handlerInstance) (class-based)
  *
  * Invalid patterns:
  * - export const handler = async (event, context) => {...}
@@ -18,6 +19,34 @@
 // Lambda@Edge functions that can't use PowerTools due to bundle size constraints
 const EXCLUDED_LAMBDAS = ['CloudfrontMiddleware']
 
+// Allowed function wrapper names (functional composition pattern)
+const ALLOWED_WRAPPERS = ['withPowertools', 'wrapLambdaInvokeHandler']
+
+/**
+ * Check if the call expression is a valid class-based handler pattern.
+ * Pattern: handlerInstance.handler.bind(handlerInstance)
+ */
+function isClassBasedHandlerBind(init) {
+  // Must be a CallExpression
+  if (init.type !== 'CallExpression') return false
+
+  // Callee must be a MemberExpression (something.bind)
+  const callee = init.callee
+  if (callee.type !== 'MemberExpression') return false
+
+  // Property must be 'bind'
+  if (callee.property.name !== 'bind') return false
+
+  // The object being bound should be a MemberExpression (instance.handler)
+  const object = callee.object
+  if (object.type !== 'MemberExpression') return false
+
+  // The property being bound should be 'handler'
+  if (object.property.name !== 'handler') return false
+
+  return true
+}
+
 module.exports = {
   meta: {
     type: 'problem',
@@ -27,7 +56,7 @@ module.exports = {
       recommended: true
     },
     messages: {
-      missingPowertools: 'Lambda handler "{{name}}" must be wrapped with withPowertools() or wrapLambdaInvokeHandler()'
+      missingPowertools: 'Lambda handler "{{name}}" must be wrapped with withPowertools(), wrapLambdaInvokeHandler(), or use class-based handler pattern'
     },
     schema: []
   },
@@ -48,12 +77,12 @@ module.exports = {
         // Check if this is exporting 'handler'
         if (node.declaration?.type === 'VariableDeclaration') {
           const declaration = node.declaration.declarations[0]
-          
+
           if (declaration?.id?.name === 'handler') {
-            // Check if the init value is a call expression to withPowertools or wrapLambdaInvokeHandler
             const init = declaration.init
-            
-            if (!init || init.type !== 'CallExpression') {
+
+            // Must have an initializer
+            if (!init) {
               context.report({
                 node,
                 messageId: 'missingPowertools',
@@ -62,17 +91,25 @@ module.exports = {
               return
             }
 
-            const calleeName = init.callee.name
-            if (calleeName !== 'withPowertools' && calleeName !== 'wrapLambdaInvokeHandler') {
-              context.report({
-                node,
-                messageId: 'missingPowertools',
-                data: {name: 'handler'}
-              })
+            // Check for class-based handler pattern: instance.handler.bind(instance)
+            if (isClassBasedHandlerBind(init)) {
+              return // Valid class-based handler
             }
+
+            // Check for functional wrapper pattern: withPowertools(...) or wrapLambdaInvokeHandler(...)
+            if (init.type === 'CallExpression' && ALLOWED_WRAPPERS.includes(init.callee.name)) {
+              return // Valid functional wrapper
+            }
+
+            // Neither valid pattern found
+            context.report({
+              node,
+              messageId: 'missingPowertools',
+              data: {name: 'handler'}
+            })
           }
         }
-        
+
         // Also check function exports
         if (node.declaration?.type === 'FunctionDeclaration') {
           if (node.declaration.id?.name === 'handler') {

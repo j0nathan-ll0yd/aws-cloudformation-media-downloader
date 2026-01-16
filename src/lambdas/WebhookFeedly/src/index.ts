@@ -8,6 +8,7 @@
  * Input: FeedlyWebhookRequest with articleURL
  * Output: APIGatewayProxyResult with file metadata
  */
+import type {APIGatewayProxyResult, Context} from 'aws-lambda'
 import {createFile, createFileDownload, getFile as getFileRecord} from '#entities/queries'
 import {sendMessage} from '#lib/vendor/AWS/SQS'
 import type {SendMessageRequest} from '#lib/vendor/AWS/SQS'
@@ -20,12 +21,12 @@ import {feedlyWebhookRequestSchema, webhookResponseSchema} from '#types/api-sche
 import type {FeedlyWebhookRequest} from '#types/api-schema'
 import type {File} from '#types/domainModels'
 import type {DownloadRequestedDetail} from '#types/events'
+import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
 import type {WebhookProcessingInput, WebhookProcessingResult} from '#types/lambda'
 import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/apiGateway'
 import {getRequiredEnv} from '#lib/system/env'
 import {buildValidatedResponse} from '#lib/lambda/responses'
-import {metrics, MetricUnit, withPowertools} from '#lib/lambda/middleware/powertools'
-import {wrapAuthenticatedHandler} from '#lib/lambda/middleware/api'
+import {AuthenticatedHandler, metrics, MetricUnit} from '#lib/lambda/handlers'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 import {createDownloadReadyNotification} from '#lib/services/notification/transformers'
 import {associateFileToUser} from '#lib/domain/user/userFileService'
@@ -148,32 +149,32 @@ function getIdempotentProcessor() {
 }
 
 /**
- * Receives a webhook to download a file from Feedly.
- *
- * - If the file already exists: it is associated with the requesting user and a push notification is dispatched.
- * - If the file doesn't exist: it is associated with the requesting user and queued for download.
- *
- * Uses Powertools Idempotency to prevent duplicate processing of the same webhook request.
- *
- * @notExported
+ * Handler for Feedly webhook requests.
+ * Processes video download requests with idempotency protection.
  */
-export const handler = withPowertools(wrapAuthenticatedHandler(async ({event, context, userId, metadata}) => {
-  // Track webhook received
-  metrics.addMetric('WebhookReceived', MetricUnit.Count, 1)
+class WebhookFeedlyHandler extends AuthenticatedHandler {
+  readonly operationName = 'WebhookFeedly'
 
-  // Use correlation ID from middleware for end-to-end request tracing
-  const {correlationId, traceId} = metadata
-  logInfo('Processing request', {correlationId, traceId})
+  protected async handleAuthenticated(event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> {
+    // Track webhook received
+    metrics.addMetric('WebhookReceived', MetricUnit.Count, 1)
 
-  const requestBody = getPayloadFromEvent(event) as FeedlyWebhookRequest
-  validateRequest(requestBody, feedlyWebhookRequestSchema)
-  const fileId = getVideoID(requestBody.articleURL)
+    // Use correlation ID from base class for end-to-end request tracing
+    logInfo('Processing request', {correlationId: this.correlationId, traceId: this.traceId})
 
-  // Process webhook with idempotency protection
-  const result = await getIdempotentProcessor()({fileId, userId, articleURL: requestBody.articleURL, correlationId})
+    const requestBody = getPayloadFromEvent(event) as FeedlyWebhookRequest
+    validateRequest(requestBody, feedlyWebhookRequestSchema)
+    const fileId = getVideoID(requestBody.articleURL)
 
-  // Track webhook processed
-  metrics.addMetric('WebhookProcessed', MetricUnit.Count, 1)
+    // Process webhook with idempotency protection
+    const result = await getIdempotentProcessor()({fileId, userId: this.userId, articleURL: requestBody.articleURL, correlationId: this.correlationId})
 
-  return buildValidatedResponse(context, result.statusCode, {status: result.status as 'Dispatched' | 'Initiated' | 'Accepted'}, webhookResponseSchema)
-}))
+    // Track webhook processed
+    metrics.addMetric('WebhookProcessed', MetricUnit.Count, 1)
+
+    return buildValidatedResponse(context, result.statusCode, {status: result.status as 'Dispatched' | 'Initiated' | 'Accepted'}, webhookResponseSchema)
+  }
+}
+
+const handlerInstance = new WebhookFeedlyHandler()
+export const handler = handlerInstance.handler.bind(handlerInstance)

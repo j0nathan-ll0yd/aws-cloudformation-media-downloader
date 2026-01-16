@@ -8,18 +8,18 @@
  * Input: Authenticated or anonymous request
  * Output: APIGatewayProxyResult with file list
  */
+import type {APIGatewayProxyResult, Context} from 'aws-lambda'
 import {getFilesForUser} from '#entities/queries'
-import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
 import type {File} from '#types/domainModels'
 import {FileStatus, UserStatus} from '#types/enums'
 import {fileListResponseSchema} from '#types/api-schema'
+import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
 import {getDefaultFile} from '#config/constants'
+import {metrics, MetricUnit, OptionalAuthHandler} from '#lib/lambda/handlers'
 import {buildValidatedResponse} from '#lib/lambda/responses'
-import {metrics, MetricUnit, withPowertools} from '#lib/lambda/middleware/powertools'
-import {wrapOptionalAuthHandler} from '#lib/lambda/middleware/api'
 import {logDebug} from '#lib/system/logging'
 
-// Get files for a user using a single JOIN query (replaces N+1 batch pattern)
+/** Get files for a user using a single JOIN query */
 async function getFilesByUser(userId: string): Promise<File[]> {
   logDebug('getFilesByUser <=', userId)
   const files = await getFilesForUser(userId)
@@ -28,38 +28,25 @@ async function getFilesByUser(userId: string): Promise<File[]> {
 }
 
 /**
- * Returns a list of files available to the user.
- *
- * - In an authenticated state, returns the files the user has available
- * - In an anonymous state, returns a single demo file (for training purposes)
- * - Unauthenticated users (invalid token) are rejected with 401 by wrapOptionalAuthHandler
- *
- * Query parameters:
- * - status=all: Returns files in all statuses (Queued, Downloading, Downloaded, Failed)
- * - status=downloaded (default): Returns only downloaded files
- *
- * @notExported
+ * Handler for listing files
+ * Returns files for authenticated users or demo file for anonymous
  */
-export const handler = withPowertools(wrapOptionalAuthHandler(async ({event, context, userId, userStatus}) => {
-  // Track files request
-  metrics.addMetric('FilesRequested', MetricUnit.Count, 1)
+class ListFilesHandler extends OptionalAuthHandler {
+  readonly operationName = 'ListFiles'
 
-  const span = startSpan('list-files-query')
-  addAnnotation(span, 'userStatus', String(userStatus))
-  if (userId) {
-    addAnnotation(span, 'userId', userId)
-  }
+  protected async handleRequest(event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> {
+    this.addAnnotation('userStatus', String(this.userStatus))
+    if (this.userId) {
+      this.addAnnotation('userId', this.userId)
+    }
 
-  try {
-    // wrapOptionalAuthHandler already rejected Unauthenticated users with 401
     const myResponse = {contents: [] as File[], keyCount: 0}
 
-    if (userStatus === UserStatus.Anonymous) {
+    if (this.userStatus === UserStatus.Anonymous) {
       myResponse.contents = [getDefaultFile()]
       myResponse.keyCount = myResponse.contents.length
-      addMetadata(span, 'fileCount', myResponse.keyCount)
-      addMetadata(span, 'anonymous', true)
-      endSpan(span)
+      this.addMetadata('fileCount', myResponse.keyCount)
+      this.addMetadata('anonymous', true)
       return buildValidatedResponse(context, 200, myResponse, fileListResponseSchema)
     }
 
@@ -67,7 +54,7 @@ export const handler = withPowertools(wrapOptionalAuthHandler(async ({event, con
     const statusParam = event.queryStringParameters?.status || 'downloaded'
     const showAllStatuses = statusParam === 'all'
 
-    const files = await getFilesByUser(userId as string)
+    const files = await getFilesByUser(this.userId as string)
 
     // Filter based on status parameter
     const filteredFiles = showAllStatuses
@@ -79,12 +66,11 @@ export const handler = withPowertools(wrapOptionalAuthHandler(async ({event, con
 
     // Track files returned
     metrics.addMetric('FilesReturned', MetricUnit.Count, myResponse.keyCount)
-    addMetadata(span, 'fileCount', myResponse.keyCount)
-    endSpan(span)
+    this.addMetadata('fileCount', myResponse.keyCount)
 
     return buildValidatedResponse(context, 200, myResponse, fileListResponseSchema)
-  } catch (error) {
-    endSpan(span, error as Error)
-    throw error
   }
-}))
+}
+
+const handlerInstance = new ListFilesHandler()
+export const handler = handlerInstance.handler.bind(handlerInstance)

@@ -1,10 +1,10 @@
 import {beforeAll, beforeEach, describe, expect, test, vi} from 'vitest'
-import type {APIGatewayEvent} from 'aws-lambda'
 import {createMockContext} from '#util/vitest-setup'
 import {createBetterAuthMock} from '#test/helpers/better-auth-mock'
 import {createAPIGatewayEvent} from '#test/helpers/event-factories'
 import {DEFAULT_SESSION_ID, DEFAULT_USER_ID} from '#test/helpers/entity-fixtures'
 import {randomUUID} from 'node:crypto'
+import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
 
 // Mock Better Auth API - now exports getAuth as async function
 const authMock = createBetterAuthMock()
@@ -19,7 +19,7 @@ const mockIdToken =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2FwcGxlaWQuYXBwbGUuY29tIiwiYXVkIjoibGlmZWdhbWVzLk9mZmxpbmVNZWRpYURvd25sb2FkZXIiLCJleHAiOjE1OTAwOTY2MzksImlhdCI6MTU5MDA5NjAzOSwic3ViIjoiMDAwMTg1Ljc3MjAzMTU1NzBmYzQ5ZDk5YTI2NWY5YWY0YjQ2ODc5LjIwMzQiLCJlbWFpbCI6IjI4bmNjaTMzYTNAcHJpdmF0ZXJlbGF5LmFwcGxlaWQuY29tIiwiZW1haWxfdmVyaWZpZWQiOiJ0cnVlIiwiaXNfcHJpdmF0ZV9lbWFpbCI6InRydWUifQ.mockSignature'
 
 describe('#RegisterUser', () => {
-  let event: APIGatewayEvent
+  let event: CustomAPIGatewayRequestAuthorizerEvent
   const context = createMockContext()
 
   beforeAll(() => {
@@ -27,7 +27,7 @@ describe('#RegisterUser', () => {
   })
 
   beforeEach(() => {
-    event = createAPIGatewayEvent({path: '/registerUser', httpMethod: 'POST', body: JSON.stringify({idToken: mockIdToken})}) as unknown as APIGatewayEvent
+    event = createAPIGatewayEvent({path: '/registerUser', httpMethod: 'POST', body: JSON.stringify({idToken: mockIdToken})})
     authMock.mocks.signInSocial.mockReset()
     vi.mocked(updateUser).mockClear()
     // Default mock - will be overridden in specific tests
@@ -56,7 +56,7 @@ describe('#RegisterUser', () => {
       path: '/registerUser',
       httpMethod: 'POST',
       body: JSON.stringify({idToken: mockIdToken, firstName: 'Jonathan', lastName: 'Lloyd'})
-    }) as unknown as APIGatewayEvent
+    })
 
     authMock.mocks.signInSocial.mockResolvedValue({
       user: {
@@ -170,11 +170,7 @@ describe('#RegisterUser', () => {
         session: {id: DEFAULT_SESSION_ID, expiresAt: Date.now() + 86400000},
         token: randomUUID()
       })
-      event = createAPIGatewayEvent({
-        path: '/registerUser',
-        httpMethod: 'POST',
-        body: JSON.stringify({idToken: mockIdToken, firstName: 'Jonathan'})
-      }) as unknown as APIGatewayEvent
+      event = createAPIGatewayEvent({path: '/registerUser', httpMethod: 'POST', body: JSON.stringify({idToken: mockIdToken, firstName: 'Jonathan'})})
 
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(200)
