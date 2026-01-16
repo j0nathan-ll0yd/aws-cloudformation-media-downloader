@@ -3,6 +3,7 @@ import type {APIGatewayEvent} from 'aws-lambda'
 import {createMockContext} from '#util/vitest-setup'
 import {createBetterAuthMock} from '#test/helpers/better-auth-mock'
 import {createAPIGatewayEvent} from '#test/helpers/event-factories'
+import {DEFAULT_SESSION_ID, DEFAULT_USER_ID} from '#test/helpers/entity-fixtures'
 import {randomUUID} from 'node:crypto'
 
 // Mock Better Auth API - now exports getAuth as async function
@@ -45,8 +46,8 @@ describe('#RegisterUser', () => {
 
   test('should successfully register a new user via Better Auth and update name', async () => {
     // Mock Better Auth creating a new user
-    const userId = randomUUID()
-    const sessionId = randomUUID()
+    const userId = DEFAULT_USER_ID
+    const sessionId = DEFAULT_SESSION_ID
     const token = randomUUID()
     const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000
 
@@ -93,8 +94,8 @@ describe('#RegisterUser', () => {
 
   test('should successfully login an existing user via Better Auth without updating name', async () => {
     // Mock Better Auth finding and logging in existing user
-    const userId = randomUUID()
-    const sessionId = randomUUID()
+    const userId = DEFAULT_USER_ID
+    const sessionId = DEFAULT_SESSION_ID
     const token = randomUUID()
     const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000
 
@@ -144,10 +145,10 @@ describe('#RegisterUser', () => {
 
   describe('#EdgeCases', () => {
     test('should handle missing firstName and lastName in request', async () => {
-      const userId = randomUUID()
+      const userId = DEFAULT_USER_ID
       authMock.mocks.signInSocial.mockResolvedValue({
         user: {id: userId, email: 'test@example.com', createdAt: new Date().toISOString()},
-        session: {id: randomUUID(), expiresAt: Date.now() + 86400000},
+        session: {id: DEFAULT_SESSION_ID, expiresAt: Date.now() + 86400000},
         token: randomUUID()
       })
       // Remove name fields from request body
@@ -163,10 +164,10 @@ describe('#RegisterUser', () => {
     })
 
     test('should handle only firstName provided (no lastName)', async () => {
-      const userId = randomUUID()
+      const userId = DEFAULT_USER_ID
       authMock.mocks.signInSocial.mockResolvedValue({
         user: {id: userId, email: 'test@example.com', createdAt: new Date().toISOString()},
-        session: {id: randomUUID(), expiresAt: Date.now() + 86400000},
+        session: {id: DEFAULT_SESSION_ID, expiresAt: Date.now() + 86400000},
         token: randomUUID()
       })
       event = createAPIGatewayEvent({
@@ -182,10 +183,10 @@ describe('#RegisterUser', () => {
     })
 
     test('should handle updateUser database failure gracefully', async () => {
-      const userId = randomUUID()
+      const userId = DEFAULT_USER_ID
       authMock.mocks.signInSocial.mockResolvedValue({
         user: {id: userId, email: 'test@example.com', createdAt: new Date().toISOString()},
-        session: {id: randomUUID(), expiresAt: Date.now() + 86400000},
+        session: {id: DEFAULT_SESSION_ID, expiresAt: Date.now() + 86400000},
         token: randomUUID()
       })
       vi.mocked(updateUser).mockRejectedValue(new Error('Database write failed'))

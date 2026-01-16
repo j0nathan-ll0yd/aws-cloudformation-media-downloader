@@ -9,12 +9,13 @@
  * Output: PruneDevicesResult with deletion counts
  */
 import {deleteUserDevicesByDeviceId, getAllDevices} from '#entities/queries'
+import {addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
 import type {Device} from '#types/domainModels'
 import type {ApplePushNotificationResponse, PruneDevicesResult} from '#types/lambda'
 import {deleteDevice} from '#lib/services/device/deviceService'
 import {getOptionalEnv, getRequiredEnv} from '#lib/system/env'
 import {Apns2Error, UnexpectedError} from '#lib/system/errors'
-import {withPowertools} from '#lib/lambda/middleware/powertools'
+import {metrics, MetricUnit, withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapScheduledHandler} from '#lib/lambda/middleware/internal'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 
@@ -78,6 +79,11 @@ async function dispatchHealthCheckNotificationToDeviceToken(token: string): Prom
  * @notExported
  */
 export const handler = withPowertools(wrapScheduledHandler(async (): Promise<PruneDevicesResult> => {
+  // Track prune devices run
+  metrics.addMetric('PruneDevicesRun', MetricUnit.Count, 1)
+
+  const span = startSpan('prune-devices-cleanup')
+
   const result: PruneDevicesResult = {devicesChecked: 0, devicesPruned: 0, errors: []}
 
   const devices = await getDevices()
@@ -106,6 +112,13 @@ export const handler = withPowertools(wrapScheduledHandler(async (): Promise<Pru
       }
     }
   }
+
+  // Track devices pruned
+  metrics.addMetric('DevicesPruned', MetricUnit.Count, result.devicesPruned)
+  addMetadata(span, 'devicesChecked', result.devicesChecked)
+  addMetadata(span, 'devicesPruned', result.devicesPruned)
+  addMetadata(span, 'errors', result.errors.length)
+  endSpan(span)
 
   logInfo('PruneDevices completed', result)
   return result

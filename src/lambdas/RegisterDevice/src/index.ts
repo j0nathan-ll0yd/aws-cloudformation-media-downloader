@@ -10,6 +10,7 @@
  */
 import {upsertDevice as upsertDeviceRecord, upsertUserDevice} from '#entities/queries'
 import {createPlatformEndpoint, listSubscriptionsByTopic} from '#lib/vendor/AWS/SNS'
+import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
 import {UserStatus} from '#types/enums'
 import {deviceRegistrationRequestSchema, deviceRegistrationResponseSchema} from '#types/api-schema'
 import type {DeviceRegistrationRequest} from '#types/api-schema'
@@ -20,7 +21,7 @@ import {getRequiredEnv} from '#lib/system/env'
 import {providerFailureErrorMessage, ServiceUnavailableError, UnexpectedError} from '#lib/system/errors'
 import {buildValidatedResponse} from '#lib/lambda/responses'
 import {verifyPlatformConfiguration} from '#lib/lambda/context'
-import {withPowertools} from '#lib/lambda/middleware/powertools'
+import {metrics, MetricUnit, withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapOptionalAuthHandler} from '#lib/lambda/middleware/api'
 import {logDebug} from '#lib/system/logging'
 
@@ -111,34 +112,57 @@ async function getSubscriptionArnFromEndpointAndTopic(endpointArn: string, topic
  * @notExported
  */
 export const handler = withPowertools(wrapOptionalAuthHandler(async ({event, context, userId, userStatus}) => {
-  // wrapOptionalAuthHandler already rejected Unauthenticated users with 401
-  verifyPlatformConfiguration()
-  const requestBody = getPayloadFromEvent(event) as DeviceRegistrationRequest
-  validateRequest(requestBody, deviceRegistrationRequestSchema)
+  // Track device registration attempt
+  metrics.addMetric('DeviceRegistrationAttempt', MetricUnit.Count, 1)
 
-  const platformEndpoint = await createPlatformEndpointFromToken(requestBody.token)
-  const pushNotificationTopicArn = getRequiredEnv('PUSH_NOTIFICATION_TOPIC_ARN')
-  const device = {...requestBody, endpointArn: platformEndpoint.EndpointArn} as Device
-  // Store the device details, regardless of user status
-  await upsertDevice(device)
-  /* c8 ignore else */
-  if (userStatus === UserStatus.Authenticated && userId) {
-    // Extract the userId and associate them
-    // Store the device details associated with the user
-    await upsertUserDevices(userId, requestBody.deviceId)
-    // Determine if the user already exists
-    const userDevices = await getUserDevices(userId)
-    if (userDevices.length === 1) {
-      return buildValidatedResponse(context, 200, {endpointArn: device.endpointArn}, deviceRegistrationResponseSchema)
-    } else {
-      // Confirm the subscription, and unsubscribe
-      const subscriptionArn = await getSubscriptionArnFromEndpointAndTopic(device.endpointArn, pushNotificationTopicArn)
-      await unsubscribeEndpointToTopic(subscriptionArn)
-      return buildValidatedResponse(context, 201, {endpointArn: platformEndpoint.EndpointArn}, deviceRegistrationResponseSchema)
+  const span = startSpan('register-device-sns')
+  addAnnotation(span, 'userStatus', String(userStatus))
+
+  try {
+    // wrapOptionalAuthHandler already rejected Unauthenticated users with 401
+    verifyPlatformConfiguration()
+    const requestBody = getPayloadFromEvent(event) as DeviceRegistrationRequest
+    validateRequest(requestBody, deviceRegistrationRequestSchema)
+    addAnnotation(span, 'deviceId', requestBody.deviceId)
+
+    const platformEndpoint = await createPlatformEndpointFromToken(requestBody.token)
+    const pushNotificationTopicArn = getRequiredEnv('PUSH_NOTIFICATION_TOPIC_ARN')
+    const device = {...requestBody, endpointArn: platformEndpoint.EndpointArn} as Device
+    // Store the device details, regardless of user status
+    await upsertDevice(device)
+    /* c8 ignore else */
+    if (userStatus === UserStatus.Authenticated && userId) {
+      addAnnotation(span, 'userId', userId)
+      // Extract the userId and associate them
+      // Store the device details associated with the user
+      await upsertUserDevices(userId, requestBody.deviceId)
+      // Determine if the user already exists
+      const userDevices = await getUserDevices(userId)
+      if (userDevices.length === 1) {
+        addMetadata(span, 'firstDevice', true)
+        endSpan(span)
+        return buildValidatedResponse(context, 200, {endpointArn: device.endpointArn}, deviceRegistrationResponseSchema)
+      } else {
+        // Confirm the subscription, and unsubscribe
+        const subscriptionArn = await getSubscriptionArnFromEndpointAndTopic(device.endpointArn, pushNotificationTopicArn)
+        await unsubscribeEndpointToTopic(subscriptionArn)
+        addMetadata(span, 'unsubscribed', true)
+        endSpan(span)
+        return buildValidatedResponse(context, 201, {endpointArn: platformEndpoint.EndpointArn}, deviceRegistrationResponseSchema)
+      }
+    } else if (userStatus === UserStatus.Anonymous) {
+      // If the user hasn't registered; add them to the unregistered topic
+      await subscribeEndpointToTopic(device.endpointArn, pushNotificationTopicArn)
+      addMetadata(span, 'subscribedToTopic', true)
     }
-  } else if (userStatus === UserStatus.Anonymous) {
-    // If the user hasn't registered; add them to the unregistered topic
-    await subscribeEndpointToTopic(device.endpointArn, pushNotificationTopicArn)
+
+    // Track successful registration
+    metrics.addMetric('DeviceRegistrationSuccess', MetricUnit.Count, 1)
+    endSpan(span)
+
+    return buildValidatedResponse(context, 200, {endpointArn: device.endpointArn}, deviceRegistrationResponseSchema)
+  } catch (error) {
+    endSpan(span, error as Error)
+    throw error
   }
-  return buildValidatedResponse(context, 200, {endpointArn: device.endpointArn}, deviceRegistrationResponseSchema)
 }))

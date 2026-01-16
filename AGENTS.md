@@ -63,7 +63,7 @@ AWS Serverless media downloader service built with OpenTofu and TypeScript. Down
 │   └── mcp/               # Model Context Protocol server & validation
 │       ├── server.ts      # MCP server entry point
 │       ├── handlers/      # Query tools (entities, lambda, infrastructure, etc.)
-│       └── validation/    # AST-based convention enforcement (13 rules)
+│       └── validation/    # AST-based convention enforcement (21 rules)
 ├── test/helpers/          # Test utilities
 │   ├── entity-fixtures.ts # Factory functions for mock entity rows
 │   └── aws-sdk-mock.ts    # AWS SDK v3 mock helpers (aws-sdk-client-mock)

@@ -9,12 +9,13 @@
  * Output: APIGatewayProxyResult with file list
  */
 import {getFilesForUser} from '#entities/queries'
+import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
 import type {File} from '#types/domainModels'
 import {FileStatus, UserStatus} from '#types/enums'
 import {fileListResponseSchema} from '#types/api-schema'
 import {getDefaultFile} from '#config/constants'
 import {buildValidatedResponse} from '#lib/lambda/responses'
-import {withPowertools} from '#lib/lambda/middleware/powertools'
+import {metrics, MetricUnit, withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapOptionalAuthHandler} from '#lib/lambda/middleware/api'
 import {logDebug} from '#lib/system/logging'
 
@@ -40,27 +41,50 @@ async function getFilesByUser(userId: string): Promise<File[]> {
  * @notExported
  */
 export const handler = withPowertools(wrapOptionalAuthHandler(async ({event, context, userId, userStatus}) => {
-  // wrapOptionalAuthHandler already rejected Unauthenticated users with 401
-  const myResponse = {contents: [] as File[], keyCount: 0}
+  // Track files request
+  metrics.addMetric('FilesRequested', MetricUnit.Count, 1)
 
-  if (userStatus === UserStatus.Anonymous) {
-    myResponse.contents = [getDefaultFile()]
-    myResponse.keyCount = myResponse.contents.length
-    return buildValidatedResponse(context, 200, myResponse, fileListResponseSchema)
+  const span = startSpan('list-files-query')
+  addAnnotation(span, 'userStatus', String(userStatus))
+  if (userId) {
+    addAnnotation(span, 'userId', userId)
   }
 
-  // Extract status query parameter (default to 'downloaded' for backwards compatibility)
-  const statusParam = event.queryStringParameters?.status || 'downloaded'
-  const showAllStatuses = statusParam === 'all'
+  try {
+    // wrapOptionalAuthHandler already rejected Unauthenticated users with 401
+    const myResponse = {contents: [] as File[], keyCount: 0}
 
-  const files = await getFilesByUser(userId as string)
+    if (userStatus === UserStatus.Anonymous) {
+      myResponse.contents = [getDefaultFile()]
+      myResponse.keyCount = myResponse.contents.length
+      addMetadata(span, 'fileCount', myResponse.keyCount)
+      addMetadata(span, 'anonymous', true)
+      endSpan(span)
+      return buildValidatedResponse(context, 200, myResponse, fileListResponseSchema)
+    }
 
-  // Filter based on status parameter
-  const filteredFiles = showAllStatuses
-    ? files
-    : files.filter((file) => file.status === FileStatus.Downloaded)
+    // Extract status query parameter (default to 'downloaded' for backwards compatibility)
+    const statusParam = event.queryStringParameters?.status || 'downloaded'
+    const showAllStatuses = statusParam === 'all'
 
-  myResponse.contents = filteredFiles.sort((a, b) => new Date(b.publishDate).getTime() - new Date(a.publishDate).getTime())
-  myResponse.keyCount = myResponse.contents.length
-  return buildValidatedResponse(context, 200, myResponse, fileListResponseSchema)
+    const files = await getFilesByUser(userId as string)
+
+    // Filter based on status parameter
+    const filteredFiles = showAllStatuses
+      ? files
+      : files.filter((file) => file.status === FileStatus.Downloaded)
+
+    myResponse.contents = filteredFiles.sort((a, b) => new Date(b.publishDate).getTime() - new Date(a.publishDate).getTime())
+    myResponse.keyCount = myResponse.contents.length
+
+    // Track files returned
+    metrics.addMetric('FilesReturned', MetricUnit.Count, myResponse.keyCount)
+    addMetadata(span, 'fileCount', myResponse.keyCount)
+    endSpan(span)
+
+    return buildValidatedResponse(context, 200, myResponse, fileListResponseSchema)
+  } catch (error) {
+    endSpan(span, error as Error)
+    throw error
+  }
 }))

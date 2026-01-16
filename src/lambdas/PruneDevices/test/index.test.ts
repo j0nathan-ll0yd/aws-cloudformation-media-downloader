@@ -48,6 +48,19 @@ vi.mock('#entities/queries', () => ({getAllDevices: vi.fn(), deleteUserDevicesBy
 
 vi.mock('#lib/services/device/deviceService', () => ({deleteDevice: vi.fn()}))
 
+// Mock middleware
+vi.mock('#lib/lambda/middleware/powertools',
+  () => ({
+    withPowertools: vi.fn(<T extends (...args: never[]) => unknown>(handler: T) => handler),
+    metrics: {addMetric: vi.fn()},
+    MetricUnit: {Count: 'Count'}
+  }))
+
+vi.mock('#lib/lambda/middleware/internal', () => ({wrapScheduledHandler: vi.fn(<T extends (...args: never[]) => unknown>(handler: T) => handler)}))
+
+// Mock OpenTelemetry
+vi.mock('#lib/vendor/OpenTelemetry', () => ({startSpan: vi.fn(() => ({})), endSpan: vi.fn(), addAnnotation: vi.fn(), addMetadata: vi.fn()}))
+
 // Use vi.hoisted() to define mock classes before vi.mock hoists
 const {sendMock, MockApnsClient, MockNotification} = vi.hoisted(() => {
   const sendMock = vi.fn()

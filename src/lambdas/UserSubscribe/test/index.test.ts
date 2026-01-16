@@ -1,13 +1,13 @@
 import {afterAll, afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {createMockContext} from '#util/vitest-setup'
-import {randomUUID} from 'node:crypto'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
 import {createAPIGatewayEvent, createSubscribeBody} from '#test/helpers/event-factories'
 import {DeleteEndpointCommand, SubscribeCommand, UnsubscribeCommand} from '@aws-sdk/client-sns'
 import {createSNSMetadataResponse, createSNSSubscribeResponse} from '#test/helpers/aws-response-factories'
 import {createSNSMock, resetAllAwsMocks} from '#test/helpers/aws-sdk-mock'
+import {DEFAULT_USER_ID} from '#test/helpers/entity-fixtures'
 
-const fakeUserId = randomUUID()
+const fakeUserId = DEFAULT_USER_ID
 
 // Create SNS mock using helper - injects into vendor client factory
 const snsMock = createSNSMock()

@@ -1,13 +1,14 @@
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 import type {APIGatewayRequestAuthorizerEvent} from 'aws-lambda'
-import {randomBytes, randomUUID} from 'node:crypto'
+import {randomBytes} from 'node:crypto'
 import {UnexpectedError} from '#lib/system/errors'
 import {createMockContext} from '#util/vitest-setup'
 import {createApiGatewayAuthorizerEvent} from '#test/helpers/event-factories'
 import {createGetApiKeysResponse, createGetUsagePlansResponse, createGetUsageResponse} from '#test/helpers/aws-response-factories'
+import {DEFAULT_USER_ID} from '#test/helpers/entity-fixtures'
 import type {SessionPayload} from '#types/util'
 
-const fakeUserId = randomUUID()
+const fakeUserId = DEFAULT_USER_ID
 const fakeUsageIdentifierKey = randomBytes(48).toString('hex')
 const unauthorizedError = new Error('Unauthorized')
 

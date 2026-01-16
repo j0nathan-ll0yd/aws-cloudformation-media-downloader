@@ -49,6 +49,29 @@ main() {
   source "${PROJECT_ROOT}/.env"
   set +a
 
+  # =============================================================================
+  # Validate SOPS Secrets
+  # =============================================================================
+  echo -e "${BLUE}Validating SOPS secrets...${NC}"
+
+  SECRETS_FILE="${PROJECT_ROOT}/secrets.enc.yaml"
+
+  if [[ ! -f "${SECRETS_FILE}" ]]; then
+    echo -e "${RED}✗${NC} secrets.enc.yaml not found"
+    echo "  Encrypted secrets file is required for deployment"
+    exit 1
+  fi
+
+  # Verify file has SOPS encryption markers
+  if ! grep -q "sops:" "${SECRETS_FILE}" 2>/dev/null; then
+    echo -e "${RED}✗${NC} secrets.enc.yaml does not appear to be SOPS-encrypted"
+    echo "  File should contain 'sops:' metadata section"
+    exit 1
+  fi
+
+  echo -e "${GREEN}✓${NC} SOPS secrets file validated"
+  echo ""
+
   # Check if state file exists
   if [[ ! -f "${TERRAFORM_DIR}/terraform.tfstate" ]] && [[ ! -L "${TERRAFORM_DIR}/terraform.tfstate" ]]; then
     echo -e "${RED}ERROR: terraform.tfstate not found${NC}"
@@ -118,7 +141,7 @@ main() {
       echo "Summary: +${ADD_COUNT} to add, ~${CHANGE_COUNT} to change, -${DESTROY_COUNT} to destroy"
       echo ""
 
-      if [[ "$1" == "--force" ]]; then
+      if [[ "${1:-}" == "--force" ]]; then
         echo -e "${YELLOW}--force flag set, proceeding with deployment...${NC}"
         exit 0
       else

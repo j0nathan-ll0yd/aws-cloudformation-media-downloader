@@ -90,7 +90,6 @@ function extractFromSQS(event: SQSEvent): string | undefined {
  */
 function extractFromAPIGateway(event: APIGatewayProxyEvent): string | undefined {
   const headers = event.headers || {}
-  // Only use custom correlation header - don't conflate with X-Ray trace ID
   return headers['X-Correlation-ID'] || headers['x-correlation-id'] || headers['X-Correlation-Id']
 }
 

@@ -10,9 +10,10 @@
  */
 
 import type {APIGatewayEvent, APIGatewayProxyResult} from 'aws-lambda'
+import {addAnnotation, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
 import type {ApiHandlerParams} from '#types/lambda'
 import {buildValidatedResponse} from '#lib/lambda/responses'
-import {withPowertools} from '#lib/lambda/middleware/powertools'
+import {metrics, MetricUnit, withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapApiHandler} from '#lib/lambda/middleware/api'
 import {logInfo} from '#lib/system/logging'
 
@@ -21,8 +22,18 @@ import {logInfo} from '#lib/system/logging'
  * @notExported
  */
 export const handler = withPowertools(wrapApiHandler(async ({event, context}: ApiHandlerParams<APIGatewayEvent>): Promise<APIGatewayProxyResult> => {
+  // Track device event received
+  metrics.addMetric('DeviceEventReceived', MetricUnit.Count, 1)
+
+  const span = startSpan('device-event-log')
   const deviceId = event.headers['x-device-uuid']
+  if (deviceId) {
+    addAnnotation(span, 'deviceId', deviceId)
+  }
+
   const message = event.body
   logInfo('Event received', {deviceId, message})
+  endSpan(span)
+
   return buildValidatedResponse(context, 204)
 }))

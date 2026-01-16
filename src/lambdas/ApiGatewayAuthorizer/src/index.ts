@@ -11,10 +11,11 @@
 import type {APIGatewayRequestAuthorizerEvent, CustomAuthorizerResult} from 'aws-lambda'
 import {getApiKeys, getUsage, getUsagePlans} from '#lib/vendor/AWS/ApiGateway'
 import type {ApiKey, UsagePlan} from '#lib/vendor/AWS/ApiGateway'
+import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
 import {validateSessionToken} from '#lib/domain/auth/sessionService'
 import {getOptionalEnv, getRequiredEnv} from '#lib/system/env'
 import {providerFailureErrorMessage, UnexpectedError} from '#lib/system/errors'
-import {withPowertools} from '#lib/lambda/middleware/powertools'
+import {metrics, MetricUnit, withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapAuthorizer} from '#lib/lambda/middleware/legacy'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 
@@ -168,9 +169,18 @@ function isRemoteTestRequest(event: APIGatewayRequestAuthorizerEvent): boolean {
  * @notExported
  */
 export const handler = withPowertools(wrapAuthorizer(async ({event}) => {
+  // Track authorization attempt
+  metrics.addMetric('AuthorizationAttempt', MetricUnit.Count, 1)
+
+  const span = startSpan('authorize-request')
+  addAnnotation(span, 'path', event.path)
+
   const queryStringParameters = event.queryStringParameters
   if (!queryStringParameters || !('ApiKey' in queryStringParameters)) {
     logInfo('No API key found')
+    metrics.addMetric('AuthorizationDenied', MetricUnit.Count, 1)
+    addMetadata(span, 'reason', 'no_api_key')
+    endSpan(span)
     throw new Error('Unauthorized')
   }
   const apiKeyValue = queryStringParameters.ApiKey
@@ -178,16 +188,26 @@ export const handler = withPowertools(wrapAuthorizer(async ({event}) => {
   const matchedApiKey = apiKeys.filter((item) => item.value === apiKeyValue)
   if (matchedApiKey.length == 0) {
     logInfo('API key is invalid')
+    metrics.addMetric('AuthorizationDenied', MetricUnit.Count, 1)
+    addMetadata(span, 'reason', 'invalid_api_key')
+    endSpan(span)
     throw new Error('Unauthorized')
   }
   const apiKey = matchedApiKey[0]
   if (apiKey.enabled === false) {
     logInfo('API key is disabled')
+    metrics.addMetric('AuthorizationDenied', MetricUnit.Count, 1)
+    addMetadata(span, 'reason', 'api_key_disabled')
+    endSpan(span)
     throw new Error('Unauthorized')
   }
 
   if (isRemoteTestRequest(event)) {
     const fakeUserId = '123e4567-e89b-12d3-a456-426614174000'
+    metrics.addMetric('AuthorizationSuccess', MetricUnit.Count, 1)
+    addAnnotation(span, 'principalId', fakeUserId)
+    addMetadata(span, 'testRequest', true)
+    endSpan(span)
     return generateAllow(fakeUserId, event.methodArn, apiKeyValue)
   }
 
@@ -211,6 +231,9 @@ export const handler = withPowertools(wrapAuthorizer(async ({event}) => {
       } else {
         // Return 401 to trigger re-login flow in iOS app
         logInfo('Session token invalid or expired')
+        metrics.addMetric('AuthorizationDenied', MetricUnit.Count, 1)
+        addMetadata(span, 'reason', 'session_invalid')
+        endSpan(span)
         throw new Error('Unauthorized')
       }
     }
@@ -219,8 +242,18 @@ export const handler = withPowertools(wrapAuthorizer(async ({event}) => {
     if (!multiAuthenticationPaths.includes(pathPart)) {
       // Return 401 to trigger login flow in iOS app
       logInfo('Authorization header missing')
+      metrics.addMetric('AuthorizationDenied', MetricUnit.Count, 1)
+      addMetadata(span, 'reason', 'auth_header_missing')
+      endSpan(span)
       throw new Error('Unauthorized')
     }
   }
+
+  // Track successful authorization
+  metrics.addMetric('AuthorizationSuccess', MetricUnit.Count, 1)
+  addAnnotation(span, 'principalId', principalId)
+  addMetadata(span, 'success', true)
+  endSpan(span)
+
   return generateAllow(principalId, event.methodArn, apiKeyValue)
 }))

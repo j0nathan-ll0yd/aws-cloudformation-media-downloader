@@ -446,8 +446,9 @@ export async function downloadVideoToS3(uri: string, bucket: string, key: string
 
         // Track which format succeeded
         usedFormat = formatSelector
-        metrics.addDimension('FormatSelector', formatSelector === FORMAT_SELECTORS[0] ? 'primary' : 'fallback')
-        metrics.addMetric('YouTubeFormatSuccess', MetricUnit.Count, 1)
+        const successMetric = metrics.singleMetric()
+        successMetric.addDimension('FormatSelector', formatSelector === FORMAT_SELECTORS[0] ? 'primary' : 'fallback')
+        successMetric.addMetric('YouTubeFormatSuccess', MetricUnit.Count, 1)
 
         break // Success, exit the loop
       } catch (error) {
@@ -455,8 +456,9 @@ export async function downloadVideoToS3(uri: string, bucket: string, key: string
         const errorMessage = downloadError.message
 
         // Track format failure
-        metrics.addDimension('FormatSelector', formatSelector === FORMAT_SELECTORS[0] ? 'primary' : 'fallback')
-        metrics.addMetric('YouTubeFormatFailure', MetricUnit.Count, 1)
+        const failureMetric = metrics.singleMetric()
+        failureMetric.addDimension('FormatSelector', formatSelector === FORMAT_SELECTORS[0] ? 'primary' : 'fallback')
+        failureMetric.addMetric('YouTubeFormatFailure', MetricUnit.Count, 1)
 
         // If it's a SABR error or 403 on download, try next format
         if (isSabrError(errorMessage) || (errorMessage.includes('403') && !isCookieExpirationError(errorMessage))) {

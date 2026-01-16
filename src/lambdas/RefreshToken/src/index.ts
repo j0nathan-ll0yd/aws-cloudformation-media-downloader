@@ -9,6 +9,7 @@
  */
 
 import type {APIGatewayProxyEvent, APIGatewayProxyResult} from 'aws-lambda'
+import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
 import type {ApiHandlerParams} from '#types/lambda'
 import {userLoginResponseSchema} from '#types/api-schema'
 import {buildValidatedResponse} from '#lib/lambda/responses'
@@ -31,30 +32,39 @@ import {extractBearerToken} from '#lib/lambda/auth-helpers'
 export const handler = withPowertools(wrapApiHandler(async ({event, context}: ApiHandlerParams<APIGatewayProxyEvent>): Promise<APIGatewayProxyResult> => {
   // Track refresh attempt
   metrics.addMetric('TokenRefreshAttempt', MetricUnit.Count, 1)
+  const span = startSpan('refresh-token-session')
+  try {
+    // Extract Bearer token from Authorization header
+    const token = extractBearerToken(event.headers || {})
 
-  // Extract Bearer token from Authorization header
-  const token = extractBearerToken(event.headers || {})
+    // Validate the session token
+    logDebug('RefreshToken: validating session token')
+    const sessionPayload = await validateSessionToken(token)
+    addAnnotation(span, 'userId', sessionPayload.userId)
+    addAnnotation(span, 'sessionId', sessionPayload.sessionId)
 
-  // Validate the session token
-  logDebug('RefreshToken: validating session token')
-  const sessionPayload = await validateSessionToken(token)
+    // Refresh the session (extend expiration)
+    logDebug('RefreshToken: refreshing session', {sessionId: sessionPayload.sessionId})
+    const {expiresAt} = await refreshSession(sessionPayload.sessionId)
 
-  // Refresh the session (extend expiration)
-  logDebug('RefreshToken: refreshing session', {sessionId: sessionPayload.sessionId})
-  const {expiresAt} = await refreshSession(sessionPayload.sessionId)
+    // Track successful refresh
+    metrics.addMetric('TokenRefreshSuccess', MetricUnit.Count, 1)
+    addMetadata(span, 'success', true)
+    endSpan(span)
 
-  // Track successful refresh
-  metrics.addMetric('TokenRefreshSuccess', MetricUnit.Count, 1)
+    // Return success with updated session info
+    const responseData = {
+      token, // Same token, just extended expiration
+      expiresAt: new Date(expiresAt).toISOString(),
+      sessionId: sessionPayload.sessionId,
+      userId: sessionPayload.userId
+    }
 
-  // Return success with updated session info
-  const responseData = {
-    token, // Same token, just extended expiration
-    expiresAt: new Date(expiresAt).toISOString(),
-    sessionId: sessionPayload.sessionId,
-    userId: sessionPayload.userId
+    logInfo('RefreshToken: session refreshed successfully', {sessionId: sessionPayload.sessionId, expiresAt})
+
+    return buildValidatedResponse(context, 200, responseData, userLoginResponseSchema)
+  } catch (error) {
+    endSpan(span, error as Error)
+    throw error
   }
-
-  logInfo('RefreshToken: session refreshed successfully', {sessionId: sessionPayload.sessionId, expiresAt})
-
-  return buildValidatedResponse(context, 200, responseData, userLoginResponseSchema)
 }))

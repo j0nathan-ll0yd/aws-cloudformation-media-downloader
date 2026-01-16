@@ -12,9 +12,10 @@
 import {and, eq, lt, or} from '#lib/vendor/Drizzle/types'
 import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
 import {fileDownloads, sessions, verification} from '#lib/vendor/Drizzle/schema'
+import {addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
 import type {CleanupResult} from '#types/lambda'
 import {DownloadStatus} from '#types/enums'
-import {withPowertools} from '#lib/lambda/middleware/powertools'
+import {metrics, MetricUnit, withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapScheduledHandler} from '#lib/lambda/middleware/internal'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 import {secondsAgo, TIME} from '#lib/system/time'
@@ -75,6 +76,11 @@ async function cleanupVerificationTokens(): Promise<number> {
  * @returns CleanupResult with counts of deleted records
  */
 export const handler = withPowertools(wrapScheduledHandler(async (): Promise<CleanupResult> => {
+  // Track cleanup run
+  metrics.addMetric('CleanupRun', MetricUnit.Count, 1)
+
+  const span = startSpan('cleanup-records')
+
   const result: CleanupResult = {fileDownloadsDeleted: 0, sessionsDeleted: 0, verificationTokensDeleted: 0, errors: []}
 
   logInfo('CleanupExpiredRecords starting')
@@ -105,6 +111,16 @@ export const handler = withPowertools(wrapScheduledHandler(async (): Promise<Cle
     logError('Failed to cleanup verification tokens', {error: message})
     result.errors.push(`Verification cleanup failed: ${message}`)
   }
+
+  // Track total records cleaned up
+  const totalDeleted = result.fileDownloadsDeleted + result.sessionsDeleted + result.verificationTokensDeleted
+  metrics.addMetric('RecordsCleanedUp', MetricUnit.Count, totalDeleted)
+  addMetadata(span, 'fileDownloadsDeleted', result.fileDownloadsDeleted)
+  addMetadata(span, 'sessionsDeleted', result.sessionsDeleted)
+  addMetadata(span, 'verificationTokensDeleted', result.verificationTokensDeleted)
+  addMetadata(span, 'totalDeleted', totalDeleted)
+  addMetadata(span, 'errors', result.errors.length)
+  endSpan(span)
 
   logInfo('CleanupExpiredRecords completed', result)
   return result
