@@ -13,6 +13,7 @@ overrides:
   diff@<8.0.3: '>=8.0.3'
   undici@<6.23.0: '>=6.23.0'
   undici@>=7.0.0 <7.18.2: '>=7.18.2'
+  tar@<=7.5.2: '>=7.5.3'
 
 importers:
 
@@ -125,20 +126,20 @@ importers:
         specifier: ^8.51.0
         version: 8.51.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3)
       '@typespec/compiler':
-        specifier: ^1.7.1
-        version: 1.7.1(@types/node@25.0.3)
+        specifier: ^1.8.0
+        version: 1.8.0(@types/node@25.0.3)
       '@typespec/http':
-        specifier: ^1.7.0
-        version: 1.7.0(@typespec/compiler@1.7.1(@types/node@25.0.3))
+        specifier: ^1.8.0
+        version: 1.8.0(@typespec/compiler@1.8.0(@types/node@25.0.3))
       '@typespec/json-schema':
-        specifier: ^1.7.0
-        version: 1.7.0(@typespec/compiler@1.7.1(@types/node@25.0.3))
+        specifier: ^1.8.0
+        version: 1.8.0(@typespec/compiler@1.8.0(@types/node@25.0.3))
       '@typespec/openapi':
-        specifier: ^1.7.0
-        version: 1.7.0(@typespec/compiler@1.7.1(@types/node@25.0.3))(@typespec/http@1.7.0(@typespec/compiler@1.7.1(@types/node@25.0.3)))
+        specifier: ^1.8.0
+        version: 1.8.0(@typespec/compiler@1.8.0(@types/node@25.0.3))(@typespec/http@1.8.0(@typespec/compiler@1.8.0(@types/node@25.0.3)))
       '@typespec/openapi3':
-        specifier: ^1.7.0
-        version: 1.7.0(@typespec/compiler@1.7.1(@types/node@25.0.3))(@typespec/http@1.7.0(@typespec/compiler@1.7.1(@types/node@25.0.3)))(@typespec/json-schema@1.7.0(@typespec/compiler@1.7.1(@types/node@25.0.3)))(@typespec/openapi@1.7.0(@typespec/compiler@1.7.1(@types/node@25.0.3))(@typespec/http@1.7.0(@typespec/compiler@1.7.1(@types/node@25.0.3))))
+        specifier: ^1.8.0
+        version: 1.8.0(@typespec/compiler@1.8.0(@types/node@25.0.3))(@typespec/http@1.8.0(@typespec/compiler@1.8.0(@types/node@25.0.3)))(@typespec/json-schema@1.8.0(@typespec/compiler@1.8.0(@types/node@25.0.3)))(@typespec/openapi@1.8.0(@typespec/compiler@1.8.0(@types/node@25.0.3))(@typespec/http@1.8.0(@typespec/compiler@1.8.0(@types/node@25.0.3))))
       aws-sdk-client-mock:
         specifier: ^4.1.0
         version: 4.1.0
@@ -2516,8 +2517,8 @@ packages:
   '@types/node@16.18.126':
     resolution: {integrity: sha512-OTcgaiwfGFBKacvfwuHzzn1KLxH/er8mluiy8/uM3sGXHaRe73RrSIj01jow9t4kJEW633Ov+cOexXeiApTyAw==}
 
-  '@types/node@20.19.27':
-    resolution: {integrity: sha512-N2clP5pJhB2YnZJ3PIHFk5RkygRX5WO/5f0WC08tp0wd+sv0rsJk3MqWn3CbNmT2J505a5336jaQj4ph1AdMug==}
+  '@types/node@20.19.30':
+    resolution: {integrity: sha512-WJtwWJu7UdlvzEAUm484QNg5eAoq5QR08KDNx7g45Usrs2NtOPiX8ugDqmKdXkyL03rBqU5dYNYVQetEpBHq2g==}
 
   '@types/node@25.0.3':
     resolution: {integrity: sha512-W609buLVRVmeW693xKfzHeIV6nJGGz98uCPfeXI1ELMLXVeKYZ9m15fAMSaUPBHYLGFsVRcMmSCksQOrZV9BYA==}
@@ -2643,46 +2644,46 @@ packages:
     resolution: {integrity: sha512-mM/JRQOzhVN1ykejrvwnBRV3+7yTKK8tVANVN3o1O0t0v7o+jqdVu9crPy5Y9dov15TJk/FTIgoUGHrTOVL3Zg==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
-  '@typespec/asset-emitter@0.77.0':
-    resolution: {integrity: sha512-OoeYP3UZ/taf46U6sEcb11VYmBlgpCn02mdHTIAM+suCjBZPBYV02pkeEvKyms4MtHMsg/GdEh7Tpl6cTwwsNg==}
+  '@typespec/asset-emitter@0.78.0':
+    resolution: {integrity: sha512-TA9MzNI+SJEYKNWdbSsWXhjnVOL+2VvsBqzExXKQmoN6zxu3dAImqrMG/oTA6FS4pbCU4vmWgLUiOmikvjm22Q==}
     engines: {node: '>=20.0.0'}
     peerDependencies:
-      '@typespec/compiler': ^1.7.0
+      '@typespec/compiler': ^1.8.0
 
-  '@typespec/compiler@1.7.1':
-    resolution: {integrity: sha512-sb3MEsKjFlAx8ZG484exs5Ec+JwmYf2anJqLjMusrV3rRMUhv3fbEulk9MD+l4eOkBS46VMNGqRu0wTn8suVVA==}
+  '@typespec/compiler@1.8.0':
+    resolution: {integrity: sha512-FeLb7Q0z6Bh5dDpqtnU2RlWiIWWWF7rujx2xGMta5dcTuIOZ4jbdyz1hVdxk4iM4qadvaSV4ey/qrSuffNoh3w==}
     engines: {node: '>=20.0.0'}
     hasBin: true
 
-  '@typespec/http@1.7.0':
-    resolution: {integrity: sha512-4cGkcMiob3bedWbFkRcq614TDH7WPEI3YMgrg44mBarj903arpEniAESIhNUbLQzQFFc5rOJagexQDl4agVDyA==}
+  '@typespec/http@1.8.0':
+    resolution: {integrity: sha512-ZKa4RISabwL8cUAmE3BkoNmtCYRjerO0+1Ba6XdDJKG+vJC5EGM2hkDf+ZmYsYZgrX0cvbhPXUKKh28zBV60hw==}
     engines: {node: '>=20.0.0'}
     peerDependencies:
-      '@typespec/compiler': ^1.7.0
-      '@typespec/streams': ^0.77.0
+      '@typespec/compiler': ^1.8.0
+      '@typespec/streams': ^0.78.0
     peerDependenciesMeta:
       '@typespec/streams':
         optional: true
 
-  '@typespec/json-schema@1.7.0':
-    resolution: {integrity: sha512-patXNO5r8ly56LpR/IZtMvEa5w1l7RIOEagWRsmfCd5LxiwTAucEQNZr8tnUBXHAIaQ4MM//8gTrRJ5/HPql1A==}
+  '@typespec/json-schema@1.8.0':
+    resolution: {integrity: sha512-FEcU2A/POu+cMuJE0mZrzGL/6ONUlbuOWbZZK2NSUfcMCpN0kHtKwEwui3fw3KaSIUqOaAJX9vE8vE47CT3bAA==}
     engines: {node: '>=20.0.0'}
     peerDependencies:
-      '@typespec/compiler': ^1.7.0
+      '@typespec/compiler': ^1.8.0
 
-  '@typespec/openapi3@1.7.0':
-    resolution: {integrity: sha512-HjKM+4FfimQjscnfO7Y1iMGaRO0nlxTfou5+aA82DNuDl+oCsfjtddHAP/CSCVhRdqzkD2HyHdm2SwYPJL/fpw==}
+  '@typespec/openapi3@1.8.0':
+    resolution: {integrity: sha512-lmFJZEHjx20iTZqGaVJytlNjpPsPpXZGRs/ur8X0nx1vRcXtfM9IemZ0Chi6hWgo+AFq91lex9nocJEUn+uMMw==}
     engines: {node: '>=20.0.0'}
     hasBin: true
     peerDependencies:
-      '@typespec/compiler': ^1.7.0
-      '@typespec/events': ^0.77.0
-      '@typespec/http': ^1.7.0
-      '@typespec/json-schema': ^1.7.0
-      '@typespec/openapi': ^1.7.0
-      '@typespec/sse': ^0.77.0
-      '@typespec/streams': ^0.77.0
-      '@typespec/versioning': ^0.77.0
+      '@typespec/compiler': ^1.8.0
+      '@typespec/events': ^0.78.0
+      '@typespec/http': ^1.8.0
+      '@typespec/json-schema': ^1.8.0
+      '@typespec/openapi': ^1.8.0
+      '@typespec/sse': ^0.78.0
+      '@typespec/streams': ^0.78.0
+      '@typespec/versioning': ^0.78.0
       '@typespec/xml': '*'
     peerDependenciesMeta:
       '@typespec/events':
@@ -2698,12 +2699,12 @@ packages:
       '@typespec/xml':
         optional: true
 
-  '@typespec/openapi@1.7.0':
-    resolution: {integrity: sha512-tEAIgGnjLvOjbGAoCfkBudvpe/tXaOXkzy5nVFXs4921/jAaMTwzcJIt0bTXZpp5cExdlL7w9ZrnehARHiposQ==}
+  '@typespec/openapi@1.8.0':
+    resolution: {integrity: sha512-v+RIJpx7vALBSGQmnUWemvXjnrk50HAVqJeg0RbaF3VUnh66Z4itsoNJJmIIc+HmBJng8Ie0V7xv3l02ek6HWA==}
     engines: {node: '>=20.0.0'}
     peerDependencies:
-      '@typespec/compiler': ^1.7.0
-      '@typespec/http': ^1.7.0
+      '@typespec/compiler': ^1.8.0
+      '@typespec/http': ^1.8.0
 
   '@vitest/coverage-istanbul@4.0.16':
     resolution: {integrity: sha512-CLyueXIHewDzmov97rGW/RNtg++UBwdtY/F9PZbEDvHlX16JWVyolg7OeGXZS3xkuuoaZMheef7luDFCoC6vsQ==}
@@ -3151,10 +3152,6 @@ packages:
   chokidar@3.6.0:
     resolution: {integrity: sha512-7VT13fmjotKpGipCW9JEQAusEPE+Ei8nl6/g4FBAmIm0GOOLMua9NDDo/DWp0ZAxCr3cPq5ZpBqmPAQgDda2Pw==}
     engines: {node: '>= 8.10.0'}
-
-  chownr@2.0.0:
-    resolution: {integrity: sha512-bIomtDF5KGpdogkLd9VspvFzk9KfpyyGlS8YFVZl7TGPBHL5snIOnxeshwVgPteQ9b4Eydl+pVbIyE1DcvCWgQ==}
-    engines: {node: '>=10'}
 
   chownr@3.0.0:
     resolution: {integrity: sha512-+IxzY9BZOQd/XuYPRmrvEVjF/nqj5kgT4kEq7VofrDoM1MxoRjEWkrCC3EtLi59TVawxTAn+orJwFQcrqEN1+g==}
@@ -3849,10 +3846,6 @@ packages:
     resolution: {integrity: sha512-Rx/WycZ60HOaqLKAi6cHRKKI7zxWbJ31MhntmtwMoaTeF7XFH9hhBp8vITaMidfljRQ6eYWCKkaTK+ykVJHP2A==}
     engines: {node: '>= 0.8'}
 
-  fs-minipass@2.1.0:
-    resolution: {integrity: sha512-V/JgOLFCS+R6Vcq0slCuaeWEdNC3ouDlJMNIsacH2VtALiu9mV4LPrHc5cDl8k5aw6J8jwgWWpiTo5RYhmIzvg==}
-    engines: {node: '>= 8'}
-
   fs.realpath@1.0.0:
     resolution: {integrity: sha512-OO0pH2lK6a0hZnAdau5ItzHPI6pUlvI7jMVnxUQRtw4owF2wk8lOSabtGDCTP4Ggrg2MbGnWO9X8K1t4+fGMDw==}
 
@@ -4508,21 +4501,9 @@ packages:
   minimist@1.2.8:
     resolution: {integrity: sha512-2yyAR8qBkN3YuheJanUpWC5U3bb5osDywNB8RzDVlDwDHbocAJveqqj1u8+SVD7jkWT4yvsHCpWqqWqAxb0zCA==}
 
-  minipass@3.3.6:
-    resolution: {integrity: sha512-DxiNidxSEK+tHG6zOIklvNOwm3hvCrbUrdtzY74U6HKTJxvIDfOUL5W5P2Ghd3DTkhhKPYGqeNUIh5qcM4YBfw==}
-    engines: {node: '>=8'}
-
-  minipass@5.0.0:
-    resolution: {integrity: sha512-3FnjYuehv9k6ovOEbyOswadCDPX1piCfhV8ncmYtHOjuPwylVWsghTLo7rabjC3Rx5xD4HDx8Wm1xnMF7S5qFQ==}
-    engines: {node: '>=8'}
-
   minipass@7.1.2:
     resolution: {integrity: sha512-qOOzS1cBTWYF4BH8fVePDBOO9iptMnGUEZwNc/cMWnTV2nVLZ7VoNWEPHkYczZA0pdoA7dl6e7FL659nX9S2aw==}
     engines: {node: '>=16 || 14 >=14.17'}
-
-  minizlib@2.1.2:
-    resolution: {integrity: sha512-bAxsR8BVfj60DWXHE3u30oHzfl4G7khkSuPW+qvpd7jFRHm7dLxOjUk1EHACJ/hxLY8phGJ0YhYHZo7jil7Qdg==}
-    engines: {node: '>= 8'}
 
   minizlib@3.1.0:
     resolution: {integrity: sha512-KZxYo1BUkWD2TVFLr0MQoM8vUUigWD3LlD83a/75BqC+4qE0Hb1Vo5v1FgcfaNXvfXzr+5EhQ6ing/CaBijTlw==}
@@ -4530,11 +4511,6 @@ packages:
 
   mitt@3.0.1:
     resolution: {integrity: sha512-vKivATfr97l2/QBCYAkXYDbrIWPM2IIKEl7YPhjCvKlG3kE2gm+uBo6nEXK3M5/Ffh/FLpKExzOQ3JJoJGFKBw==}
-
-  mkdirp@1.0.4:
-    resolution: {integrity: sha512-vVqVZQyf3WLx2Shd0qJ9xuvqgAyKPLAiqITEtqW0oIUjzo3PePDd6fW9iFz30ef7Ysp/oiWqbhszeGWW2T6Gzw==}
-    engines: {node: '>=10'}
-    hasBin: true
 
   mnemonist@0.38.3:
     resolution: {integrity: sha512-2K9QYubXx/NAjv4VLq1d1Ly8pWNC5L3BrixtdkyTegXWJIqY+zLNDhhX/A+ZwWt70tB1S8H4BE8FLYEFyNoOBw==}
@@ -4917,8 +4893,8 @@ packages:
     resolution: {integrity: sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g==}
     engines: {node: '>= 0.8.0'}
 
-  prettier@3.6.2:
-    resolution: {integrity: sha512-I7AIg5boAr5R0FFtJ6rCfD+LFsWHp81dolrFD8S79U9tb8Az2nGrJncnMSnys+bpQJfRUzqs9hnA81OAA3hCuQ==}
+  prettier@3.7.4:
+    resolution: {integrity: sha512-v6UNi1+3hSlVvv8fSaoUbggEM5VErKmmpGA7Pl3HF8V6uKY7rvClBOJlH6yNwQtfTueNkGVpOv/mtWL9L4bgRA==}
     engines: {node: '>=14'}
     hasBin: true
 
@@ -5479,12 +5455,8 @@ packages:
   tar-stream@3.1.7:
     resolution: {integrity: sha512-qJj60CXt7IU1Ffyc3NJMjh6EkuCFej46zUqJ4J7pqYlThyd9bO0XBTmcOIhSzZJVWfsLks0+nle/j538YAW9RQ==}
 
-  tar@6.2.1:
-    resolution: {integrity: sha512-DZ4yORTwrbTj/7MZYq2w+/ZFdI6OZ/f9SFHR+71gIVUZhOQPHzVCLpvRnPgyaMpfWxxk/4ONva3GQSyNIKRv6A==}
-    engines: {node: '>=10'}
-
-  tar@7.5.2:
-    resolution: {integrity: sha512-7NyxrTE4Anh8km8iEy7o0QYPs+0JKBTj5ZaqHg6B39erLg0qYXN3BijtShwbsNSvQ+LN75+KV+C4QR/f6Gwnpg==}
+  tar@7.5.3:
+    resolution: {integrity: sha512-ENg5JUHUm2rDD7IvKNFGzyElLXNjachNLp6RaGf4+JOgxXHkqA+gq81ZAMCUmtMtqBsoU62lcp6S27g1LCYGGQ==}
     engines: {node: '>=18'}
 
   temporal-polyfill@0.3.0:
@@ -5971,9 +5943,6 @@ packages:
 
   yallist@3.1.1:
     resolution: {integrity: sha512-a4UGQaWPH59mOXUYnAG2ewncQS4i4F43Tv3JoAM+s2VDAmS9NsK8GpDMLrCHPksFT7h3K6TOoUNn2pb7RoXx4g==}
-
-  yallist@4.0.0:
-    resolution: {integrity: sha512-3wdGidZyq5PB084XLES5TpOSRA3wjXAlIWMhum2kRcv/41Sn2emQ0dycQW4uZXLejwKvg6EsvbdlVL+FYEct7A==}
 
   yallist@5.0.0:
     resolution: {integrity: sha512-YgvUTfwqyc7UXVMrB+SImsVYSmTS8X/tSrtdNZMImM+n7+QTriRXyXim0mBrTXNeqzVF0KWGgHPeiyViFFrNDw==}
@@ -9152,7 +9121,7 @@ snapshots:
 
   '@types/node@16.18.126': {}
 
-  '@types/node@20.19.27':
+  '@types/node@20.19.30':
     dependencies:
       undici-types: 7.16.0
 
@@ -9327,11 +9296,11 @@ snapshots:
       '@typescript-eslint/types': 8.51.0
       eslint-visitor-keys: 4.2.1
 
-  '@typespec/asset-emitter@0.77.0(@typespec/compiler@1.7.1(@types/node@25.0.3))':
+  '@typespec/asset-emitter@0.78.0(@typespec/compiler@1.8.0(@types/node@25.0.3))':
     dependencies:
-      '@typespec/compiler': 1.7.1(@types/node@25.0.3)
+      '@typespec/compiler': 1.8.0(@types/node@25.0.3)
 
-  '@typespec/compiler@1.7.1(@types/node@25.0.3)':
+  '@typespec/compiler@1.8.0(@types/node@25.0.3)':
     dependencies:
       '@babel/code-frame': 7.27.1
       '@inquirer/prompts': 8.1.0(@types/node@25.0.3)
@@ -9342,9 +9311,9 @@ snapshots:
       is-unicode-supported: 2.1.0
       mustache: 4.2.0
       picocolors: 1.1.1
-      prettier: 3.6.2
+      prettier: 3.7.4
       semver: 7.7.3
-      tar: 7.5.2
+      tar: 7.5.3
       temporal-polyfill: 0.3.0
       vscode-languageserver: 9.0.1
       vscode-languageserver-textdocument: 1.0.12
@@ -9353,33 +9322,33 @@ snapshots:
     transitivePeerDependencies:
       - '@types/node'
 
-  '@typespec/http@1.7.0(@typespec/compiler@1.7.1(@types/node@25.0.3))':
+  '@typespec/http@1.8.0(@typespec/compiler@1.8.0(@types/node@25.0.3))':
     dependencies:
-      '@typespec/compiler': 1.7.1(@types/node@25.0.3)
+      '@typespec/compiler': 1.8.0(@types/node@25.0.3)
 
-  '@typespec/json-schema@1.7.0(@typespec/compiler@1.7.1(@types/node@25.0.3))':
+  '@typespec/json-schema@1.8.0(@typespec/compiler@1.8.0(@types/node@25.0.3))':
     dependencies:
-      '@typespec/asset-emitter': 0.77.0(@typespec/compiler@1.7.1(@types/node@25.0.3))
-      '@typespec/compiler': 1.7.1(@types/node@25.0.3)
+      '@typespec/asset-emitter': 0.78.0(@typespec/compiler@1.8.0(@types/node@25.0.3))
+      '@typespec/compiler': 1.8.0(@types/node@25.0.3)
       yaml: 2.8.2
 
-  '@typespec/openapi3@1.7.0(@typespec/compiler@1.7.1(@types/node@25.0.3))(@typespec/http@1.7.0(@typespec/compiler@1.7.1(@types/node@25.0.3)))(@typespec/json-schema@1.7.0(@typespec/compiler@1.7.1(@types/node@25.0.3)))(@typespec/openapi@1.7.0(@typespec/compiler@1.7.1(@types/node@25.0.3))(@typespec/http@1.7.0(@typespec/compiler@1.7.1(@types/node@25.0.3))))':
+  '@typespec/openapi3@1.8.0(@typespec/compiler@1.8.0(@types/node@25.0.3))(@typespec/http@1.8.0(@typespec/compiler@1.8.0(@types/node@25.0.3)))(@typespec/json-schema@1.8.0(@typespec/compiler@1.8.0(@types/node@25.0.3)))(@typespec/openapi@1.8.0(@typespec/compiler@1.8.0(@types/node@25.0.3))(@typespec/http@1.8.0(@typespec/compiler@1.8.0(@types/node@25.0.3))))':
     dependencies:
       '@scalar/json-magic': 0.8.8
       '@scalar/openapi-parser': 0.23.9
       '@scalar/openapi-types': 0.5.3
-      '@typespec/asset-emitter': 0.77.0(@typespec/compiler@1.7.1(@types/node@25.0.3))
-      '@typespec/compiler': 1.7.1(@types/node@25.0.3)
-      '@typespec/http': 1.7.0(@typespec/compiler@1.7.1(@types/node@25.0.3))
-      '@typespec/openapi': 1.7.0(@typespec/compiler@1.7.1(@types/node@25.0.3))(@typespec/http@1.7.0(@typespec/compiler@1.7.1(@types/node@25.0.3)))
+      '@typespec/asset-emitter': 0.78.0(@typespec/compiler@1.8.0(@types/node@25.0.3))
+      '@typespec/compiler': 1.8.0(@types/node@25.0.3)
+      '@typespec/http': 1.8.0(@typespec/compiler@1.8.0(@types/node@25.0.3))
+      '@typespec/openapi': 1.8.0(@typespec/compiler@1.8.0(@types/node@25.0.3))(@typespec/http@1.8.0(@typespec/compiler@1.8.0(@types/node@25.0.3)))
       yaml: 2.8.2
     optionalDependencies:
-      '@typespec/json-schema': 1.7.0(@typespec/compiler@1.7.1(@types/node@25.0.3))
+      '@typespec/json-schema': 1.8.0(@typespec/compiler@1.8.0(@types/node@25.0.3))
 
-  '@typespec/openapi@1.7.0(@typespec/compiler@1.7.1(@types/node@25.0.3))(@typespec/http@1.7.0(@typespec/compiler@1.7.1(@types/node@25.0.3)))':
+  '@typespec/openapi@1.8.0(@typespec/compiler@1.8.0(@types/node@25.0.3))(@typespec/http@1.8.0(@typespec/compiler@1.8.0(@types/node@25.0.3)))':
     dependencies:
-      '@typespec/compiler': 1.7.1(@types/node@25.0.3)
-      '@typespec/http': 1.7.0(@typespec/compiler@1.7.1(@types/node@25.0.3))
+      '@typespec/compiler': 1.8.0(@types/node@25.0.3)
+      '@typespec/http': 1.8.0(@typespec/compiler@1.8.0(@types/node@25.0.3))
 
   '@vitest/coverage-istanbul@4.0.16(vitest@4.0.16(@opentelemetry/api@1.9.0)(@types/node@25.0.3)(jiti@2.6.1)(msw@2.12.7(@types/node@25.0.3)(typescript@5.9.3))(tsx@4.21.0)(yaml@2.8.2))':
     dependencies:
@@ -9537,7 +9506,7 @@ snapshots:
       '@swc/helpers': 0.5.18
       '@types/command-line-args': 5.2.3
       '@types/command-line-usage': 5.0.4
-      '@types/node': 20.19.27
+      '@types/node': 20.19.30
       command-line-args: 5.2.1
       command-line-usage: 7.0.3
       flatbuffers: 24.12.23
@@ -9810,8 +9779,6 @@ snapshots:
       readdirp: 3.6.0
     optionalDependencies:
       fsevents: 2.3.3
-
-  chownr@2.0.0: {}
 
   chownr@3.0.0: {}
 
@@ -10446,7 +10413,7 @@ snapshots:
       '@huggingface/hub': 2.7.1
       onnxruntime-node: 1.21.0
       progress: 2.0.3
-      tar: 6.2.1
+      tar: 7.5.3
 
   fastq@1.20.1:
     dependencies:
@@ -10530,10 +10497,6 @@ snapshots:
   forwarded@0.2.0: {}
 
   fresh@2.0.0: {}
-
-  fs-minipass@2.1.0:
-    dependencies:
-      minipass: 3.3.6
 
   fs.realpath@1.0.0: {}
 
@@ -11147,26 +11110,13 @@ snapshots:
 
   minimist@1.2.8: {}
 
-  minipass@3.3.6:
-    dependencies:
-      yallist: 4.0.0
-
-  minipass@5.0.0: {}
-
   minipass@7.1.2: {}
-
-  minizlib@2.1.2:
-    dependencies:
-      minipass: 3.3.6
-      yallist: 4.0.0
 
   minizlib@3.1.0:
     dependencies:
       minipass: 7.1.2
 
   mitt@3.0.1: {}
-
-  mkdirp@1.0.4: {}
 
   mnemonist@0.38.3:
     dependencies:
@@ -11387,7 +11337,7 @@ snapshots:
     dependencies:
       global-agent: 3.0.0
       onnxruntime-common: 1.21.0
-      tar: 7.5.2
+      tar: 7.5.3
 
   open@10.2.0:
     dependencies:
@@ -11542,7 +11492,7 @@ snapshots:
 
   prelude-ls@1.2.1: {}
 
-  prettier@3.6.2: {}
+  prettier@3.7.4: {}
 
   pretty-ms@9.3.0:
     dependencies:
@@ -12310,16 +12260,7 @@ snapshots:
       - bare-abort-controller
       - react-native-b4a
 
-  tar@6.2.1:
-    dependencies:
-      chownr: 2.0.0
-      fs-minipass: 2.1.0
-      minipass: 5.0.0
-      minizlib: 2.1.2
-      mkdirp: 1.0.4
-      yallist: 4.0.0
-
-  tar@7.5.2:
+  tar@7.5.3:
     dependencies:
       '@isaacs/fs-minipass': 4.0.1
       chownr: 3.0.0
@@ -12731,8 +12672,6 @@ snapshots:
   y18n@5.0.8: {}
 
   yallist@3.1.1: {}
-
-  yallist@4.0.0: {}
 
   yallist@5.0.0: {}
 
