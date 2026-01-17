@@ -87,12 +87,10 @@ async function sendNotificationToDevice(device: Device, messageBody: string, not
  * Uses per-device error handling to maximize successful deliveries.
  * Only fails if ALL devices fail (partial success = message processed).
  */
-@RequiresDatabase({
-  tables: [
-    {table: DatabaseTable.Devices, operations: [DatabaseOperation.Select]},
-    {table: DatabaseTable.UserDevices, operations: [DatabaseOperation.Select]}
-  ]
-})
+@RequiresDatabase([
+  {table: DatabaseTable.Devices, operations: [DatabaseOperation.Select]},
+  {table: DatabaseTable.UserDevices, operations: [DatabaseOperation.Select]}
+])
 class SendPushNotificationHandler extends SqsHandler<string> {
   readonly operationName = 'SendPushNotification'
   protected readonly batchOptions = {parseBody: false}

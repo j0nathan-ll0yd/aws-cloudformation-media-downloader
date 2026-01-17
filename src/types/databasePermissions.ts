@@ -55,25 +55,21 @@ export interface TablePermission {
 }
 
 /**
- * Full database permissions declaration for a Lambda handler.
+ * Database permissions declaration for a Lambda handler.
+ * An array of table permissions specifying required access.
  *
  * @example
  * ```typescript
- * import {DatabaseOperation, DatabaseTable, type DatabasePermissions} from '#types/databasePermissions'
+ * import {DatabaseOperation, DatabaseTable} from '#types/databasePermissions'
  *
- * @RequiresDatabase({
- *   tables: [
- *     {table: DatabaseTable.Users, operations: [DatabaseOperation.Select]},
- *     {table: DatabaseTable.Files, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}
- *   ]
- * })
+ * @RequiresDatabase([
+ *   {table: DatabaseTable.Users, operations: [DatabaseOperation.Select]},
+ *   {table: DatabaseTable.Files, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}
+ * ])
  * class MyHandler extends ApiHandler { ... }
  * ```
  */
-export interface DatabasePermissions {
-  /** Table permissions required by this handler */
-  tables: TablePermission[]
-}
+export type DatabasePermissions = TablePermission[]
 
 /**
  * Computed access level based on declared permissions.

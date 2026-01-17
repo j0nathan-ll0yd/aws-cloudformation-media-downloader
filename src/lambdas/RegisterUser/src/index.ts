@@ -31,13 +31,11 @@ import {logInfo} from '#lib/system/logging'
  * Handler for user registration via Sign in with Apple
  * Uses Better Auth to verify ID token and create/find user
  */
-@RequiresDatabase({
-  tables: [
-    {table: DatabaseTable.Users, operations: [DatabaseOperation.Update]},
-    {table: DatabaseTable.Sessions, operations: [DatabaseOperation.Insert]},
-    {table: DatabaseTable.Accounts, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}
-  ]
-})
+@RequiresDatabase([
+  {table: DatabaseTable.Users, operations: [DatabaseOperation.Update]},
+  {table: DatabaseTable.Sessions, operations: [DatabaseOperation.Insert]},
+  {table: DatabaseTable.Accounts, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}
+])
 class RegisterUserHandler extends ApiHandler<CustomAPIGatewayRequestAuthorizerEvent> {
   readonly operationName = 'RegisterUser'
 

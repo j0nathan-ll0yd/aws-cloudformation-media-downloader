@@ -195,19 +195,17 @@ async function applyMigration(migration: MigrationFile): Promise<void> {
  * Handler for database migration invocation.
  * Applies pending migrations from SQL files.
  */
-@RequiresDatabase({
-  tables: [
-    {table: DatabaseTable.Users, operations: [DatabaseOperation.All]},
-    {table: DatabaseTable.Files, operations: [DatabaseOperation.All]},
-    {table: DatabaseTable.FileDownloads, operations: [DatabaseOperation.All]},
-    {table: DatabaseTable.Devices, operations: [DatabaseOperation.All]},
-    {table: DatabaseTable.Sessions, operations: [DatabaseOperation.All]},
-    {table: DatabaseTable.Accounts, operations: [DatabaseOperation.All]},
-    {table: DatabaseTable.VerificationTokens, operations: [DatabaseOperation.All]},
-    {table: DatabaseTable.UserFiles, operations: [DatabaseOperation.All]},
-    {table: DatabaseTable.UserDevices, operations: [DatabaseOperation.All]}
-  ]
-})
+@RequiresDatabase([
+  {table: DatabaseTable.Users, operations: [DatabaseOperation.All]},
+  {table: DatabaseTable.Files, operations: [DatabaseOperation.All]},
+  {table: DatabaseTable.FileDownloads, operations: [DatabaseOperation.All]},
+  {table: DatabaseTable.Devices, operations: [DatabaseOperation.All]},
+  {table: DatabaseTable.Sessions, operations: [DatabaseOperation.All]},
+  {table: DatabaseTable.Accounts, operations: [DatabaseOperation.All]},
+  {table: DatabaseTable.VerificationTokens, operations: [DatabaseOperation.All]},
+  {table: DatabaseTable.UserFiles, operations: [DatabaseOperation.All]},
+  {table: DatabaseTable.UserDevices, operations: [DatabaseOperation.All]}
+])
 class MigrateDSQLHandler extends InvokeHandler<{source?: string}, MigrationResult> {
   readonly operationName = 'MigrateDSQL'
 

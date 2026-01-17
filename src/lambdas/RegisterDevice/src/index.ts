@@ -83,12 +83,10 @@ async function getSubscriptionArnFromEndpointAndTopic(endpointArn: string, topic
  * Handler for device registration
  * Registers devices for push notifications via AWS SNS
  */
-@RequiresDatabase({
-  tables: [
-    {table: DatabaseTable.Devices, operations: [DatabaseOperation.Insert, DatabaseOperation.Update]},
-    {table: DatabaseTable.UserDevices, operations: [DatabaseOperation.Select, DatabaseOperation.Insert, DatabaseOperation.Update]}
-  ]
-})
+@RequiresDatabase([
+  {table: DatabaseTable.Devices, operations: [DatabaseOperation.Insert, DatabaseOperation.Update]},
+  {table: DatabaseTable.UserDevices, operations: [DatabaseOperation.Select, DatabaseOperation.Insert, DatabaseOperation.Update]}
+])
 class RegisterDeviceHandler extends OptionalAuthHandler {
   readonly operationName = 'RegisterDevice'
 

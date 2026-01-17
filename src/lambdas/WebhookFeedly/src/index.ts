@@ -153,13 +153,11 @@ function getIdempotentProcessor() {
  * Handler for Feedly webhook requests.
  * Processes video download requests with idempotency protection.
  */
-@RequiresDatabase({
-  tables: [
-    {table: DatabaseTable.Files, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]},
-    {table: DatabaseTable.FileDownloads, operations: [DatabaseOperation.Insert]},
-    {table: DatabaseTable.UserFiles, operations: [DatabaseOperation.Insert]}
-  ]
-})
+@RequiresDatabase([
+  {table: DatabaseTable.Files, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]},
+  {table: DatabaseTable.FileDownloads, operations: [DatabaseOperation.Insert]},
+  {table: DatabaseTable.UserFiles, operations: [DatabaseOperation.Insert]}
+])
 class WebhookFeedlyHandler extends AuthenticatedHandler {
   readonly operationName = 'WebhookFeedly'
 

@@ -25,13 +25,11 @@ import {logInfo} from '#lib/system/logging'
  * Handler for user login via Sign in with Apple
  * Uses Better Auth to verify ID token and create session
  */
-@RequiresDatabase({
-  tables: [
-    {table: DatabaseTable.Users, operations: [DatabaseOperation.Select, DatabaseOperation.Update]},
-    {table: DatabaseTable.Sessions, operations: [DatabaseOperation.Insert]},
-    {table: DatabaseTable.Accounts, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}
-  ]
-})
+@RequiresDatabase([
+  {table: DatabaseTable.Users, operations: [DatabaseOperation.Select, DatabaseOperation.Update]},
+  {table: DatabaseTable.Sessions, operations: [DatabaseOperation.Insert]},
+  {table: DatabaseTable.Accounts, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}
+])
 class LoginUserHandler extends ApiHandler<CustomAPIGatewayRequestAuthorizerEvent> {
   readonly operationName = 'LoginUser'
 

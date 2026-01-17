@@ -71,12 +71,10 @@ async function dispatchHealthCheckNotificationToDeviceToken(token: string): Prom
  * Handler for scheduled device cleanup.
  * Removes devices with disabled APNS endpoints and their user associations.
  */
-@RequiresDatabase({
-  tables: [
-    {table: DatabaseTable.Devices, operations: [DatabaseOperation.Select, DatabaseOperation.Delete]},
-    {table: DatabaseTable.UserDevices, operations: [DatabaseOperation.Delete]}
-  ]
-})
+@RequiresDatabase([
+  {table: DatabaseTable.Devices, operations: [DatabaseOperation.Select, DatabaseOperation.Delete]},
+  {table: DatabaseTable.UserDevices, operations: [DatabaseOperation.Delete]}
+])
 class PruneDevicesHandler extends ScheduledHandler<PruneDevicesResult> {
   readonly operationName = 'PruneDevices'
 

@@ -18,13 +18,10 @@ import type {ComputedAccessLevel, DatabasePermissions, WithDatabasePermissions} 
  *
  * @example
  * ```typescript
- * @RequiresDatabase({
- *   tables: [
- *     {table: DatabaseTable.Users, operations: [DatabaseOperation.Select]},
- *     {table: DatabaseTable.Files, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}
- *   ],
- *   description: 'Read users and create files'
- * })
+ * @RequiresDatabase([
+ *   {table: DatabaseTable.Users, operations: [DatabaseOperation.Select]},
+ *   {table: DatabaseTable.Files, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}
+ * ])
  * class MyHandler extends AuthenticatedHandler { ... }
  * ```
  */
@@ -51,6 +48,6 @@ export function getDatabasePermissions(handlerClass: unknown): DatabasePermissio
  * - admin: Not computed (must be explicitly declared)
  */
 export function computeAccessLevel(permissions: DatabasePermissions): ComputedAccessLevel {
-  const hasWrite = permissions.tables.some((t) => t.operations.some((op) => ['INSERT', 'UPDATE', 'DELETE'].includes(op)))
+  const hasWrite = permissions.some((t) => t.operations.some((op) => ['INSERT', 'UPDATE', 'DELETE'].includes(op)))
   return hasWrite ? 'readwrite' : 'readonly'
 }

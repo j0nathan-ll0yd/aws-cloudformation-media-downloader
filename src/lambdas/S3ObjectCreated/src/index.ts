@@ -61,12 +61,10 @@ function dispatchFileNotificationToUser(file: File, userId: string) {
  * Handler for S3 object creation events.
  * Dispatches download-ready notifications to all users waiting for the file.
  */
-@RequiresDatabase({
-  tables: [
-    {table: DatabaseTable.Files, operations: [DatabaseOperation.Select]},
-    {table: DatabaseTable.UserFiles, operations: [DatabaseOperation.Select]}
-  ]
-})
+@RequiresDatabase([
+  {table: DatabaseTable.Files, operations: [DatabaseOperation.Select]},
+  {table: DatabaseTable.UserFiles, operations: [DatabaseOperation.Select]}
+])
 class S3ObjectCreatedHandler extends S3EventHandler {
   readonly operationName = 'S3ObjectCreated'
 

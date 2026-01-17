@@ -124,34 +124,25 @@ function getDeclaredTables(sourceFile: SourceFile): Set<string> {
       continue
     }
 
-    const objLiteral = args[0].asKind(SyntaxKind.ObjectLiteralExpression)
-    if (!objLiteral) {
+    // Decorator now takes array directly: @RequiresDatabase([...])
+    const arrayLiteral = args[0].asKind(SyntaxKind.ArrayLiteralExpression)
+    if (!arrayLiteral) {
       continue
     }
 
-    for (const prop of objLiteral.getProperties()) {
-      if (prop.isKind(SyntaxKind.PropertyAssignment)) {
-        const name = prop.getName()
-        if (name === 'tables') {
-          const arrayLiteral = prop.getInitializer()?.asKind(SyntaxKind.ArrayLiteralExpression)
-          if (arrayLiteral) {
-            for (const element of arrayLiteral.getElements()) {
-              const tableObj = element.asKind(SyntaxKind.ObjectLiteralExpression)
-              if (tableObj) {
-                for (const tableProp of tableObj.getProperties()) {
-                  if (tableProp.isKind(SyntaxKind.PropertyAssignment)) {
-                    if (tableProp.getName() === 'table') {
-                      const initText = tableProp.getInitializer()?.getText() || ''
-                      // Extract table name from DatabaseTable.Users format
-                      const match = initText.match(/DatabaseTable\.(\w+)/)
-                      if (match) {
-                        // Convert PascalCase to snake_case
-                        const tableName = match[1].replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase()
-                        tables.add(tableName)
-                      }
-                    }
-                  }
-                }
+    for (const element of arrayLiteral.getElements()) {
+      const tableObj = element.asKind(SyntaxKind.ObjectLiteralExpression)
+      if (tableObj) {
+        for (const tableProp of tableObj.getProperties()) {
+          if (tableProp.isKind(SyntaxKind.PropertyAssignment)) {
+            if (tableProp.getName() === 'table') {
+              const initText = tableProp.getInitializer()?.getText() || ''
+              // Extract table name from DatabaseTable.Users format
+              const match = initText.match(/DatabaseTable\.(\w+)/)
+              if (match) {
+                // Convert PascalCase to snake_case
+                const tableName = match[1].replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase()
+                tables.add(tableName)
               }
             }
           }

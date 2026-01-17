@@ -69,13 +69,11 @@ async function cleanupVerificationTokens(): Promise<number> {
  * Handler for scheduled expired record cleanup.
  * Deletes expired FileDownloads, Sessions, and Verification tokens.
  */
-@RequiresDatabase({
-  tables: [
-    {table: DatabaseTable.FileDownloads, operations: [DatabaseOperation.Delete]},
-    {table: DatabaseTable.Sessions, operations: [DatabaseOperation.Delete]},
-    {table: DatabaseTable.VerificationTokens, operations: [DatabaseOperation.Delete]}
-  ]
-})
+@RequiresDatabase([
+  {table: DatabaseTable.FileDownloads, operations: [DatabaseOperation.Delete]},
+  {table: DatabaseTable.Sessions, operations: [DatabaseOperation.Delete]},
+  {table: DatabaseTable.VerificationTokens, operations: [DatabaseOperation.Delete]}
+])
 class CleanupExpiredRecordsHandler extends ScheduledHandler<CleanupResult> {
   readonly operationName = 'CleanupExpiredRecords'
 

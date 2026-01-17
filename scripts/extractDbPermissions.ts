@@ -141,47 +141,36 @@ async function extractPermissions(): Promise<PermissionsManifest> {
       // Parse the tables array from the decorator argument
       const tables: TablePermission[] = []
 
-      // Extract tables array using AST
-      const objLiteral = args[0].asKind(SyntaxKind.ObjectLiteralExpression)
-      if (objLiteral) {
-        for (const prop of objLiteral.getProperties()) {
-          if (prop.isKind(SyntaxKind.PropertyAssignment)) {
-            const name = prop.getName()
+      // Extract tables array using AST - decorator now takes array directly: @RequiresDatabase([...])
+      const arrayLiteral = args[0].asKind(SyntaxKind.ArrayLiteralExpression)
+      if (arrayLiteral) {
+        for (const element of arrayLiteral.getElements()) {
+          const tableObj = element.asKind(SyntaxKind.ObjectLiteralExpression)
+          if (tableObj) {
+            let tableName = ''
+            const operations: string[] = []
 
-            if (name === 'tables') {
-              const arrayLiteral = prop.getInitializer()?.asKind(SyntaxKind.ArrayLiteralExpression)
-              if (arrayLiteral) {
-                for (const element of arrayLiteral.getElements()) {
-                  const tableObj = element.asKind(SyntaxKind.ObjectLiteralExpression)
-                  if (tableObj) {
-                    let tableName = ''
-                    const operations: string[] = []
+            for (const tableProp of tableObj.getProperties()) {
+              if (tableProp.isKind(SyntaxKind.PropertyAssignment)) {
+                const propName = tableProp.getName()
+                const initText = tableProp.getInitializer()?.getText() || ''
 
-                    for (const tableProp of tableObj.getProperties()) {
-                      if (tableProp.isKind(SyntaxKind.PropertyAssignment)) {
-                        const propName = tableProp.getName()
-                        const initText = tableProp.getInitializer()?.getText() || ''
-
-                        if (propName === 'table') {
-                          tableName = extractTableName(initText)
-                        } else if (propName === 'operations') {
-                          const opsArray = tableProp.getInitializer()?.asKind(SyntaxKind.ArrayLiteralExpression)
-                          if (opsArray) {
-                            for (const opElement of opsArray.getElements()) {
-                              // extractOperations returns array (handles All -> individual ops)
-                              operations.push(...extractOperations(opElement.getText()))
-                            }
-                          }
-                        }
-                      }
-                    }
-
-                    if (tableName && operations.length > 0) {
-                      tables.push({table: tableName, operations})
+                if (propName === 'table') {
+                  tableName = extractTableName(initText)
+                } else if (propName === 'operations') {
+                  const opsArray = tableProp.getInitializer()?.asKind(SyntaxKind.ArrayLiteralExpression)
+                  if (opsArray) {
+                    for (const opElement of opsArray.getElements()) {
+                      // extractOperations returns array (handles All -> individual ops)
+                      operations.push(...extractOperations(opElement.getText()))
                     }
                   }
                 }
               }
+            }
+
+            if (tableName && operations.length > 0) {
+              tables.push({table: tableName, operations})
             }
           }
         }

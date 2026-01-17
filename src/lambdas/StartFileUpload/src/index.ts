@@ -445,13 +445,11 @@ async function processDownloadRequest(message: ValidatedDownloadQueueMessage, re
  * Consumes messages from DownloadQueue (routed via EventBridge from WebhookFeedly).
  * Uses ReportBatchItemFailures to enable partial batch success.
  */
-@RequiresDatabase({
-  tables: [
-    {table: DatabaseTable.Files, operations: [DatabaseOperation.Select, DatabaseOperation.Insert, DatabaseOperation.Update]},
-    {table: DatabaseTable.FileDownloads, operations: [DatabaseOperation.Select, DatabaseOperation.Insert, DatabaseOperation.Update]},
-    {table: DatabaseTable.UserFiles, operations: [DatabaseOperation.Select]}
-  ]
-})
+@RequiresDatabase([
+  {table: DatabaseTable.Files, operations: [DatabaseOperation.Select, DatabaseOperation.Insert, DatabaseOperation.Update]},
+  {table: DatabaseTable.FileDownloads, operations: [DatabaseOperation.Select, DatabaseOperation.Insert, DatabaseOperation.Update]},
+  {table: DatabaseTable.UserFiles, operations: [DatabaseOperation.Select]}
+])
 class StartFileUploadHandler extends SqsHandler<unknown> {
   readonly operationName = 'StartFileUpload'
 

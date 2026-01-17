@@ -32,12 +32,10 @@ async function getFilesByUser(userId: string): Promise<File[]> {
  * Handler for listing files
  * Returns files for authenticated users or demo file for anonymous
  */
-@RequiresDatabase({
-  tables: [
-    {table: DatabaseTable.UserFiles, operations: [DatabaseOperation.Select]},
-    {table: DatabaseTable.Files, operations: [DatabaseOperation.Select]}
-  ]
-})
+@RequiresDatabase([
+  {table: DatabaseTable.UserFiles, operations: [DatabaseOperation.Select]},
+  {table: DatabaseTable.Files, operations: [DatabaseOperation.Select]}
+])
 class ListFilesHandler extends OptionalAuthHandler {
   readonly operationName = 'ListFiles'
 

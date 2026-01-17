@@ -51,11 +51,9 @@ describe('database-permissions rule', () => {
       import {ApiHandler, RequiresDatabase} from '#lib/lambda/handlers'
       import {DatabaseTable, DatabaseOperation} from '#types/databasePermissions'
 
-      @RequiresDatabase({
-        tables: [
-          {table: DatabaseTable.Users, operations: [DatabaseOperation.Select]}
-        ]
-      })
+      @RequiresDatabase([
+        {table: DatabaseTable.Users, operations: [DatabaseOperation.Select]}
+      ])
       class MyHandler extends ApiHandler {
         async executeApi() {
           const user = await getUser('123')
@@ -74,11 +72,9 @@ describe('database-permissions rule', () => {
       import {ApiHandler, RequiresDatabase} from '#lib/lambda/handlers'
       import {DatabaseTable, DatabaseOperation} from '#types/databasePermissions'
 
-      @RequiresDatabase({
-        tables: [
-          {table: DatabaseTable.Users, operations: [DatabaseOperation.Select]}
-        ]
-      })
+      @RequiresDatabase([
+        {table: DatabaseTable.Users, operations: [DatabaseOperation.Select]}
+      ])
       class MyHandler extends ApiHandler {
         async executeApi() {
           const user = await getUser('123')

@@ -21,7 +21,7 @@ import {extractBearerToken} from '#lib/lambda/auth-helpers'
  * Handler for refreshing session tokens
  * Validates the current session and extends its expiration
  */
-@RequiresDatabase({tables: [{table: DatabaseTable.Sessions, operations: [DatabaseOperation.Select, DatabaseOperation.Update]}]})
+@RequiresDatabase([{table: DatabaseTable.Sessions, operations: [DatabaseOperation.Select, DatabaseOperation.Update]}])
 class RefreshTokenHandler extends ApiHandler<CustomAPIGatewayRequestAuthorizerEvent> {
   readonly operationName = 'RefreshToken'
 

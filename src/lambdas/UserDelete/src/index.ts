@@ -45,14 +45,12 @@ async function deleteUser(userId: string): Promise<void> {
  * Handler for user deletion with cascade
  * Deletes user files, devices, and finally the user record
  */
-@RequiresDatabase({
-  tables: [
-    {table: DatabaseTable.Users, operations: [DatabaseOperation.Delete]},
-    {table: DatabaseTable.Devices, operations: [DatabaseOperation.Select, DatabaseOperation.Delete]},
-    {table: DatabaseTable.UserFiles, operations: [DatabaseOperation.Select, DatabaseOperation.Delete]},
-    {table: DatabaseTable.UserDevices, operations: [DatabaseOperation.Select, DatabaseOperation.Delete]}
-  ]
-})
+@RequiresDatabase([
+  {table: DatabaseTable.Users, operations: [DatabaseOperation.Delete]},
+  {table: DatabaseTable.Devices, operations: [DatabaseOperation.Select, DatabaseOperation.Delete]},
+  {table: DatabaseTable.UserFiles, operations: [DatabaseOperation.Select, DatabaseOperation.Delete]},
+  {table: DatabaseTable.UserDevices, operations: [DatabaseOperation.Select, DatabaseOperation.Delete]}
+])
 class UserDeleteHandler extends AuthenticatedHandler {
   readonly operationName = 'UserDelete'
 
