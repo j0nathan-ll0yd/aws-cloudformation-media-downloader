@@ -161,13 +161,6 @@
       }
     },
     {
-      "id": "entity:IdentityProviders",
-      "type": "Entity",
-      "properties": {
-        "name": "IdentityProviders"
-      }
-    },
-    {
       "id": "entity:Files",
       "type": "Entity",
       "properties": {

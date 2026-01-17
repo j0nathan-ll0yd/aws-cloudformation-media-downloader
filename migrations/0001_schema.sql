@@ -84,20 +84,6 @@ CREATE TABLE IF NOT EXISTS verification (
 -- APPLICATION TABLES
 -- =============================================================================
 
--- Identity Providers table - OAuth token storage for Sign In With Apple
-CREATE TABLE IF NOT EXISTS identity_providers (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL,
-  provider_user_id TEXT NOT NULL,
-  email TEXT NOT NULL,
-  email_verified BOOLEAN NOT NULL,
-  is_private_email BOOLEAN NOT NULL,
-  access_token TEXT NOT NULL,
-  refresh_token TEXT NOT NULL,
-  token_type TEXT NOT NULL,
-  expires_at INTEGER NOT NULL
-);
-
 -- Files table - Video metadata storage
 CREATE TABLE IF NOT EXISTS files (
   file_id TEXT PRIMARY KEY,
@@ -184,9 +170,6 @@ CREATE INDEX ASYNC IF NOT EXISTS accounts_provider_idx ON accounts(provider_id, 
 
 -- Verification table indexes
 CREATE INDEX ASYNC IF NOT EXISTS verification_identifier_idx ON verification(identifier);
-
--- Identity Providers table indexes
-CREATE INDEX ASYNC IF NOT EXISTS identity_providers_user_idx ON identity_providers(user_id);
 
 -- User Files table indexes
 CREATE INDEX ASYNC IF NOT EXISTS user_files_user_idx ON user_files(user_id);

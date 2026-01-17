@@ -1,7 +1,7 @@
 -- Migration: 0002_lambda_roles
 -- Description: Per-Lambda PostgreSQL roles with fine-grained table permissions
 -- Auto-generated from @RequiresDatabase decorators
--- Generated at: 2026-01-17T04:51:16.568Z
+-- Generated at: 2026-01-17T19:20:56.849Z
 --
 -- This migration creates per-Lambda PostgreSQL roles and grants them
 -- exactly the table permissions declared in their @RequiresDatabase decorators.
@@ -31,7 +31,7 @@ CREATE ROLE lambda_webhook_feedly WITH LOGIN;
 -- =============================================================================
 
 -- ApiGatewayAuthorizer: sessions
-GRANT SELECT ON sessions TO lambda_api_gateway_authorizer;
+GRANT SELECT, UPDATE ON sessions TO lambda_api_gateway_authorizer;
 
 -- CleanupExpiredRecords: file_downloads, sessions, verification_tokens
 GRANT DELETE ON file_downloads TO lambda_cleanup_expired_records;
@@ -44,7 +44,7 @@ GRANT SELECT ON files TO lambda_list_files;
 
 -- LoginUser: users, sessions, accounts
 GRANT SELECT, UPDATE ON users TO lambda_login_user;
-GRANT INSERT ON sessions TO lambda_login_user;
+GRANT SELECT, INSERT ON sessions TO lambda_login_user;
 GRANT SELECT, INSERT ON accounts TO lambda_login_user;
 
 -- PruneDevices: devices, user_devices
@@ -55,12 +55,12 @@ GRANT DELETE ON user_devices TO lambda_prune_devices;
 GRANT SELECT, UPDATE ON sessions TO lambda_refresh_token;
 
 -- RegisterDevice: devices, user_devices
-GRANT INSERT, UPDATE ON devices TO lambda_register_device;
+GRANT SELECT, INSERT, UPDATE ON devices TO lambda_register_device;
 GRANT SELECT, INSERT, UPDATE ON user_devices TO lambda_register_device;
 
 -- RegisterUser: users, sessions, accounts
-GRANT UPDATE ON users TO lambda_register_user;
-GRANT INSERT ON sessions TO lambda_register_user;
+GRANT SELECT, INSERT, UPDATE ON users TO lambda_register_user;
+GRANT SELECT, INSERT ON sessions TO lambda_register_user;
 GRANT SELECT, INSERT ON accounts TO lambda_register_user;
 
 -- S3ObjectCreated: files, user_files
@@ -84,8 +84,8 @@ GRANT SELECT, DELETE ON user_devices TO lambda_user_delete;
 
 -- WebhookFeedly: files, file_downloads, user_files
 GRANT SELECT, INSERT ON files TO lambda_webhook_feedly;
-GRANT INSERT ON file_downloads TO lambda_webhook_feedly;
-GRANT INSERT ON user_files TO lambda_webhook_feedly;
+GRANT SELECT, INSERT ON file_downloads TO lambda_webhook_feedly;
+GRANT SELECT, INSERT ON user_files TO lambda_webhook_feedly;
 
 -- =============================================================================
 -- AWS IAM GRANT (associate Lambda IAM roles with PostgreSQL roles)

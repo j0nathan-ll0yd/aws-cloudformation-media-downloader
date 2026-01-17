@@ -32,8 +32,8 @@ import {logInfo} from '#lib/system/logging'
  * Uses Better Auth to verify ID token and create/find user
  */
 @RequiresDatabase([
-  {table: DatabaseTable.Users, operations: [DatabaseOperation.Update]},
-  {table: DatabaseTable.Sessions, operations: [DatabaseOperation.Insert]},
+  {table: DatabaseTable.Users, operations: [DatabaseOperation.Select, DatabaseOperation.Insert, DatabaseOperation.Update]},
+  {table: DatabaseTable.Sessions, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]},
   {table: DatabaseTable.Accounts, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}
 ])
 class RegisterUserHandler extends ApiHandler<CustomAPIGatewayRequestAuthorizerEvent> {
@@ -83,6 +83,9 @@ class RegisterUserHandler extends ApiHandler<CustomAPIGatewayRequestAuthorizerEv
     logInfo('RegisterUser: Better Auth sign-in/registration successful', {
       userId: result.user?.id,
       sessionToken: result.token ? 'present' : 'missing',
+      tokenLength: result.token?.length,
+      tokenPrefix: result.token?.substring(0, 8),
+      sessionId: result.session?.id?.substring(0, 8),
       isNewUser
     })
 

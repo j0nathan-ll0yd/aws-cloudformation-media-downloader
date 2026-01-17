@@ -60,7 +60,7 @@ const NAMING_RULES = {
     {suffix: 'Item', contexts: ['entity', 'drizzle'], description: 'Drizzle entity return type'},
     {suffix: 'Record', contexts: ['persistence', 'database'], description: 'Database record type'}
   ],
-  domainModels: ['User', 'File', 'Device', 'Session', 'IdentityProvider']
+  domainModels: ['User', 'File', 'Device', 'Session']
 }
 
 /**

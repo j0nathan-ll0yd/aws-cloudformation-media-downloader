@@ -51,7 +51,6 @@ function adaptMigrationForSchema(migrationSql: string, schema: string): string {
     'sessions',
     'accounts',
     'verification',
-    'identity_providers',
     'files',
     'file_downloads',
     'devices',

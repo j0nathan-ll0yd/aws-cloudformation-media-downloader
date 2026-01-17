@@ -9,15 +9,14 @@
  * Cascade order (children before parents):
  * 1. UserFiles, UserDevices (junction tables)
  * 2. Sessions, Accounts (auth tables)
- * 3. IdentityProviders (1:1 with user)
- * 4. Users (parent)
+ * 3. Users (parent)
  *
  * @see docs/wiki/TypeScript/Entity-Query-Patterns.md for usage examples
  * @see src/lib/vendor/Drizzle/instrumentation.ts for query metrics
  */
 import {withTransaction} from '#lib/vendor/Drizzle/client'
 import {withQueryMetrics} from '#lib/vendor/Drizzle/instrumentation'
-import {accounts, identityProviders, sessions, userDevices, userFiles, users} from '#lib/vendor/Drizzle/schema'
+import {accounts, sessions, userDevices, userFiles, users} from '#lib/vendor/Drizzle/schema'
 import {eq} from '#lib/vendor/Drizzle/types'
 
 /**
@@ -38,9 +37,7 @@ export async function deleteUserCascade(userId: string): Promise<void> {
       // 2. Delete auth tables
       await tx.delete(sessions).where(eq(sessions.userId, userId))
       await tx.delete(accounts).where(eq(accounts.userId, userId))
-      // 3. Delete identity provider (1:1 with user)
-      await tx.delete(identityProviders).where(eq(identityProviders.userId, userId))
-      // 4. Delete user last (parent)
+      // 3. Delete user last (parent)
       await tx.delete(users).where(eq(users.id, userId))
     })
   })

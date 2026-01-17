@@ -67,9 +67,10 @@ model UnauthorizedError {
    */
   error: {
     /**
-     * Error code - always "Unauthorized" for 401 responses
+     * Error code - typically "Unauthorized" for 401 responses, but may vary
+     * based on API Gateway configuration (e.g., "custom-4XX-generic")
      */
-    code: "Unauthorized";
+    code: string;
 
     /**
      * Human-readable error message describing the authentication failure.
@@ -102,9 +103,10 @@ model ForbiddenError {
    */
   error: {
     /**
-     * Error code - always "Forbidden" for 403 responses
+     * Error code - typically "Forbidden" for 403 responses, but may vary
+     * based on API Gateway configuration
      */
-    code: "Forbidden";
+    code: string;
 
     /**
      * Human-readable error message describing the authorization failure
@@ -128,9 +130,9 @@ model InternalServerError {
    */
   error: {
     /**
-     * Error code
+     * Error code - typically "InternalServerError" for 500 responses
      */
-    code: "InternalServerError";
+    code: string;
 
     /**
      * Error message

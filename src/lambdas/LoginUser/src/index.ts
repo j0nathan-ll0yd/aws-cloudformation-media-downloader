@@ -27,7 +27,7 @@ import {logInfo} from '#lib/system/logging'
  */
 @RequiresDatabase([
   {table: DatabaseTable.Users, operations: [DatabaseOperation.Select, DatabaseOperation.Update]},
-  {table: DatabaseTable.Sessions, operations: [DatabaseOperation.Insert]},
+  {table: DatabaseTable.Sessions, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]},
   {table: DatabaseTable.Accounts, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}
 ])
 class LoginUserHandler extends ApiHandler<CustomAPIGatewayRequestAuthorizerEvent> {

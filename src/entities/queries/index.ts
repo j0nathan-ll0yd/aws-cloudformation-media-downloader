@@ -17,8 +17,6 @@ export {
   deleteUser,
   getUser,
   getUsersByEmail,
-  type IdentityProviderData,
-  type IdentityProviderRow,
   updateUser,
   type UpdateUserInput,
   type UserItem,

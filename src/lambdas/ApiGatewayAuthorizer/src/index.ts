@@ -163,7 +163,7 @@ function isRemoteTestRequest(event: APIGatewayRequestAuthorizerEvent): boolean {
  * Handler for API Gateway custom authorization.
  * Validates API keys and session tokens, returns IAM policies.
  */
-@RequiresDatabase([{table: DatabaseTable.Sessions, operations: [DatabaseOperation.Select]}])
+@RequiresDatabase([{table: DatabaseTable.Sessions, operations: [DatabaseOperation.Select, DatabaseOperation.Update]}])
 class ApiGatewayAuthorizerHandler extends AuthorizerHandler {
   readonly operationName = 'ApiGatewayAuthorizer'
 

@@ -71,19 +71,6 @@ export interface SessionRow {
   updatedAt: Date
 }
 
-export interface IdentityProviderRow {
-  id: string
-  userId: string
-  providerUserId: string
-  email: string
-  emailVerified: boolean
-  isPrivateEmail: boolean
-  accessToken: string
-  refreshToken: string
-  tokenType: string
-  expiresAt: number
-}
-
 export interface FileDownloadRow {
   fileId: string
   status: string
@@ -223,26 +210,6 @@ export function createMockSession(overrides: Partial<SessionRow> = {}): SessionR
     userAgent: 'MediaDownloader/1.0 iOS/17.2.1',
     createdAt: now,
     updatedAt: now,
-    ...overrides
-  }
-}
-
-/**
- * Create a mock identity provider row.
- * Defaults to a Sign In With Apple identity with valid tokens.
- */
-export function createMockIdentityProvider(overrides: Partial<IdentityProviderRow> = {}): IdentityProviderRow {
-  return {
-    id: 'idp-1234-5678-9abc-def012345678',
-    userId: DEFAULT_USER_ID,
-    providerUserId: '001234.abcdef1234567890.1234',
-    email: 'private-relay@privaterelay.appleid.com',
-    emailVerified: true,
-    isPrivateEmail: true,
-    accessToken: 'test-access-token',
-    refreshToken: 'test-refresh-token',
-    tokenType: 'Bearer',
-    expiresAt: Math.floor(Date.now() / 1000) + 3600,
     ...overrides
   }
 }

@@ -182,7 +182,6 @@ export async function dropAllTables(): Promise<void> {
     DROP TABLE IF EXISTS ${schema}.verification CASCADE;
     DROP TABLE IF EXISTS ${schema}.accounts CASCADE;
     DROP TABLE IF EXISTS ${schema}.sessions CASCADE;
-    DROP TABLE IF EXISTS ${schema}.identity_providers CASCADE;
     DROP TABLE IF EXISTS ${schema}.devices CASCADE;
     DROP TABLE IF EXISTS ${schema}.files CASCADE;
     DROP TABLE IF EXISTS ${schema}.users CASCADE;
@@ -217,7 +216,7 @@ export async function truncateAllTables(): Promise<void> {
   await db.execute(sql.raw(`
     TRUNCATE ${schema}.user_devices, ${schema}.user_files, ${schema}.file_downloads,
              ${schema}.verification, ${schema}.accounts, ${schema}.sessions,
-             ${schema}.identity_providers, ${schema}.devices, ${schema}.files, ${schema}.users
+             ${schema}.devices, ${schema}.files, ${schema}.users
     CASCADE;
   `))
 }

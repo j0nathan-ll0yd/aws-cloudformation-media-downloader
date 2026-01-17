@@ -362,7 +362,6 @@ const devices = createMockDevices(2)  // Creates 2 devices
 | `createMockUserFile()` | User-file link | `userId`, `fileId` |
 | `createMockUserDevice()` | User-device link | `userId`, `deviceId` |
 | `createMockSession()` | Valid session (24h) | `expiresAt`, `userId` |
-| `createMockIdentityProvider()` | Apple Sign In | `expiresAt`, `userId` |
 | `createMockFileDownload()` | Pending download | `status`, `retryCount`, `lastError` |
 | `createMockAccount()` | Apple OAuth account | `userId`, `providerId`, `accessToken` |
 | `createMockVerification()` | Verification token (24h) | `identifier`, `expiresAt` |

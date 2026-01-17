@@ -7,18 +7,13 @@
  * @see {@link file://../../../../docs/wiki/Conventions/Vendor-Encapsulation-Policy.md}
  */
 import {createInsertSchema, createSelectSchema, createUpdateSchema} from 'drizzle-zod'
-import {accounts, devices, fileDownloads, files, identityProviders, sessions, userDevices, userFiles, users, verification} from './schema'
+import {accounts, devices, fileDownloads, files, sessions, userDevices, userFiles, users, verification} from './schema'
 import {downloadStatusZodSchema, fileStatusZodSchema} from '#types/sharedPrimitives'
 
 // User schemas
 export const userInsertSchema = createInsertSchema(users)
 export const userSelectSchema = createSelectSchema(users)
 export const userUpdateSchema = createUpdateSchema(users)
-
-// Identity provider schemas
-export const identityProviderInsertSchema = createInsertSchema(identityProviders)
-export const identityProviderSelectSchema = createSelectSchema(identityProviders)
-export const identityProviderUpdateSchema = createUpdateSchema(identityProviders)
 
 // File schemas with status enum validation
 export const fileInsertSchema = createInsertSchema(files, {status: () => fileStatusZodSchema})

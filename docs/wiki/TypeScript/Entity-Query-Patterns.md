@@ -65,15 +65,12 @@ type UserRow = {
   updatedAt: Date
 }
 
-// Item type - row with joined data
-type UserItem = UserRow & {
-  identityProviders?: IdentityProviderData
-}
+// Item type - row (typically the same as UserRow, may include joined data)
+type UserItem = UserRow
 
 // Input types - what you pass to create/update
 type CreateUserInput = Omit<UserRow, 'id' | 'createdAt' | 'updatedAt'> & {
   id?: string  // Optional - generated if not provided
-  identityProviders?: IdentityProviderData
 }
 
 type UpdateUserInput = Partial<Omit<UserRow, 'id' | 'createdAt'>>
@@ -416,8 +413,7 @@ Children must be deleted before parents:
 
 1. UserFiles, UserDevices (junction tables)
 2. Sessions, Accounts (auth tables)
-3. IdentityProviders (1:1 with user)
-4. Users (parent)
+3. Users (parent)
 
 ## Best Practices
 

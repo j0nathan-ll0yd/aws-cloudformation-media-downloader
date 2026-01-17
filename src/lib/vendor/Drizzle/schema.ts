@@ -10,7 +10,6 @@
  * - Timestamps: All use TIMESTAMP WITH TIME ZONE (Better Auth expects Date objects)
  *
  * Key changes from DynamoDB:
- * - Users.identityProviders embedded map becomes separate identity_providers table
  * - GSI patterns become PostgreSQL indexes
  * - Single-table design becomes normalized relational tables
  * - TTL attribute becomes scheduled cleanup Lambda
@@ -21,7 +20,7 @@ import {boolean, index, integer, pgTable, primaryKey, text, timestamp, unique, u
  * Users table - Core user account management (Better Auth).
  *
  * Manages user accounts with Sign In With Apple integration.
- * Identity providers are now in a separate normalized table.
+ * OAuth account data stored in Better Auth's accounts table.
  *
  * Indexes:
  * - usersEmailIdx: Lookup by email (login flow)
@@ -38,29 +37,6 @@ export const users = pgTable('users', {
   updatedAt: timestamp('updated_at', {withTimezone: true}).defaultNow().notNull()
 }, (table) => [
   index('users_email_idx').on(table.email)
-])
-
-/**
- * Identity Providers table - Normalized from Users.identityProviders JSONB.
- *
- * Stores OAuth tokens for Sign In With Apple.
- * One-to-one relationship with users (could be one-to-many for multiple providers).
- *
- * Foreign key to users enforced at application layer (Aurora DSQL limitation).
- */
-export const identityProviders = pgTable('identity_providers', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id').notNull(),
-  providerUserId: text('provider_user_id').notNull(),
-  email: text('email').notNull(),
-  emailVerified: boolean('email_verified').notNull(),
-  isPrivateEmail: boolean('is_private_email').notNull(),
-  accessToken: text('access_token').notNull(),
-  refreshToken: text('refresh_token').notNull(),
-  tokenType: text('token_type').notNull(),
-  expiresAt: integer('expires_at').notNull()
-}, (table) => [
-  index('identity_providers_user_idx').on(table.userId)
 ])
 
 /**
