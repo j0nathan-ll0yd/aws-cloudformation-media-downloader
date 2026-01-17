@@ -51,7 +51,7 @@ function generateMockCode(dep: string, entityNames: string[]): MockInfo | null {
   if (awsVendorMatch) {
     const serviceName = awsVendorMatch[1]
     const mockFunctions = getAwsServiceMocks(serviceName)
-    const mockFunctionsStr = mockFunctions.map((fn) => `  ${fn}: jest.fn()`).join(',\n')
+    const mockFunctionsStr = mockFunctions.map((fn) => `  ${fn}: vi.fn()`).join(',\n')
     const mockCode = loadAndInterpolate('test-scaffold/aws-vendor-mock.template.txt', {serviceName, mockFunctions: mockFunctionsStr})
     return {type: 'vendor', name: `AWS/${serviceName}`, path: dep, importAlias: `#lib/vendor/AWS/${serviceName}`, mockCode}
   }
@@ -94,8 +94,8 @@ function generateTestScaffold(lambdaName: string, mocks: MockInfo[]): string {
   const entityMocks = mocks.filter((m) => m.type === 'entity')
   const vendorMocks = mocks.filter((m) => m.type === 'vendor')
 
-  // Build entity mock import
-  const entityMockImport = entityMocks.length > 0 ? "import {createEntityMock} from '#test/helpers/entity-mock'" : ''
+  // Build entity mock import (uses vi.mock pattern)
+  const entityMockImport = entityMocks.length > 0 ? "import {vi} from 'vitest'" : ''
 
   // Build entity mocks section
   const entityMocksSection = entityMocks.length > 0 ? '// Entity mocks\n' + entityMocks.map((m) => m.mockCode).join('\n\n') + '\n' : ''
@@ -104,7 +104,7 @@ function generateTestScaffold(lambdaName: string, mocks: MockInfo[]): string {
   const vendorMocksSection = vendorMocks.length > 0 ? '// Vendor mocks\n' + vendorMocks.map((m) => m.mockCode).join('\n\n') + '\n' : ''
 
   // Build entity mock resets
-  const entityMockResets = entityMocks.map((m) => `    ${m.name.toLowerCase()}Mock.reset()`).join('\n')
+  const entityMockResets = entityMocks.length > 0 ? '    vi.clearAllMocks()' : ''
 
   // Build entity mock returns
   const entityMockReturns = entityMocks.length > 0
@@ -196,12 +196,12 @@ export async function handleTestScaffoldQuery(args: TestScaffoldQueryArgs) {
           vendors: vendorMocks.map((m) => ({name: m.name, importAlias: m.importAlias, code: m.mockCode}))
         },
         mockOrder: [
-          '1. Entity mocks (createEntityMock)',
-          '2. Vendor mocks (jest.unstable_mockModule)',
+          "1. Entity mocks (vi.mock('#entities/queries', ...))",
+          '2. Vendor mocks (vi.unstable_mockModule)',
           '3. Handler import (await import)'
         ],
         recommendation: entityMocks.length > 0
-          ? 'Remember: Entity mocks MUST be defined before jest.unstable_mockModule calls'
+          ? 'Remember: Entity mocks MUST be defined before vi.unstable_mockModule calls'
           : 'Standard mock setup - define mocks before importing handler'
       }
     }
@@ -242,9 +242,9 @@ export async function handleTestScaffoldQuery(args: TestScaffoldQueryArgs) {
         testPath: testFilePath,
         structure: {
           imports: [
-            '@jest/globals (beforeAll, beforeEach, describe, expect, jest, test)',
+            'vitest (beforeAll, beforeEach, describe, expect, vi, test)',
             'aws-lambda types',
-            entityNames.length > 0 ? 'createEntityMock from test helpers' : null
+            entityNames.length > 0 ? "vi.mock('#entities/queries', ...)" : null
           ].filter(Boolean),
           setup: {beforeAll: 'Environment variables', mocks: mocks.map((m) => `${m.type}: ${m.name}`), handlerImport: 'await import after mocks'},
           testSuites: ['success cases', 'error cases', 'edge cases'],
