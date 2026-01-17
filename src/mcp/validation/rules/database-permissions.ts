@@ -1,6 +1,6 @@
 /**
  * Database Permissions Rule
- * HIGH: Lambda handlers that import entity queries must have @RequiresDatabase decorator
+ * HIGH: Lambda handlers that import entity queries must have `@RequiresDatabase` decorator
  *
  * This rule ensures that database access requirements are explicitly declared.
  */
@@ -92,7 +92,7 @@ function getImportedQueryFunctions(sourceFile: SourceFile): string[] {
 }
 
 /**
- * Check if a class has the @RequiresDatabase decorator
+ * Check if a class has the `@RequiresDatabase` decorator
  */
 function hasRequiresDatabaseDecorator(sourceFile: SourceFile): boolean {
   const classes = sourceFile.getClasses()
@@ -106,7 +106,7 @@ function hasRequiresDatabaseDecorator(sourceFile: SourceFile): boolean {
 }
 
 /**
- * Extract declared tables from @RequiresDatabase decorator
+ * Extract declared tables from `@RequiresDatabase` decorator
  */
 function getDeclaredTables(sourceFile: SourceFile): Set<string> {
   const tables = new Set<string>()

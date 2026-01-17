@@ -9,8 +9,8 @@
  * Output: PruneDevicesResult with deletion counts
  */
 import {deleteUserDevicesByDeviceId, getAllDevices} from '#entities/queries'
-import {DatabaseOperation, DatabaseTable} from '#types/databasePermissions'
 import {addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
+import {DatabaseOperation, DatabaseTable} from '#types/databasePermissions'
 import type {Device} from '#types/domainModels'
 import type {ApplePushNotificationResponse, PruneDevicesResult} from '#types/lambda'
 import {deleteDevice} from '#lib/services/device/deviceService'

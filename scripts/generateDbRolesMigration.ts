@@ -2,7 +2,7 @@
  * Database Role Migration Generator
  *
  * Reads build/db-permissions.json and generates PostgreSQL migration SQL
- * for IAM role assignments based on @RequiresDatabase decorator metadata.
+ * for IAM role assignments based on `@RequiresDatabase` decorator metadata.
  *
  * Output: migrations/NNNN_lambda_iam_grants.sql
  *

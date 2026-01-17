@@ -16,9 +16,9 @@
  */
 import type {APIGatewayProxyResult, Context} from 'aws-lambda'
 import {updateUser} from '#entities/queries'
-import {DatabaseOperation, DatabaseTable} from '#types/databasePermissions'
 import {getAuth} from '#lib/vendor/BetterAuth/config'
 import {assertTokenResponse, getSessionExpirationISO} from '#lib/vendor/BetterAuth/helpers'
+import {DatabaseOperation, DatabaseTable} from '#types/databasePermissions'
 import {userRegistrationRequestSchema, userRegistrationResponseSchema} from '#types/api-schema'
 import type {UserRegistrationRequest} from '#types/api-schema'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'

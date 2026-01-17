@@ -10,8 +10,8 @@
  */
 import type {APIGatewayProxyResult, Context} from 'aws-lambda'
 import {upsertDevice as upsertDeviceRecord, upsertUserDevice} from '#entities/queries'
-import {DatabaseOperation, DatabaseTable} from '#types/databasePermissions'
 import {createPlatformEndpoint, listSubscriptionsByTopic} from '#lib/vendor/AWS/SNS'
+import {DatabaseOperation, DatabaseTable} from '#types/databasePermissions'
 import {UserStatus} from '#types/enums'
 import {deviceRegistrationRequestSchema, deviceRegistrationResponseSchema} from '#types/api-schema'
 import type {DeviceRegistrationRequest} from '#types/api-schema'

@@ -14,9 +14,9 @@
  * Output: SQSBatchResponse with item failures for retry
  */
 import {getDevice as getDeviceRecord, getUserDevicesByUserId} from '#entities/queries'
-import {DatabaseOperation, DatabaseTable} from '#types/databasePermissions'
 import {publishSnsEvent} from '#lib/vendor/AWS/SNS'
 import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
+import {DatabaseOperation, DatabaseTable} from '#types/databasePermissions'
 import type {Device} from '#types/domainModels'
 import type {DeviceNotificationResult, FileNotificationType} from '#types/notificationTypes'
 import {pushNotificationAttributesSchema} from '#types/schemas'

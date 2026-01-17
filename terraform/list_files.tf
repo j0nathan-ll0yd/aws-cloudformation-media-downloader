@@ -33,10 +33,7 @@ resource "aws_iam_role_policy_attachment" "ListFilesXRay" {
   policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }
 
-resource "aws_iam_role_policy_attachment" "ListFilesDSQL" {
-  role       = aws_iam_role.ListFiles.name
-  policy_arn = aws_iam_policy.LambdaDSQLReadOnly.arn
-}
+# DSQL policy attachment handled by terraform/dsql_permissions.tf
 
 resource "aws_lambda_permission" "ListFiles" {
   action        = "lambda:InvokeFunction"
@@ -82,7 +79,7 @@ resource "aws_lambda_function" "ListFiles" {
       DEFAULT_FILE_URL          = "https://${aws_s3_object.DefaultFile.bucket}.s3.amazonaws.com/${aws_s3_object.DefaultFile.key}"
       DEFAULT_FILE_CONTENT_TYPE = aws_s3_object.DefaultFile.content_type
       OTEL_SERVICE_NAME         = local.list_files_function_name
-      DSQL_ACCESS_LEVEL         = "readonly"
+      DSQL_ROLE_NAME            = local.lambda_dsql_roles["ListFiles"].role_name
     })
   }
 

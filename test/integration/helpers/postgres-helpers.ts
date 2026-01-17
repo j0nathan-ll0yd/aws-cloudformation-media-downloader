@@ -130,11 +130,11 @@ export async function closeTestDb(): Promise<void> {
  * Run this in beforeAll() of integration tests.
  *
  * CONVENTION: Migrations are the single source of truth for SQL.
- * Tables are created by globalSetup.ts from migrations/0001_initial_schema.sql.
+ * Tables are created by globalSetup.ts from migrations/0001_schema.sql.
  * This function ensures schema exists and sets search_path for the connection.
  *
  * DO NOT duplicate SQL table definitions here.
- * All schema definitions belong in migrations/0001_initial_schema.sql.
+ * All schema definitions belong in migrations/0001_schema.sql.
  */
 export async function createAllTables(): Promise<void> {
   const db = getTestDb()

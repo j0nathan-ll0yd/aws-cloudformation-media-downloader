@@ -9,10 +9,10 @@
  * Output: void (processes all records, logs errors)
  */
 import {getFilesByKey, getUserFilesByFileId} from '#entities/queries'
-import {DatabaseOperation, DatabaseTable} from '#types/databasePermissions'
 import {sendMessage} from '#lib/vendor/AWS/SQS'
 import type {SendMessageRequest} from '#lib/vendor/AWS/SQS'
 import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
+import {DatabaseOperation, DatabaseTable} from '#types/databasePermissions'
 import type {File} from '#types/domainModels'
 import {metrics, MetricUnit, RequiresDatabase, S3EventHandler} from '#lib/lambda/handlers'
 import type {S3RecordContext} from '#lib/lambda/handlers'

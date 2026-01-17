@@ -39,10 +39,7 @@ resource "aws_iam_role_policy_attachment" "MigrateDSQLXRay" {
   policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }
 
-resource "aws_iam_role_policy_attachment" "MigrateDSQLDSQL" {
-  role       = aws_iam_role.MigrateDSQL.name
-  policy_arn = aws_iam_policy.LambdaDSQLAdmin.arn
-}
+# DSQL policy attachment handled by terraform/dsql_permissions.tf
 
 resource "aws_cloudwatch_log_group" "MigrateDSQL" {
   name              = "/aws/lambda/${aws_lambda_function.MigrateDSQL.function_name}"
@@ -77,7 +74,7 @@ resource "aws_lambda_function" "MigrateDSQL" {
   environment {
     variables = merge(local.common_lambda_env, {
       OTEL_SERVICE_NAME = local.migrate_dsql_function_name
-      DSQL_ACCESS_LEVEL = "admin"
+      DSQL_ROLE_NAME    = local.lambda_dsql_roles["MigrateDSQL"].role_name
       AWS_ACCOUNT_ID    = data.aws_caller_identity.current.account_id
     })
   }

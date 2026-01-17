@@ -39,7 +39,7 @@ function getSchemaPrefix(): string {
  * - UUID → TEXT for test simplicity with regular PostgreSQL
  *
  * DO NOT add DEFAULT NULL or other schema modifications here.
- * All schema definitions belong in migrations/0001_initial_schema.sql.
+ * All schema definitions belong in migrations/0001_schema.sql.
  */
 function adaptMigrationForSchema(migrationSql: string, schema: string): string {
   let adapted = migrationSql
@@ -174,10 +174,9 @@ export async function setup(): Promise<void> {
   log(`[globalSetup] Starting schema creation with prefix: "${prefix}"`)
   log(`[globalSetup] MAX_WORKERS: ${MAX_WORKERS}`)
 
-  // Read migration files
+  // Read migration files (0001_schema.sql contains both schema and indexes)
   const migrationsDir = path.join(process.cwd(), 'migrations')
-  const schemaMigration = fs.readFileSync(path.join(migrationsDir, '0001_initial_schema.sql'), 'utf8')
-  const indexMigration = fs.readFileSync(path.join(migrationsDir, '0002_create_indexes.sql'), 'utf8')
+  const schemaMigration = fs.readFileSync(path.join(migrationsDir, '0001_schema.sql'), 'utf8')
 
   // Wait for PostgreSQL to be ready with retry logic (handles CI startup delays)
   const sql = await waitForPostgres(databaseUrl)
@@ -192,7 +191,7 @@ export async function setup(): Promise<void> {
       // Create the schema
       await sql.unsafe(`CREATE SCHEMA IF NOT EXISTS ${schemaName}`)
 
-      // Adapt and execute schema migration
+      // Adapt and execute schema migration (includes both tables and indexes)
       const adaptedSchema = adaptMigrationForSchema(schemaMigration, schemaName)
       validateAdaptations(adaptedSchema)
       const schemaStatements = parseSqlStatements(adaptedSchema)
@@ -200,15 +199,7 @@ export async function setup(): Promise<void> {
         await sql.unsafe(statement)
       }
 
-      // Adapt and execute index migration
-      const adaptedIndexes = adaptMigrationForSchema(indexMigration, schemaName)
-      validateAdaptations(adaptedIndexes)
-      const indexStatements = parseSqlStatements(adaptedIndexes)
-      for (const statement of indexStatements) {
-        await sql.unsafe(statement)
-      }
-
-      log(`[globalSetup] Schema ${schemaName} ready with ${schemaStatements.length} tables`)
+      log(`[globalSetup] Schema ${schemaName} ready with ${schemaStatements.length} statements`)
     }
 
     // Create all schemas in parallel for faster setup

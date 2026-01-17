@@ -150,7 +150,7 @@ resource "aws_lambda_function" "S3ObjectCreated" {
     variables = merge(local.common_lambda_env, {
       SNS_QUEUE_URL     = aws_sqs_queue.SendPushNotification.id
       OTEL_SERVICE_NAME = local.s3_object_created_function_name
-      DSQL_ACCESS_LEVEL = "readonly"
+      DSQL_ROLE_NAME    = local.lambda_dsql_roles["S3ObjectCreated"].role_name
     })
   }
 
@@ -208,7 +208,4 @@ resource "aws_iam_role_policy_attachment" "S3ObjectCreatedXRay" {
   policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }
 
-resource "aws_iam_role_policy_attachment" "S3ObjectCreatedDSQL" {
-  role       = aws_iam_role.S3ObjectCreated.name
-  policy_arn = aws_iam_policy.LambdaDSQLReadOnly.arn
-}
+# DSQL policy attachment handled by terraform/dsql_permissions.tf

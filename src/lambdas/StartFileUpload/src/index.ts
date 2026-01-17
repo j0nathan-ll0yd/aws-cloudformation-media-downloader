@@ -9,11 +9,11 @@
  * Output: SQSBatchResponse with item failures for retry
  */
 import {createFileDownload, getFile, getFileDownload, getUserFilesByFileId, updateFile, updateFileDownload} from '#entities/queries'
-import {DatabaseOperation, DatabaseTable} from '#types/databasePermissions'
 import {sendMessage} from '#lib/vendor/AWS/SQS'
 import {publishEvent} from '#lib/vendor/AWS/EventBridge'
 import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
 import {downloadVideoToS3, fetchVideoInfo} from '#lib/vendor/YouTube'
+import {DatabaseOperation, DatabaseTable} from '#types/databasePermissions'
 import type {File} from '#types/domainModels'
 import type {DownloadCompletedDetail, DownloadFailedDetail} from '#types/events'
 import type {DownloadFailureResult} from '#types/lambda'

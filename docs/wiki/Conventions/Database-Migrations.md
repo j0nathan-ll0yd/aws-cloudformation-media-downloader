@@ -31,9 +31,9 @@ Migration files are stored in the `migrations/` directory at the project root:
 
 ```
 migrations/
-├── 0001_initial_schema.sql
-├── 0002_create_indexes.sql
-└── NNNN_description.sql
+├── 0001_schema.sql           # Schema + indexes (consolidated)
+├── 0002_lambda_roles.sql     # Per-Lambda PostgreSQL roles
+└── NNNN_description.sql      # Additional migrations
 ```
 
 ### Naming Convention
@@ -112,7 +112,7 @@ Use application-layer validation in `src/lib/vendor/Drizzle/fkEnforcement.ts`.
 **CRITICAL**: Migrations are the single source of truth for SQL. Test infrastructure reads from migration files, not from duplicate SQL definitions.
 
 ```
-migrations/0001_initial_schema.sql  ← Single source of truth
+migrations/0001_schema.sql          ← Single source of truth for schema
             ↓
 test/integration/globalSetup.ts     ← Reads and adapts migrations
             ↓

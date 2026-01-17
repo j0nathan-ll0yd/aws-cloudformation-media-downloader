@@ -76,37 +76,20 @@ const TOKEN_REFRESH_BUFFER_MS = 3 * 60 * 1000
 const TOKEN_VALIDITY_MS = 15 * 60 * 1000
 
 /**
- * Access level for Aurora DSQL connections.
- * - readonly: SELECT only (uses app_readonly PostgreSQL role)
- * - readwrite: Full DML (uses app_readwrite PostgreSQL role)
- * - admin: Full DDL/DML (uses built-in admin user)
+ * Gets the PostgreSQL role name from environment.
+ * Uses DSQL_ROLE_NAME which maps directly to the per-Lambda PostgreSQL role.
+ * Examples: lambda_list_files, lambda_webhook_feedly, admin
  */
-export type DSQLAccessLevel = 'readonly' | 'readwrite' | 'admin'
-
-/**
- * Gets the DSQL access level from environment variable.
- * Defaults to 'admin' for backward compatibility during migration.
- */
-function getDSQLAccessLevel(): DSQLAccessLevel {
-  const level = getOptionalEnv('DSQL_ACCESS_LEVEL', 'admin')
-  if (level === 'readonly' || level === 'readwrite' || level === 'admin') {
-    return level
-  }
-  return 'admin'
+function getPostgresUsername(): string {
+  return getRequiredEnv('DSQL_ROLE_NAME')
 }
 
 /**
- * Maps access level to PostgreSQL username.
+ * Determines if admin token generation is needed.
+ * Only the 'admin' role (MigrateDSQL) uses DbConnectAdmin.
  */
-function getPostgresUsername(accessLevel: DSQLAccessLevel): string {
-  switch (accessLevel) {
-    case 'readonly':
-      return 'app_readonly'
-    case 'readwrite':
-      return 'app_readwrite'
-    case 'admin':
-      return 'admin'
-  }
+function isAdminRole(username: string): boolean {
+  return username === 'admin'
 }
 
 /**
@@ -153,14 +136,12 @@ export async function getDrizzleClient(): Promise<PostgresJsDatabase<typeof sche
   // Production mode: use Aurora DSQL with IAM authentication
   const endpoint = getRequiredEnv('DSQL_CLUSTER_ENDPOINT')
   const region = getOptionalEnv('DSQL_REGION', getRequiredEnv('AWS_REGION'))
-  const accessLevel = getDSQLAccessLevel()
-
   const signer = new DsqlSigner({hostname: endpoint, region})
   // Admin uses getDbConnectAdminAuthToken(), others use getDbConnectAuthToken()
-  const token = accessLevel === 'admin'
+  const username = getPostgresUsername()
+  const token = isAdminRole(username)
     ? await signer.getDbConnectAdminAuthToken()
     : await signer.getDbConnectAuthToken()
-  const username = getPostgresUsername(accessLevel)
 
   cachedSql = postgres({
     host: endpoint,

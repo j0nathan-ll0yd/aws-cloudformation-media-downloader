@@ -54,10 +54,7 @@ resource "aws_iam_role_policy_attachment" "UserDeleteXRay" {
   policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }
 
-resource "aws_iam_role_policy_attachment" "UserDeleteDSQL" {
-  role       = aws_iam_role.UserDelete.name
-  policy_arn = aws_iam_policy.LambdaDSQLReadWrite.arn
-}
+# DSQL policy attachment handled by terraform/dsql_permissions.tf
 
 resource "aws_lambda_permission" "UserDelete" {
   action        = "lambda:InvokeFunction"
@@ -98,7 +95,7 @@ resource "aws_lambda_function" "UserDelete" {
     variables = merge(local.common_lambda_env, {
       GITHUB_PERSONAL_TOKEN = data.sops_file.secrets.data["github.issue.token"]
       OTEL_SERVICE_NAME     = local.user_delete_function_name
-      DSQL_ACCESS_LEVEL     = "readwrite"
+      DSQL_ROLE_NAME        = local.lambda_dsql_roles["UserDelete"].role_name
     })
   }
 

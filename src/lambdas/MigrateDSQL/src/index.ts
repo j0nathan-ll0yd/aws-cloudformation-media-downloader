@@ -16,10 +16,10 @@
 import {readdirSync, readFileSync} from 'fs'
 import {dirname, join} from 'path'
 import {fileURLToPath} from 'url'
-import {DatabaseOperation, DatabaseTable} from '#types/databasePermissions'
 import {sql} from '#lib/vendor/Drizzle/types'
 import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
 import {addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
+import {DatabaseOperation, DatabaseTable} from '#types/databasePermissions'
 import type {MigrationFile, MigrationResult} from '#types/lambda'
 import {InvokeHandler, metrics, MetricUnit, RequiresDatabase} from '#lib/lambda/handlers'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
@@ -67,7 +67,7 @@ function loadMigrations(): MigrationFile[] {
     const filepath = join(migrationsDir, filename)
     const sqlContent = readFileSync(filepath, 'utf-8')
 
-    // Parse version and name from filename: 0001_initial_schema.sql
+    // Parse version and name from filename: 0001_schema.sql
     const match = filename.match(/^(\d+)_(.+)\.sql$/)
     if (!match) {
       throw new Error(`Invalid migration filename format: ${filename}. Expected: NNNN_name.sql`)

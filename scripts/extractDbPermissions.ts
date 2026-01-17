@@ -1,7 +1,7 @@
 /**
  * Database Permission Extraction Script
  *
- * Uses ts-morph to extract @RequiresDatabase decorator metadata from Lambda handlers
+ * Uses ts-morph to extract `@RequiresDatabase` decorator metadata from Lambda handlers
  * and generates a JSON manifest for downstream tooling.
  *
  * Output: build/db-permissions.json
@@ -38,7 +38,7 @@ interface PermissionsManifest {
  * Compute access level from declared operations.
  * - readonly: Only SELECT operations
  * - readwrite: Any INSERT, UPDATE, or DELETE operations
- * - admin: All operations on all tables (detected by having all ops on >5 tables)
+ * - admin: All operations on all tables (detected by having all ops on \>5 tables)
  */
 function computeAccessLevel(tables: TablePermission[]): 'readonly' | 'readwrite' | 'admin' {
   const hasAllOps = tables.every(t =>
