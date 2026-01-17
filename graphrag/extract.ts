@@ -178,8 +178,18 @@ async function discoverTypeSpecModels(): Promise<TypeSpecModelMetadata[]> {
 }
 
 /**
- * Operation name to Lambda handler mapping
- * TypeSpec doesn't encode which Lambda handles each operation, so we maintain this mapping
+ * Maps TypeSpec operation names to Lambda handler names.
+ *
+ * TypeSpec doesn't encode which Lambda handles each operation, so we maintain
+ * this explicit mapping for the knowledge graph extraction.
+ *
+ * MAINTENANCE NOTE: This map must be updated when TypeSpec operations change.
+ * If a new operation is added to tsp/operations/operations.tsp:
+ * 1. Add the mapping here (operationName to LambdaName)
+ * 2. Run `pnpm run graphrag:extract` to regenerate knowledge graph
+ * 3. CI will fail if knowledge-graph.json is out of date
+ *
+ * @see tsp/operations/operations.tsp for current operations
  */
 const OPERATION_TO_HANDLER: Record<string, string> = {
   listFiles: 'ListFiles',

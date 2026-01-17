@@ -9,7 +9,9 @@ import {defineConfig} from 'vitest/config'
 const isCI = process.env.CI === 'true'
 const maxWorkers = isCI ? 4 : Math.min(cpus().length, 6)
 
-// Standalone config for integration tests (does not merge with base to avoid exclude conflicts)
+// Standalone config for integration tests
+// NOTE: Does not merge with base vitest.config.mts to avoid exclude conflicts
+// Integration tests need different excludes and longer timeouts than unit tests
 export default defineConfig({
   test: {
     globals: false,
@@ -17,14 +19,19 @@ export default defineConfig({
     include: ['test/integration/**/*.integration.test.ts'],
     exclude: ['node_modules/**', 'dist/**', 'build/**'],
     clearMocks: true,
+    // Test timeout: 30s - allows for I/O operations and database queries
+    // Integration tests hit real Aurora DSQL which has variable latency
     testTimeout: 30000,
-    hookTimeout: 60000, // Allow 60s for beforeAll/afterAll hooks (schema creation may retry up to 30s)
+    // Hook timeout: 60s - allows for schema creation (up to 30s) plus retry buffer
+    // Aurora DSQL schema operations can take longer during cold starts
+    hookTimeout: 60000,
     pool: 'threads',
     maxWorkers,
     globalSetup: './test/integration/globalSetup.ts',
     setupFiles: ['./test/integration/setup.ts'],
-    // Retry flaky tests in CI (up to 2 retries = 3 total attempts)
-    // This catches transient failures from timing, network, or service startup
+    // Retry only in CI - respects local developer experience
+    // Flaky tests get 2 retries (3 total attempts) to handle transient failures
+    // from timing issues, network blips, or Aurora DSQL cold starts
     retry: isCI ? 2 : 0,
     // Generate JUnit reports for CI analysis and flaky test tracking
     reporters: isCI

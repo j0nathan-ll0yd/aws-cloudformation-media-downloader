@@ -1,6 +1,6 @@
 /**
  * Coverage analysis handler for MCP server
- * Analyzes which dependencies need mocking for Jest tests
+ * Analyzes which dependencies need mocking for Vitest tests
  *
  * Uses build/graph.json for transitive dependency analysis
  */
@@ -33,7 +33,7 @@ function categorizeDependency(dep: string, entityNames: string[]): {category: ke
   if (entityMatch) {
     const entityName = entityMatch[1]
     if (entityNames.includes(entityName)) {
-      return {category: 'entities', name: entityName, details: {path: dep, mockHelper: 'createEntityMock()'}}
+      return {category: 'entities', name: entityName, details: {path: dep, mockHelper: "vi.mock('#entities/queries', ...)"}}
     }
   }
 
@@ -73,16 +73,16 @@ async function analyzeExistingTestMocks(testFilePath: string): Promise<string[]>
     const content = await fs.readFile(testFilePath, 'utf-8')
     const mocks: string[] = []
 
-    // Find jest.unstable_mockModule calls
-    const mockModulePattern = /jest\.unstable_mockModule\s*\(\s*['"]([^'"]+)['"]/g
+    // Find vi.unstable_mockModule calls
+    const mockModulePattern = /vi\.unstable_mockModule\s*\(\s*['"]([^'"]+)['"]/g
     let match
     while ((match = mockModulePattern.exec(content)) !== null) {
       mocks.push(match[1])
     }
 
-    // Find jest.mock calls
-    const jestMockPattern = /jest\.mock\s*\(\s*['"]([^'"]+)['"]/g
-    while ((match = jestMockPattern.exec(content)) !== null) {
+    // Find vi.mock calls
+    const vitestMockPattern = /vi\.mock\s*\(\s*['"]([^'"]+)['"]/g
+    while ((match = vitestMockPattern.exec(content)) !== null) {
       mocks.push(match[1])
     }
 
@@ -204,8 +204,8 @@ export async function handleCoverageQuery(args: CoverageQueryArgs) {
         entities: mockAnalysis.entities.map((e) => e.name),
         vendors: mockAnalysis.vendors.map((v) => v.name),
         recommendation: mockAnalysis.entities.length > 0
-          ? 'Use createEntityMock() from test/helpers/entity-mock.ts for entity mocking'
-          : 'Standard jest.unstable_mockModule() for vendor mocks'
+          ? "Use vi.mock('#entities/queries', () => ({...})) for entity mocking"
+          : 'Standard vi.unstable_mockModule() for vendor mocks'
       }
     }
 

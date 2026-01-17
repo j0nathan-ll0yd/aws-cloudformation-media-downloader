@@ -143,6 +143,22 @@ This creates:
 4. Annotations are searchable (filter expressions)
 5. Metadata is visible in span details
 
+## ADOT Layer Version Tracking
+
+Current version: v1.30.2 (ARM64)
+Terraform reference: `terraform/main.tf:44`
+
+**Monitoring required for:**
+- Breaking changes in trace propagation
+- Security updates
+- OpenTelemetry specification changes
+
+**Update process:**
+1. Check AWS ADOT releases: https://github.com/aws-observability/aws-otel-lambda
+2. Update layer ARN in terraform/main.tf
+3. Test trace propagation across API Gateway to Lambda to SQS chains
+4. Verify X-Ray console shows connected traces
+
 ## Best Practices
 
 1. **Use annotations for searchable data**: fileId, userId, correlationId
