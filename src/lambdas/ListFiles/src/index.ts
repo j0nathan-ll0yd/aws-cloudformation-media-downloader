@@ -62,9 +62,7 @@ class ListFilesHandler extends OptionalAuthHandler {
     const files = await getFilesByUser(this.userId as string)
 
     // Filter based on status parameter
-    const filteredFiles = showAllStatuses
-      ? files
-      : files.filter((file) => file.status === FileStatus.Downloaded)
+    const filteredFiles = showAllStatuses ? files : files.filter((file) => file.status === FileStatus.Downloaded)
 
     myResponse.contents = filteredFiles.sort((a, b) => new Date(b.publishDate).getTime() - new Date(a.publishDate).getTime())
     myResponse.keyCount = myResponse.contents.length

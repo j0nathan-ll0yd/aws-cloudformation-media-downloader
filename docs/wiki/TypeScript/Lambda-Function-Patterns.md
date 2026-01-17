@@ -81,16 +81,16 @@ Lambda handlers that access the database must declare their permissions using th
 import {DatabaseOperation, DatabaseTable} from '#types/databasePermissions'
 import {AuthenticatedHandler, RequiresDatabase} from '#lib/lambda/handlers'
 
-@RequiresDatabase({
-  tables: [
-    {table: DatabaseTable.Files, operations: [DatabaseOperation.Select]},
-    {table: DatabaseTable.UserFiles, operations: [DatabaseOperation.Select]}
-  ]
-})
+@RequiresDatabase([
+  {table: DatabaseTable.Files, operations: [DatabaseOperation.Select]},
+  {table: DatabaseTable.UserFiles, operations: [DatabaseOperation.Select]}
+])
 class ListFilesHandler extends AuthenticatedHandler<ListFilesResponse> {
   // Handler implementation
 }
 ```
+
+See [Database Permissions](../Infrastructure/Database-Permissions.md) for complete documentation.
 
 ### Available Tables
 
