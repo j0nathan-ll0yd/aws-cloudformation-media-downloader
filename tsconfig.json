@@ -6,6 +6,8 @@
     "outDir": "./dist",
     "rootDir": ".",
     "strict": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "verbatimModuleSyntax": true,
     "types": ["node"],
     "moduleResolution": "bundler",

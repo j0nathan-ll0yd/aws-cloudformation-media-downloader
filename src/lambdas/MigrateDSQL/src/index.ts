@@ -20,8 +20,7 @@ import {sql} from '#lib/vendor/Drizzle/types'
 import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
 import {addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
 import type {MigrationFile, MigrationResult} from '#types/lambda'
-import {metrics, MetricUnit, withPowertools} from '#lib/lambda/middleware/powertools'
-import {wrapLambdaInvokeHandler} from '#lib/lambda/middleware/internal'
+import {InvokeHandler, metrics, MetricUnit} from '#lib/lambda/handlers'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -192,63 +191,66 @@ async function applyMigration(migration: MigrationFile): Promise<void> {
 }
 
 /**
- * Lambda handler that applies pending database migrations.
- *
- * Invoked by Terraform during deployment. Safe to re-run - skips
- * already-applied migrations.
- *
- * @returns MigrationResult with lists of applied, skipped, and errored migrations
+ * Handler for database migration invocation.
+ * Applies pending migrations from SQL files.
  */
-export const handler = withPowertools(wrapLambdaInvokeHandler<{source?: string}, MigrationResult>(async (): Promise<MigrationResult> => {
-  // Track migration run
-  metrics.addMetric('MigrationRun', MetricUnit.Count, 1)
+class MigrateDSQLHandler extends InvokeHandler<{source?: string}, MigrationResult> {
+  readonly operationName = 'MigrateDSQL'
 
-  const span = startSpan('migrate-dsql')
+  protected async executeInvoke(): Promise<MigrationResult> {
+    // Track migration run
+    metrics.addMetric('MigrationRun', MetricUnit.Count, 1)
 
-  const result: MigrationResult = {applied: [], skipped: [], errors: []}
+    const span = startSpan('migrate-dsql')
 
-  logInfo('MigrateDSQL starting')
+    const result: MigrationResult = {applied: [], skipped: [], errors: []}
 
-  // Ensure migrations tracking table exists
-  await ensureMigrationsTable()
+    logInfo('MigrateDSQL starting')
 
-  // Load migrations from SQL files
-  const migrations = loadMigrations()
-  logInfo('Loaded migrations', {count: migrations.length})
+    // Ensure migrations tracking table exists
+    await ensureMigrationsTable()
 
-  // Get already-applied migrations
-  const appliedVersions = await getAppliedMigrations()
-  logDebug('Already applied migrations', {versions: [...appliedVersions]})
+    // Load migrations from SQL files
+    const migrations = loadMigrations()
+    logInfo('Loaded migrations', {count: migrations.length})
 
-  // Apply pending migrations in order
-  for (const migration of migrations) {
-    if (appliedVersions.has(migration.version)) {
-      result.skipped.push(migration.version)
-      logDebug('Migration already applied, skipping', {version: migration.version})
-      continue
+    // Get already-applied migrations
+    const appliedVersions = await getAppliedMigrations()
+    logDebug('Already applied migrations', {versions: [...appliedVersions]})
+
+    // Apply pending migrations in order
+    for (const migration of migrations) {
+      if (appliedVersions.has(migration.version)) {
+        result.skipped.push(migration.version)
+        logDebug('Migration already applied, skipping', {version: migration.version})
+        continue
+      }
+
+      try {
+        await applyMigration(migration)
+        result.applied.push(migration.version)
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        logError('Migration failed', {version: migration.version, error: message})
+        result.errors.push(`${migration.version}: ${message}`)
+        // Stop on first error - don't continue with dependent migrations
+        break
+      }
     }
 
-    try {
-      await applyMigration(migration)
-      result.applied.push(migration.version)
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      logError('Migration failed', {version: migration.version, error: message})
-      result.errors.push(`${migration.version}: ${message}`)
-      // Stop on first error - don't continue with dependent migrations
-      break
+    // Track successful migrations applied
+    if (result.errors.length === 0) {
+      metrics.addMetric('MigrationSuccess', MetricUnit.Count, 1)
     }
-  }
+    addMetadata(span, 'applied', result.applied.length)
+    addMetadata(span, 'skipped', result.skipped.length)
+    addMetadata(span, 'errors', result.errors.length)
+    endSpan(span)
 
-  // Track successful migrations applied
-  if (result.errors.length === 0) {
-    metrics.addMetric('MigrationSuccess', MetricUnit.Count, 1)
+    logInfo('MigrateDSQL completed', result)
+    return result
   }
-  addMetadata(span, 'applied', result.applied.length)
-  addMetadata(span, 'skipped', result.skipped.length)
-  addMetadata(span, 'errors', result.errors.length)
-  endSpan(span)
+}
 
-  logInfo('MigrateDSQL completed', result)
-  return result
-}))
+const handlerInstance = new MigrateDSQLHandler()
+export const handler = handlerInstance.handler.bind(handlerInstance)

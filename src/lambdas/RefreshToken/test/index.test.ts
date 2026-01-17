@@ -1,9 +1,9 @@
 import {beforeEach, describe, expect, test, vi} from 'vitest'
-import type {APIGatewayProxyEvent} from 'aws-lambda'
 import {createMockContext} from '#util/vitest-setup'
 import {createAPIGatewayEvent} from '#test/helpers/event-factories'
 import {DEFAULT_SESSION_ID, DEFAULT_USER_ID} from '#test/helpers/entity-fixtures'
 import type {SessionPayload} from '#types/util'
+import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
 
 const validateSessionTokenMock = vi.fn<(token: string) => Promise<SessionPayload>>()
 const refreshSessionMock = vi.fn<(sessionId: string) => Promise<{expiresAt: number}>>()
@@ -16,7 +16,7 @@ const {handler} = await import('./../src')
 
 describe('#RefreshToken', () => {
   const context = createMockContext()
-  let event: APIGatewayProxyEvent
+  let event: CustomAPIGatewayRequestAuthorizerEvent
   const fakeUserId = DEFAULT_USER_ID
   const fakeSessionId = DEFAULT_SESSION_ID
   const fakeToken = 'test-session-token-abc123'
@@ -24,11 +24,7 @@ describe('#RefreshToken', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    event = createAPIGatewayEvent({
-      path: '/refreshToken',
-      httpMethod: 'POST',
-      headers: {Authorization: `Bearer ${fakeToken}`}
-    }) as unknown as APIGatewayProxyEvent
+    event = createAPIGatewayEvent({path: '/refreshToken', httpMethod: 'POST', headers: {Authorization: `Bearer ${fakeToken}`}})
   })
 
   test('should successfully refresh a valid session token', async () => {

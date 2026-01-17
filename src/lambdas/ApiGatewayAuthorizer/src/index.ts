@@ -15,8 +15,7 @@ import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTe
 import {validateSessionToken} from '#lib/domain/auth/sessionService'
 import {getOptionalEnv, getRequiredEnv} from '#lib/system/env'
 import {providerFailureErrorMessage, UnexpectedError} from '#lib/system/errors'
-import {metrics, MetricUnit, withPowertools} from '#lib/lambda/middleware/powertools'
-import {wrapAuthorizer} from '#lib/lambda/middleware/legacy'
+import {AuthorizerHandler, metrics, MetricUnit} from '#lib/lambda/handlers'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 
 const generatePolicy = (principalId: string, effect: string, resource: string, usageIdentifierKey?: string) => {
@@ -160,100 +159,102 @@ function isRemoteTestRequest(event: APIGatewayRequestAuthorizerEvent): boolean {
 }
 
 /**
- * A custom Lambda Authorizer that handles the Authentication header
- * There are (3) possible outcomes from this method:
- * - Returns a policy with Effect: Allow ... forwards the request
- * - Returns a policy with Effect: Deny ... translated into 403
- * - Returns new Error('Unauthorized') ... translated into 401
- * - Returns callback(Error) ... translated into 500
- * @notExported
+ * Handler for API Gateway custom authorization.
+ * Validates API keys and session tokens, returns IAM policies.
  */
-export const handler = withPowertools(wrapAuthorizer(async ({event}) => {
-  // Track authorization attempt
-  metrics.addMetric('AuthorizationAttempt', MetricUnit.Count, 1)
+class ApiGatewayAuthorizerHandler extends AuthorizerHandler {
+  readonly operationName = 'ApiGatewayAuthorizer'
 
-  const span = startSpan('authorize-request')
-  addAnnotation(span, 'path', event.path)
+  protected async authorize(event: APIGatewayRequestAuthorizerEvent): Promise<CustomAuthorizerResult> {
+    // Track authorization attempt
+    metrics.addMetric('AuthorizationAttempt', MetricUnit.Count, 1)
 
-  const queryStringParameters = event.queryStringParameters
-  if (!queryStringParameters || !('ApiKey' in queryStringParameters)) {
-    logInfo('No API key found')
-    metrics.addMetric('AuthorizationDenied', MetricUnit.Count, 1)
-    addMetadata(span, 'reason', 'no_api_key')
-    endSpan(span)
-    throw new Error('Unauthorized')
-  }
-  const apiKeyValue = queryStringParameters.ApiKey
-  const apiKeys = await fetchApiKeys()
-  const matchedApiKey = apiKeys.filter((item) => item.value === apiKeyValue)
-  if (matchedApiKey.length == 0) {
-    logInfo('API key is invalid')
-    metrics.addMetric('AuthorizationDenied', MetricUnit.Count, 1)
-    addMetadata(span, 'reason', 'invalid_api_key')
-    endSpan(span)
-    throw new Error('Unauthorized')
-  }
-  const apiKey = matchedApiKey[0]
-  if (apiKey.enabled === false) {
-    logInfo('API key is disabled')
-    metrics.addMetric('AuthorizationDenied', MetricUnit.Count, 1)
-    addMetadata(span, 'reason', 'api_key_disabled')
-    endSpan(span)
-    throw new Error('Unauthorized')
-  }
+    const span = startSpan('authorize-request')
+    addAnnotation(span, 'path', event.path)
 
-  if (isRemoteTestRequest(event)) {
-    const fakeUserId = '123e4567-e89b-12d3-a456-426614174000'
-    metrics.addMetric('AuthorizationSuccess', MetricUnit.Count, 1)
-    addAnnotation(span, 'principalId', fakeUserId)
-    addMetadata(span, 'testRequest', true)
-    endSpan(span)
-    return generateAllow(fakeUserId, event.methodArn, apiKeyValue)
-  }
+    const queryStringParameters = event.queryStringParameters
+    if (!queryStringParameters || !('ApiKey' in queryStringParameters)) {
+      logInfo('No API key found')
+      metrics.addMetric('AuthorizationDenied', MetricUnit.Count, 1)
+      addMetadata(span, 'reason', 'no_api_key')
+      endSpan(span)
+      throw new Error('Unauthorized')
+    }
+    const apiKeyValue = queryStringParameters.ApiKey
+    const apiKeys = await fetchApiKeys()
+    const matchedApiKey = apiKeys.filter((item) => item.value === apiKeyValue)
+    if (matchedApiKey.length == 0) {
+      logInfo('API key is invalid')
+      metrics.addMetric('AuthorizationDenied', MetricUnit.Count, 1)
+      addMetadata(span, 'reason', 'invalid_api_key')
+      endSpan(span)
+      throw new Error('Unauthorized')
+    }
+    const apiKey = matchedApiKey[0]
+    if (apiKey.enabled === false) {
+      logInfo('API key is disabled')
+      metrics.addMetric('AuthorizationDenied', MetricUnit.Count, 1)
+      addMetadata(span, 'reason', 'api_key_disabled')
+      endSpan(span)
+      throw new Error('Unauthorized')
+    }
 
-  const apiKeyId = apiKey.id as string
-  const usagePlans = await fetchUsagePlans(apiKeyId)
-  const usagePlanId = usagePlans[0].id as string
-  const usageData = await fetchUsageData(apiKeyId, usagePlanId)
-  logInfo('usageData =>', usageData)
+    if (isRemoteTestRequest(event)) {
+      const fakeUserId = '123e4567-e89b-12d3-a456-426614174000'
+      metrics.addMetric('AuthorizationSuccess', MetricUnit.Count, 1)
+      addAnnotation(span, 'principalId', fakeUserId)
+      addMetadata(span, 'testRequest', true)
+      endSpan(span)
+      return generateAllow(fakeUserId, event.methodArn, apiKeyValue)
+    }
 
-  let principalId = 'unknown'
-  const pathPart = event.path.substring(1)
-  const multiAuthenticationPathsString = getRequiredEnv('MULTI_AUTHENTICATION_PATH_PARTS')
-  const multiAuthenticationPaths = multiAuthenticationPathsString.split(',')
-  if (event.headers && 'Authorization' in event.headers && event.headers.Authorization !== undefined) {
-    const maybeUserId = await getUserIdFromAuthenticationHeader(event.headers.Authorization)
-    if (maybeUserId) {
-      principalId = maybeUserId
-    } else {
-      if (multiAuthenticationPaths.includes(pathPart)) {
-        logInfo('Multi-authentication path; userId not required')
+    const apiKeyId = apiKey.id as string
+    const usagePlans = await fetchUsagePlans(apiKeyId)
+    const usagePlanId = usagePlans[0].id as string
+    const usageData = await fetchUsageData(apiKeyId, usagePlanId)
+    logInfo('usageData =>', usageData)
+
+    let principalId = 'unknown'
+    const pathPart = event.path.substring(1)
+    const multiAuthenticationPathsString = getRequiredEnv('MULTI_AUTHENTICATION_PATH_PARTS')
+    const multiAuthenticationPaths = multiAuthenticationPathsString.split(',')
+    if (event.headers && 'Authorization' in event.headers && event.headers.Authorization !== undefined) {
+      const maybeUserId = await getUserIdFromAuthenticationHeader(event.headers.Authorization)
+      if (maybeUserId) {
+        principalId = maybeUserId
       } else {
-        // Return 401 to trigger re-login flow in iOS app
-        logInfo('Session token invalid or expired')
+        if (multiAuthenticationPaths.includes(pathPart)) {
+          logInfo('Multi-authentication path; userId not required')
+        } else {
+          // Return 401 to trigger re-login flow in iOS app
+          logInfo('Session token invalid or expired')
+          metrics.addMetric('AuthorizationDenied', MetricUnit.Count, 1)
+          addMetadata(span, 'reason', 'session_invalid')
+          endSpan(span)
+          throw new Error('Unauthorized')
+        }
+      }
+    } else {
+      // If it's not a multi-authentication path, it needs the Authorization header
+      if (!multiAuthenticationPaths.includes(pathPart)) {
+        // Return 401 to trigger login flow in iOS app
+        logInfo('Authorization header missing')
         metrics.addMetric('AuthorizationDenied', MetricUnit.Count, 1)
-        addMetadata(span, 'reason', 'session_invalid')
+        addMetadata(span, 'reason', 'auth_header_missing')
         endSpan(span)
         throw new Error('Unauthorized')
       }
     }
-  } else {
-    // If it's not a multi-authentication path, it needs the Authorization header
-    if (!multiAuthenticationPaths.includes(pathPart)) {
-      // Return 401 to trigger login flow in iOS app
-      logInfo('Authorization header missing')
-      metrics.addMetric('AuthorizationDenied', MetricUnit.Count, 1)
-      addMetadata(span, 'reason', 'auth_header_missing')
-      endSpan(span)
-      throw new Error('Unauthorized')
-    }
+
+    // Track successful authorization
+    metrics.addMetric('AuthorizationSuccess', MetricUnit.Count, 1)
+    addAnnotation(span, 'principalId', principalId)
+    addMetadata(span, 'success', true)
+    endSpan(span)
+
+    return generateAllow(principalId, event.methodArn, apiKeyValue)
   }
+}
 
-  // Track successful authorization
-  metrics.addMetric('AuthorizationSuccess', MetricUnit.Count, 1)
-  addAnnotation(span, 'principalId', principalId)
-  addMetadata(span, 'success', true)
-  endSpan(span)
-
-  return generateAllow(principalId, event.methodArn, apiKeyValue)
-}))
+const handlerInstance = new ApiGatewayAuthorizerHandler()
+export const handler = handlerInstance.handler.bind(handlerInstance)

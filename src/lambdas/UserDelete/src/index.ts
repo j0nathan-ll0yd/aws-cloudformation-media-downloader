@@ -8,32 +8,32 @@
  * Input: Authenticated user context (userId from token)
  * Output: APIGatewayProxyResult confirming deletion
  */
+import type {APIGatewayProxyResult, Context} from 'aws-lambda'
 import {deleteUser as deleteUserRecord, deleteUserDevicesByUserId, deleteUserFilesByUserId, getDevicesBatch} from '#entities/queries'
-import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
 import type {Device} from '#types/domainModels'
+import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
+import {AuthenticatedHandler} from '#lib/lambda/handlers'
+import {buildValidatedResponse} from '#lib/lambda/responses'
+import {createFailedUserDeletionIssue} from '#lib/integrations/github/issueService'
 import {deleteDevice, getUserDevices} from '#lib/services/device/deviceService'
 import {providerFailureErrorMessage, UnexpectedError} from '#lib/system/errors'
-import {createFailedUserDeletionIssue} from '#lib/integrations/github/issueService'
-import {buildValidatedResponse} from '#lib/lambda/responses'
-import {metrics, MetricUnit, withPowertools} from '#lib/lambda/middleware/powertools'
-import {wrapAuthenticatedHandler} from '#lib/lambda/middleware/api'
 import {logDebug, logError} from '#lib/system/logging'
 
-// Delete all user-file relationships
+/** Delete all user-file relationships */
 async function deleteUserFiles(userId: string): Promise<void> {
   logDebug('deleteUserFiles <=', userId)
   await deleteUserFilesByUserId(userId)
   logDebug('deleteUserFiles => completed')
 }
 
-// Delete all user-device relationships
+/** Delete all user-device relationships */
 async function deleteUserDevicesRelations(userId: string): Promise<void> {
   logDebug('deleteUserDevices <=', userId)
   await deleteUserDevicesByUserId(userId)
   logDebug('deleteUserDevices => completed')
 }
 
-// Delete user record
+/** Delete user record */
 async function deleteUser(userId: string): Promise<void> {
   logDebug('deleteUser <=', userId)
   await deleteUserRecord(userId)
@@ -41,22 +41,16 @@ async function deleteUser(userId: string): Promise<void> {
 }
 
 /**
- * Deletes a User and all associated data.
- * It does NOT delete the files themselves; this happens through a separate process.
- * @param event - An AWS ScheduledEvent; happening daily
- * @param context - An AWS Context object
+ * Handler for user deletion with cascade
+ * Deletes user files, devices, and finally the user record
  */
-export const handler = withPowertools(wrapAuthenticatedHandler(async ({context, userId}) => {
-  // Track user delete attempt
-  metrics.addMetric('UserDeleteAttempt', MetricUnit.Count, 1)
+class UserDeleteHandler extends AuthenticatedHandler {
+  readonly operationName = 'UserDelete'
 
-  const span = startSpan('user-delete-cascade')
-  addAnnotation(span, 'userId', userId)
-
-  try {
+  protected async handleAuthenticated(_event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> {
     const deletableDevices: Device[] = []
 
-    const userDevices = await getUserDevices(userId)
+    const userDevices = await getUserDevices(this.userId)
     logDebug('Found userDevices', userDevices.length.toString())
     if (userDevices.length > 0) {
       const deviceIds = userDevices.map((userDevice) => userDevice.deviceId)
@@ -71,8 +65,8 @@ export const handler = withPowertools(wrapAuthenticatedHandler(async ({context, 
     // Delete children FIRST (correct cascade order), then parent LAST
     // 1. Delete junction/child tables first
     const relationResults = await Promise.allSettled([
-      deleteUserFiles(userId),
-      deleteUserDevicesRelations(userId)
+      deleteUserFiles(this.userId),
+      deleteUserDevicesRelations(this.userId)
     ])
     logDebug('Promise.allSettled (relations)', relationResults)
 
@@ -98,24 +92,19 @@ export const handler = withPowertools(wrapAuthenticatedHandler(async ({context, 
 
     // Delete parent LAST - only if all children succeeded
     try {
-      await deleteUser(userId)
+      await deleteUser(this.userId)
       logDebug('deleteUser completed')
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error))
-      logError(`Failed to properly remove user ${userId}`, err.message)
-      await createFailedUserDeletionIssue(userId, deletableDevices, err, context.awsRequestId)
+      logError(`Failed to properly remove user ${this.userId}`, err.message)
+      await createFailedUserDeletionIssue(this.userId, deletableDevices, err, context.awsRequestId)
       throw new UnexpectedError('Operation failed unexpectedly; but logged for resolution')
     }
 
-    // Track successful deletion
-    metrics.addMetric('UserDeleteSuccess', MetricUnit.Count, 1)
-    addMetadata(span, 'success', true)
-    addMetadata(span, 'devicesDeleted', deletableDevices.length)
-    endSpan(span)
-
+    this.addMetadata('devicesDeleted', deletableDevices.length)
     return buildValidatedResponse(context, 204)
-  } catch (error) {
-    endSpan(span, error as Error)
-    throw error
   }
-}))
+}
+
+const handlerInstance = new UserDeleteHandler()
+export const handler = handlerInstance.handler.bind(handlerInstance)

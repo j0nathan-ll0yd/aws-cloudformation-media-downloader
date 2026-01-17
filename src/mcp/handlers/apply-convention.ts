@@ -9,7 +9,7 @@
  * - entity-mock: Fix entity mock patterns in tests
  * - response-helper: Replace raw response objects with buildApiResponse
  * - env-validation: Replace process.env with getRequiredEnv
- * - powertools: Wrap handlers with withPowertools
+ * - class-handlers: Convert to class-based handler pattern
  */
 
 import {existsSync, readFileSync} from 'node:fs'
@@ -20,7 +20,7 @@ import {Project, SyntaxKind} from 'ts-morph'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const projectRoot = resolve(__dirname, '../../..')
 
-export type ConventionType = 'aws-sdk-wrapper' | 'entity-mock' | 'response-helper' | 'env-validation' | 'powertools'
+export type ConventionType = 'aws-sdk-wrapper' | 'entity-mock' | 'response-helper' | 'env-validation' | 'class-handlers'
 
 export interface ApplyConventionArgs {
   file: string
@@ -342,38 +342,52 @@ async function applyEnvValidation(filePath: string, dryRun: boolean): Promise<Ap
 }
 
 /**
- * Apply powertools convention
- * Wraps handlers with withPowertools
+ * Apply class-handlers convention
+ * Checks if handlers use class-based pattern instead of functional wrappers
  */
-async function applyPowertools(filePath: string, dryRun: boolean): Promise<ApplyResult> {
+async function applyClassHandlers(filePath: string, dryRun: boolean): Promise<ApplyResult> {
   const changes: string[] = []
 
   if (!filePath.includes('/lambdas/') || !filePath.endsWith('index.ts')) {
-    return {file: filePath, convention: 'powertools', applied: false, changes: ['File is not a Lambda handler - skipping'], dryRun}
+    return {file: filePath, convention: 'class-handlers', applied: false, changes: ['File is not a Lambda handler - skipping'], dryRun}
   }
 
   const content = readFileSync(filePath, 'utf-8')
 
-  // Check if already wrapped
-  if (content.includes('withPowertools') || content.includes('wrapLambdaInvokeHandler')) {
-    return {file: filePath, convention: 'powertools', applied: false, changes: ['Handler already uses PowerTools wrapper'], dryRun}
+  // Check if using class-based pattern
+  const classBasedPattern = /class\s+\w+Handler\s+extends\s+\w+Handler/
+  if (classBasedPattern.test(content)) {
+    return {file: filePath, convention: 'class-handlers', applied: false, changes: ['Handler already uses class-based pattern'], dryRun}
   }
 
-  // Check for unwrapped handler export
-  const unwrappedPattern = /export\s+const\s+handler\s*=\s*async/
-  if (unwrappedPattern.test(content)) {
-    changes.push('Handler is not wrapped with withPowertools')
+  // Check for old functional patterns
+  const oldPatterns = ['withPowertools', 'wrapAuthenticatedHandler', 'wrapOptionalAuthHandler', 'wrapApiHandler', 'wrapSqsBatchHandler']
+  const foundOldPatterns = oldPatterns.filter((pattern) => content.includes(pattern))
+
+  if (foundOldPatterns.length > 0) {
+    changes.push(`Handler uses deprecated patterns: ${foundOldPatterns.join(', ')}`)
     changes.push('')
-    changes.push("Add import: import {withPowertools} from '#lib/lambda/middleware/powertools'")
-    changes.push('Wrap handler:')
-    changes.push('  export const handler = withPowertools(async (event, context) => {')
-    changes.push('    // handler code')
-    changes.push('  })')
+    changes.push('Convert to class-based pattern:')
+    changes.push("1. Import base class: import {AuthenticatedHandler} from '#lib/lambda/handlers'")
+    changes.push('2. Create handler class extending appropriate base:')
+    changes.push('   class MyHandler extends AuthenticatedHandler {')
+    changes.push("     readonly operationName = 'MyOperation'")
+    changes.push('     protected async handleAuthenticated(event, context) { ... }')
+    changes.push('   }')
+    changes.push('3. Export bound handler:')
+    changes.push('   const handlerInstance = new MyHandler()')
+    changes.push('   export const handler = handlerInstance.handler.bind(handlerInstance)')
 
-    return {file: filePath, convention: 'powertools', applied: false, changes, dryRun, error: 'Auto-fix not available - manual wrapping required'}
+    return {file: filePath, convention: 'class-handlers', applied: false, changes, dryRun, error: 'Auto-fix not available - requires class-based refactor'}
   }
 
-  return {file: filePath, convention: 'powertools', applied: false, changes: ['Handler appears to be properly wrapped'], dryRun}
+  return {
+    file: filePath,
+    convention: 'class-handlers',
+    applied: false,
+    changes: ['Handler pattern could not be determined - manual review required'],
+    dryRun
+  }
 }
 
 /**
@@ -405,8 +419,8 @@ export async function handleApplyConvention(args: ApplyConventionArgs): Promise<
     case 'env-validation':
       return applyEnvValidation(filePath, dryRun)
 
-    case 'powertools':
-      return applyPowertools(filePath, dryRun)
+    case 'class-handlers':
+      return applyClassHandlers(filePath, dryRun)
 
     default:
       return {
@@ -415,7 +429,7 @@ export async function handleApplyConvention(args: ApplyConventionArgs): Promise<
         applied: false,
         changes: [],
         dryRun,
-        error: `Unknown convention: ${convention}. Available: aws-sdk-wrapper, entity-mock, response-helper, env-validation, powertools`
+        error: `Unknown convention: ${convention}. Available: aws-sdk-wrapper, entity-mock, response-helper, env-validation, class-handlers`
       }
   }
 }

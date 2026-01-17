@@ -9,31 +9,36 @@
  * Output: 204 No Content on success
  */
 
-import type {APIGatewayEvent, APIGatewayProxyResult} from 'aws-lambda'
+import type {APIGatewayEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
 import {addAnnotation, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
-import type {ApiHandlerParams} from '#types/lambda'
 import {buildValidatedResponse} from '#lib/lambda/responses'
-import {metrics, MetricUnit, withPowertools} from '#lib/lambda/middleware/powertools'
-import {wrapApiHandler} from '#lib/lambda/middleware/api'
+import {ApiHandler, metrics, MetricUnit} from '#lib/lambda/handlers'
 import {logInfo} from '#lib/system/logging'
 
 /**
- * Logs client-side events for debugging and analytics.
- * @notExported
+ * Handler for client-side device events.
+ * Logs events for debugging and analytics.
  */
-export const handler = withPowertools(wrapApiHandler(async ({event, context}: ApiHandlerParams<APIGatewayEvent>): Promise<APIGatewayProxyResult> => {
-  // Track device event received
-  metrics.addMetric('DeviceEventReceived', MetricUnit.Count, 1)
+class DeviceEventHandler extends ApiHandler<APIGatewayEvent> {
+  readonly operationName = 'DeviceEvent'
 
-  const span = startSpan('device-event-log')
-  const deviceId = event.headers['x-device-uuid']
-  if (deviceId) {
-    addAnnotation(span, 'deviceId', deviceId)
+  protected async handleRequest(event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> {
+    // Track device event received
+    metrics.addMetric('DeviceEventReceived', MetricUnit.Count, 1)
+
+    const span = startSpan('device-event-log')
+    const deviceId = event.headers['x-device-uuid']
+    if (deviceId) {
+      addAnnotation(span, 'deviceId', deviceId)
+    }
+
+    const message = event.body
+    logInfo('Event received', {deviceId, message})
+    endSpan(span)
+
+    return buildValidatedResponse(context, 204)
   }
+}
 
-  const message = event.body
-  logInfo('Event received', {deviceId, message})
-  endSpan(span)
-
-  return buildValidatedResponse(context, 204)
-}))
+const handlerInstance = new DeviceEventHandler()
+export const handler = handlerInstance.handler.bind(handlerInstance)

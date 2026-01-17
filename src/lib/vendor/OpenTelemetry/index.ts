@@ -136,5 +136,6 @@ export function withTracing<TEvent = unknown, TResult = unknown>(
   }
 }
 
-// Re-export SpanKind for consumers who need to specify span types
+// Re-export types for consumers
 export { SpanKind }
+export type { Span }

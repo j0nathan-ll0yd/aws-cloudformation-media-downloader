@@ -20,15 +20,11 @@ vi.mock('#lib/vendor/Drizzle/client', () => ({getDrizzleClient: vi.fn(async () =
 const operatorMocks = createDrizzleOperatorMocks()
 vi.mock('drizzle-orm', () => ({sql: operatorMocks.sql}))
 
-// Mock middleware - pass through the handler function
-vi.mock('#lib/lambda/middleware/powertools',
-  () => ({
-    withPowertools: vi.fn(<T extends (...args: never[]) => unknown>(handler: T) => handler),
-    metrics: {addMetric: vi.fn()},
-    MetricUnit: {Count: 'Count'}
-  }))
-
-vi.mock('#lib/lambda/middleware/internal', () => ({wrapLambdaInvokeHandler: vi.fn(<T extends (...args: never[]) => unknown>(handler: T) => handler)}))
+// Mock handlers - use partial mock to preserve real base classes
+vi.mock('#lib/lambda/handlers', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('#lib/lambda/handlers')>()
+  return {...actual, metrics: {addMetric: vi.fn()}, logger: {info: vi.fn(), error: vi.fn(), debug: vi.fn(), appendKeys: vi.fn()}}
+})
 
 // Mock OpenTelemetry
 vi.mock('#lib/vendor/OpenTelemetry', () => ({startSpan: vi.fn(() => ({})), endSpan: vi.fn(), addAnnotation: vi.fn(), addMetadata: vi.fn()}))

@@ -9,11 +9,11 @@ import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 // Mock dependencies BEFORE importing
 vi.mock('#lib/system/logging', () => ({logDebug: vi.fn(), logInfo: vi.fn()}))
 
-vi.mock('#lib/lambda/middleware/powertools', () => ({metrics: {addMetric: vi.fn()}, MetricUnit: {Count: 'Count'}}))
+vi.mock('#lib/lambda/handlers', () => ({metrics: {addMetric: vi.fn()}, MetricUnit: {Count: 'Count'}}))
 
 // Import after mocking
 const {CircuitBreaker, CircuitBreakerOpenError, youtubeCircuitBreaker} = await import('../circuitBreaker')
-import {metrics} from '#lib/lambda/middleware/powertools'
+import {metrics} from '#lib/lambda/handlers'
 import {logInfo} from '#lib/system/logging'
 
 describe('Circuit Breaker', () => {

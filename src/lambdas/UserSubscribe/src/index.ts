@@ -8,47 +8,36 @@
  * Input: UserSubscriptionRequest with endpointArn and topicArn
  * Output: APIGatewayProxyResult with subscription confirmation
  */
-import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
+import type {APIGatewayProxyResult, Context} from 'aws-lambda'
 import {userSubscriptionRequestSchema} from '#types/api-schema'
 import type {UserSubscriptionRequest} from '#types/api-schema'
+import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
+import {AuthenticatedHandler} from '#lib/lambda/handlers'
 import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/apiGateway'
 import {buildValidatedResponse} from '#lib/lambda/responses'
 import {verifyPlatformConfiguration} from '#lib/lambda/context'
-import {metrics, MetricUnit, withPowertools} from '#lib/lambda/middleware/powertools'
-import {wrapAuthenticatedHandler} from '#lib/lambda/middleware/api'
 import {subscribeEndpointToTopic} from '#lib/services/device/deviceService'
 
 /**
+ * Handler for user subscription to SNS topics
  * Subscribes an endpoint (a client device) to an SNS topic
- *
- * - Requires authentication (rejects Unauthenticated and Anonymous users)
- * - Requires that the platformApplicationArn environment variable is set
- * - Requires the endpointArn and topicArn are in the payload
- *
- * @notExported
  */
-export const handler = withPowertools(wrapAuthenticatedHandler(async ({event, context}) => {
-  // Track subscription attempt
-  metrics.addMetric('SubscriptionAttempt', MetricUnit.Count, 1)
-  const span = startSpan('user-subscribe-sns')
-  try {
+class UserSubscribeHandler extends AuthenticatedHandler {
+  readonly operationName = 'UserSubscribe'
+
+  protected async handleAuthenticated(event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> {
     verifyPlatformConfiguration()
     const requestBody = getPayloadFromEvent(event) as UserSubscriptionRequest
     validateRequest(requestBody, userSubscriptionRequestSchema)
-    addAnnotation(span, 'endpointArn', requestBody.endpointArn)
-    addAnnotation(span, 'topicArn', requestBody.topicArn)
+    this.addAnnotation('endpointArn', requestBody.endpointArn)
+    this.addAnnotation('topicArn', requestBody.topicArn)
 
     const subscribeResponse = await subscribeEndpointToTopic(requestBody.endpointArn, requestBody.topicArn)
 
-    // Track successful subscription
-    metrics.addMetric('SubscriptionSuccess', MetricUnit.Count, 1)
-    addMetadata(span, 'subscriptionArn', subscribeResponse.SubscriptionArn)
-    addMetadata(span, 'success', true)
-    endSpan(span)
-
+    this.addMetadata('subscriptionArn', subscribeResponse.SubscriptionArn)
     return buildValidatedResponse(context, 201, {subscriptionArn: subscribeResponse.SubscriptionArn})
-  } catch (error) {
-    endSpan(span, error as Error)
-    throw error
   }
-}))
+}
+
+const handlerInstance = new UserSubscribeHandler()
+export const handler = handlerInstance.handler.bind(handlerInstance)

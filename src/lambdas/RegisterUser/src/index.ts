@@ -14,81 +14,49 @@
  * The iOS app sends this separately from ASAuthorizationAppleIDCredential.fullName.
  * This is only populated on first sign-in, so we cache it for new user registration.
  */
-
-import type {APIGatewayEvent, APIGatewayProxyResult} from 'aws-lambda'
+import type {APIGatewayProxyResult, Context} from 'aws-lambda'
 import {updateUser} from '#entities/queries'
 import {getAuth} from '#lib/vendor/BetterAuth/config'
 import {assertTokenResponse, getSessionExpirationISO} from '#lib/vendor/BetterAuth/helpers'
-import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
 import {userRegistrationRequestSchema, userRegistrationResponseSchema} from '#types/api-schema'
 import type {UserRegistrationRequest} from '#types/api-schema'
-import type {ApiHandlerParams} from '#types/lambda'
+import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
+import {ApiHandler, metrics, MetricUnit} from '#lib/lambda/handlers'
 import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/apiGateway'
 import {buildValidatedResponse} from '#lib/lambda/responses'
-import {metrics, MetricUnit, withPowertools} from '#lib/lambda/middleware/powertools'
-import {wrapApiHandler} from '#lib/lambda/middleware/api'
 import {logInfo} from '#lib/system/logging'
 
 /**
- * Registers a User or logs in existing User via Sign in with Apple using Better Auth.
- *
- * Flow:
- * 1. Receive ID token directly from iOS app
- * 2. Use Better Auth's OAuth sign-in/registration with ID token
- * 3. Better Auth verifies token, creates/finds user, links account, creates session
- * 4. Update user with first/last name if this is a new registration
- * 5. Return session token with expiration
- *
- * Error cases:
- * - 401: Invalid ID token
- * - 500: Other errors
- *
- * @notExported
+ * Handler for user registration via Sign in with Apple
+ * Uses Better Auth to verify ID token and create/find user
  */
-export const handler = withPowertools(wrapApiHandler(async ({event, context}: ApiHandlerParams<APIGatewayEvent>): Promise<APIGatewayProxyResult> => {
-  // Track registration attempt
-  metrics.addMetric('RegistrationAttempt', MetricUnit.Count, 1)
+class RegisterUserHandler extends ApiHandler<CustomAPIGatewayRequestAuthorizerEvent> {
+  readonly operationName = 'RegisterUser'
 
-  const span = startSpan('register-user-auth')
-  addAnnotation(span, 'provider', 'apple')
+  protected async handleRequest(event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> {
+    this.addAnnotation('provider', 'apple')
 
-  try {
     // 1. Validate request
     const requestBody = getPayloadFromEvent(event) as UserRegistrationRequest
     validateRequest(requestBody, userRegistrationRequestSchema)
 
     // 2. Sign in/Register using Better Auth with ID token from iOS app
-    // Better Auth handles:
-    // - ID token verification (signature, expiration, issuer using Apple's public JWKS)
-    // - User lookup by Apple ID (or creation if new)
-    // - OAuth account linking (Accounts entity)
-    // - Session creation with device tracking
-    // - Email verification status from Apple
     const ipAddress = event.requestContext?.identity?.sourceIp
     const userAgent = event.headers?.['User-Agent'] || ''
 
     const auth = await getAuth()
     const rawResult = await auth.api.signInSocial({
       headers: {'user-agent': userAgent, 'x-forwarded-for': ipAddress || ''},
-      body: {
-        provider: 'apple',
-        idToken: {
-          token: requestBody.idToken
-          // No accessToken needed - we only have the ID token from iOS
-        }
-      }
+      body: {provider: 'apple', idToken: {token: requestBody.idToken}}
     })
 
     // Assert token response (throws if redirect)
     const result = assertTokenResponse(rawResult)
-    addAnnotation(span, 'userId', result.user?.id || 'unknown')
+    this.addAnnotation('userId', result.user?.id || 'unknown')
 
     // 3. Check if this is a new user and update with name from iOS app
-    // Apple's ID token doesn't include first/last name for privacy reasons
-    // The iOS app provides this from ASAuthorizationAppleIDCredential.fullName
-    // (only populated on first sign-in)
     const isNewUser = !result.user?.createdAt || Date.now() - new Date(result.user.createdAt).getTime() < 5000
-    addMetadata(span, 'isNewUser', isNewUser)
+    this.addMetadata('isNewUser', isNewUser)
 
     if (isNewUser && (requestBody.firstName || requestBody.lastName)) {
       const fullName = [requestBody.firstName, requestBody.lastName].filter(Boolean).join(' ')
@@ -101,13 +69,10 @@ export const handler = withPowertools(wrapApiHandler(async ({event, context}: Ap
       })
     }
 
-    // Track successful registration
-    metrics.addMetric('RegistrationSuccess', MetricUnit.Count, 1)
+    // Track new user registrations separately
     if (isNewUser) {
       metrics.addMetric('NewUserRegistration', MetricUnit.Count, 1)
     }
-    addMetadata(span, 'success', true)
-    endSpan(span)
 
     logInfo('RegisterUser: Better Auth sign-in/registration successful', {
       userId: result.user?.id,
@@ -122,8 +87,8 @@ export const handler = withPowertools(wrapApiHandler(async ({event, context}: Ap
       sessionId: result.session?.id || '',
       userId: result.user?.id || ''
     }, userRegistrationResponseSchema)
-  } catch (error) {
-    endSpan(span, error as Error)
-    throw error
   }
-}))
+}
+
+const handlerInstance = new RegisterUserHandler()
+export const handler = handlerInstance.handler.bind(handlerInstance)

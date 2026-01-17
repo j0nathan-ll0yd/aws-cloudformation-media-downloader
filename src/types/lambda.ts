@@ -223,6 +223,52 @@ export interface SqsBatchOptions {
 }
 
 // ============================================================================
+// Handler Base Class Types (used by class-based handlers)
+// ============================================================================
+
+/**
+ * Context passed to SQS record processors in class-based handlers.
+ * Similar to SqsRecordParams but designed for class method signatures.
+ */
+export interface SqsRecordContext<TBody = unknown> {
+  /** The SQS record being processed */
+  record: import('aws-lambda').SQSRecord
+  /** Parsed body (if parseBody is true) */
+  body: TBody
+  /** Lambda context */
+  context: import('aws-lambda').Context
+  /** Correlation metadata */
+  metadata: WrapperMetadata
+  /** SQS message attributes */
+  messageAttributes: import('aws-lambda').SQSMessageAttributes
+}
+
+/**
+ * Context passed to S3 record processors in class-based handlers.
+ */
+export interface S3RecordContext {
+  /** The S3 event record being processed */
+  record: import('aws-lambda').S3EventRecord
+  /** Lambda context */
+  context: import('aws-lambda').Context
+  /** Correlation metadata */
+  metadata: WrapperMetadata
+}
+
+/**
+ * Result type for scheduled handlers.
+ * Used by ScheduledHandler base class.
+ */
+export interface ScheduledResult {
+  /** Number of items processed */
+  processed?: number
+  /** Number of items deleted/cleaned up */
+  deleted?: number
+  /** Any additional result data */
+  [key: string]: unknown
+}
+
+// ============================================================================
 // Sanitization Types
 // ============================================================================
 
