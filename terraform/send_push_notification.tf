@@ -35,7 +35,7 @@ resource "aws_iam_role_policy_attachment" "SendPushNotificationXRay" {
 
 resource "aws_iam_role_policy_attachment" "SendPushNotificationDSQL" {
   role       = aws_iam_role.SendPushNotification.name
-  policy_arn = aws_iam_policy.LambdaDSQLReadWrite.arn
+  policy_arn = aws_iam_policy.LambdaDSQLReadOnly.arn
 }
 
 data "aws_iam_policy_document" "SendPushNotification" {
@@ -108,7 +108,7 @@ resource "aws_lambda_function" "SendPushNotification" {
   environment {
     variables = merge(local.common_lambda_env, {
       OTEL_SERVICE_NAME = local.send_push_notification_function_name
-      DSQL_ACCESS_LEVEL = "readwrite"
+      DSQL_ACCESS_LEVEL = "readonly"
     })
   }
 

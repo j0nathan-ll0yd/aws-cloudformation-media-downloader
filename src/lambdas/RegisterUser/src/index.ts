@@ -16,12 +16,13 @@
  */
 import type {APIGatewayProxyResult, Context} from 'aws-lambda'
 import {updateUser} from '#entities/queries'
+import {DatabaseOperation, DatabaseTable} from '#types/databasePermissions'
 import {getAuth} from '#lib/vendor/BetterAuth/config'
 import {assertTokenResponse, getSessionExpirationISO} from '#lib/vendor/BetterAuth/helpers'
 import {userRegistrationRequestSchema, userRegistrationResponseSchema} from '#types/api-schema'
 import type {UserRegistrationRequest} from '#types/api-schema'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
-import {ApiHandler, metrics, MetricUnit} from '#lib/lambda/handlers'
+import {ApiHandler, metrics, MetricUnit, RequiresDatabase} from '#lib/lambda/handlers'
 import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/apiGateway'
 import {buildValidatedResponse} from '#lib/lambda/responses'
 import {logInfo} from '#lib/system/logging'
@@ -30,6 +31,13 @@ import {logInfo} from '#lib/system/logging'
  * Handler for user registration via Sign in with Apple
  * Uses Better Auth to verify ID token and create/find user
  */
+@RequiresDatabase({
+  tables: [
+    {table: DatabaseTable.Users, operations: [DatabaseOperation.Update]},
+    {table: DatabaseTable.Sessions, operations: [DatabaseOperation.Insert]},
+    {table: DatabaseTable.Accounts, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}
+  ]
+})
 class RegisterUserHandler extends ApiHandler<CustomAPIGatewayRequestAuthorizerEvent> {
   readonly operationName = 'RegisterUser'
 

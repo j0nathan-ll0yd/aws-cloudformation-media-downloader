@@ -7,6 +7,7 @@
 -- ReadOnly Lambdas: app_readonly role (SELECT only)
 AWS IAM GRANT app_readonly TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/ListFiles';
 AWS IAM GRANT app_readonly TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/S3ObjectCreated';
+AWS IAM GRANT app_readonly TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/SendPushNotification';
 
 -- ReadWrite Lambdas: app_readwrite role (full DML)
 AWS IAM GRANT app_readwrite TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/ApiGatewayAuthorizer';
@@ -17,7 +18,6 @@ AWS IAM GRANT app_readwrite TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/PruneDevices
 AWS IAM GRANT app_readwrite TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/RefreshToken';
 AWS IAM GRANT app_readwrite TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/RegisterDevice';
 AWS IAM GRANT app_readwrite TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/RegisterUser';
-AWS IAM GRANT app_readwrite TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/SendPushNotification';
 AWS IAM GRANT app_readwrite TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/StartFileUpload';
 AWS IAM GRANT app_readwrite TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/UserDelete';
 AWS IAM GRANT app_readwrite TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/UserSubscribe';

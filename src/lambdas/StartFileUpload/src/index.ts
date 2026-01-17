@@ -9,6 +9,7 @@
  * Output: SQSBatchResponse with item failures for retry
  */
 import {createFileDownload, getFile, getFileDownload, getUserFilesByFileId, updateFile, updateFileDownload} from '#entities/queries'
+import {DatabaseOperation, DatabaseTable} from '#types/databasePermissions'
 import {sendMessage} from '#lib/vendor/AWS/SQS'
 import {publishEvent} from '#lib/vendor/AWS/EventBridge'
 import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
@@ -24,7 +25,7 @@ import {validateSchema} from '#lib/validation/constraints'
 import {getRequiredEnv} from '#lib/system/env'
 import {UnexpectedError} from '#lib/system/errors'
 import {closeCookieExpirationIssueIfResolved, createCookieExpirationIssue, createVideoDownloadFailureIssue} from '#lib/integrations/github/issueService'
-import {metrics, MetricUnit, SqsHandler} from '#lib/lambda/handlers'
+import {metrics, MetricUnit, RequiresDatabase, SqsHandler} from '#lib/lambda/handlers'
 import type {SqsRecordContext} from '#lib/lambda/handlers'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 import {createFailureNotification, createMetadataNotification} from '#lib/services/notification/transformers'
@@ -444,6 +445,13 @@ async function processDownloadRequest(message: ValidatedDownloadQueueMessage, re
  * Consumes messages from DownloadQueue (routed via EventBridge from WebhookFeedly).
  * Uses ReportBatchItemFailures to enable partial batch success.
  */
+@RequiresDatabase({
+  tables: [
+    {table: DatabaseTable.Files, operations: [DatabaseOperation.Select, DatabaseOperation.Insert, DatabaseOperation.Update]},
+    {table: DatabaseTable.FileDownloads, operations: [DatabaseOperation.Select, DatabaseOperation.Insert, DatabaseOperation.Update]},
+    {table: DatabaseTable.UserFiles, operations: [DatabaseOperation.Select]}
+  ]
+})
 class StartFileUploadHandler extends SqsHandler<unknown> {
   readonly operationName = 'StartFileUpload'
 

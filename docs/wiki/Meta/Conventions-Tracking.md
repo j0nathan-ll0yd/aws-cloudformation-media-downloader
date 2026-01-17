@@ -8,7 +8,7 @@ Central registry of all project conventions with their documentation and enforce
 
 | Method | Count | Description |
 |--------|-------|-------------|
-| **MCP Rules** | 21 | AST-based validation via ts-morph |
+| **MCP Rules** | 22 | AST-based validation via ts-morph |
 | **ESLint** | 26 | Linting rules including 9 JSDoc rules + 2 Drizzle safety rules + 10 local rules + TSDoc |
 | **Git Hooks** | 5 | Pre-commit (deps + secrets), commit-msg, pre-push, post-checkout |
 | **Dependency Cruiser** | 8 | Architectural boundary enforcement |
@@ -35,6 +35,7 @@ Central registry of all project conventions with their documentation and enforce
 | doc-sync | docs | HIGH | [MCP Convention Tools](../MCP/Convention-Tools.md) |
 | naming-conventions | naming | HIGH | [Naming Conventions](../Conventions/Naming-Conventions.md) |
 | authenticated-handler-enforcement | auth | HIGH | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) |
+| database-permissions | database, db-permissions | HIGH | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) |
 | comment-conventions | comments | HIGH | [Code Comments](../Conventions/Code-Comments.md) |
 | docs-structure | docs-location | HIGH | [Documentation Structure](Documentation-Structure.md) |
 | import-order | imports | MEDIUM | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) |
@@ -73,6 +74,7 @@ Central registry of all project conventions with their documentation and enforce
 | Only Mock External Services in Integration Tests | [Coverage Philosophy](../Testing/Coverage-Philosophy.md) | Code review |
 | Branch-First PR Workflow | [Git Workflow](../Conventions/Git-Workflow.md) | Git hook `pre-push` |
 | Authenticated Handler Wrappers | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) | MCP + ESLint |
+| Database Permissions Decorator | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) | MCP + Build Scripts |
 | Lambda Response Helper | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) | MCP + ESLint |
 | Type Definitions Location | [Type Definitions](../TypeScript/Type-Definitions.md) | MCP |
 | Batch Operation Retry | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) | MCP |

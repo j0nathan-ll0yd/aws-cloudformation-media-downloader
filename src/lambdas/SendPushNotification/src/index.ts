@@ -14,13 +14,14 @@
  * Output: SQSBatchResponse with item failures for retry
  */
 import {getDevice as getDeviceRecord, getUserDevicesByUserId} from '#entities/queries'
+import {DatabaseOperation, DatabaseTable} from '#types/databasePermissions'
 import {publishSnsEvent} from '#lib/vendor/AWS/SNS'
 import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
 import type {Device} from '#types/domainModels'
 import type {DeviceNotificationResult, FileNotificationType} from '#types/notificationTypes'
 import {pushNotificationAttributesSchema} from '#types/schemas'
 import {validateSchema} from '#lib/validation/constraints'
-import {metrics, MetricUnit, SqsHandler} from '#lib/lambda/handlers'
+import {metrics, MetricUnit, RequiresDatabase, SqsHandler} from '#lib/lambda/handlers'
 import type {SqsRecordContext} from '#lib/lambda/handlers'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 import {providerFailureErrorMessage, UnexpectedError} from '#lib/system/errors'
@@ -86,6 +87,12 @@ async function sendNotificationToDevice(device: Device, messageBody: string, not
  * Uses per-device error handling to maximize successful deliveries.
  * Only fails if ALL devices fail (partial success = message processed).
  */
+@RequiresDatabase({
+  tables: [
+    {table: DatabaseTable.Devices, operations: [DatabaseOperation.Select]},
+    {table: DatabaseTable.UserDevices, operations: [DatabaseOperation.Select]}
+  ]
+})
 class SendPushNotificationHandler extends SqsHandler<string> {
   readonly operationName = 'SendPushNotification'
   protected readonly batchOptions = {parseBody: false}

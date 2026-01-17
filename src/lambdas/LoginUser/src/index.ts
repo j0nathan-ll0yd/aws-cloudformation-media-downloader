@@ -12,10 +12,11 @@
 import type {APIGatewayProxyResult, Context} from 'aws-lambda'
 import {getAuth} from '#lib/vendor/BetterAuth/config'
 import {assertTokenResponse, getSessionExpirationISO} from '#lib/vendor/BetterAuth/helpers'
+import {DatabaseOperation, DatabaseTable} from '#types/databasePermissions'
 import {userLoginRequestSchema, userLoginResponseSchema} from '#types/api-schema'
 import type {UserLoginRequest} from '#types/api-schema'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
-import {ApiHandler} from '#lib/lambda/handlers'
+import {ApiHandler, RequiresDatabase} from '#lib/lambda/handlers'
 import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/apiGateway'
 import {buildValidatedResponse} from '#lib/lambda/responses'
 import {logInfo} from '#lib/system/logging'
@@ -24,6 +25,13 @@ import {logInfo} from '#lib/system/logging'
  * Handler for user login via Sign in with Apple
  * Uses Better Auth to verify ID token and create session
  */
+@RequiresDatabase({
+  tables: [
+    {table: DatabaseTable.Users, operations: [DatabaseOperation.Select, DatabaseOperation.Update]},
+    {table: DatabaseTable.Sessions, operations: [DatabaseOperation.Insert]},
+    {table: DatabaseTable.Accounts, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}
+  ]
+})
 class LoginUserHandler extends ApiHandler<CustomAPIGatewayRequestAuthorizerEvent> {
   readonly operationName = 'LoginUser'
 

@@ -68,6 +68,81 @@ All wrappers provide:
 - Fixture logging for test data extraction
 - `WrapperMetadata` with traceId passed to handler
 
+## Database Permissions Decorator
+
+Lambda handlers that access the database must declare their permissions using the `@RequiresDatabase` decorator. This enables:
+- **Documentation**: Database access requirements visible in code
+- **Validation**: MCP rule ensures declared permissions match actual query usage
+- **Generation**: Automated Terraform and PostgreSQL role generation
+
+### Basic Usage
+
+```typescript
+import {DatabaseOperation, DatabaseTable} from '#types/databasePermissions'
+import {AuthenticatedHandler, RequiresDatabase} from '#lib/lambda/handlers'
+
+@RequiresDatabase({
+  tables: [
+    {table: DatabaseTable.Files, operations: [DatabaseOperation.Select]},
+    {table: DatabaseTable.UserFiles, operations: [DatabaseOperation.Select]}
+  ]
+})
+class ListFilesHandler extends AuthenticatedHandler<ListFilesResponse> {
+  // Handler implementation
+}
+```
+
+### Available Tables
+
+| Enum Value | Table Name |
+|------------|------------|
+| `DatabaseTable.Users` | users |
+| `DatabaseTable.Files` | files |
+| `DatabaseTable.FileDownloads` | file_downloads |
+| `DatabaseTable.Devices` | devices |
+| `DatabaseTable.Sessions` | sessions |
+| `DatabaseTable.Accounts` | accounts |
+| `DatabaseTable.VerificationTokens` | verification_tokens |
+| `DatabaseTable.UserFiles` | user_files |
+| `DatabaseTable.UserDevices` | user_devices |
+
+### Available Operations
+
+| Enum Value | PostgreSQL |
+|------------|------------|
+| `DatabaseOperation.Select` | SELECT |
+| `DatabaseOperation.Insert` | INSERT |
+| `DatabaseOperation.Update` | UPDATE |
+| `DatabaseOperation.Delete` | DELETE |
+
+### Access Level Computation
+
+The decorator automatically computes an access level:
+- **readonly**: Only SELECT operations declared
+- **readwrite**: Any INSERT, UPDATE, or DELETE operations
+- **admin**: All operations on 5+ tables (MigrateDSQL only)
+
+### Build-Time Scripts
+
+```bash
+# Extract permissions from decorators to JSON
+pnpm run extract:db-permissions
+
+# Generate PostgreSQL IAM GRANT migration
+pnpm run generate:db-roles-migration
+
+# Validate Terraform matches declared permissions
+pnpm run generate:terraform-permissions
+```
+
+### Enforcement
+
+| Rule | Method | Severity |
+|------|--------|----------|
+| Handlers with entity imports must have decorator | MCP `database-permissions` | HIGH |
+| Declared tables must cover all imported queries | MCP `database-permissions` | HIGH |
+| Terraform access levels must match | `generate:terraform-permissions` | HIGH |
+
 ### Powertools Wrapper
 
 ```typescript
