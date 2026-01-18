@@ -42,5 +42,8 @@ export { getServicePermissions, RequiresServices } from './RequiresServices'
 // EventBridge permissions decorator
 export { getEventBridgePermissions, RequiresEventBridge } from './RequiresEventBridge'
 
+// DynamoDB permissions decorator
+export { getDynamoDBPermissions, RequiresDynamoDB } from './RequiresDynamoDB'
+
 // Re-export types from centralized types module
 export type { S3RecordContext, ScheduledResult, SqsBatchOptions, SqsRecordContext } from '#types/lambda'

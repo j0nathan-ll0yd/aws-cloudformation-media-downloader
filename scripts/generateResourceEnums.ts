@@ -30,6 +30,7 @@ interface TerraformResourceManifest {
   snsTopics: ResourceEntry[]
   snsPlatformApplications: ResourceEntry[]
   eventBridgeBuses: ResourceEntry[]
+  dynamodbTables: ResourceEntry[]
   generatedAt: string
 }
 
@@ -76,16 +77,21 @@ function generateTypeScriptFile(manifest: TerraformResourceManifest): string {
     manifest.eventBridgeBuses,
     'EventBridge event bus resources from Terraform'
   )
+  const dynamodbEnum = generateEnum(
+    'DynamoDBResource',
+    manifest.dynamodbTables,
+    'DynamoDB table resources from Terraform'
+  )
 
   const typeDefinitions = `
 /** Union of all SNS resources (topics and platform applications) */
 export type SNSResource = SNSTopicResource | SNSPlatformResource
 
 /** Union of all service resources for @RequiresServices decorator */
-export type TerraformResource = S3Resource | SQSResource | SNSTopicResource | SNSPlatformResource | EventBridgeResource
+export type TerraformResource = S3Resource | SQSResource | SNSTopicResource | SNSPlatformResource | EventBridgeResource | DynamoDBResource
 `
 
-  return header + s3Enum + '\n' + sqsEnum + '\n' + snsTopicEnum + '\n' + snsPlatformEnum + '\n' + eventBridgeEnum + typeDefinitions
+  return header + s3Enum + '\n' + sqsEnum + '\n' + snsTopicEnum + '\n' + snsPlatformEnum + '\n' + eventBridgeEnum + '\n' + dynamodbEnum + typeDefinitions
 }
 
 /**
@@ -119,6 +125,7 @@ async function main(): Promise<void> {
   console.log(`  SNSTopicResource:     ${manifest.snsTopics.length} value(s)`)
   console.log(`  SNSPlatformResource:  ${manifest.snsPlatformApplications.length} value(s)`)
   console.log(`  EventBridgeResource:  ${manifest.eventBridgeBuses.length} value(s)`)
+  console.log(`  DynamoDBResource:     ${manifest.dynamodbTables.length} value(s)`)
 }
 
 main().catch((error) => {

@@ -33,6 +33,7 @@ interface TerraformResourceManifest {
   snsTopics: ResourceEntry[]
   snsPlatformApplications: ResourceEntry[]
   eventBridgeBuses: ResourceEntry[]
+  dynamodbTables: ResourceEntry[]
   generatedAt: string
 }
 
@@ -43,6 +44,7 @@ interface InfrastructureJson {
     aws_sns_topic?: Record<string, unknown[]>
     aws_sns_platform_application?: Record<string, unknown[]>
     aws_cloudwatch_event_bus?: Record<string, unknown[]>
+    aws_dynamodb_table?: Record<string, unknown[]>
   }
 }
 
@@ -103,6 +105,10 @@ async function extractTerraformResources(): Promise<TerraformResourceManifest> {
       resources.aws_cloudwatch_event_bus,
       'aws_cloudwatch_event_bus'
     ),
+    dynamodbTables: extractResources(
+      resources.aws_dynamodb_table,
+      'aws_dynamodb_table'
+    ),
     generatedAt: new Date().toISOString()
   }
 
@@ -133,6 +139,7 @@ async function main(): Promise<void> {
     console.log(`  SNS Topics:              ${manifest.snsTopics.map((r) => r.name).join(', ') || '(none)'}`)
     console.log(`  SNS Platform Apps:       ${manifest.snsPlatformApplications.map((r) => r.name).join(', ') || '(none)'}`)
     console.log(`  EventBridge Buses:       ${manifest.eventBridgeBuses.map((r) => r.name).join(', ') || '(none)'}`)
+    console.log(`  DynamoDB Tables:         ${manifest.dynamodbTables.map((r) => r.name).join(', ') || '(none)'}`)
   } catch (error) {
     console.error('Failed to extract Terraform resources:', error)
     process.exit(1)

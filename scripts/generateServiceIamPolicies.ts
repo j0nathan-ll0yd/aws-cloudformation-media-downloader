@@ -1,9 +1,9 @@
 /**
  * Service IAM Policy Generator
  *
- * Generates Terraform IAM policy documents from @RequiresServices decorator metadata.
- * Creates aws_iam_policy_document, aws_iam_policy, and aws_iam_role_policy_attachment
- * resources for each Lambda with service permissions.
+ * Generates Terraform IAM policy documents from @RequiresServices and @RequiresDynamoDB
+ * decorator metadata. Creates aws_iam_policy_document, aws_iam_policy, and
+ * aws_iam_role_policy_attachment resources for each Lambda with service permissions.
  *
  * Output: terraform/generated_service_permissions.tf
  *
@@ -35,6 +35,21 @@ interface LambdaServicePermissions {
 
 interface ServicePermissionsManifest {
   lambdas: Record<string, LambdaServicePermissions>
+  generatedAt: string
+}
+
+interface DynamoDBPermission {
+  table: string
+  arnRef: string
+  operations: string[]
+}
+
+interface LambdaDynamoDBPermissions {
+  tables: DynamoDBPermission[]
+}
+
+interface DynamoDBPermissionsManifest {
+  lambdas: Record<string, LambdaDynamoDBPermissions>
   generatedAt: string
 }
 
@@ -74,19 +89,53 @@ function getServiceDescription(service: ServiceType): string {
 }
 
 /**
+ * Generate a policy document statement for a DynamoDB permission
+ */
+function generateDynamoDBStatement(permission: DynamoDBPermission): string {
+  const actions = permission.operations.map((op) => `"${op}"`).join(', ')
+  const comment = `DynamoDB: ${permission.table}`
+  return `  # ${comment}
+  statement {
+    actions   = [${actions}]
+    resources = [${permission.arnRef}]
+  }`
+}
+
+/**
  * Generate Terraform HCL for a Lambda's service permissions
  */
-function generateLambdaPolicies(lambdaName: string, permissions: LambdaServicePermissions): string {
-  const serviceNames = permissions.services.map((s) => getServiceDescription(s.service)).join(' + ')
+function generateLambdaPolicies(
+  lambdaName: string,
+  servicePerms: LambdaServicePermissions | undefined,
+  dynamodbPerms: LambdaDynamoDBPermissions | undefined
+): string {
+  const services = servicePerms?.services || []
+  const tables = dynamodbPerms?.tables || []
+
+  if (services.length === 0 && tables.length === 0) {
+    return ''
+  }
+
+  const serviceNames: string[] = []
+  if (services.length > 0) {
+    serviceNames.push(...services.map((s) => getServiceDescription(s.service)))
+  }
+  if (tables.length > 0) {
+    serviceNames.push('DynamoDB')
+  }
 
   const lines: string[] = [
-    `# ${lambdaName}: ${serviceNames} permissions`,
+    `# ${lambdaName}: ${[...new Set(serviceNames)].join(' + ')} permissions`,
     `data "aws_iam_policy_document" "${lambdaName}_services" {`
   ]
 
-  for (const perm of permissions.services) {
+  for (const perm of services) {
     const comment = `${getServiceDescription(perm.service)}: ${perm.resource}${perm.hasWildcard ? '/*' : ''}`
     lines.push(generateStatement(perm, comment))
+  }
+
+  for (const tbl of tables) {
+    lines.push(generateDynamoDBStatement(tbl))
   }
 
   lines.push('}')
@@ -109,37 +158,58 @@ function generateLambdaPolicies(lambdaName: string, permissions: LambdaServicePe
  * Main entry point
  */
 async function main(): Promise<void> {
-  const manifestPath = join(projectRoot, 'build/service-permissions.json')
+  const serviceManifestPath = join(projectRoot, 'build/service-permissions.json')
+  const dynamodbManifestPath = join(projectRoot, 'build/dynamodb-permissions.json')
 
-  if (!existsSync(manifestPath)) {
+  // Load service permissions (required)
+  if (!existsSync(serviceManifestPath)) {
     console.error('Error: build/service-permissions.json not found.')
     console.error('Run: pnpm run extract:service-permissions first.')
     process.exit(1)
   }
 
   console.log('Reading build/service-permissions.json...')
-  const manifest: ServicePermissionsManifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
+  const serviceManifest: ServicePermissionsManifest = JSON.parse(readFileSync(serviceManifestPath, 'utf-8'))
+  console.log(`Loaded service permissions for ${Object.keys(serviceManifest.lambdas).length} Lambdas`)
 
-  console.log(`Loaded permissions for ${Object.keys(manifest.lambdas).length} Lambdas`)
-  console.log(`Generated at: ${manifest.generatedAt}`)
+  // Load DynamoDB permissions (optional)
+  let dynamodbManifest: DynamoDBPermissionsManifest = {lambdas: {}, generatedAt: ''}
+  if (existsSync(dynamodbManifestPath)) {
+    console.log('Reading build/dynamodb-permissions.json...')
+    dynamodbManifest = JSON.parse(readFileSync(dynamodbManifestPath, 'utf-8'))
+    console.log(`Loaded DynamoDB permissions for ${Object.keys(dynamodbManifest.lambdas).length} Lambdas`)
+  } else {
+    console.log('Note: build/dynamodb-permissions.json not found, skipping DynamoDB permissions.')
+  }
 
   // Generate header
-  const header = `# Auto-generated Lambda IAM policies from @RequiresServices decorators
+  const header = `# Auto-generated Lambda IAM policies from @RequiresServices and @RequiresDynamoDB decorators
 # Generated at: ${new Date().toISOString()}
-# Source: build/service-permissions.json
+# Source: build/service-permissions.json, build/dynamodb-permissions.json
 #
 # DO NOT EDIT - regenerate with: pnpm run generate:service-iam-policies
 #
-# This file creates IAM policies based on the @RequiresServices decorator
-# declarations in Lambda handler code. Each Lambda gets a policy document,
+# This file creates IAM policies based on the @RequiresServices and @RequiresDynamoDB
+# decorator declarations in Lambda handler code. Each Lambda gets a policy document,
 # an IAM policy, and a role policy attachment.
 
 `
 
+  // Combine all Lambda names from both manifests
+  const allLambdas = new Set([
+    ...Object.keys(serviceManifest.lambdas),
+    ...Object.keys(dynamodbManifest.lambdas)
+  ])
+
   // Generate policies for each Lambda
   const policies: string[] = []
-  for (const [lambdaName, perms] of Object.entries(manifest.lambdas).sort()) {
-    policies.push(generateLambdaPolicies(lambdaName, perms))
+  for (const lambdaName of [...allLambdas].sort()) {
+    const servicePerms = serviceManifest.lambdas[lambdaName]
+    const dynamodbPerms = dynamodbManifest.lambdas[lambdaName]
+    const policy = generateLambdaPolicies(lambdaName, servicePerms, dynamodbPerms)
+    if (policy) {
+      policies.push(policy)
+    }
   }
 
   const content = header + policies.join('\n\n') + '\n'
@@ -150,9 +220,17 @@ async function main(): Promise<void> {
 
   console.log(`\nGenerated ${outputPath}`)
   console.log(`\nCreated IAM policies for:`)
-  for (const [name, perms] of Object.entries(manifest.lambdas).sort()) {
-    const services = perms.services.map((s) => `${s.service}:${s.resource}${s.hasWildcard ? '/*' : ''}`).join(', ')
-    console.log(`  - ${name}: ${services}`)
+  for (const lambdaName of [...allLambdas].sort()) {
+    const servicePerms = serviceManifest.lambdas[lambdaName]
+    const dynamodbPerms = dynamodbManifest.lambdas[lambdaName]
+    const parts: string[] = []
+    if (servicePerms) {
+      parts.push(...servicePerms.services.map((s) => `${s.service}:${s.resource}${s.hasWildcard ? '/*' : ''}`))
+    }
+    if (dynamodbPerms) {
+      parts.push(...dynamodbPerms.tables.map((t) => `dynamodb:${t.table}`))
+    }
+    console.log(`  - ${lambdaName}: ${parts.join(', ')}`)
   }
 
   console.log('\n=== Next Steps ===')

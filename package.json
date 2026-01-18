@@ -42,6 +42,7 @@
     "extract:db-permissions": "node --import tsx scripts/extractDbPermissions.ts",
     "extract:terraform-resources": "node --import tsx scripts/extractTerraformResources.ts",
     "extract:service-permissions": "node --import tsx scripts/extractServicePermissions.ts",
+    "extract:dynamodb-permissions": "node --import tsx scripts/extractDynamoDBPermissions.ts",
     "generate:dsql-permissions": "node --import tsx scripts/generateDsqlPermissions.ts",
     "dsql:sync": "pnpm run extract:db-permissions && pnpm run generate:dsql-permissions",
     "extract:fixtures": "./bin/extract-fixtures.sh",

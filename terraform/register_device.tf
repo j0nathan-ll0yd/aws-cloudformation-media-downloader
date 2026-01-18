@@ -8,12 +8,14 @@ resource "aws_iam_role" "RegisterDevice" {
   tags               = local.common_tags
 }
 
-data "aws_iam_policy_document" "RegisterDevice" {
+# Infrastructure permissions for RegisterDevice Lambda
+# These SNS operations are not covered by @RequiresServices decorator (Publish, Subscribe)
+# and include additional operations needed for device registration flow
+data "aws_iam_policy_document" "RegisterDevice_infrastructure" {
   statement {
     actions = [
       "sns:ListSubscriptionsByTopic",
       "sns:CreatePlatformEndpoint",
-      "sns:Subscribe",
       "sns:Unsubscribe"
     ]
     resources = compact([
@@ -23,15 +25,15 @@ data "aws_iam_policy_document" "RegisterDevice" {
   }
 }
 
-resource "aws_iam_policy" "RegisterDevice" {
-  name   = local.register_device_function_name
-  policy = data.aws_iam_policy_document.RegisterDevice.json
+resource "aws_iam_policy" "RegisterDevice_infrastructure" {
+  name   = "RegisterDevice-infrastructure"
+  policy = data.aws_iam_policy_document.RegisterDevice_infrastructure.json
   tags   = local.common_tags
 }
 
-resource "aws_iam_role_policy_attachment" "RegisterDevice" {
+resource "aws_iam_role_policy_attachment" "RegisterDevice_infrastructure" {
   role       = aws_iam_role.RegisterDevice.name
-  policy_arn = aws_iam_policy.RegisterDevice.arn
+  policy_arn = aws_iam_policy.RegisterDevice_infrastructure.arn
 }
 
 resource "aws_iam_role_policy" "RegisterDeviceLogging" {
@@ -87,7 +89,7 @@ resource "aws_lambda_function" "RegisterDevice" {
   runtime          = "nodejs24.x"
   architectures    = [local.lambda_architecture]
   timeout          = local.default_lambda_timeout
-  depends_on       = [aws_iam_role_policy_attachment.RegisterDevice]
+  depends_on       = [aws_iam_role_policy_attachment.RegisterDevice_infrastructure, aws_iam_role_policy_attachment.RegisterDevice_services]
   filename         = data.archive_file.RegisterDevice.output_path
   source_code_hash = data.archive_file.RegisterDevice.output_base64sha256
   layers           = [local.adot_layer_arn]

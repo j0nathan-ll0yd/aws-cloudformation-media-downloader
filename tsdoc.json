@@ -20,6 +20,10 @@
     {
       "tagName": "@RequiresEventBridge",
       "syntaxKind": "modifier"
+    },
+    {
+      "tagName": "@RequiresDynamoDB",
+      "syntaxKind": "modifier"
     }
   ]
 }

@@ -4,7 +4,7 @@
  *
  * Regenerate with: pnpm run generate:resource-enums
  * Source: build/terraform-resources.json
- * Generated at: 2026-01-18T17:43:20.903Z
+ * Generated at: 2026-01-18T19:15:48.649Z
  */
 
 /** S3 bucket resources from Terraform */
@@ -36,8 +36,13 @@ export enum EventBridgeResource {
   MediaDownloader = 'MediaDownloader'
 }
 
+/** DynamoDB table resources from Terraform */
+export enum DynamoDBResource {
+  IdempotencyTable = 'IdempotencyTable'
+}
+
 /** Union of all SNS resources (topics and platform applications) */
 export type SNSResource = SNSTopicResource | SNSPlatformResource
 
 /** Union of all service resources for @RequiresServices decorator */
-export type TerraformResource = S3Resource | SQSResource | SNSTopicResource | SNSPlatformResource | EventBridgeResource
+export type TerraformResource = S3Resource | SQSResource | SNSTopicResource | SNSPlatformResource | EventBridgeResource | DynamoDBResource

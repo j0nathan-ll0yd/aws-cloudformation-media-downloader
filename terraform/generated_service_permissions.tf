@@ -1,11 +1,11 @@
-# Auto-generated Lambda IAM policies from @RequiresServices decorators
-# Generated at: 2026-01-18T17:37:06.810Z
-# Source: build/service-permissions.json
+# Auto-generated Lambda IAM policies from @RequiresServices and @RequiresDynamoDB decorators
+# Generated at: 2026-01-18T18:35:36.400Z
+# Source: build/service-permissions.json, build/dynamodb-permissions.json
 #
 # DO NOT EDIT - regenerate with: pnpm run generate:service-iam-policies
 #
-# This file creates IAM policies based on the @RequiresServices decorator
-# declarations in Lambda handler code. Each Lambda gets a policy document,
+# This file creates IAM policies based on the @RequiresServices and @RequiresDynamoDB
+# decorator declarations in Lambda handler code. Each Lambda gets a policy document,
 # an IAM policy, and a role policy attachment.
 
 # RegisterDevice: SNS permissions
@@ -98,7 +98,7 @@ resource "aws_iam_role_policy_attachment" "StartFileUpload_services" {
   policy_arn = aws_iam_policy.StartFileUpload_services.arn
 }
 
-# WebhookFeedly: SQS + EventBridge permissions
+# WebhookFeedly: SQS + EventBridge + DynamoDB permissions
 data "aws_iam_policy_document" "WebhookFeedly_services" {
   # SQS: SendPushNotification
   statement {
@@ -109,6 +109,11 @@ data "aws_iam_policy_document" "WebhookFeedly_services" {
   statement {
     actions   = ["events:PutEvents"]
     resources = [aws_cloudwatch_event_bus.MediaDownloader.arn]
+  }
+  # DynamoDB: IdempotencyTable
+  statement {
+    actions   = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:DeleteItem"]
+    resources = [aws_dynamodb_table.IdempotencyTable.arn]
   }
 }
 
