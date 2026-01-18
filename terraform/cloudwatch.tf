@@ -5,13 +5,15 @@
 locals {
   lambda_functions = [
     "ApiGatewayAuthorizer",
+    "CleanupExpiredRecords",
     "CloudfrontMiddleware",
+    "DeviceEvent",
     "ListFiles",
-    "LogClientEvent",
     "LoginUser",
+    "LogoutUser",
+    "MigrateDSQL",
     "PruneDevices",
     "RefreshToken",
-    "RefreshYouTubeCookies",
     "RegisterDevice",
     "RegisterUser",
     "S3ObjectCreated",
@@ -25,24 +27,26 @@ locals {
   # Split lambdas into groups for CloudWatch alarms (max 10 metrics per alarm)
   lambda_functions_api = [
     "ApiGatewayAuthorizer",
+    "DeviceEvent",
     "ListFiles",
-    "LogClientEvent",
     "LoginUser",
+    "LogoutUser",
     "RefreshToken",
     "RegisterDevice",
     "RegisterUser",
     "UserDelete",
-    "UserSubscribe",
-    "WebhookFeedly"
+    "UserSubscribe"
   ]
 
   lambda_functions_background = [
+    "CleanupExpiredRecords",
     "CloudfrontMiddleware",
+    "MigrateDSQL",
     "PruneDevices",
-    "RefreshYouTubeCookies",
     "S3ObjectCreated",
     "SendPushNotification",
-    "StartFileUpload"
+    "StartFileUpload",
+    "WebhookFeedly"
   ]
 }
 

@@ -3,6 +3,9 @@
   "description": "Bundle size limits for Lambda functions. Sizes in bytes.",
   "globalLimit": 5242880,
   "warningThreshold": 0.9,
+  "notes": {
+    "PruneDevices": "At 91.5% capacity (2026-01). Monitor growth. If near limit, profile with 'pnpm run analyze'."
+  },
   "limits": {
     "ApiGatewayAuthorizer": 1048576,
     "CleanupExpiredRecords": 1048576,

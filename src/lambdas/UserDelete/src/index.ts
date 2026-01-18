@@ -54,7 +54,8 @@ async function deleteUser(userId: string): Promise<void> {
 class UserDeleteHandler extends AuthenticatedHandler {
   readonly operationName = 'UserDelete'
 
-  protected async handleAuthenticated(_event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> {
+  protected async handleAuthenticated(event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> {
+    void event // Required by interface but not used - userId from this.userId
     const deletableDevices: Device[] = []
 
     const userDevices = await getUserDevices(this.userId)

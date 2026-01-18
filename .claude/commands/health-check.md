@@ -45,7 +45,7 @@ For each section, output one of:
 - Is vitest.config.mts current with 2025 patterns?
 - Do ALL Lambda tests follow factory/fixture patterns consistently?
 - Are test helpers (aws-sdk-mock.ts, entity-fixtures.ts) comprehensive for all entities?
-- Is Stryker mutation threshold appropriate (currently: high=60, low=40, break=35)?
+- Is Stryker mutation threshold appropriate (currently: high=70, low=50, break=45)?
 - Does integration test schema isolation work for parallel execution?
 - Are ALL transitive dependencies properly mocked in each test?
 

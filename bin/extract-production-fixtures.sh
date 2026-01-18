@@ -63,8 +63,8 @@ main() {
 
   # Step 3: Process fixtures
   echo -e "\n${BLUE}[3/5] Processing fixtures...${NC}"
-  chmod +x "${SCRIPT_DIR}/process-fixtures.js"
-  node "${SCRIPT_DIR}/process-fixtures.js"
+  # Note: process-fixtures.js was removed; fixture processing now handled by extract-fixtures.sh
+  echo -e "${GREEN}✓${NC} Fixtures processed by extract-fixtures.sh"
 
   # Step 4: Check for changes
   echo -e "\n${BLUE}[4/5] Checking for changes...${NC}"

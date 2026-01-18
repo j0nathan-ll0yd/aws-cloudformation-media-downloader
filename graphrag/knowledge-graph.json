@@ -226,11 +226,19 @@
       }
     },
     {
+      "id": "service:Aurora DSQL",
+      "type": "Service",
+      "properties": {
+        "name": "Aurora DSQL",
+        "type": "database"
+      }
+    },
+    {
       "id": "service:DynamoDB",
       "type": "Service",
       "properties": {
         "name": "DynamoDB",
-        "type": "database"
+        "type": "idempotency"
       }
     },
     {
