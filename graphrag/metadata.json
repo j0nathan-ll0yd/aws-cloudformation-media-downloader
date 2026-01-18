@@ -83,7 +83,8 @@
     { "name": "GitHub", "type": "integration", "description": "Issue creation for errors" }
   ],
   "awsServices": [
-    { "name": "DynamoDB", "type": "database", "vendorPath": "AWS/DynamoDB" },
+    { "name": "Aurora DSQL", "type": "database", "vendorPath": "Drizzle" },
+    { "name": "DynamoDB", "type": "idempotency", "vendorPath": "AWS/DynamoDB" },
     { "name": "S3", "type": "storage", "vendorPath": "AWS/S3" },
     { "name": "SNS", "type": "notification", "vendorPath": "AWS/SNS" },
     { "name": "SQS", "type": "queue", "vendorPath": "AWS/SQS" },

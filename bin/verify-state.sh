@@ -76,8 +76,12 @@ main() {
   # Check for drift
   echo -e "${YELLOW}[3/3] Checking for configuration drift...${NC}"
 
+  # Use mktemp for portable temporary file creation
+  PLAN_OUTPUT=$(mktemp)
+  trap 'rm -f "$PLAN_OUTPUT"' EXIT
+
   set +e
-  tofu plan -detailed-exitcode -input=false -no-color > /tmp/verify-plan.txt 2>&1
+  tofu plan -detailed-exitcode -input=false -no-color > "$PLAN_OUTPUT" 2>&1
   PLAN_EXIT=$?
   set -e
 
@@ -91,8 +95,7 @@ main() {
     1)
       echo ""
       echo -e "${RED}ERROR: tofu plan failed${NC}"
-      cat /tmp/verify-plan.txt
-      rm -f /tmp/verify-plan.txt
+      cat "$PLAN_OUTPUT"
       exit 1
       ;;
     2)
@@ -101,21 +104,18 @@ main() {
       echo ""
 
       # Extract summary
-      grep -E "^Plan:" /tmp/verify-plan.txt || true
+      grep -E "^Plan:" "$PLAN_OUTPUT" || true
       echo ""
 
       # Show affected resources
       echo "Affected resources:"
-      grep -E "^  # " /tmp/verify-plan.txt | head -20 || true
+      grep -E "^  # " "$PLAN_OUTPUT" | head -20 || true
       echo ""
 
       echo "Run 'pnpm run plan' for details, or 'pnpm run deploy' to reconcile."
-      rm -f /tmp/verify-plan.txt
       exit 2
       ;;
   esac
-
-  rm -f /tmp/verify-plan.txt
 
   # Summary
   echo "Summary"

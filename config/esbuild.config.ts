@@ -18,6 +18,7 @@ const awsSdkExternals = [
   '@aws-sdk/client-s3',
   '@aws-sdk/client-sns',
   '@aws-sdk/client-sqs',
+  '@aws-sdk/dsql-signer',
   '@aws-sdk/lib-dynamodb',
   '@aws-sdk/lib-storage'
 ]

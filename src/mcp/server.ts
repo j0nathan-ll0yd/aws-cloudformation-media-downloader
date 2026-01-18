@@ -148,7 +148,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: 'validate_pattern',
-        description: 'Validate code against project conventions using AST analysis (20 rules: 7 CRITICAL, 9 HIGH, 4 MEDIUM)',
+        description: 'Validate code against project conventions using AST analysis (22 rules: 7 CRITICAL, 11 HIGH, 4 MEDIUM)',
         inputSchema: {
           type: 'object',
           properties: {

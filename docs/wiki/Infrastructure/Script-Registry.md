@@ -94,7 +94,7 @@ Scripts documented in `AGENTS.md` and `README.md` are automatically validated ag
 **Purpose**: Test ListFiles Lambda against production API
 **Dependencies**: AWS credentials, jq
 **CI Coverage**: No (requires production)
-**Notes**: Validates API Gateway → Lambda → DynamoDB flow
+**Notes**: Validates API Gateway → Lambda → Aurora DSQL flow
 
 ### `pnpm run test:remote:hook`
 **Purpose**: Test Feedly webhook against production API
@@ -153,10 +153,10 @@ Scripts documented in `AGENTS.md` and `README.md` are automatically validated ag
 **Notes**: Run locally before committing
 
 ### `pnpm run format`
-**Purpose**: Format code with Prettier
-**Dependencies**: Prettier
+**Purpose**: Format code with dprint
+**Dependencies**: dprint
 **CI Coverage**: No
-**Notes**: 250 character line limit; run before commits
+**Notes**: 157 character line limit; run before commits
 
 ---
 

@@ -41,9 +41,16 @@ main() {
   echo "   Version: $PACKAGE_VERSION"
 
   # Update the title and version in the generated OpenAPI file
-  sed -i.bak "s/title: Offline Media Downloader API/title: $PACKAGE_NAME/" "$PROJECT_ROOT/docs/api/openapi.yaml"
-  sed -i.bak "s/version: 0\.0\.0/version: $PACKAGE_VERSION/" "$PROJECT_ROOT/docs/api/openapi.yaml"
-  rm -f "$PROJECT_ROOT/docs/api/openapi.yaml.bak"
+  # Use portable sed: create backup then delete it (works on both macOS BSD and GNU sed)
+  if [[ "$(uname)" == "Darwin" ]]; then
+    # macOS requires extension after -i
+    sed -i '' "s/title: Offline Media Downloader API/title: $PACKAGE_NAME/" "$PROJECT_ROOT/docs/api/openapi.yaml"
+    sed -i '' "s/version: 0\.0\.0/version: $PACKAGE_VERSION/" "$PROJECT_ROOT/docs/api/openapi.yaml"
+  else
+    # GNU sed
+    sed -i "s/title: Offline Media Downloader API/title: $PACKAGE_NAME/" "$PROJECT_ROOT/docs/api/openapi.yaml"
+    sed -i "s/version: 0\.0\.0/version: $PACKAGE_VERSION/" "$PROJECT_ROOT/docs/api/openapi.yaml"
+  fi
 
   echo ""
   echo -e "${GREEN}✓${NC} OpenAPI specification generated successfully!"
