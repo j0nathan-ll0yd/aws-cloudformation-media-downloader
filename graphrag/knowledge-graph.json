@@ -1011,6 +1011,11 @@
     },
     {
       "source": "lambda:StartFileUpload",
+      "target": "service:S3",
+      "relationship": "uses"
+    },
+    {
+      "source": "lambda:StartFileUpload",
       "target": "service:SQS",
       "relationship": "uses"
     },
