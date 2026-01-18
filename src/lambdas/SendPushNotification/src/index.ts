@@ -20,7 +20,7 @@ import {DatabaseOperation, DatabaseTable} from '#types/databasePermissions'
 import type {Device} from '#types/domainModels'
 import type {DeviceNotificationResult, FileNotificationType} from '#types/notificationTypes'
 import {pushNotificationAttributesSchema} from '#types/schemas'
-import {AWSService, SNSOperation} from '#types/servicePermissions'
+import {AWSService, SNSOperation, SNSPlatformResource} from '#types/servicePermissions'
 import {validateSchema} from '#lib/validation/constraints'
 import {metrics, MetricUnit, RequiresDatabase, RequiresServices, SqsHandler} from '#lib/lambda/handlers'
 import type {SqsRecordContext} from '#lib/lambda/handlers'
@@ -93,7 +93,7 @@ async function sendNotificationToDevice(device: Device, messageBody: string, not
   {table: DatabaseTable.UserDevices, operations: [DatabaseOperation.Select]}
 ])
 @RequiresServices([
-  {service: AWSService.SNS, resource: 'apns-platform-application', operations: [SNSOperation.Publish]}
+  {service: AWSService.SNS, resource: SNSPlatformResource.OfflineMediaDownloader, operations: [SNSOperation.Publish]}
 ])
 class SendPushNotificationHandler extends SqsHandler<string> {
   readonly operationName = 'SendPushNotification'

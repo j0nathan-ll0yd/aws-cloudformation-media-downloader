@@ -4,13 +4,15 @@
  * Uses ts-morph to extract `@RequiresServices` decorator metadata from Lambda handlers
  * and generates a JSON manifest for downstream tooling.
  *
+ * Supports resource enum values (e.g., S3Resource.Files) and wildcard patterns.
+ *
  * Output: build/service-permissions.json
  *
  * Usage: pnpm run extract:service-permissions
  *
  * @see docs/wiki/Infrastructure/Lambda-Decorators.md
  */
-import {existsSync, mkdirSync, writeFileSync} from 'fs'
+import {existsSync, mkdirSync, readFileSync, writeFileSync} from 'fs'
 import {dirname, join} from 'path'
 import {fileURLToPath} from 'url'
 import {Project, SyntaxKind} from 'ts-morph'
@@ -19,9 +21,13 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 const projectRoot = join(__dirname, '..')
 
+type ServiceType = 's3' | 'sqs' | 'sns' | 'events'
+
 interface ServicePermission {
-  service: 's3' | 'sqs' | 'sns' | 'events'
+  service: ServiceType
   resource: string
+  hasWildcard: boolean
+  arnRef: string
   operations: string[]
 }
 
@@ -34,13 +40,69 @@ interface ServicePermissionsManifest {
   generatedAt: string
 }
 
+interface TerraformResourceEntry {
+  name: string
+  terraformId: string
+  arnRef: string
+}
+
+interface TerraformResourceManifest {
+  s3Buckets: TerraformResourceEntry[]
+  sqsQueues: TerraformResourceEntry[]
+  snsTopics: TerraformResourceEntry[]
+  snsPlatformApplications: TerraformResourceEntry[]
+  eventBridgeBuses: TerraformResourceEntry[]
+}
+
+/**
+ * Load Terraform resource manifest for ARN reference lookup
+ */
+function loadTerraformResources(): TerraformResourceManifest | null {
+  const manifestPath = join(projectRoot, 'build/terraform-resources.json')
+  if (!existsSync(manifestPath)) {
+    console.warn('Warning: build/terraform-resources.json not found. ARN references will be incomplete.')
+    console.warn('Run: pnpm run extract:terraform-resources first.')
+    return null
+  }
+  return JSON.parse(readFileSync(manifestPath, 'utf-8'))
+}
+
+/**
+ * Get Terraform ARN reference for a resource
+ */
+function getArnRef(service: ServiceType, resourceName: string, terraformResources: TerraformResourceManifest | null): string {
+  if (!terraformResources) {
+    return `${resourceName}.arn`
+  }
+
+  let resources: TerraformResourceEntry[] = []
+  switch (service) {
+    case 's3':
+      resources = terraformResources.s3Buckets
+      break
+    case 'sqs':
+      resources = terraformResources.sqsQueues
+      break
+    case 'sns':
+      // Check both topics and platform applications
+      resources = [...terraformResources.snsTopics, ...terraformResources.snsPlatformApplications]
+      break
+    case 'events':
+      resources = terraformResources.eventBridgeBuses
+      break
+  }
+
+  const entry = resources.find((r) => r.name === resourceName)
+  return entry?.arnRef || `${resourceName}.arn`
+}
+
 /**
  * Extract service type from expression like AWSService.S3
  */
-function extractServiceType(expr: string): 's3' | 'sqs' | 'sns' | 'events' {
+function extractServiceType(expr: string): ServiceType {
   const match = expr.match(/AWSService\.(\w+)/)
   if (match) {
-    const serviceMap: Record<string, 's3' | 'sqs' | 'sns' | 'events'> = {
+    const serviceMap: Record<string, ServiceType> = {
       'S3': 's3',
       'SQS': 'sqs',
       'SNS': 'sns',
@@ -57,11 +119,37 @@ function extractServiceType(expr: string): 's3' | 'sqs' | 'sns' | 'events' {
 }
 
 /**
- * Extract string value from quoted expression
+ * Extract resource name and wildcard flag from resource expression.
+ * Handles:
+ * - Enum values: S3Resource.Files → {name: 'Files', hasWildcard: false}
+ * - Template literals: `${S3Resource.Files}/*` → {name: 'Files', hasWildcard: true}
+ * - String literals: 'media-bucket/*' → {name: 'media-bucket', hasWildcard: true}
  */
-function extractStringValue(expr: string): string {
-  const match = expr.match(/['"`]([^'"`]+)['"`]/)
-  return match ? match[1] : expr
+function extractResourceValue(expr: string): {name: string; hasWildcard: boolean} {
+  // Handle template literal with enum: `${S3Resource.Files}/*`
+  const templateMatch = expr.match(/`\$\{(\w+Resource)\.(\w+)\}(\/\*)?`/)
+  if (templateMatch) {
+    const hasWildcard = templateMatch[3] === '/*'
+    return {name: templateMatch[2], hasWildcard}
+  }
+
+  // Handle enum value: S3Resource.Files, SQSResource.SendPushNotification, etc.
+  const enumMatch = expr.match(/(\w+Resource)\.(\w+)/)
+  if (enumMatch) {
+    return {name: enumMatch[2], hasWildcard: false}
+  }
+
+  // Handle string literal (legacy): 'media-bucket/*'
+  const stringMatch = expr.match(/['"`]([^'"`]+)['"`]/)
+  if (stringMatch) {
+    const value = stringMatch[1]
+    const hasWildcard = value.endsWith('/*')
+    const name = hasWildcard ? value.slice(0, -2) : value
+    return {name, hasWildcard}
+  }
+
+  // Fallback
+  return {name: expr, hasWildcard: false}
 }
 
 /**
@@ -98,7 +186,8 @@ function extractOperation(expr: string): string {
     return opMaps[operationType]?.[opName] || expr
   }
   // Handle string literal
-  return extractStringValue(expr)
+  const stringMatch = expr.match(/['"`]([^'"`]+)['"`]/)
+  return stringMatch ? stringMatch[1] : expr
 }
 
 /**
@@ -114,6 +203,8 @@ function extractLambdaName(filePath: string): string {
  */
 async function extractPermissions(): Promise<ServicePermissionsManifest> {
   console.log('Loading TypeScript project...')
+
+  const terraformResources = loadTerraformResources()
 
   const project = new Project({
     tsConfigFilePath: join(projectRoot, 'tsconfig.json'),
@@ -154,8 +245,8 @@ async function extractPermissions(): Promise<ServicePermissionsManifest> {
         for (const element of arrayLiteral.getElements()) {
           const serviceObj = element.asKind(SyntaxKind.ObjectLiteralExpression)
           if (serviceObj) {
-            let service: 's3' | 'sqs' | 'sns' | 'events' = 's3'
-            let resource = ''
+            let service: ServiceType = 's3'
+            let resourceValue = {name: '', hasWildcard: false}
             const operations: string[] = []
 
             for (const prop of serviceObj.getProperties()) {
@@ -166,7 +257,7 @@ async function extractPermissions(): Promise<ServicePermissionsManifest> {
                 if (propName === 'service') {
                   service = extractServiceType(initText)
                 } else if (propName === 'resource') {
-                  resource = extractStringValue(initText)
+                  resourceValue = extractResourceValue(initText)
                 } else if (propName === 'operations') {
                   const opsArray = prop.getInitializer()?.asKind(SyntaxKind.ArrayLiteralExpression)
                   if (opsArray) {
@@ -178,8 +269,15 @@ async function extractPermissions(): Promise<ServicePermissionsManifest> {
               }
             }
 
-            if (resource && operations.length > 0) {
-              services.push({service, resource, operations})
+            if (resourceValue.name && operations.length > 0) {
+              const arnRef = getArnRef(service, resourceValue.name, terraformResources)
+              services.push({
+                service,
+                resource: resourceValue.name,
+                hasWildcard: resourceValue.hasWildcard,
+                arnRef,
+                operations
+              })
             }
           }
         }
@@ -218,7 +316,9 @@ async function main(): Promise<void> {
       const serviceCount = perms.services.length
       console.log(`  - ${name}: ${serviceCount} service(s)`)
       for (const svc of perms.services) {
-        console.log(`      ${svc.service}: ${svc.resource} [${svc.operations.join(', ')}]`)
+        const wildcard = svc.hasWildcard ? '/*' : ''
+        console.log(`      ${svc.service}: ${svc.resource}${wildcard} [${svc.operations.join(', ')}]`)
+        console.log(`        arnRef: ${svc.arnRef}`)
       }
     }
   } catch (error) {

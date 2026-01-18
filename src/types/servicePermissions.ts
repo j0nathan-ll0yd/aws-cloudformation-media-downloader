@@ -11,6 +11,7 @@
  *
  * @see docs/wiki/Infrastructure/Lambda-Decorators.md
  */
+import {EventBridgeResource, S3Resource, SNSPlatformResource, SNSTopicResource, SQSResource} from './generatedResources'
 
 /**
  * AWS service types for Lambda handlers.
@@ -22,6 +23,9 @@ export enum AWSService {
   SNS = 'sns',
   EventBridge = 'events'
 }
+
+// Re-export generated resource enums for convenience
+export { EventBridgeResource, S3Resource, SNSPlatformResource, SNSTopicResource, SQSResource }
 
 /**
  * S3 operation types matching IAM action names.
@@ -61,14 +65,34 @@ export enum EventBridgeOperation {
 }
 
 /**
+ * Maps AWS service types to their corresponding Terraform resource enum types.
+ * This enables type-safe resource references in @RequiresServices decorators.
+ */
+export type ServiceResourceMap = {
+  [AWSService.S3]: S3Resource
+  [AWSService.SQS]: SQSResource
+  [AWSService.SNS]: SNSTopicResource | SNSPlatformResource
+  [AWSService.EventBridge]: EventBridgeResource
+}
+
+/**
+ * Union of all possible resource types from Terraform definitions.
+ */
+export type AnyServiceResource = S3Resource | SQSResource | SNSTopicResource | SNSPlatformResource | EventBridgeResource
+
+/**
  * Permission declaration for a single AWS service.
  * Specifies which operations are required and on which resources.
+ *
+ * Resource field supports both exact resource names and wildcard patterns:
+ * - Exact: `S3Resource.Files` → files bucket
+ * - Wildcard: `\`${S3Resource.Files}/*\`` → all objects in files bucket
  */
 export interface ServicePermission {
   /** The AWS service being accessed */
   service: AWSService
-  /** Resource ARN pattern or resource name (supports wildcards) */
-  resource: string
+  /** Resource enum value or wildcard pattern (e.g., S3Resource.Files or \`${S3Resource.Files}/*\`) */
+  resource: AnyServiceResource | `${AnyServiceResource}/*`
   /** The operations required on this resource */
   operations: (S3Operation | SQSOperation | SNSOperation | EventBridgeOperation | string)[]
 }

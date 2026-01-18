@@ -14,7 +14,7 @@ import type {SendMessageRequest} from '#lib/vendor/AWS/SQS'
 import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
 import {DatabaseOperation, DatabaseTable} from '#types/databasePermissions'
 import type {File} from '#types/domainModels'
-import {AWSService, SQSOperation} from '#types/servicePermissions'
+import {AWSService, SQSOperation, SQSResource} from '#types/servicePermissions'
 import {metrics, MetricUnit, RequiresDatabase, RequiresServices, S3EventHandler} from '#lib/lambda/handlers'
 import type {S3RecordContext} from '#lib/lambda/handlers'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
@@ -67,7 +67,7 @@ function dispatchFileNotificationToUser(file: File, userId: string) {
   {table: DatabaseTable.UserFiles, operations: [DatabaseOperation.Select]}
 ])
 @RequiresServices([
-  {service: AWSService.SQS, resource: 'notification-queue', operations: [SQSOperation.SendMessage]}
+  {service: AWSService.SQS, resource: SQSResource.SendPushNotification, operations: [SQSOperation.SendMessage]}
 ])
 class S3ObjectCreatedHandler extends S3EventHandler {
   readonly operationName = 'S3ObjectCreated'
