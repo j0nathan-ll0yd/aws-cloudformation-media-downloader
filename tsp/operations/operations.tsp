@@ -286,6 +286,31 @@ interface Authentication {
   };
 
   /**
+   * Log out current session.
+   *
+   * Invalidates the user's current session by deleting it from the database.
+   * The user will need to re-authenticate to access protected resources.
+   */
+  @post
+  @route("/logout")
+  @summary("Log out current session")
+  logoutUser(
+    @header("Authorization") authorization: string,
+    @header("X-API-Key") apiKey: string,
+  ): {
+    @doc("Session logged out successfully")
+    @statusCode statusCode: 204;
+  } | {
+    @doc("Authentication failed - invalid or expired session token")
+    @statusCode statusCode: 401;
+    @body body: UnauthorizedError;
+  } | {
+    @doc("Internal server error")
+    @statusCode statusCode: 500;
+    @body body: InternalServerError;
+  };
+
+  /**
    * Delete user account and all associated data.
    *
    * Required for Sign in with Apple compliance (account deletion requirement).

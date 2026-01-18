@@ -30,6 +30,10 @@
       "trigger": "API Gateway",
       "purpose": "Refresh authentication token"
     },
+    "LogoutUser": {
+      "trigger": "API Gateway",
+      "purpose": "Invalidate user session and log out"
+    },
     "RegisterDevice": {
       "trigger": "API Gateway",
       "purpose": "Register iOS device for push notifications"
