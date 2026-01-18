@@ -8,12 +8,14 @@ import {createMockFile, createMockFileDownload, createMockUserFile} from '#test/
 import {createDownloadQueueEvent, createSQSEvent} from '#test/helpers/event-factories'
 import {SendMessageCommand} from '@aws-sdk/client-sqs'
 import {PutEventsCommand} from '@aws-sdk/client-eventbridge'
+import {HeadObjectCommand} from '@aws-sdk/client-s3'
 import {createEventBridgePutEventsResponse, createSQSSendMessageResponse} from '#test/helpers/aws-response-factories'
-import {createEventBridgeMock, createSQSMock, resetAllAwsMocks} from '#test/helpers/aws-sdk-mock'
+import {createEventBridgeMock, createS3Mock, createSQSMock, resetAllAwsMocks} from '#test/helpers/aws-sdk-mock'
 
 // Create AWS mocks using helpers - inject into vendor client factory
 const sqsMock = createSQSMock()
 const eventBridgeMock = createEventBridgeMock()
+const s3Mock = createS3Mock()
 
 // Mock YouTube functions
 const fetchVideoInfoMock = vi.fn<(url: string) => Promise<FetchVideoInfoResult>>()
@@ -105,6 +107,8 @@ describe('#StartFileUpload', () => {
     // Configure AWS mock responses using factories
     sqsMock.on(SendMessageCommand).resolves(createSQSSendMessageResponse())
     eventBridgeMock.on(PutEventsCommand).resolves(createEventBridgePutEventsResponse())
+    // Default: S3 file does not exist (triggers normal download path)
+    s3Mock.on(HeadObjectCommand).rejects({name: 'NotFound', message: 'Not Found'})
 
     process.env.BUCKET = 'test-bucket'
     process.env.AWS_REGION = 'us-west-2'
@@ -117,6 +121,7 @@ describe('#StartFileUpload', () => {
   afterEach(() => {
     sqsMock.reset()
     eventBridgeMock.reset()
+    s3Mock.reset()
   })
 
   afterAll(() => {
@@ -310,5 +315,89 @@ describe('#StartFileUpload', () => {
 
     // Only the failed record should be in batchItemFailures
     expect(result.batchItemFailures).toEqual([{itemIdentifier: 'msg-fail'}])
+  })
+
+  describe('S3 file recovery', () => {
+    test('should recover from S3 when file exists but DB records missing', async () => {
+      // Mock S3 headObject to return file exists with size
+      s3Mock.on(HeadObjectCommand).resolves({ContentLength: 12345678})
+
+      // Mock YouTube fetch to succeed (for metadata)
+      fetchVideoInfoMock.mockResolvedValue(createSuccessResult({id: 'YcuKhcqzt7w', title: 'Recovered Video', uploader: 'Test Creator'}))
+
+      const result = await handler(event, context)
+
+      expect(result.batchItemFailures).toEqual([])
+      // Should check S3 for file existence
+      expect(s3Mock).toHaveReceivedCommandWith(HeadObjectCommand, {Bucket: 'test-bucket', Key: 'YcuKhcqzt7w.mp4'})
+      // Should NOT download since file already exists in S3
+      expect(downloadVideoToS3Mock).not.toHaveBeenCalled()
+      // Should upsert file record
+      expect(vi.mocked(upsertFile)).toHaveBeenCalled()
+      // Should publish DownloadCompleted event
+      expect(eventBridgeMock).toHaveReceivedCommandWith(PutEventsCommand, {
+        Entries: expect.arrayContaining([expect.objectContaining({DetailType: 'DownloadCompleted', Detail: expect.stringContaining('YcuKhcqzt7w')})])
+      })
+    })
+
+    test('should proceed with download when S3 file does not exist', async () => {
+      // Default setup already rejects headObject with NotFound
+      fetchVideoInfoMock.mockResolvedValue(createSuccessResult({id: 'YcuKhcqzt7w'}))
+      downloadVideoToS3Mock.mockResolvedValue({fileSize: 82784319, s3Url: 's3://test-bucket/test-video.mp4', duration: 45})
+
+      const result = await handler(event, context)
+
+      expect(result.batchItemFailures).toEqual([])
+      // Should check S3 first
+      expect(s3Mock).toHaveReceivedCommand(HeadObjectCommand)
+      // Should download since file doesn't exist
+      expect(downloadVideoToS3Mock).toHaveBeenCalled()
+    })
+
+    test('should use minimal metadata when YouTube fetch fails during recovery', async () => {
+      // S3 file exists
+      s3Mock.on(HeadObjectCommand).resolves({ContentLength: 12345678})
+      // YouTube fetch fails
+      fetchVideoInfoMock.mockResolvedValue({success: false, error: new Error('Video unavailable')})
+
+      const result = await handler(event, context)
+
+      expect(result.batchItemFailures).toEqual([])
+      // Should still recover - using minimal metadata
+      expect(downloadVideoToS3Mock).not.toHaveBeenCalled()
+      expect(vi.mocked(upsertFile)).toHaveBeenCalledWith(expect.objectContaining({
+        fileId: 'YcuKhcqzt7w',
+        title: 'YcuKhcqzt7w', // Falls back to fileId
+        authorName: 'Unknown'
+      }))
+    })
+
+    test('should treat zero-size S3 file as not existing', async () => {
+      // S3 returns zero-size file (corrupted)
+      s3Mock.on(HeadObjectCommand).resolves({ContentLength: 0})
+      fetchVideoInfoMock.mockResolvedValue(createSuccessResult({id: 'YcuKhcqzt7w'}))
+      downloadVideoToS3Mock.mockResolvedValue({fileSize: 82784319, s3Url: 's3://test-bucket/test-video.mp4', duration: 45})
+
+      const result = await handler(event, context)
+
+      expect(result.batchItemFailures).toEqual([])
+      // Should download since zero-size is treated as missing
+      expect(downloadVideoToS3Mock).toHaveBeenCalled()
+    })
+
+    test('should dispatch MetadataNotifications during recovery when YouTube succeeds', async () => {
+      vi.mocked(getUserFilesByFileId).mockResolvedValue([
+        createMockUserFile({userId: 'user-1', fileId: 'YcuKhcqzt7w'}),
+        createMockUserFile({userId: 'user-2', fileId: 'YcuKhcqzt7w'})
+      ])
+      s3Mock.on(HeadObjectCommand).resolves({ContentLength: 12345678})
+      fetchVideoInfoMock.mockResolvedValue(createSuccessResult({id: 'YcuKhcqzt7w', title: 'Recovered Video'}))
+
+      const result = await handler(event, context)
+
+      expect(result.batchItemFailures).toEqual([])
+      // Should send MetadataNotification to both users
+      expect(sqsMock).toHaveReceivedCommandTimes(SendMessageCommand, 2)
+    })
   })
 })

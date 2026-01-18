@@ -9,6 +9,7 @@
  * Output: SQSBatchResponse with item failures for retry
  */
 import {createFileDownload, getFile, getFileDownload, getUserFilesByFileId, updateFile, updateFileDownload} from '#entities/queries'
+import {headObject} from '#lib/vendor/AWS/S3'
 import {sendMessage} from '#lib/vendor/AWS/SQS'
 import {publishEvent} from '#lib/vendor/AWS/EventBridge'
 import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
@@ -85,6 +86,87 @@ async function downloadVideoToS3Traced(fileUrl: string, bucket: string, fileName
     endSpan(span, error as Error)
     throw error
   }
+}
+
+/**
+ * Check if a file already exists in S3 and return its metadata.
+ * Used for recovery when database records are missing but S3 file exists.
+ *
+ * @param bucket - The S3 bucket name
+ * @param key - The S3 object key (e.g., 'dQw4w9WgXcQ.mp4')
+ * @returns Object with exists flag and size, or exists: false if not found
+ */
+async function checkS3FileExists(bucket: string, key: string): Promise<{exists: true; size: number} | {exists: false}> {
+  try {
+    const response = await headObject(bucket, key)
+    const size = response.ContentLength ?? 0
+    if (size > 0) {
+      return {exists: true, size}
+    }
+    // Zero-size file is treated as not existing (likely corrupted)
+    return {exists: false}
+  } catch {
+    // NotFound or other errors - file doesn't exist
+    return {exists: false}
+  }
+}
+
+/**
+ * Recover file state from S3 when database records are missing.
+ * Creates File and FileDownload records, sends notifications to users.
+ *
+ * @param message - The download request message
+ * @param s3Size - File size from S3 headObject
+ */
+async function recoverFromS3(message: ValidatedDownloadQueueMessage, s3Size: number): Promise<void> {
+  const {fileId, correlationId, sourceUrl} = message
+  const fileUrl = sourceUrl || `https://www.youtube.com/watch?v=${fileId}`
+  const fileName = `${fileId}.mp4`
+  const cloudfrontDomain = getRequiredEnv('CLOUDFRONT_DOMAIN')
+
+  logInfo('Recovering file from S3', {fileId, correlationId, s3Size})
+  metrics.addMetric('S3FileRecoveryAttempt', MetricUnit.Count, 1)
+
+  // Try to fetch video metadata from YouTube for better user experience
+  let videoInfo: YtDlpVideoInfo | undefined
+  try {
+    const videoInfoResult = await fetchVideoInfoTraced(fileUrl, fileId)
+    if (videoInfoResult.success && videoInfoResult.info) {
+      videoInfo = videoInfoResult.info
+      // Send MetadataNotification to users
+      await dispatchMetadataNotifications(fileId, videoInfo)
+    }
+  } catch (error) {
+    logInfo('YouTube metadata fetch failed during recovery, using minimal metadata', {fileId, error: String(error)})
+  }
+
+  // Create File record with either YouTube metadata or minimal S3 metadata
+  const fileData: File = {
+    fileId,
+    key: fileName,
+    size: s3Size,
+    authorName: videoInfo?.uploader || 'Unknown',
+    authorUser: (videoInfo?.uploader || 'unknown').toLowerCase().replace(/\s+/g, '_'),
+    title: videoInfo?.title || fileId,
+    description: videoInfo?.description || '',
+    publishDate: videoInfo?.upload_date || new Date().toISOString(),
+    contentType: 'video/mp4',
+    status: FileStatus.Downloaded,
+    url: `https://${cloudfrontDomain}/${fileName}`
+  }
+
+  logDebug('upsertFile (recovery) <=', fileData)
+  await upsertFile(fileData)
+
+  // Create FileDownload record marked as Completed
+  await updateDownloadState(fileId, DownloadStatus.Completed)
+
+  // Publish DownloadCompleted event for observability
+  const completedDetail: DownloadCompletedDetail = {fileId, correlationId, s3Key: fileName, fileSize: s3Size, completedAt: new Date().toISOString()}
+  await publishEvent('DownloadCompleted', completedDetail, {correlationId})
+
+  metrics.addMetric('S3FileRecoverySuccess', MetricUnit.Count, 1)
+  logInfo('File recovered from S3 successfully', {fileId, correlationId, s3Size, hasYouTubeMetadata: !!videoInfo})
 }
 
 /**
@@ -326,6 +408,17 @@ async function processDownloadRequest(message: ValidatedDownloadQueueMessage, re
   const fileUrl = sourceUrl || `https://www.youtube.com/watch?v=${fileId}`
   const isRetry = receiveCount > 1
 
+  // Check if file already exists in S3 (recovery path for missing DB records)
+  const bucket = getRequiredEnv('BUCKET')
+  const fileName = `${fileId}.mp4`
+  const s3Check = await checkS3FileExists(bucket, fileName)
+
+  if (s3Check.exists) {
+    logInfo('File already exists in S3, recovering database state', {fileId, correlationId, s3Size: s3Check.size})
+    await recoverFromS3(message, s3Check.size)
+    return // Skip download - file already in S3
+  }
+
   // Log prominently if this is a retry attempt
   if (isRetry) {
     logInfo('RETRY: Processing download request', {fileId, correlationId, receiveCount, isRetry: true})
@@ -378,9 +471,7 @@ async function processDownloadRequest(message: ValidatedDownloadQueueMessage, re
   // Dispatch MetadataNotification to all users waiting for this file
   await dispatchMetadataNotifications(fileId, videoInfo)
 
-  // Step 2: Prepare for download
-  const fileName = `${videoInfo.id}.mp4`
-  const bucket = getRequiredEnv('BUCKET')
+  // Step 2: Prepare for download (bucket already declared above for S3 check)
 
   // Step 3: Download video to S3
   logDebug('downloadVideoToS3 <=', {url: fileUrl, bucket, key: fileName})
