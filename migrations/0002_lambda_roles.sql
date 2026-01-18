@@ -1,7 +1,7 @@
 -- Migration: 0002_lambda_roles
 -- Description: Per-Lambda PostgreSQL roles with fine-grained table permissions
 -- Auto-generated from @RequiresDatabase decorators
--- Generated at: 2026-01-18T01:05:14.681Z
+-- Generated at: 2026-01-18T02:15:41.318Z
 --
 -- This migration creates per-Lambda PostgreSQL roles and grants them
 -- exactly the table permissions declared in their @RequiresDatabase decorators.
@@ -28,6 +28,25 @@ CREATE ROLE lambda_user_delete WITH LOGIN;
 CREATE ROLE lambda_webhook_feedly WITH LOGIN;
 
 -- =============================================================================
+-- REVOKE ALL PERMISSIONS (ensure clean slate for idempotent re-runs)
+-- =============================================================================
+
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM lambda_api_gateway_authorizer;
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM lambda_cleanup_expired_records;
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM lambda_list_files;
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM lambda_login_user;
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM lambda_logout_user;
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM lambda_prune_devices;
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM lambda_refresh_token;
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM lambda_register_device;
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM lambda_register_user;
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM lambda_s3_object_created;
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM lambda_send_push_notification;
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM lambda_start_file_upload;
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM lambda_user_delete;
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM lambda_webhook_feedly;
+
+-- =============================================================================
 -- GRANT TABLE PERMISSIONS (per-Lambda least-privilege)
 -- =============================================================================
 
@@ -49,7 +68,7 @@ GRANT SELECT, INSERT ON sessions TO lambda_login_user;
 GRANT SELECT, INSERT ON accounts TO lambda_login_user;
 
 -- LogoutUser: sessions
-GRANT SELECT, DELETE ON sessions TO lambda_logout_user;
+GRANT SELECT, UPDATE ON sessions TO lambda_logout_user;
 
 -- PruneDevices: devices, user_devices
 GRANT SELECT, DELETE ON devices TO lambda_prune_devices;

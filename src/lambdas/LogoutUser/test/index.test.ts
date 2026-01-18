@@ -8,8 +8,8 @@ import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure
 const validateSessionTokenMock = vi.fn<(token: string) => Promise<SessionPayload>>()
 vi.mock('#lib/domain/auth/sessionService', () => ({validateSessionToken: validateSessionTokenMock}))
 
-const deleteSessionMock = vi.fn<(sessionId: string) => Promise<void>>()
-vi.mock('#entities/queries', () => ({deleteSession: deleteSessionMock}))
+const updateSessionMock = vi.fn<(sessionId: string, data: {expiresAt: Date}) => Promise<void>>()
+vi.mock('#entities/queries', () => ({updateSession: updateSessionMock}))
 
 const {handler} = await import('./../src')
 
@@ -27,14 +27,14 @@ describe('#LogoutUser', () => {
 
   test('should successfully logout with valid session token', async () => {
     validateSessionTokenMock.mockResolvedValue({userId: fakeUserId, sessionId: fakeSessionId, expiresAt: Date.now() + 1000000})
-    deleteSessionMock.mockResolvedValue(undefined)
+    updateSessionMock.mockResolvedValue(undefined)
 
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(204)
     expect(output.body).toEqual('')
 
     expect(validateSessionTokenMock).toHaveBeenCalledWith(fakeToken)
-    expect(deleteSessionMock).toHaveBeenCalledWith(fakeSessionId)
+    expect(updateSessionMock).toHaveBeenCalledWith(fakeSessionId, {expiresAt: expect.any(Date)})
   })
 
   test('should return 401 when Authorization header is missing', async () => {
@@ -48,7 +48,7 @@ describe('#LogoutUser', () => {
     expect(body.error.message).toEqual('Missing Authorization header')
 
     expect(validateSessionTokenMock).not.toHaveBeenCalled()
-    expect(deleteSessionMock).not.toHaveBeenCalled()
+    expect(updateSessionMock).not.toHaveBeenCalled()
   })
 
   test('should return 401 when Authorization header format is invalid', async () => {
@@ -62,7 +62,7 @@ describe('#LogoutUser', () => {
     expect(body.error.message).toEqual('Invalid Authorization header format')
 
     expect(validateSessionTokenMock).not.toHaveBeenCalled()
-    expect(deleteSessionMock).not.toHaveBeenCalled()
+    expect(updateSessionMock).not.toHaveBeenCalled()
   })
 
   test('should return 401 when Authorization header has no Bearer prefix', async () => {
@@ -72,7 +72,7 @@ describe('#LogoutUser', () => {
     expect(output.statusCode).toEqual(401)
 
     expect(validateSessionTokenMock).not.toHaveBeenCalled()
-    expect(deleteSessionMock).not.toHaveBeenCalled()
+    expect(updateSessionMock).not.toHaveBeenCalled()
   })
 
   test('should handle lowercase authorization header', async () => {
@@ -80,13 +80,13 @@ describe('#LogoutUser', () => {
     event.headers!['authorization'] = `Bearer ${fakeToken}`
 
     validateSessionTokenMock.mockResolvedValue({userId: fakeUserId, sessionId: fakeSessionId, expiresAt: Date.now() + 1000000})
-    deleteSessionMock.mockResolvedValue(undefined)
+    updateSessionMock.mockResolvedValue(undefined)
 
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(204)
 
     expect(validateSessionTokenMock).toHaveBeenCalledWith(fakeToken)
-    expect(deleteSessionMock).toHaveBeenCalledWith(fakeSessionId)
+    expect(updateSessionMock).toHaveBeenCalledWith(fakeSessionId, {expiresAt: expect.any(Date)})
   })
 
   describe('#SessionValidation', () => {
@@ -99,7 +99,7 @@ describe('#LogoutUser', () => {
       const body = JSON.parse(output.body)
       expect(body.error.code).toEqual('custom-5XX-generic')
 
-      expect(deleteSessionMock).not.toHaveBeenCalled()
+      expect(updateSessionMock).not.toHaveBeenCalled()
     })
 
     test('should return error when session is expired', async () => {
@@ -111,14 +111,14 @@ describe('#LogoutUser', () => {
       const body = JSON.parse(output.body)
       expect(Object.keys(body)).toEqual(expect.arrayContaining(['error', 'requestId']))
 
-      expect(deleteSessionMock).not.toHaveBeenCalled()
+      expect(updateSessionMock).not.toHaveBeenCalled()
     })
   })
 
-  describe('#DeleteFailure', () => {
-    test('should return error when delete operation fails', async () => {
+  describe('#InvalidationFailure', () => {
+    test('should return error when session invalidation fails', async () => {
       validateSessionTokenMock.mockResolvedValue({userId: fakeUserId, sessionId: fakeSessionId, expiresAt: Date.now() + 1000000})
-      deleteSessionMock.mockRejectedValue(new Error('Database connection failed'))
+      updateSessionMock.mockRejectedValue(new Error('Database connection failed'))
 
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(500)
