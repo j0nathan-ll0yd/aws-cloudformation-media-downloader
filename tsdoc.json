@@ -4,6 +4,22 @@
     {
       "tagName": "@notExported",
       "syntaxKind": "modifier"
+    },
+    {
+      "tagName": "@RequiresDatabase",
+      "syntaxKind": "modifier"
+    },
+    {
+      "tagName": "@RequiresSecrets",
+      "syntaxKind": "modifier"
+    },
+    {
+      "tagName": "@RequiresServices",
+      "syntaxKind": "modifier"
+    },
+    {
+      "tagName": "@RequiresEventBridge",
+      "syntaxKind": "modifier"
     }
   ]
 }

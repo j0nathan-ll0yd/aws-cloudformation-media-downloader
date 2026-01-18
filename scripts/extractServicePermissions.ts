@@ -121,9 +121,9 @@ function extractServiceType(expr: string): ServiceType {
 /**
  * Extract resource name and wildcard flag from resource expression.
  * Handles:
- * - Enum values: S3Resource.Files → {name: 'Files', hasWildcard: false}
- * - Template literals: `${S3Resource.Files}/*` → {name: 'Files', hasWildcard: true}
- * - String literals: 'media-bucket/*' → {name: 'media-bucket', hasWildcard: true}
+ * - Enum values: S3Resource.Files - returns name: 'Files', hasWildcard: false
+ * - Template literals with wildcard - returns name: 'Files', hasWildcard: true
+ * - String literals: 'media-bucket/*' - returns name: 'media-bucket', hasWildcard: true
  */
 function extractResourceValue(expr: string): {name: string; hasWildcard: boolean} {
   // Handle template literal with enum: `${S3Resource.Files}/*`

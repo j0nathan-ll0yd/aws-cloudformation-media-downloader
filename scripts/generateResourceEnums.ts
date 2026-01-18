@@ -40,9 +40,7 @@ function generateEnum(enumName: string, resources: ResourceEntry[], docComment: 
   if (resources.length === 0) {
     return `/** ${docComment} */\nexport enum ${enumName} {}\n`
   }
-
   const entries = resources.map((r) => `  ${r.name} = '${r.name}'`).join(',\n')
-
   return `/** ${docComment} */
 export enum ${enumName} {
 ${entries}

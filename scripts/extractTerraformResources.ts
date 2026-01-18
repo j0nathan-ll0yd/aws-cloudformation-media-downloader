@@ -56,11 +56,9 @@ function extractResources(
   if (!resources) {
     return []
   }
-
   return Object.keys(resources).map((name) => {
     // SNS platform applications use array indexing due to conditional creation
     const arnSuffix = terraformType === 'aws_sns_platform_application' ? '[0].arn' : '.arn'
-
     return {
       name,
       terraformId: `${terraformType}.${name}`,

@@ -85,13 +85,13 @@ export type AnyServiceResource = S3Resource | SQSResource | SNSTopicResource | S
  * Specifies which operations are required and on which resources.
  *
  * Resource field supports both exact resource names and wildcard patterns:
- * - Exact: `S3Resource.Files` → files bucket
- * - Wildcard: `\`${S3Resource.Files}/*\`` → all objects in files bucket
+ * - Exact: S3Resource.Files - files bucket
+ * - Wildcard: S3Resource.Files + "/*" - all objects in files bucket
  */
 export interface ServicePermission {
   /** The AWS service being accessed */
   service: AWSService
-  /** Resource enum value or wildcard pattern (e.g., S3Resource.Files or \`${S3Resource.Files}/*\`) */
+  /** Resource enum value or wildcard pattern */
   resource: AnyServiceResource | `${AnyServiceResource}/*`
   /** The operations required on this resource */
   operations: (S3Operation | SQSOperation | SNSOperation | EventBridgeOperation | string)[]
