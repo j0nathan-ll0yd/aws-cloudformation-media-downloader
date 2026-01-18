@@ -33,10 +33,7 @@ resource "aws_iam_role_policy_attachment" "SendPushNotificationXRay" {
   policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }
 
-resource "aws_iam_role_policy_attachment" "SendPushNotificationDSQL" {
-  role       = aws_iam_role.SendPushNotification.name
-  policy_arn = aws_iam_policy.LambdaDSQLReadWrite.arn
-}
+# DSQL policy attachment handled by terraform/dsql_permissions.tf
 
 data "aws_iam_policy_document" "SendPushNotification" {
   statement {
@@ -108,7 +105,7 @@ resource "aws_lambda_function" "SendPushNotification" {
   environment {
     variables = merge(local.common_lambda_env, {
       OTEL_SERVICE_NAME = local.send_push_notification_function_name
-      DSQL_ACCESS_LEVEL = "readwrite"
+      DSQL_ROLE_NAME    = local.lambda_dsql_roles["SendPushNotification"].role_name
     })
   }
 

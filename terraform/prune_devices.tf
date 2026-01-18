@@ -54,10 +54,7 @@ resource "aws_iam_role_policy_attachment" "PruneDevicesXRay" {
   policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }
 
-resource "aws_iam_role_policy_attachment" "PruneDevicesDSQL" {
-  role       = aws_iam_role.PruneDevices.name
-  policy_arn = aws_iam_policy.LambdaDSQLReadWrite.arn
-}
+# DSQL policy attachment handled by terraform/dsql_permissions.tf
 
 resource "aws_cloudwatch_event_target" "PruneDevices" {
   rule = aws_cloudwatch_event_rule.PruneDevices.name
@@ -116,7 +113,7 @@ resource "aws_lambda_function" "PruneDevices" {
       APNS_DEFAULT_TOPIC = data.sops_file.secrets.data["apns.staging.defaultTopic"]
       APNS_HOST          = "api.sandbox.push.apple.com"
       OTEL_SERVICE_NAME  = local.prune_devices_function_name
-      DSQL_ACCESS_LEVEL  = "readwrite"
+      DSQL_ROLE_NAME     = local.lambda_dsql_roles["PruneDevices"].role_name
     })
   }
 

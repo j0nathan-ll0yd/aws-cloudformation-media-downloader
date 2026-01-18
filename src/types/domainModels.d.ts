@@ -99,31 +99,3 @@ export interface Device {
   /** SNS endpoint ARN for this device's push notifications */
   endpointArn: string
 }
-
-/**
- * OAuth identity provider tokens.
- *
- * Stored after Sign In With Apple authentication.
- * Used for token refresh and API access.
- *
- * @see Accounts entity for Better Auth storage
- * @see LoginUser Lambda for authentication flow
- */
-export interface IdentityProvider {
-  /** Provider's user ID (e.g., Apple's sub claim) */
-  userId: string
-  /** User's email from the provider */
-  email: string
-  /** Whether email has been verified by the provider */
-  emailVerified: boolean
-  /** Whether the email is a private relay (Apple) */
-  isPrivateEmail: boolean
-  /** OAuth access token for API requests */
-  accessToken: string
-  /** OAuth refresh token for obtaining new access tokens */
-  refreshToken: string
-  /** Token type, typically 'Bearer' */
-  tokenType: string
-  /** Unix timestamp when access token expires */
-  expiresAt: number
-}

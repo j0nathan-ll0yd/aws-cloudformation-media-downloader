@@ -10,61 +10,45 @@ resource "aws_dsql_cluster" "media_downloader" {
 }
 
 # =============================================================================
-# Three-Tier DSQL Access Model
+# Per-Lambda DSQL Access Model
 # =============================================================================
-# - ReadOnly: SELECT only (ListFiles, S3ObjectCreated)
-# - ReadWrite: Full DML (most Lambdas)
-# - Admin: Full DDL/DML (MigrateDSQL only)
+# - Connect: Per-Lambda PostgreSQL roles with fine-grained GRANT permissions
+# - AdminConnect: Built-in admin user for DDL (MigrateDSQL only)
 #
 # IAM controls token generation, PostgreSQL roles control actual SQL permissions.
-# See migration 0003_create_access_roles.sql for role definitions.
+# Per-Lambda roles and GRANTs defined in migrations/0002_lambda_roles.sql.
+# Policy attachments generated in terraform/dsql_permissions.tf.
 # =============================================================================
 
-# ReadOnly policy - uses custom PostgreSQL role via DbConnect
-data "aws_iam_policy_document" "dsql_readonly" {
+# Connect policy - per-Lambda PostgreSQL roles via DbConnect
+data "aws_iam_policy_document" "dsql_connect" {
   statement {
-    sid       = "DSQLConnectReadOnly"
+    sid       = "DSQLConnect"
     actions   = ["dsql:DbConnect"]
     resources = [aws_dsql_cluster.media_downloader.arn]
   }
 }
 
-resource "aws_iam_policy" "LambdaDSQLReadOnly" {
-  name        = "LambdaDSQLReadOnly"
-  description = "Allows Lambda functions SELECT-only access to Aurora DSQL (uses app_readonly role)"
-  policy      = data.aws_iam_policy_document.dsql_readonly.json
+resource "aws_iam_policy" "LambdaDSQLConnect" {
+  name        = "LambdaDSQLConnect"
+  description = "Allows Lambda functions to connect to Aurora DSQL with per-Lambda PostgreSQL roles"
+  policy      = data.aws_iam_policy_document.dsql_connect.json
   tags        = local.common_tags
 }
 
-# ReadWrite policy - uses custom PostgreSQL role via DbConnect
-data "aws_iam_policy_document" "dsql_readwrite" {
+# AdminConnect policy - built-in admin user via DbConnectAdmin (migrations only)
+data "aws_iam_policy_document" "dsql_admin_connect" {
   statement {
-    sid       = "DSQLConnectReadWrite"
-    actions   = ["dsql:DbConnect"]
-    resources = [aws_dsql_cluster.media_downloader.arn]
-  }
-}
-
-resource "aws_iam_policy" "LambdaDSQLReadWrite" {
-  name        = "LambdaDSQLReadWrite"
-  description = "Allows Lambda functions full DML access to Aurora DSQL (uses app_readwrite role)"
-  policy      = data.aws_iam_policy_document.dsql_readwrite.json
-  tags        = local.common_tags
-}
-
-# Admin policy - uses built-in admin user via DbConnectAdmin (migrations only)
-data "aws_iam_policy_document" "dsql_admin" {
-  statement {
-    sid       = "DSQLConnectAdmin"
+    sid       = "DSQLAdminConnect"
     actions   = ["dsql:DbConnectAdmin"]
     resources = [aws_dsql_cluster.media_downloader.arn]
   }
 }
 
-resource "aws_iam_policy" "LambdaDSQLAdmin" {
-  name        = "LambdaDSQLAdmin"
+resource "aws_iam_policy" "LambdaDSQLAdminConnect" {
+  name        = "LambdaDSQLAdminConnect"
   description = "Allows Lambda functions admin access to Aurora DSQL (MigrateDSQL only)"
-  policy      = data.aws_iam_policy_document.dsql_admin.json
+  policy      = data.aws_iam_policy_document.dsql_admin_connect.json
   tags        = local.common_tags
 }
 

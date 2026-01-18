@@ -33,10 +33,7 @@ resource "aws_iam_role_policy_attachment" "RefreshTokenXRay" {
   policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }
 
-resource "aws_iam_role_policy_attachment" "RefreshTokenDSQL" {
-  role       = aws_iam_role.RefreshToken.name
-  policy_arn = aws_iam_policy.LambdaDSQLReadWrite.arn
-}
+# DSQL policy attachment handled by terraform/dsql_permissions.tf
 
 resource "aws_lambda_permission" "RefreshToken" {
   action        = "lambda:InvokeFunction"
@@ -76,7 +73,7 @@ resource "aws_lambda_function" "RefreshToken" {
   environment {
     variables = merge(local.common_lambda_env, {
       OTEL_SERVICE_NAME = local.refresh_token_function_name
-      DSQL_ACCESS_LEVEL = "readwrite"
+      DSQL_ROLE_NAME    = local.lambda_dsql_roles["RefreshToken"].role_name
     })
   }
 

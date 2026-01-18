@@ -16,6 +16,7 @@ import {publishEventWithRetry} from '#lib/vendor/AWS/EventBridge'
 import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
 import {createPersistenceStore, defaultIdempotencyConfig, makeIdempotent} from '#lib/vendor/Powertools/idempotency'
 import {getVideoID} from '#lib/vendor/YouTube'
+import {DatabaseOperation, DatabaseTable} from '#types/databasePermissions'
 import {DownloadStatus, FileStatus, ResponseStatus} from '#types/enums'
 import {feedlyWebhookRequestSchema, webhookResponseSchema} from '#types/api-schema'
 import type {FeedlyWebhookRequest} from '#types/api-schema'
@@ -26,7 +27,7 @@ import type {WebhookProcessingInput, WebhookProcessingResult} from '#types/lambd
 import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/apiGateway'
 import {getRequiredEnv} from '#lib/system/env'
 import {buildValidatedResponse} from '#lib/lambda/responses'
-import {AuthenticatedHandler, metrics, MetricUnit} from '#lib/lambda/handlers'
+import {AuthenticatedHandler, metrics, MetricUnit, RequiresDatabase} from '#lib/lambda/handlers'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 import {createDownloadReadyNotification} from '#lib/services/notification/transformers'
 import {associateFileToUser} from '#lib/domain/user/userFileService'
@@ -152,6 +153,11 @@ function getIdempotentProcessor() {
  * Handler for Feedly webhook requests.
  * Processes video download requests with idempotency protection.
  */
+@RequiresDatabase([
+  {table: DatabaseTable.Files, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]},
+  {table: DatabaseTable.FileDownloads, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]},
+  {table: DatabaseTable.UserFiles, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}
+])
 class WebhookFeedlyHandler extends AuthenticatedHandler {
   readonly operationName = 'WebhookFeedly'
 

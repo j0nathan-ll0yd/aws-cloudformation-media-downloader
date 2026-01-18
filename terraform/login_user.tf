@@ -33,10 +33,7 @@ resource "aws_iam_role_policy_attachment" "LoginUserXRay" {
   policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }
 
-resource "aws_iam_role_policy_attachment" "LoginUserDSQL" {
-  role       = aws_iam_role.LoginUser.name
-  policy_arn = aws_iam_policy.LambdaDSQLReadWrite.arn
-}
+# DSQL policy attachment handled by terraform/dsql_permissions.tf
 
 resource "aws_lambda_permission" "LoginUser" {
   action        = "lambda:InvokeFunction"
@@ -79,7 +76,7 @@ resource "aws_lambda_function" "LoginUser" {
       SIGN_IN_WITH_APPLE_CONFIG = data.sops_file.secrets.data["signInWithApple.config"]
       BETTER_AUTH_SECRET        = data.sops_file.secrets.data["platform.key"]
       OTEL_SERVICE_NAME         = local.login_user_function_name
-      DSQL_ACCESS_LEVEL         = "readwrite"
+      DSQL_ROLE_NAME            = local.lambda_dsql_roles["LoginUser"].role_name
     })
   }
 

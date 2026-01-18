@@ -14,8 +14,9 @@ import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
 import {fileDownloads, sessions, verification} from '#lib/vendor/Drizzle/schema'
 import {addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
 import type {CleanupResult} from '#types/lambda'
+import {DatabaseOperation, DatabaseTable} from '#types/databasePermissions'
 import {DownloadStatus} from '#types/enums'
-import {metrics, MetricUnit, ScheduledHandler} from '#lib/lambda/handlers'
+import {metrics, MetricUnit, RequiresDatabase, ScheduledHandler} from '#lib/lambda/handlers'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 import {secondsAgo, TIME} from '#lib/system/time'
 
@@ -68,6 +69,11 @@ async function cleanupVerificationTokens(): Promise<number> {
  * Handler for scheduled expired record cleanup.
  * Deletes expired FileDownloads, Sessions, and Verification tokens.
  */
+@RequiresDatabase([
+  {table: DatabaseTable.FileDownloads, operations: [DatabaseOperation.Delete]},
+  {table: DatabaseTable.Sessions, operations: [DatabaseOperation.Delete]},
+  {table: DatabaseTable.VerificationTokens, operations: [DatabaseOperation.Delete]}
+])
 class CleanupExpiredRecordsHandler extends ScheduledHandler<CleanupResult> {
   readonly operationName = 'CleanupExpiredRecords'
 

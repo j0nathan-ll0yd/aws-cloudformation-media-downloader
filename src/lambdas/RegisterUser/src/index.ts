@@ -18,10 +18,11 @@ import type {APIGatewayProxyResult, Context} from 'aws-lambda'
 import {updateUser} from '#entities/queries'
 import {getAuth} from '#lib/vendor/BetterAuth/config'
 import {assertTokenResponse, getSessionExpirationISO} from '#lib/vendor/BetterAuth/helpers'
+import {DatabaseOperation, DatabaseTable} from '#types/databasePermissions'
 import {userRegistrationRequestSchema, userRegistrationResponseSchema} from '#types/api-schema'
 import type {UserRegistrationRequest} from '#types/api-schema'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
-import {ApiHandler, metrics, MetricUnit} from '#lib/lambda/handlers'
+import {ApiHandler, metrics, MetricUnit, RequiresDatabase} from '#lib/lambda/handlers'
 import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/apiGateway'
 import {buildValidatedResponse} from '#lib/lambda/responses'
 import {logInfo} from '#lib/system/logging'
@@ -30,6 +31,11 @@ import {logInfo} from '#lib/system/logging'
  * Handler for user registration via Sign in with Apple
  * Uses Better Auth to verify ID token and create/find user
  */
+@RequiresDatabase([
+  {table: DatabaseTable.Users, operations: [DatabaseOperation.Select, DatabaseOperation.Insert, DatabaseOperation.Update]},
+  {table: DatabaseTable.Sessions, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]},
+  {table: DatabaseTable.Accounts, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}
+])
 class RegisterUserHandler extends ApiHandler<CustomAPIGatewayRequestAuthorizerEvent> {
   readonly operationName = 'RegisterUser'
 
@@ -77,6 +83,9 @@ class RegisterUserHandler extends ApiHandler<CustomAPIGatewayRequestAuthorizerEv
     logInfo('RegisterUser: Better Auth sign-in/registration successful', {
       userId: result.user?.id,
       sessionToken: result.token ? 'present' : 'missing',
+      tokenLength: result.token?.length,
+      tokenPrefix: result.token?.substring(0, 8),
+      sessionId: result.session?.id?.substring(0, 8),
       isNewUser
     })
 

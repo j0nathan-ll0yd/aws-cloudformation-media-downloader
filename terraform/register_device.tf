@@ -59,10 +59,7 @@ resource "aws_iam_role_policy_attachment" "RegisterDeviceXRay" {
   policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }
 
-resource "aws_iam_role_policy_attachment" "RegisterDeviceDSQL" {
-  role       = aws_iam_role.RegisterDevice.name
-  policy_arn = aws_iam_policy.LambdaDSQLReadWrite.arn
-}
+# DSQL policy attachment handled by terraform/dsql_permissions.tf
 
 resource "aws_lambda_permission" "RegisterDevice" {
   action        = "lambda:InvokeFunction"
@@ -104,7 +101,7 @@ resource "aws_lambda_function" "RegisterDevice" {
       PLATFORM_APPLICATION_ARN    = length(aws_sns_platform_application.OfflineMediaDownloader) == 1 ? aws_sns_platform_application.OfflineMediaDownloader[0].arn : ""
       PUSH_NOTIFICATION_TOPIC_ARN = aws_sns_topic.PushNotifications.arn
       OTEL_SERVICE_NAME           = local.register_device_function_name
-      DSQL_ACCESS_LEVEL           = "readwrite"
+      DSQL_ROLE_NAME              = local.lambda_dsql_roles["RegisterDevice"].role_name
     })
   }
 

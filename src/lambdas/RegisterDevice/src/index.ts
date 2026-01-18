@@ -11,12 +11,13 @@
 import type {APIGatewayProxyResult, Context} from 'aws-lambda'
 import {upsertDevice as upsertDeviceRecord, upsertUserDevice} from '#entities/queries'
 import {createPlatformEndpoint, listSubscriptionsByTopic} from '#lib/vendor/AWS/SNS'
+import {DatabaseOperation, DatabaseTable} from '#types/databasePermissions'
 import {UserStatus} from '#types/enums'
 import {deviceRegistrationRequestSchema, deviceRegistrationResponseSchema} from '#types/api-schema'
 import type {DeviceRegistrationRequest} from '#types/api-schema'
 import type {Device} from '#types/domainModels'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
-import {OptionalAuthHandler} from '#lib/lambda/handlers'
+import {OptionalAuthHandler, RequiresDatabase} from '#lib/lambda/handlers'
 import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/apiGateway'
 import {getUserDevices, subscribeEndpointToTopic, unsubscribeEndpointToTopic} from '#lib/services/device/deviceService'
 import {getRequiredEnv} from '#lib/system/env'
@@ -82,6 +83,10 @@ async function getSubscriptionArnFromEndpointAndTopic(endpointArn: string, topic
  * Handler for device registration
  * Registers devices for push notifications via AWS SNS
  */
+@RequiresDatabase([
+  {table: DatabaseTable.Devices, operations: [DatabaseOperation.Select, DatabaseOperation.Insert, DatabaseOperation.Update]},
+  {table: DatabaseTable.UserDevices, operations: [DatabaseOperation.Select, DatabaseOperation.Insert, DatabaseOperation.Update]}
+])
 class RegisterDeviceHandler extends OptionalAuthHandler {
   readonly operationName = 'RegisterDevice'
 

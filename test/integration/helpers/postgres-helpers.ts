@@ -130,11 +130,11 @@ export async function closeTestDb(): Promise<void> {
  * Run this in beforeAll() of integration tests.
  *
  * CONVENTION: Migrations are the single source of truth for SQL.
- * Tables are created by globalSetup.ts from migrations/0001_initial_schema.sql.
+ * Tables are created by globalSetup.ts from migrations/0001_schema.sql.
  * This function ensures schema exists and sets search_path for the connection.
  *
  * DO NOT duplicate SQL table definitions here.
- * All schema definitions belong in migrations/0001_initial_schema.sql.
+ * All schema definitions belong in migrations/0001_schema.sql.
  */
 export async function createAllTables(): Promise<void> {
   const db = getTestDb()
@@ -182,7 +182,6 @@ export async function dropAllTables(): Promise<void> {
     DROP TABLE IF EXISTS ${schema}.verification CASCADE;
     DROP TABLE IF EXISTS ${schema}.accounts CASCADE;
     DROP TABLE IF EXISTS ${schema}.sessions CASCADE;
-    DROP TABLE IF EXISTS ${schema}.identity_providers CASCADE;
     DROP TABLE IF EXISTS ${schema}.devices CASCADE;
     DROP TABLE IF EXISTS ${schema}.files CASCADE;
     DROP TABLE IF EXISTS ${schema}.users CASCADE;
@@ -217,7 +216,7 @@ export async function truncateAllTables(): Promise<void> {
   await db.execute(sql.raw(`
     TRUNCATE ${schema}.user_devices, ${schema}.user_files, ${schema}.file_downloads,
              ${schema}.verification, ${schema}.accounts, ${schema}.sessions,
-             ${schema}.identity_providers, ${schema}.devices, ${schema}.files, ${schema}.users
+             ${schema}.devices, ${schema}.files, ${schema}.users
     CASCADE;
   `))
 }

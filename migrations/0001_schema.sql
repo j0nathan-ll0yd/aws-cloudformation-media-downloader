@@ -1,6 +1,7 @@
--- Migration: 0001_initial_schema
+-- Migration: 0001_schema
 -- Description: Initial database schema for Aurora DSQL with Better Auth
 -- Created: 2025-12-26
+-- Updated: 2026-01-16 (consolidated schema + indexes)
 --
 -- Schema aligned with Better Auth official drizzle adapter expectations:
 -- - Primary keys: 'id' (UUID with database-generated values)
@@ -8,12 +9,19 @@
 -- - Table names: users, sessions, accounts, verification
 -- - Better Auth configured with generateId: false to let DB generate UUIDs
 
--- Schema migrations tracking table
+-- =============================================================================
+-- SCHEMA MIGRATIONS TRACKING
+-- =============================================================================
+
 CREATE TABLE IF NOT EXISTS schema_migrations (
   version TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   applied_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
+
+-- =============================================================================
+-- BETTER AUTH CORE TABLES
+-- =============================================================================
 
 -- Users table - Better Auth core table
 -- NOTE: Nullable columns use DEFAULT NULL for Better Auth compatibility
@@ -72,19 +80,9 @@ CREATE TABLE IF NOT EXISTS verification (
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
--- Identity Providers table - OAuth token storage for Sign In With Apple
-CREATE TABLE IF NOT EXISTS identity_providers (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL,
-  provider_user_id TEXT NOT NULL,
-  email TEXT NOT NULL,
-  email_verified BOOLEAN NOT NULL,
-  is_private_email BOOLEAN NOT NULL,
-  access_token TEXT NOT NULL,
-  refresh_token TEXT NOT NULL,
-  token_type TEXT NOT NULL,
-  expires_at INTEGER NOT NULL
-);
+-- =============================================================================
+-- APPLICATION TABLES
+-- =============================================================================
 
 -- Files table - Video metadata storage
 CREATE TABLE IF NOT EXISTS files (
@@ -127,6 +125,10 @@ CREATE TABLE IF NOT EXISTS devices (
   endpoint_arn TEXT NOT NULL
 );
 
+-- =============================================================================
+-- RELATIONSHIP TABLES (Many-to-Many)
+-- =============================================================================
+
 -- User Files table - Many-to-many
 CREATE TABLE IF NOT EXISTS user_files (
   user_id UUID NOT NULL,
@@ -142,3 +144,37 @@ CREATE TABLE IF NOT EXISTS user_devices (
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
   PRIMARY KEY (user_id, device_id)
 );
+
+-- =============================================================================
+-- INDEXES
+-- =============================================================================
+-- Aurora DSQL requires CREATE INDEX ASYNC for non-blocking index creation.
+-- All indexes use IF NOT EXISTS for idempotency.
+
+-- Users table indexes
+CREATE INDEX ASYNC IF NOT EXISTS users_email_idx ON users(email);
+
+-- Files table indexes
+CREATE INDEX ASYNC IF NOT EXISTS files_key_idx ON files(key);
+
+-- File Downloads table indexes
+CREATE INDEX ASYNC IF NOT EXISTS file_downloads_status_idx ON file_downloads(status, retry_after);
+
+-- Sessions table indexes
+CREATE INDEX ASYNC IF NOT EXISTS sessions_user_idx ON sessions(user_id);
+CREATE INDEX ASYNC IF NOT EXISTS sessions_token_idx ON sessions(token);
+
+-- Accounts table indexes
+CREATE INDEX ASYNC IF NOT EXISTS accounts_user_idx ON accounts(user_id);
+CREATE INDEX ASYNC IF NOT EXISTS accounts_provider_idx ON accounts(provider_id, account_id);
+
+-- Verification table indexes
+CREATE INDEX ASYNC IF NOT EXISTS verification_identifier_idx ON verification(identifier);
+
+-- User Files table indexes
+CREATE INDEX ASYNC IF NOT EXISTS user_files_user_idx ON user_files(user_id);
+CREATE INDEX ASYNC IF NOT EXISTS user_files_file_idx ON user_files(file_id);
+
+-- User Devices table indexes
+CREATE INDEX ASYNC IF NOT EXISTS user_devices_user_idx ON user_devices(user_id);
+CREATE INDEX ASYNC IF NOT EXISTS user_devices_device_idx ON user_devices(device_id);

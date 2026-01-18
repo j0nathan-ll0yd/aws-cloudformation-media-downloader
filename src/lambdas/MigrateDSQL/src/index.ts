@@ -19,8 +19,9 @@ import {fileURLToPath} from 'url'
 import {sql} from '#lib/vendor/Drizzle/types'
 import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
 import {addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
+import {DatabaseOperation, DatabaseTable} from '#types/databasePermissions'
 import type {MigrationFile, MigrationResult} from '#types/lambda'
-import {InvokeHandler, metrics, MetricUnit} from '#lib/lambda/handlers'
+import {InvokeHandler, metrics, MetricUnit, RequiresDatabase} from '#lib/lambda/handlers'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -66,7 +67,7 @@ function loadMigrations(): MigrationFile[] {
     const filepath = join(migrationsDir, filename)
     const sqlContent = readFileSync(filepath, 'utf-8')
 
-    // Parse version and name from filename: 0001_initial_schema.sql
+    // Parse version and name from filename: 0001_schema.sql
     const match = filename.match(/^(\d+)_(.+)\.sql$/)
     if (!match) {
       throw new Error(`Invalid migration filename format: ${filename}. Expected: NNNN_name.sql`)
@@ -190,14 +191,31 @@ async function applyMigration(migration: MigrationFile): Promise<void> {
   logInfo('Migration applied successfully', {version: migration.version})
 }
 
+interface MigrateDSQLInput {
+  source?: string
+  /** Array of migration versions to reset (delete from schema_migrations) before running */
+  resetVersions?: string[]
+}
+
 /**
  * Handler for database migration invocation.
  * Applies pending migrations from SQL files.
  */
-class MigrateDSQLHandler extends InvokeHandler<{source?: string}, MigrationResult> {
+@RequiresDatabase([
+  {table: DatabaseTable.Users, operations: [DatabaseOperation.All]},
+  {table: DatabaseTable.Files, operations: [DatabaseOperation.All]},
+  {table: DatabaseTable.FileDownloads, operations: [DatabaseOperation.All]},
+  {table: DatabaseTable.Devices, operations: [DatabaseOperation.All]},
+  {table: DatabaseTable.Sessions, operations: [DatabaseOperation.All]},
+  {table: DatabaseTable.Accounts, operations: [DatabaseOperation.All]},
+  {table: DatabaseTable.VerificationTokens, operations: [DatabaseOperation.All]},
+  {table: DatabaseTable.UserFiles, operations: [DatabaseOperation.All]},
+  {table: DatabaseTable.UserDevices, operations: [DatabaseOperation.All]}
+])
+class MigrateDSQLHandler extends InvokeHandler<MigrateDSQLInput, MigrationResult> {
   readonly operationName = 'MigrateDSQL'
 
-  protected async executeInvoke(): Promise<MigrationResult> {
+  protected async executeInvoke(input: MigrateDSQLInput): Promise<MigrationResult> {
     // Track migration run
     metrics.addMetric('MigrationRun', MetricUnit.Count, 1)
 
@@ -205,10 +223,19 @@ class MigrateDSQLHandler extends InvokeHandler<{source?: string}, MigrationResul
 
     const result: MigrationResult = {applied: [], skipped: [], errors: []}
 
-    logInfo('MigrateDSQL starting')
+    logInfo('MigrateDSQL starting', {resetVersions: input.resetVersions})
 
     // Ensure migrations tracking table exists
     await ensureMigrationsTable()
+
+    // Reset specific versions if requested (allows forced re-run)
+    if (input.resetVersions && input.resetVersions.length > 0) {
+      const db = await getDrizzleClient()
+      for (const version of input.resetVersions) {
+        logInfo('Resetting migration version', {version})
+        await db.execute(sql.raw(`DELETE FROM schema_migrations WHERE version = '${version}'`))
+      }
+    }
 
     // Load migrations from SQL files
     const migrations = loadMigrations()

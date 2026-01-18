@@ -1,13 +1,13 @@
 openapi: 3.0.0
 info:
-  title: aws-cloudformation-media-downloader
+  title: Offline Media Downloader API
   description: |-
     Offline Media Downloader API
 
     A serverless AWS media downloader service that downloads media content
     (primarily YouTube videos) and integrates with a companion iOS app for
     offline playback.
-  version: 1.0.0
+  version: 0.0.0
 tags:
   - name: Files
   - name: Devices
@@ -671,9 +671,9 @@ components:
           properties:
             code:
               type: string
-              enum:
-                - Forbidden
-              description: Error code - always "Forbidden" for 403 responses
+              description: |-
+                Error code - typically "Forbidden" for 403 responses, but may vary
+                based on API Gateway configuration
             message:
               type: string
               description: Human-readable error message describing the authorization failure
@@ -705,9 +705,7 @@ components:
           properties:
             code:
               type: string
-              enum:
-                - InternalServerError
-              description: Error code
+              description: Error code - typically "InternalServerError" for 500 responses
             message:
               type: string
               description: Error message
@@ -1029,9 +1027,9 @@ components:
           properties:
             code:
               type: string
-              enum:
-                - Unauthorized
-              description: Error code - always "Unauthorized" for 401 responses
+              description: |-
+                Error code - typically "Unauthorized" for 401 responses, but may vary
+                based on API Gateway configuration (e.g., "custom-4XX-generic")
             message:
               type: string
               description: |-

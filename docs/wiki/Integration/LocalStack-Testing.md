@@ -298,7 +298,7 @@ Integration tests use PostgreSQL schema isolation for parallel test execution:
 
 ```
 globalSetup.ts       → Creates schemas worker_1...worker_8 before tests
-                     └→ Reads migrations/0001_initial_schema.sql
+                     └→ Reads migrations/0001_schema.sql
                      └→ Applies Aurora DSQL → PostgreSQL adaptations
                      └→ Creates tables in each schema
 

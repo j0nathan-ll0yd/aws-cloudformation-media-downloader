@@ -30,5 +30,8 @@ export { InvokeHandler } from './InvokeHandler'
 // Custom authorizer handlers
 export { AuthorizerHandler } from './AuthorizerHandler'
 
+// Database permissions decorator
+export { computeAccessLevel, getDatabasePermissions, RequiresDatabase } from './RequiresDatabase'
+
 // Re-export types from centralized types module
 export type { S3RecordContext, ScheduledResult, SqsBatchOptions, SqsRecordContext } from '#types/lambda'

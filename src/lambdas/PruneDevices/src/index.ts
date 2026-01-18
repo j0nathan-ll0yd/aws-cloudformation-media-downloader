@@ -10,12 +10,13 @@
  */
 import {deleteUserDevicesByDeviceId, getAllDevices} from '#entities/queries'
 import {addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
+import {DatabaseOperation, DatabaseTable} from '#types/databasePermissions'
 import type {Device} from '#types/domainModels'
 import type {ApplePushNotificationResponse, PruneDevicesResult} from '#types/lambda'
 import {deleteDevice} from '#lib/services/device/deviceService'
 import {getOptionalEnv, getRequiredEnv} from '#lib/system/env'
 import {Apns2Error, UnexpectedError} from '#lib/system/errors'
-import {metrics, MetricUnit, ScheduledHandler} from '#lib/lambda/handlers'
+import {metrics, MetricUnit, RequiresDatabase, ScheduledHandler} from '#lib/lambda/handlers'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 
 // Re-export types for external consumers
@@ -70,6 +71,10 @@ async function dispatchHealthCheckNotificationToDeviceToken(token: string): Prom
  * Handler for scheduled device cleanup.
  * Removes devices with disabled APNS endpoints and their user associations.
  */
+@RequiresDatabase([
+  {table: DatabaseTable.Devices, operations: [DatabaseOperation.Select, DatabaseOperation.Delete]},
+  {table: DatabaseTable.UserDevices, operations: [DatabaseOperation.Delete]}
+])
 class PruneDevicesHandler extends ScheduledHandler<PruneDevicesResult> {
   readonly operationName = 'PruneDevices'
 

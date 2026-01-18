@@ -33,8 +33,9 @@ import {docsStructureRule} from './rules/docs-structure'
 import {powertoolsMetricsRule} from './rules/powertools-metrics'
 import {migrationsSafetyRule} from './rules/migrations-safety'
 import {auroraDsqlAsyncIndexRule} from './rules/aurora-dsql-async-index'
+import {databasePermissionsRule} from './rules/database-permissions'
 
-// Export all rules (21 total: 7 CRITICAL + 10 HIGH + 4 MEDIUM)
+// Export all rules (22 total: 7 CRITICAL + 11 HIGH + 4 MEDIUM)
 export const allRules: ValidationRule[] = [
   // CRITICAL
   awsSdkEncapsulationRule,
@@ -50,6 +51,7 @@ export const allRules: ValidationRule[] = [
   batchRetryRule,
   scanPaginationRule,
   auroraDsqlAsyncIndexRule,
+  databasePermissionsRule,
   // MEDIUM
   importOrderRule,
   responseEnumRule,
@@ -87,6 +89,9 @@ export const rulesByName: Record<string, ValidationRule> = {
   migrations: migrationsSafetyRule, // alias
   'aurora-dsql-async-index': auroraDsqlAsyncIndexRule,
   'async-index': auroraDsqlAsyncIndexRule, // alias
+  'database-permissions': databasePermissionsRule,
+  'db-permissions': databasePermissionsRule, // alias
+  database: databasePermissionsRule, // alias
   // HIGH rules
   'response-helpers': responseHelpersRule,
   response: responseHelpersRule, // alias
@@ -131,6 +136,7 @@ export {
   cascadeSafetyRule,
   commentConventionsRule,
   configEnforcementRule,
+  databasePermissionsRule,
   docsStructureRule,
   docSyncRule,
   drizzleOrmEncapsulationRule,

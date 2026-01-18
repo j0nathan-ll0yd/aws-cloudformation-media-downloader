@@ -52,10 +52,7 @@ resource "aws_iam_role_policy_attachment" "ApiGatewayAuthorizerXRay" {
   policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }
 
-resource "aws_iam_role_policy_attachment" "ApiGatewayAuthorizerDSQL" {
-  role       = aws_iam_role.ApiGatewayAuthorizer.name
-  policy_arn = aws_iam_policy.LambdaDSQLReadWrite.arn
-}
+# DSQL policy attachment handled by terraform/dsql_permissions.tf
 
 data "aws_iam_policy_document" "ApiGatewayAuthorizer" {
   statement {
@@ -107,7 +104,7 @@ resource "aws_lambda_function" "ApiGatewayAuthorizer" {
       MULTI_AUTHENTICATION_PATH_PARTS = "device/register,device/event,files",
       RESERVED_CLIENT_IP              = "104.1.88.244"
       OTEL_SERVICE_NAME               = local.api_gateway_authorizer_function_name
-      DSQL_ACCESS_LEVEL               = "readwrite"
+      DSQL_ROLE_NAME                  = local.lambda_dsql_roles["ApiGatewayAuthorizer"].role_name
     })
   }
 

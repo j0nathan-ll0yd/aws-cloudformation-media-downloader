@@ -18,34 +18,27 @@ import type {SessionPayload} from '#types/util'
  * @throws UnauthorizedError if token is invalid or expired
  */
 export async function validateSessionToken(token: string): Promise<SessionPayload> {
-  logDebug('validateSessionToken: validating token')
-  try {
-    // Use index for O(1) lookup
-    const session = await getSessionByToken(token)
+  logDebug('validateSessionToken: validating token', {tokenLength: token.length, tokenPrefix: token.substring(0, 8)})
 
-    if (!session) {
-      logError('validateSessionToken: session not found')
-      throw new UnauthorizedError('Invalid session token')
-    }
+  // Use index for O(1) lookup
+  const session = await getSessionByToken(token)
 
-    // Compare Date objects - expiresAt is now a TIMESTAMP WITH TIME ZONE
-    if (session.expiresAt < new Date()) {
-      logError('validateSessionToken: session expired', {expiresAt: session.expiresAt.toISOString(), now: new Date().toISOString()})
-      throw new UnauthorizedError('Session expired')
-    }
-
-    await updateSession(session.id, {updatedAt: new Date()})
-
-    logDebug('validateSessionToken: session valid', {userId: session.userId, sessionId: session.id})
-
-    return {userId: session.userId, sessionId: session.id, expiresAt: session.expiresAt.getTime()}
-  } catch (error) {
-    if (error instanceof UnauthorizedError) {
-      throw error
-    }
-    logError('validateSessionToken: validation failed', {error})
-    throw new UnauthorizedError('Token validation failed')
+  if (!session) {
+    logError('validateSessionToken: session not found', {tokenPrefix: token.substring(0, 8), tokenLength: token.length})
+    throw new UnauthorizedError('Invalid session token')
   }
+
+  // Compare Date objects - expiresAt is now a TIMESTAMP WITH TIME ZONE
+  if (session.expiresAt < new Date()) {
+    logError('validateSessionToken: session expired', {expiresAt: session.expiresAt.toISOString(), now: new Date().toISOString()})
+    throw new UnauthorizedError('Session expired')
+  }
+
+  await updateSession(session.id, {updatedAt: new Date()})
+
+  logDebug('validateSessionToken: session valid', {userId: session.userId, sessionId: session.id})
+
+  return {userId: session.userId, sessionId: session.id, expiresAt: session.expiresAt.getTime()}
 }
 
 /**

@@ -37,13 +37,13 @@ describe('MigrateDSQL Lambda', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     // Default: migrations directory exists with two files
-    mockReaddirSync.mockReturnValue(['0001_initial_schema.sql', '0002_create_indexes.sql'])
+    mockReaddirSync.mockReturnValue(['0001_schema.sql', '0002_lambda_roles.sql'])
     mockReadFileSync.mockImplementation((path: string) => {
       if (path.includes('0001')) {
         return '-- Migration 0001\nCREATE TABLE IF NOT EXISTS users (id TEXT);'
       }
       if (path.includes('0002')) {
-        return '-- Migration 0002\nCREATE INDEX ASYNC IF NOT EXISTS users_idx ON users(id);'
+        return '-- Migration 0002\nCREATE ROLE lambda_list_files WITH LOGIN;'
       }
       return ''
     })

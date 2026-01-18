@@ -37,10 +37,7 @@ resource "aws_iam_role_policy_attachment" "CleanupExpiredRecordsXRay" {
   policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }
 
-resource "aws_iam_role_policy_attachment" "CleanupExpiredRecordsDSQL" {
-  role       = aws_iam_role.CleanupExpiredRecords.name
-  policy_arn = aws_iam_policy.LambdaDSQLReadWrite.arn
-}
+# DSQL policy attachment handled by terraform/dsql_permissions.tf
 
 resource "aws_cloudwatch_log_group" "CleanupExpiredRecords" {
   name              = "/aws/lambda/${aws_lambda_function.CleanupExpiredRecords.function_name}"
@@ -74,7 +71,7 @@ resource "aws_lambda_function" "CleanupExpiredRecords" {
   environment {
     variables = merge(local.common_lambda_env, {
       OTEL_SERVICE_NAME = local.cleanup_expired_records_function_name
-      DSQL_ACCESS_LEVEL = "readwrite"
+      DSQL_ROLE_NAME    = local.lambda_dsql_roles["CleanupExpiredRecords"].role_name
     })
   }
 

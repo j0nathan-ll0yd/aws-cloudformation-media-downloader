@@ -426,7 +426,7 @@ The following patterns have caused issues in this project and should be avoided:
 
 | File | Contents |
 |------|----------|
-| `domainModels.d.ts` | User, File, Device, IdentityProvider |
+| `domainModels.d.ts` | User, File, Device |
 | `schemas.ts` | Zod schemas and inferred *Input types |
 | `notificationTypes.d.ts` | Push notification payloads |
 | `persistenceTypes.d.ts` | Relationship types (UserDevice, UserFile) |

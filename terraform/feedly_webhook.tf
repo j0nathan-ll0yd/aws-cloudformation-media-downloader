@@ -67,10 +67,7 @@ resource "aws_iam_role_policy_attachment" "WebhookFeedlyXRay" {
   policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }
 
-resource "aws_iam_role_policy_attachment" "WebhookFeedlyDSQL" {
-  role       = aws_iam_role.WebhookFeedly.name
-  policy_arn = aws_iam_policy.LambdaDSQLReadWrite.arn
-}
+# DSQL policy attachment handled by terraform/dsql_permissions.tf
 
 resource "aws_lambda_permission" "WebhookFeedly" {
   action        = "lambda:InvokeFunction"
@@ -114,7 +111,7 @@ resource "aws_lambda_function" "WebhookFeedly" {
       IDEMPOTENCY_TABLE_NAME = aws_dynamodb_table.IdempotencyTable.name
       EVENT_BUS_NAME         = aws_cloudwatch_event_bus.MediaDownloader.name
       OTEL_SERVICE_NAME      = local.webhook_feedly_function_name
-      DSQL_ACCESS_LEVEL      = "readwrite"
+      DSQL_ROLE_NAME         = local.lambda_dsql_roles["WebhookFeedly"].role_name
     })
   }
 
@@ -240,10 +237,7 @@ resource "aws_iam_role_policy_attachment" "StartFileUploadXRay" {
   policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }
 
-resource "aws_iam_role_policy_attachment" "StartFileUploadDSQL" {
-  role       = aws_iam_role.StartFileUpload.name
-  policy_arn = aws_iam_policy.LambdaDSQLReadWrite.arn
-}
+# DSQL policy attachment handled by terraform/dsql_permissions.tf
 
 data "archive_file" "StartFileUpload" {
   type        = "zip"
@@ -531,7 +525,7 @@ resource "aws_lambda_function" "StartFileUpload" {
       PYTHONPATH            = "/opt/python" # bgutil plugin path for PO token generation
       GITHUB_PERSONAL_TOKEN = data.sops_file.secrets.data["github.issue.token"]
       OTEL_SERVICE_NAME     = local.start_file_upload_function_name
-      DSQL_ACCESS_LEVEL     = "readwrite"
+      DSQL_ROLE_NAME        = local.lambda_dsql_roles["StartFileUpload"].role_name
     })
   }
 

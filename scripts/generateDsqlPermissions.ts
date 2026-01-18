@@ -1,0 +1,323 @@
+/**
+ * DSQL Permissions Generator
+ *
+ * Generates per-Lambda database permissions from `@RequiresDatabase` decorators.
+ * This is a comprehensive generator that replaces both generateTerraformPermissions.ts
+ * and generateDbRolesMigration.ts with a unified approach.
+ *
+ * Generates from build/db-permissions.json:
+ * 1. terraform/dsql_permissions.tf - Terraform locals and for_each resources
+ * 2. migrations/0002_lambda_roles.sql - Per-Lambda PostgreSQL roles with GRANTs
+ * 3. build/dsql-permissions-report.md - Human-readable report
+ *
+ * Usage: pnpm run generate:dsql-permissions
+ *
+ * @see docs/wiki/Infrastructure/Database-Permissions.md
+ */
+import {existsSync, mkdirSync, readFileSync, writeFileSync} from 'fs'
+import {dirname, join} from 'path'
+import {fileURLToPath} from 'url'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+const projectRoot = join(__dirname, '..')
+
+interface TablePermission {
+  table: string
+  operations: string[]
+}
+
+interface LambdaPermissions {
+  tables: TablePermission[]
+  computedAccessLevel: 'readonly' | 'readwrite' | 'admin'
+}
+
+interface PermissionsManifest {
+  lambdas: Record<string, LambdaPermissions>
+  generatedAt: string
+}
+
+/**
+ * Convert PascalCase Lambda name to snake_case PostgreSQL role name.
+ * ListFiles -\> lambda_list_files
+ * S3ObjectCreated -\> lambda_s3_object_created
+ */
+function lambdaNameToRoleName(lambdaName: string): string {
+  // Special case for admin (MigrateDSQL uses built-in admin role)
+  if (lambdaName === 'MigrateDSQL') {
+    return 'admin'
+  }
+  return 'lambda_' + lambdaName
+    .replace(/([A-Z])/g, '_$1')
+    .toLowerCase()
+    .replace(/^_/, '')
+    .replace(/_{2,}/g, '_')
+}
+
+/**
+ * Generate GRANT statements for a role's table permissions.
+ * Groups operations by table for cleaner SQL.
+ */
+function generateGrants(roleName: string, tables: TablePermission[]): string[] {
+  return tables.map(t => {
+    const ops = t.operations.join(', ')
+    return `GRANT ${ops} ON ${t.table} TO ${roleName};`
+  })
+}
+
+/**
+ * Generate Terraform HCL for per-Lambda DSQL permissions.
+ */
+function generateTerraformHcl(manifest: PermissionsManifest): string {
+  const lines: string[] = [
+    '# Auto-generated from @RequiresDatabase decorators',
+    '# Do not edit manually - run: pnpm run generate:dsql-permissions',
+    `# Generated at: ${new Date().toISOString()}`,
+    '',
+    'locals {',
+    '  # Per-Lambda PostgreSQL role configuration',
+    '  # Maps Lambda function names to their PostgreSQL role and admin status',
+    '  lambda_dsql_roles = {'
+  ]
+
+  const entries = Object.entries(manifest.lambdas).sort((a, b) => a[0].localeCompare(b[0]))
+  const maxLen = Math.max(...entries.map(([name]) => name.length))
+
+  for (const [lambdaName, perms] of entries) {
+    const roleName = lambdaNameToRoleName(lambdaName)
+    const requiresAdmin = perms.computedAccessLevel === 'admin'
+    const padding = ' '.repeat(maxLen - lambdaName.length)
+    lines.push(`    "${lambdaName}"${padding} = {`)
+    lines.push(`      role_name      = "${roleName}"`)
+    lines.push(`      requires_admin = ${requiresAdmin}`)
+    lines.push('    }')
+  }
+
+  lines.push('  }')
+  lines.push('')
+  lines.push('  # Partition by IAM requirement')
+  lines.push('  # Non-admin Lambdas use dsql:DbConnect with custom PostgreSQL roles')
+  lines.push('  lambda_dsql_connect = {')
+  lines.push('    for k, v in local.lambda_dsql_roles : k => v if !v.requires_admin')
+  lines.push('  }')
+  lines.push('')
+  lines.push('  # Admin Lambdas use dsql:DbConnectAdmin with built-in admin user')
+  lines.push('  lambda_dsql_admin = {')
+  lines.push('    for k, v in local.lambda_dsql_roles : k => v if v.requires_admin')
+  lines.push('  }')
+  lines.push('}')
+  lines.push('')
+  lines.push('# =============================================================================')
+  lines.push('# IAM Policy Attachments (generated with for_each)')
+  lines.push('# =============================================================================')
+  lines.push('# These replace the hardcoded aws_iam_role_policy_attachment resources')
+  lines.push('# in individual Lambda .tf files.')
+  lines.push('')
+  lines.push('resource "aws_iam_role_policy_attachment" "lambda_dsql_connect" {')
+  lines.push('  for_each   = local.lambda_dsql_connect')
+  lines.push('  role       = each.key')
+  lines.push('  policy_arn = aws_iam_policy.LambdaDSQLConnect.arn')
+  lines.push('}')
+  lines.push('')
+  lines.push('resource "aws_iam_role_policy_attachment" "lambda_dsql_admin" {')
+  lines.push('  for_each   = local.lambda_dsql_admin')
+  lines.push('  role       = each.key')
+  lines.push('  policy_arn = aws_iam_policy.LambdaDSQLAdminConnect.arn')
+  lines.push('}')
+  lines.push('')
+
+  return lines.join('\n')
+}
+
+/**
+ * Generate SQL migration for per-Lambda PostgreSQL roles.
+ */
+function generateSqlMigration(manifest: PermissionsManifest): string {
+  const lines: string[] = [
+    '-- Migration: 0002_lambda_roles',
+    '-- Description: Per-Lambda PostgreSQL roles with fine-grained table permissions',
+    '-- Auto-generated from @RequiresDatabase decorators',
+    `-- Generated at: ${new Date().toISOString()}`,
+    '--',
+    '-- This migration creates per-Lambda PostgreSQL roles and grants them',
+    '-- exactly the table permissions declared in their @RequiresDatabase decorators.',
+    '-- Note: ${AWS_ACCOUNT_ID} is replaced at runtime by MigrateDSQL handler.',
+    '',
+    '-- =============================================================================',
+    '-- CREATE ROLES (per-Lambda with LOGIN for IAM auth)',
+    '-- =============================================================================',
+    ''
+  ]
+
+  const entries = Object.entries(manifest.lambdas).sort((a, b) => a[0].localeCompare(b[0]))
+
+  // Create roles (skip admin which is built-in)
+  for (const [lambdaName, perms] of entries) {
+    if (perms.computedAccessLevel === 'admin') {
+      lines.push(`-- ${lambdaName}: Uses built-in admin role (DDL/DML access)`)
+      continue
+    }
+    const roleName = lambdaNameToRoleName(lambdaName)
+    lines.push(`CREATE ROLE ${roleName} WITH LOGIN;`)
+  }
+
+  lines.push('')
+  lines.push('-- =============================================================================')
+  lines.push('-- GRANT TABLE PERMISSIONS (per-Lambda least-privilege)')
+  lines.push('-- =============================================================================')
+  lines.push('')
+
+  // Grant table permissions
+  for (const [lambdaName, perms] of entries) {
+    if (perms.computedAccessLevel === 'admin') {
+      continue // Admin has full access, no explicit grants needed
+    }
+    const roleName = lambdaNameToRoleName(lambdaName)
+    const tableList = perms.tables.map(t => t.table).join(', ')
+    lines.push(`-- ${lambdaName}: ${tableList}`)
+    const grants = generateGrants(roleName, perms.tables)
+    lines.push(...grants)
+    lines.push('')
+  }
+
+  lines.push('-- =============================================================================')
+  lines.push('-- AWS IAM GRANT (associate Lambda IAM roles with PostgreSQL roles)')
+  lines.push('-- =============================================================================')
+  lines.push('-- These statements link AWS IAM roles to PostgreSQL roles for authentication.')
+  lines.push('-- ${AWS_ACCOUNT_ID} is replaced at runtime by MigrateDSQL handler.')
+  lines.push('')
+
+  // AWS IAM GRANT statements
+  for (const [lambdaName, perms] of entries) {
+    if (perms.computedAccessLevel === 'admin') {
+      lines.push(`-- ${lambdaName}: Uses admin (no IAM GRANT needed, uses DbConnectAdmin)`)
+      continue
+    }
+    const roleName = lambdaNameToRoleName(lambdaName)
+    lines.push(`AWS IAM GRANT ${roleName} TO 'arn:aws:iam::\${AWS_ACCOUNT_ID}:role/${lambdaName}';`)
+  }
+
+  lines.push('')
+
+  return lines.join('\n')
+}
+
+/**
+ * Generate human-readable report of permissions.
+ */
+function generateReport(manifest: PermissionsManifest): string {
+  const lines: string[] = [
+    '# DSQL Permissions Report',
+    '',
+    `Generated at: ${new Date().toISOString()}`,
+    '',
+    '## Summary',
+    ''
+  ]
+
+  const entries = Object.entries(manifest.lambdas).sort((a, b) => a[0].localeCompare(b[0]))
+  const counts = {readonly: 0, readwrite: 0, admin: 0}
+  for (const [, perms] of entries) {
+    counts[perms.computedAccessLevel]++
+  }
+
+  lines.push(`- **Total Lambdas**: ${entries.length}`)
+  lines.push(`- **Readonly**: ${counts.readonly}`)
+  lines.push(`- **Readwrite**: ${counts.readwrite}`)
+  lines.push(`- **Admin**: ${counts.admin}`)
+  lines.push('')
+  lines.push('## Per-Lambda Permissions')
+  lines.push('')
+
+  for (const [lambdaName, perms] of entries) {
+    const roleName = lambdaNameToRoleName(lambdaName)
+    lines.push(`### ${lambdaName}`)
+    lines.push('')
+    lines.push(`- **PostgreSQL Role**: \`${roleName}\``)
+    lines.push(`- **Access Level**: ${perms.computedAccessLevel}`)
+    lines.push('')
+
+    if (perms.tables.length > 0) {
+      lines.push('| Table | Operations |')
+      lines.push('|-------|------------|')
+      for (const t of perms.tables) {
+        lines.push(`| ${t.table} | ${t.operations.join(', ')} |`)
+      }
+      lines.push('')
+    }
+  }
+
+  return lines.join('\n')
+}
+
+/**
+ * Main entry point
+ */
+async function main(): Promise<void> {
+  const manifestPath = join(projectRoot, 'build/db-permissions.json')
+
+  if (!existsSync(manifestPath)) {
+    console.error('Error: build/db-permissions.json not found.')
+    console.error('Run: pnpm run extract:db-permissions first.')
+    process.exit(1)
+  }
+
+  const manifest: PermissionsManifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
+
+  console.log(`Loaded permissions for ${Object.keys(manifest.lambdas).length} Lambdas`)
+  console.log('')
+
+  // Ensure directories exist
+  const terraformDir = join(projectRoot, 'terraform')
+  const migrationsDir = join(projectRoot, 'migrations')
+  const buildDir = join(projectRoot, 'build')
+
+  if (!existsSync(terraformDir)) {
+    mkdirSync(terraformDir, {recursive: true})
+  }
+  if (!existsSync(migrationsDir)) {
+    mkdirSync(migrationsDir, {recursive: true})
+  }
+  if (!existsSync(buildDir)) {
+    mkdirSync(buildDir, {recursive: true})
+  }
+
+  // Generate Terraform HCL
+  const terraformHcl = generateTerraformHcl(manifest)
+  const terraformPath = join(terraformDir, 'dsql_permissions.tf')
+  writeFileSync(terraformPath, terraformHcl)
+  console.log(`Generated: ${terraformPath}`)
+
+  // Generate SQL migration
+  const sqlMigration = generateSqlMigration(manifest)
+  const migrationPath = join(migrationsDir, '0002_lambda_roles.sql')
+  writeFileSync(migrationPath, sqlMigration)
+  console.log(`Generated: ${migrationPath}`)
+
+  // Generate report
+  const report = generateReport(manifest)
+  const reportPath = join(buildDir, 'dsql-permissions-report.md')
+  writeFileSync(reportPath, report)
+  console.log(`Generated: ${reportPath}`)
+
+  // Summary
+  console.log('')
+  console.log('=== Access Level Summary ===')
+  const counts = {readonly: 0, readwrite: 0, admin: 0}
+  for (const perms of Object.values(manifest.lambdas)) {
+    counts[perms.computedAccessLevel]++
+  }
+  console.log(`  readonly:  ${counts.readonly} Lambdas`)
+  console.log(`  readwrite: ${counts.readwrite} Lambdas`)
+  console.log(`  admin:     ${counts.admin} Lambdas`)
+  console.log('')
+  console.log('Next steps:')
+  console.log('  1. Update terraform/aurora_dsql.tf with new IAM policies')
+  console.log('  2. Remove hardcoded DSQL config from Lambda .tf files')
+  console.log('  3. Run: cd terraform && tofu validate')
+}
+
+main().catch(error => {
+  console.error('Failed to generate DSQL permissions:', error)
+  process.exit(1)
+})

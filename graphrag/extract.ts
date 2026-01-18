@@ -418,7 +418,7 @@ function extractEntities(deps: string[], knownEntities: string[]): string[] {
 
   // Map query modules to entity names they access
   const queryModuleToEntities: Record<string, string[]> = {
-    'user-queries': ['Users', 'IdentityProviders'],
+    'user-queries': ['Users'],
     'file-queries': ['Files', 'FileDownloads'],
     'device-queries': ['Devices'],
     'session-queries': ['Sessions', 'Accounts', 'VerificationTokens'],
