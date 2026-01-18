@@ -1,6 +1,6 @@
 # Auto-generated from @RequiresDatabase decorators
 # Do not edit manually - run: pnpm run generate:dsql-permissions
-# Generated at: 2026-01-17T19:20:56.842Z
+# Generated at: 2026-01-18T02:15:41.311Z
 
 locals {
   # Per-Lambda PostgreSQL role configuration
@@ -20,6 +20,10 @@ locals {
     }
     "LoginUser" = {
       role_name      = "lambda_login_user"
+      requires_admin = false
+    }
+    "LogoutUser" = {
+      role_name      = "lambda_logout_user"
       requires_admin = false
     }
     "MigrateDSQL" = {

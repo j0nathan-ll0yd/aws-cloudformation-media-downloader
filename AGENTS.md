@@ -279,6 +279,7 @@ The MCP server (`src/mcp/`) and GraphRAG (`graphrag/`) use shared data sources f
 | MigrateDSQL | Manual | CLI invocation | Run Drizzle migrations on Aurora DSQL |
 | PruneDevices | CloudWatch Events | Daily schedule | Clean inactive devices |
 | RefreshToken | API Gateway | POST /user/refresh | Refresh authentication token |
+| LogoutUser | API Gateway | POST /user/logout | Invalidate user session and log out |
 | RegisterDevice | API Gateway | POST /device/register | Register iOS device for push |
 | RegisterUser | API Gateway | POST /user/register | Register new user |
 | S3ObjectCreated | S3 Event | s3:ObjectCreated | Handle uploaded files, notify users |

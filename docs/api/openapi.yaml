@@ -448,6 +448,43 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/Models.UserLoginRequest'
+  /user/logout:
+    post:
+      operationId: Authentication_logoutUser
+      summary: Log out current session
+      description: |-
+        Log out current session.
+
+        Invalidates the user's current session by deleting it from the database.
+        The user will need to re-authenticate to access protected resources.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: X-API-Key
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+      tags:
+        - Authentication
   /user/refresh:
     post:
       operationId: Authentication_refreshToken

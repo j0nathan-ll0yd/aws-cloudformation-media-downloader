@@ -55,6 +55,15 @@
       }
     },
     {
+      "id": "lambda:LogoutUser",
+      "type": "Lambda",
+      "properties": {
+        "name": "LogoutUser",
+        "trigger": "API Gateway",
+        "purpose": "Invalidate user session and log out"
+      }
+    },
+    {
       "id": "lambda:MigrateDSQL",
       "type": "Lambda",
       "properties": {
@@ -818,6 +827,31 @@
     {
       "source": "service:API Gateway",
       "target": "lambda:LoginUser",
+      "relationship": "triggers"
+    },
+    {
+      "source": "lambda:LogoutUser",
+      "target": "entity:Users",
+      "relationship": "accesses"
+    },
+    {
+      "source": "lambda:LogoutUser",
+      "target": "entity:Files",
+      "relationship": "accesses"
+    },
+    {
+      "source": "lambda:LogoutUser",
+      "target": "entity:Devices",
+      "relationship": "accesses"
+    },
+    {
+      "source": "lambda:LogoutUser",
+      "target": "entity:Sessions",
+      "relationship": "accesses"
+    },
+    {
+      "source": "service:API Gateway",
+      "target": "lambda:LogoutUser",
       "relationship": "triggers"
     },
     {

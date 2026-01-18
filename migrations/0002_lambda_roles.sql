@@ -1,7 +1,7 @@
 -- Migration: 0002_lambda_roles
 -- Description: Per-Lambda PostgreSQL roles with fine-grained table permissions
 -- Auto-generated from @RequiresDatabase decorators
--- Generated at: 2026-01-17T19:20:56.849Z
+-- Generated at: 2026-01-18T02:15:41.318Z
 --
 -- This migration creates per-Lambda PostgreSQL roles and grants them
 -- exactly the table permissions declared in their @RequiresDatabase decorators.
@@ -15,6 +15,7 @@ CREATE ROLE lambda_api_gateway_authorizer WITH LOGIN;
 CREATE ROLE lambda_cleanup_expired_records WITH LOGIN;
 CREATE ROLE lambda_list_files WITH LOGIN;
 CREATE ROLE lambda_login_user WITH LOGIN;
+CREATE ROLE lambda_logout_user WITH LOGIN;
 -- MigrateDSQL: Uses built-in admin role (DDL/DML access)
 CREATE ROLE lambda_prune_devices WITH LOGIN;
 CREATE ROLE lambda_refresh_token WITH LOGIN;
@@ -25,6 +26,25 @@ CREATE ROLE lambda_send_push_notification WITH LOGIN;
 CREATE ROLE lambda_start_file_upload WITH LOGIN;
 CREATE ROLE lambda_user_delete WITH LOGIN;
 CREATE ROLE lambda_webhook_feedly WITH LOGIN;
+
+-- =============================================================================
+-- REVOKE ALL PERMISSIONS (ensure clean slate for idempotent re-runs)
+-- =============================================================================
+
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM lambda_api_gateway_authorizer;
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM lambda_cleanup_expired_records;
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM lambda_list_files;
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM lambda_login_user;
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM lambda_logout_user;
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM lambda_prune_devices;
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM lambda_refresh_token;
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM lambda_register_device;
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM lambda_register_user;
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM lambda_s3_object_created;
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM lambda_send_push_notification;
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM lambda_start_file_upload;
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM lambda_user_delete;
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM lambda_webhook_feedly;
 
 -- =============================================================================
 -- GRANT TABLE PERMISSIONS (per-Lambda least-privilege)
@@ -46,6 +66,9 @@ GRANT SELECT ON files TO lambda_list_files;
 GRANT SELECT, UPDATE ON users TO lambda_login_user;
 GRANT SELECT, INSERT ON sessions TO lambda_login_user;
 GRANT SELECT, INSERT ON accounts TO lambda_login_user;
+
+-- LogoutUser: sessions
+GRANT SELECT, UPDATE ON sessions TO lambda_logout_user;
 
 -- PruneDevices: devices, user_devices
 GRANT SELECT, DELETE ON devices TO lambda_prune_devices;
@@ -97,6 +120,7 @@ AWS IAM GRANT lambda_api_gateway_authorizer TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:r
 AWS IAM GRANT lambda_cleanup_expired_records TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/CleanupExpiredRecords';
 AWS IAM GRANT lambda_list_files TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/ListFiles';
 AWS IAM GRANT lambda_login_user TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/LoginUser';
+AWS IAM GRANT lambda_logout_user TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/LogoutUser';
 -- MigrateDSQL: Uses admin (no IAM GRANT needed, uses DbConnectAdmin)
 AWS IAM GRANT lambda_prune_devices TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/PruneDevices';
 AWS IAM GRANT lambda_refresh_token TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/RefreshToken';
