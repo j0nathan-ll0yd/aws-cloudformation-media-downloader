@@ -35,7 +35,10 @@ resource "aws_iam_role_policy_attachment" "SendPushNotificationXRay" {
 
 # DSQL policy attachment handled by terraform/dsql_permissions.tf
 
-data "aws_iam_policy_document" "SendPushNotification" {
+# Infrastructure permissions - SQS consumer for Lambda event source mapping
+# SNS Publish permissions are generated from @RequiresServices decorator in:
+# terraform/generated_service_permissions.tf
+data "aws_iam_policy_document" "SendPushNotification_infrastructure" {
   statement {
     actions = [
       "sqs:ReceiveMessage",
@@ -47,24 +50,17 @@ data "aws_iam_policy_document" "SendPushNotification" {
       aws_sqs_queue.SendPushNotificationDLQ.arn
     ]
   }
-  dynamic "statement" {
-    for_each = length(aws_sns_platform_application.OfflineMediaDownloader) == 1 ? [1] : []
-    content {
-      actions   = ["sns:Publish"]
-      resources = [aws_sns_platform_application.OfflineMediaDownloader[0].arn]
-    }
-  }
 }
 
-resource "aws_iam_policy" "SendPushNotification" {
-  name   = local.send_push_notification_function_name
-  policy = data.aws_iam_policy_document.SendPushNotification.json
+resource "aws_iam_policy" "SendPushNotification_infrastructure" {
+  name   = "SendPushNotification-infrastructure"
+  policy = data.aws_iam_policy_document.SendPushNotification_infrastructure.json
   tags   = local.common_tags
 }
 
-resource "aws_iam_role_policy_attachment" "SendPushNotification" {
+resource "aws_iam_role_policy_attachment" "SendPushNotification_infrastructure" {
   role       = aws_iam_role.SendPushNotification.name
-  policy_arn = aws_iam_policy.SendPushNotification.arn
+  policy_arn = aws_iam_policy.SendPushNotification_infrastructure.arn
 }
 
 resource "aws_lambda_permission" "SendPushNotification" {
@@ -92,7 +88,7 @@ resource "aws_lambda_function" "SendPushNotification" {
   handler          = "index.handler"
   runtime          = "nodejs24.x"
   architectures    = [local.lambda_architecture]
-  depends_on       = [aws_iam_role_policy.SendPushNotificationLogging]
+  depends_on       = [aws_iam_role_policy.SendPushNotificationLogging, aws_iam_role_policy_attachment.SendPushNotification_infrastructure, aws_iam_role_policy_attachment.SendPushNotification_services]
   filename         = data.archive_file.SendPushNotification.output_path
   source_code_hash = data.archive_file.SendPushNotification.output_base64sha256
   layers           = [local.adot_layer_arn]

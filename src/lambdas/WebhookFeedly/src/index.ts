@@ -17,6 +17,7 @@ import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTe
 import {createPersistenceStore, defaultIdempotencyConfig, makeIdempotent} from '#lib/vendor/Powertools/idempotency'
 import {getVideoID} from '#lib/vendor/YouTube'
 import {DatabaseOperation, DatabaseTable} from '#types/databasePermissions'
+import {DynamoDBOperation, DynamoDBResource} from '#types/dynamodbPermissions'
 import {DownloadStatus, FileStatus, ResponseStatus} from '#types/enums'
 import {feedlyWebhookRequestSchema, webhookResponseSchema} from '#types/api-schema'
 import type {FeedlyWebhookRequest} from '#types/api-schema'
@@ -24,10 +25,11 @@ import type {File} from '#types/domainModels'
 import type {DownloadRequestedDetail} from '#types/events'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
 import type {WebhookProcessingInput, WebhookProcessingResult} from '#types/lambda'
+import {AWSService, EventBridgeOperation, EventBridgeResource, SQSOperation, SQSResource} from '#types/servicePermissions'
 import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/apiGateway'
 import {getRequiredEnv} from '#lib/system/env'
 import {buildValidatedResponse} from '#lib/lambda/responses'
-import {AuthenticatedHandler, metrics, MetricUnit, RequiresDatabase} from '#lib/lambda/handlers'
+import {AuthenticatedHandler, metrics, MetricUnit, RequiresDatabase, RequiresDynamoDB, RequiresEventBridge, RequiresServices} from '#lib/lambda/handlers'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 import {createDownloadReadyNotification} from '#lib/services/notification/transformers'
 import {associateFileToUser} from '#lib/domain/user/userFileService'
@@ -158,6 +160,17 @@ function getIdempotentProcessor() {
   {table: DatabaseTable.FileDownloads, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]},
   {table: DatabaseTable.UserFiles, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}
 ])
+@RequiresServices([
+  {service: AWSService.SQS, resource: SQSResource.SendPushNotification, operations: [SQSOperation.SendMessage]},
+  {service: AWSService.EventBridge, resource: EventBridgeResource.MediaDownloader, operations: [EventBridgeOperation.PutEvents]}
+])
+@RequiresDynamoDB([
+  {
+    table: DynamoDBResource.IdempotencyTable,
+    operations: [DynamoDBOperation.GetItem, DynamoDBOperation.PutItem, DynamoDBOperation.UpdateItem, DynamoDBOperation.DeleteItem]
+  }
+])
+@RequiresEventBridge({publishes: ['DownloadRequested']})
 class WebhookFeedlyHandler extends AuthenticatedHandler {
   readonly operationName = 'WebhookFeedly'
 

@@ -9,38 +9,9 @@ resource "aws_iam_role" "WebhookFeedly" {
   tags               = local.common_tags
 }
 
-data "aws_iam_policy_document" "WebhookFeedly" {
-  statement {
-    actions   = ["sqs:SendMessage"]
-    resources = [aws_sqs_queue.SendPushNotification.arn]
-  }
-  # Publish DownloadRequested events to EventBridge
-  statement {
-    actions   = ["events:PutEvents"]
-    resources = [aws_cloudwatch_event_bus.MediaDownloader.arn]
-  }
-  # Powertools Idempotency - read/write to idempotency table
-  statement {
-    actions = [
-      "dynamodb:GetItem",
-      "dynamodb:PutItem",
-      "dynamodb:UpdateItem",
-      "dynamodb:DeleteItem"
-    ]
-    resources = [aws_dynamodb_table.IdempotencyTable.arn]
-  }
-}
-
-resource "aws_iam_policy" "WebhookFeedly" {
-  name   = local.webhook_feedly_function_name
-  policy = data.aws_iam_policy_document.WebhookFeedly.json
-  tags   = local.common_tags
-}
-
-resource "aws_iam_role_policy_attachment" "WebhookFeedly" {
-  role       = aws_iam_role.WebhookFeedly.name
-  policy_arn = aws_iam_policy.WebhookFeedly.arn
-}
+# Service permissions (SQS, EventBridge, DynamoDB) are now generated from
+# @RequiresServices and @RequiresDynamoDB decorators in:
+# terraform/generated_service_permissions.tf
 
 resource "aws_iam_role_policy" "WebhookFeedlyLogging" {
   name = "WebhookFeedlyLogging"
@@ -96,7 +67,7 @@ resource "aws_lambda_function" "WebhookFeedly" {
   architectures    = [local.lambda_architecture]
   memory_size      = 512
   timeout          = local.default_lambda_timeout
-  depends_on       = [aws_iam_role_policy_attachment.WebhookFeedly]
+  depends_on       = [aws_iam_role_policy_attachment.WebhookFeedly_services]
   filename         = data.archive_file.WebhookFeedly.output_path
   source_code_hash = data.archive_file.WebhookFeedly.output_base64sha256
   layers           = [local.adot_layer_arn]
@@ -144,13 +115,11 @@ resource "aws_api_gateway_integration" "WebhookFeedlyPost" {
   uri                     = aws_lambda_function.WebhookFeedly.invoke_arn
 }
 
-data "aws_iam_policy_document" "MultipartUpload" {
-  # Send MetadataNotification to push notification queue
-  statement {
-    actions   = ["sqs:SendMessage"]
-    resources = [aws_sqs_queue.SendPushNotification.arn]
-  }
-  # Receive messages from DownloadQueue (event-driven architecture)
+# Infrastructure permissions for StartFileUpload Lambda
+# Application-level permissions (SQS SendMessage, EventBridge PutEvents, S3 HeadObject/PutObject)
+# are generated from @RequiresServices decorator in: terraform/generated_service_permissions.tf
+data "aws_iam_policy_document" "StartFileUpload_infrastructure" {
+  # Receive messages from DownloadQueue (event-driven architecture - Lambda event source mapping)
   statement {
     actions = [
       "sqs:ReceiveMessage",
@@ -162,14 +131,9 @@ data "aws_iam_policy_document" "MultipartUpload" {
       aws_sqs_queue.DownloadDLQ.arn
     ]
   }
-  # Publish DownloadCompleted/DownloadFailed events to EventBridge
-  statement {
-    actions   = ["events:PutEvents"]
-    resources = [aws_cloudwatch_event_bus.MediaDownloader.arn]
-  }
+  # S3 multipart upload operations - complex upload handling beyond basic PutObject
   statement {
     actions = [
-      "s3:PutObject",
       "s3:PutObjectAcl",
       "s3:GetObject",
     ]
@@ -184,6 +148,7 @@ data "aws_iam_policy_document" "MultipartUpload" {
     ]
     resources = [aws_s3_bucket.Files.arn]
   }
+  # CloudWatch metrics - download tracking
   statement {
     actions   = ["cloudwatch:PutMetricData"]
     resources = ["*"] # CloudWatch metrics have no resource ARN; scoped by namespace condition
@@ -201,15 +166,15 @@ resource "aws_iam_role" "StartFileUpload" {
   tags               = local.common_tags
 }
 
-resource "aws_iam_policy" "StartFileUpload" {
-  name   = local.start_file_upload_function_name
-  policy = data.aws_iam_policy_document.MultipartUpload.json
+resource "aws_iam_policy" "StartFileUpload_infrastructure" {
+  name   = "StartFileUpload-infrastructure"
+  policy = data.aws_iam_policy_document.StartFileUpload_infrastructure.json
   tags   = local.common_tags
 }
 
-resource "aws_iam_role_policy_attachment" "StartFileUpload" {
+resource "aws_iam_role_policy_attachment" "StartFileUpload_infrastructure" {
   role       = aws_iam_role.StartFileUpload.name
-  policy_arn = aws_iam_policy.StartFileUpload.arn
+  policy_arn = aws_iam_policy.StartFileUpload_infrastructure.arn
 }
 
 resource "aws_iam_role_policy" "StartFileUploadLogging" {
@@ -490,7 +455,7 @@ resource "aws_lambda_function" "StartFileUpload" {
   handler                        = "index.handler"
   runtime                        = "nodejs24.x"
   architectures                  = ["x86_64"] # Must use x86_64 - yt-dlp and ffmpeg layers are amd64 binaries
-  depends_on                     = [aws_iam_role_policy_attachment.StartFileUpload]
+  depends_on                     = [aws_iam_role_policy_attachment.StartFileUpload_infrastructure, aws_iam_role_policy_attachment.StartFileUpload_services]
   timeout                        = 900
   memory_size                    = 2048
   reserved_concurrent_executions = 10 # Prevent YouTube rate limiting

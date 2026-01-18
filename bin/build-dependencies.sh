@@ -48,6 +48,12 @@ main() {
   echo 'Converting JSON to TypeScript (via Quicktype)'
   node "${PROJECT_ROOT}/node_modules/quicktype/dist/index.js" "${infrastructure_json_file_path}" -o "${types_file_path}"
 
+  echo 'Extracting Terraform resources for type-safe enums'
+  node --import tsx "${PROJECT_ROOT}/scripts/extractTerraformResources.ts"
+
+  echo 'Generating TypeScript resource enums'
+  node --import tsx "${PROJECT_ROOT}/scripts/generateResourceEnums.ts"
+
   echo 'Checking Secrets (secrets.yaml) via SOPS'
   local secrets_file_path="${PROJECT_ROOT}/secrets.yaml"
   local encrypted_secrets_file_path="${PROJECT_ROOT}/secrets.enc.yaml"
