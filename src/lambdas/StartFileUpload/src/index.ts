@@ -22,11 +22,12 @@ import type {FetchVideoInfoResult, VideoErrorClassification} from '#types/video'
 import type {YtDlpVideoInfo} from '#types/youtube'
 import {downloadQueueMessageSchema, type ValidatedDownloadQueueMessage} from '#types/schemas'
 import {DownloadStatus, FileStatus} from '#types/enums'
+import {AWSService, EventBridgeOperation, S3Operation, SQSOperation} from '#types/servicePermissions'
 import {validateSchema} from '#lib/validation/constraints'
 import {getRequiredEnv} from '#lib/system/env'
 import {UnexpectedError} from '#lib/system/errors'
 import {closeCookieExpirationIssueIfResolved, createCookieExpirationIssue, createVideoDownloadFailureIssue} from '#lib/integrations/github/issueService'
-import {metrics, MetricUnit, RequiresDatabase, SqsHandler} from '#lib/lambda/handlers'
+import {metrics, MetricUnit, RequiresDatabase, RequiresEventBridge, RequiresServices, SqsHandler} from '#lib/lambda/handlers'
 import type {SqsRecordContext} from '#lib/lambda/handlers'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 import {createFailureNotification, createMetadataNotification} from '#lib/services/notification/transformers'
@@ -541,6 +542,12 @@ async function processDownloadRequest(message: ValidatedDownloadQueueMessage, re
   {table: DatabaseTable.FileDownloads, operations: [DatabaseOperation.Select, DatabaseOperation.Insert, DatabaseOperation.Update]},
   {table: DatabaseTable.UserFiles, operations: [DatabaseOperation.Select]}
 ])
+@RequiresServices([
+  {service: AWSService.S3, resource: 'media-bucket/*', operations: [S3Operation.HeadObject, S3Operation.PutObject]},
+  {service: AWSService.SQS, resource: 'notification-queue', operations: [SQSOperation.SendMessage]},
+  {service: AWSService.EventBridge, resource: 'default', operations: [EventBridgeOperation.PutEvents]}
+])
+@RequiresEventBridge({publishes: ['DownloadCompleted', 'DownloadFailed']})
 class StartFileUploadHandler extends SqsHandler<unknown> {
   readonly operationName = 'StartFileUpload'
 

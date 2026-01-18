@@ -24,10 +24,11 @@ import type {File} from '#types/domainModels'
 import type {DownloadRequestedDetail} from '#types/events'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
 import type {WebhookProcessingInput, WebhookProcessingResult} from '#types/lambda'
+import {AWSService, EventBridgeOperation, SQSOperation} from '#types/servicePermissions'
 import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/apiGateway'
 import {getRequiredEnv} from '#lib/system/env'
 import {buildValidatedResponse} from '#lib/lambda/responses'
-import {AuthenticatedHandler, metrics, MetricUnit, RequiresDatabase} from '#lib/lambda/handlers'
+import {AuthenticatedHandler, metrics, MetricUnit, RequiresDatabase, RequiresEventBridge, RequiresServices} from '#lib/lambda/handlers'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 import {createDownloadReadyNotification} from '#lib/services/notification/transformers'
 import {associateFileToUser} from '#lib/domain/user/userFileService'
@@ -158,6 +159,11 @@ function getIdempotentProcessor() {
   {table: DatabaseTable.FileDownloads, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]},
   {table: DatabaseTable.UserFiles, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}
 ])
+@RequiresServices([
+  {service: AWSService.SQS, resource: 'notification-queue', operations: [SQSOperation.SendMessage]},
+  {service: AWSService.EventBridge, resource: 'default', operations: [EventBridgeOperation.PutEvents]}
+])
+@RequiresEventBridge({publishes: ['DownloadRequested']})
 class WebhookFeedlyHandler extends AuthenticatedHandler {
   readonly operationName = 'WebhookFeedly'
 

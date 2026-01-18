@@ -20,8 +20,9 @@ import {DatabaseOperation, DatabaseTable} from '#types/databasePermissions'
 import type {Device} from '#types/domainModels'
 import type {DeviceNotificationResult, FileNotificationType} from '#types/notificationTypes'
 import {pushNotificationAttributesSchema} from '#types/schemas'
+import {AWSService, SNSOperation} from '#types/servicePermissions'
 import {validateSchema} from '#lib/validation/constraints'
-import {metrics, MetricUnit, RequiresDatabase, SqsHandler} from '#lib/lambda/handlers'
+import {metrics, MetricUnit, RequiresDatabase, RequiresServices, SqsHandler} from '#lib/lambda/handlers'
 import type {SqsRecordContext} from '#lib/lambda/handlers'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 import {providerFailureErrorMessage, UnexpectedError} from '#lib/system/errors'
@@ -90,6 +91,9 @@ async function sendNotificationToDevice(device: Device, messageBody: string, not
 @RequiresDatabase([
   {table: DatabaseTable.Devices, operations: [DatabaseOperation.Select]},
   {table: DatabaseTable.UserDevices, operations: [DatabaseOperation.Select]}
+])
+@RequiresServices([
+  {service: AWSService.SNS, resource: 'apns-platform-application', operations: [SNSOperation.Publish]}
 ])
 class SendPushNotificationHandler extends SqsHandler<string> {
   readonly operationName = 'SendPushNotification'
