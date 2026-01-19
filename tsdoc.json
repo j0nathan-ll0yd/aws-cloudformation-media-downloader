@@ -24,6 +24,10 @@
     {
       "tagName": "@RequiresDynamoDB",
       "syntaxKind": "modifier"
+    },
+    {
+      "tagName": "@RequiresIdempotency",
+      "syntaxKind": "modifier"
     }
   ]
 }

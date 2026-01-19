@@ -1,8 +1,8 @@
 /**
  * DynamoDB Permission Extraction Script
  *
- * Uses ts-morph to extract `@RequiresDynamoDB` decorator metadata from Lambda handlers
- * and generates a JSON manifest for downstream tooling.
+ * Uses ts-morph to extract `@RequiresDynamoDB` and `@RequiresIdempotency` decorator
+ * metadata from Lambda handlers and generates a JSON manifest for downstream tooling.
  *
  * Output: build/dynamodb-permissions.json
  *
@@ -149,53 +149,65 @@ async function extractPermissions(): Promise<DynamoDBPermissionsManifest> {
     const filePath = sourceFile.getFilePath()
     const lambdaName = extractLambdaName(filePath)
 
-    // Find classes with @RequiresDynamoDB decorator
+    // Find classes with @RequiresDynamoDB or @RequiresIdempotency decorator
     for (const classDecl of sourceFile.getClasses()) {
-      const decorator = classDecl.getDecorator('RequiresDynamoDB')
-      if (!decorator) continue
-
-      console.log(`Processing ${lambdaName}...`)
-
-      // Get decorator arguments
-      const args = decorator.getArguments()
-      if (args.length === 0) continue
-
-      // Parse the tables array from the decorator argument
       const tables: DynamoDBPermission[] = []
 
-      const arrayLiteral = args[0].asKind(SyntaxKind.ArrayLiteralExpression)
-      if (arrayLiteral) {
-        for (const element of arrayLiteral.getElements()) {
-          const tableObj = element.asKind(SyntaxKind.ObjectLiteralExpression)
-          if (tableObj) {
-            let tableName = ''
-            const operations: string[] = []
+      // Check for @RequiresIdempotency() - convenience decorator for Powertools Idempotency
+      const idempotencyDecorator = classDecl.getDecorator('RequiresIdempotency')
+      if (idempotencyDecorator) {
+        console.log(`Processing ${lambdaName} (@RequiresIdempotency)...`)
+        const arnRef = getArnRef('IdempotencyTable', terraformResources)
+        tables.push({
+          table: 'IdempotencyTable',
+          arnRef,
+          operations: ['dynamodb:GetItem', 'dynamodb:PutItem', 'dynamodb:UpdateItem', 'dynamodb:DeleteItem']
+        })
+      }
 
-            for (const prop of tableObj.getProperties()) {
-              if (prop.isKind(SyntaxKind.PropertyAssignment)) {
-                const propName = prop.getName()
-                const initText = prop.getInitializer()?.getText() || ''
+      // Check for @RequiresDynamoDB([...]) - explicit DynamoDB permissions
+      const dynamodbDecorator = classDecl.getDecorator('RequiresDynamoDB')
+      if (dynamodbDecorator) {
+        console.log(`Processing ${lambdaName} (@RequiresDynamoDB)...`)
 
-                if (propName === 'table') {
-                  tableName = extractTableName(initText)
-                } else if (propName === 'operations') {
-                  const opsArray = prop.getInitializer()?.asKind(SyntaxKind.ArrayLiteralExpression)
-                  if (opsArray) {
-                    for (const opElement of opsArray.getElements()) {
-                      operations.push(extractOperation(opElement.getText()))
+        // Get decorator arguments
+        const args = dynamodbDecorator.getArguments()
+        if (args.length > 0) {
+          const arrayLiteral = args[0].asKind(SyntaxKind.ArrayLiteralExpression)
+          if (arrayLiteral) {
+            for (const element of arrayLiteral.getElements()) {
+              const tableObj = element.asKind(SyntaxKind.ObjectLiteralExpression)
+              if (tableObj) {
+                let tableName = ''
+                const operations: string[] = []
+
+                for (const prop of tableObj.getProperties()) {
+                  if (prop.isKind(SyntaxKind.PropertyAssignment)) {
+                    const propName = prop.getName()
+                    const initText = prop.getInitializer()?.getText() || ''
+
+                    if (propName === 'table') {
+                      tableName = extractTableName(initText)
+                    } else if (propName === 'operations') {
+                      const opsArray = prop.getInitializer()?.asKind(SyntaxKind.ArrayLiteralExpression)
+                      if (opsArray) {
+                        for (const opElement of opsArray.getElements()) {
+                          operations.push(extractOperation(opElement.getText()))
+                        }
+                      }
                     }
                   }
                 }
-              }
-            }
 
-            if (tableName && operations.length > 0) {
-              const arnRef = getArnRef(tableName, terraformResources)
-              tables.push({
-                table: tableName,
-                arnRef,
-                operations
-              })
+                if (tableName && operations.length > 0) {
+                  const arnRef = getArnRef(tableName, terraformResources)
+                  tables.push({
+                    table: tableName,
+                    arnRef,
+                    operations
+                  })
+                }
+              }
             }
           }
         }
