@@ -17,8 +17,7 @@ import {deviceRegistrationRequestSchema, deviceRegistrationResponseSchema} from 
 import type {DeviceRegistrationRequest} from '#types/api-schema'
 import type {Device} from '#types/domainModels'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
-import {AWSService, SNSOperation, SNSPlatformResource} from '#types/servicePermissions'
-import {OptionalAuthHandler, RequiresDatabase, RequiresServices} from '#lib/lambda/handlers'
+import {OptionalAuthHandler, RequiresDatabase} from '#lib/lambda/handlers'
 import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/apiGateway'
 import {getUserDevices, subscribeEndpointToTopic, unsubscribeEndpointToTopic} from '#lib/services/device/deviceService'
 import {getRequiredEnv} from '#lib/system/env'
@@ -87,9 +86,6 @@ async function getSubscriptionArnFromEndpointAndTopic(endpointArn: string, topic
 @RequiresDatabase([
   {table: DatabaseTable.Devices, operations: [DatabaseOperation.Select, DatabaseOperation.Insert, DatabaseOperation.Update]},
   {table: DatabaseTable.UserDevices, operations: [DatabaseOperation.Select, DatabaseOperation.Insert, DatabaseOperation.Update]}
-])
-@RequiresServices([
-  {service: AWSService.SNS, resource: SNSPlatformResource.OfflineMediaDownloader, operations: [SNSOperation.Publish, SNSOperation.Subscribe]}
 ])
 class RegisterDeviceHandler extends OptionalAuthHandler {
   readonly operationName = 'RegisterDevice'

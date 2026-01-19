@@ -24,11 +24,10 @@ import type {File} from '#types/domainModels'
 import type {DownloadRequestedDetail} from '#types/events'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
 import type {WebhookProcessingInput, WebhookProcessingResult} from '#types/lambda'
-import {AWSService, EventBridgeOperation, EventBridgeResource, SQSOperation, SQSResource} from '#types/servicePermissions'
 import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/apiGateway'
 import {getRequiredEnv} from '#lib/system/env'
 import {buildValidatedResponse} from '#lib/lambda/responses'
-import {AuthenticatedHandler, metrics, MetricUnit, RequiresDatabase, RequiresEventBridge, RequiresIdempotency, RequiresServices} from '#lib/lambda/handlers'
+import {AuthenticatedHandler, metrics, MetricUnit, RequiresDatabase, RequiresEventBridge, RequiresIdempotency} from '#lib/lambda/handlers'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 import {createDownloadReadyNotification} from '#lib/services/notification/transformers'
 import {associateFileToUser} from '#lib/domain/user/userFileService'
@@ -158,10 +157,6 @@ function getIdempotentProcessor() {
   {table: DatabaseTable.Files, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]},
   {table: DatabaseTable.FileDownloads, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]},
   {table: DatabaseTable.UserFiles, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}
-])
-@RequiresServices([
-  {service: AWSService.SQS, resource: SQSResource.SendPushNotification, operations: [SQSOperation.SendMessage]},
-  {service: AWSService.EventBridge, resource: EventBridgeResource.MediaDownloader, operations: [EventBridgeOperation.PutEvents]}
 ])
 @RequiresIdempotency()
 @RequiresEventBridge({publishes: ['DownloadRequested']})

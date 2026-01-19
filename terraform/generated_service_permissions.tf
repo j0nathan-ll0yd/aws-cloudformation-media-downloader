@@ -1,5 +1,5 @@
 # Auto-generated Lambda IAM policies from @RequiresServices and @RequiresDynamoDB decorators
-# Generated at: 2026-01-18T18:35:36.400Z
+# Generated at: 2026-01-19T17:46:37.274Z
 # Source: build/service-permissions.json, build/dynamodb-permissions.json
 #
 # DO NOT EDIT - regenerate with: pnpm run generate:service-iam-policies
@@ -12,8 +12,13 @@
 data "aws_iam_policy_document" "RegisterDevice_services" {
   # SNS: OfflineMediaDownloader
   statement {
-    actions   = ["sns:Publish", "sns:Subscribe"]
+    actions   = ["sns:CreatePlatformEndpoint", "sns:DeleteEndpoint", "sns:Publish"]
     resources = [aws_sns_platform_application.OfflineMediaDownloader[0].arn]
+  }
+  # SNS: PushNotifications
+  statement {
+    actions   = ["sns:ListSubscriptionsByTopic", "sns:Subscribe", "sns:Unsubscribe"]
+    resources = [aws_sns_topic.PushNotifications.arn]
   }
 }
 
@@ -52,8 +57,13 @@ resource "aws_iam_role_policy_attachment" "S3ObjectCreated_services" {
 data "aws_iam_policy_document" "SendPushNotification_services" {
   # SNS: OfflineMediaDownloader
   statement {
-    actions   = ["sns:Publish"]
+    actions   = ["sns:CreatePlatformEndpoint", "sns:DeleteEndpoint", "sns:Publish"]
     resources = [aws_sns_platform_application.OfflineMediaDownloader[0].arn]
+  }
+  # SNS: PushNotifications
+  statement {
+    actions   = ["sns:ListSubscriptionsByTopic", "sns:Subscribe", "sns:Unsubscribe"]
+    resources = [aws_sns_topic.PushNotifications.arn]
   }
 }
 
@@ -68,22 +78,22 @@ resource "aws_iam_role_policy_attachment" "SendPushNotification_services" {
   policy_arn = aws_iam_policy.SendPushNotification_services.arn
 }
 
-# StartFileUpload: S3 + SQS + EventBridge permissions
+# StartFileUpload: EventBridge + S3 + SQS permissions
 data "aws_iam_policy_document" "StartFileUpload_services" {
+  # EventBridge: MediaDownloader
+  statement {
+    actions   = ["events:PutEvents"]
+    resources = [aws_cloudwatch_event_bus.MediaDownloader.arn]
+  }
   # S3: Files/*
   statement {
-    actions   = ["s3:HeadObject", "s3:PutObject"]
+    actions   = ["s3:AbortMultipartUpload", "s3:HeadObject", "s3:ListMultipartUploadParts", "s3:PutObject"]
     resources = ["${aws_s3_bucket.Files.arn}/*"]
   }
   # SQS: SendPushNotification
   statement {
     actions   = ["sqs:SendMessage"]
     resources = [aws_sqs_queue.SendPushNotification.arn]
-  }
-  # EventBridge: MediaDownloader
-  statement {
-    actions   = ["events:PutEvents"]
-    resources = [aws_cloudwatch_event_bus.MediaDownloader.arn]
   }
 }
 
@@ -98,17 +108,17 @@ resource "aws_iam_role_policy_attachment" "StartFileUpload_services" {
   policy_arn = aws_iam_policy.StartFileUpload_services.arn
 }
 
-# WebhookFeedly: SQS + EventBridge + DynamoDB permissions
+# WebhookFeedly: EventBridge + SQS + DynamoDB permissions
 data "aws_iam_policy_document" "WebhookFeedly_services" {
-  # SQS: SendPushNotification
-  statement {
-    actions   = ["sqs:SendMessage"]
-    resources = [aws_sqs_queue.SendPushNotification.arn]
-  }
   # EventBridge: MediaDownloader
   statement {
     actions   = ["events:PutEvents"]
     resources = [aws_cloudwatch_event_bus.MediaDownloader.arn]
+  }
+  # SQS: SendPushNotification
+  statement {
+    actions   = ["sqs:SendMessage"]
+    resources = [aws_sqs_queue.SendPushNotification.arn]
   }
   # DynamoDB: IdempotencyTable
   statement {

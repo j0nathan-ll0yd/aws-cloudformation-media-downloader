@@ -1,10 +1,17 @@
 /**
  * Service Permission Extraction Script
  *
- * Uses ts-morph to extract `@RequiresServices` decorator metadata from Lambda handlers
- * and generates a JSON manifest for downstream tooling.
+ * Phase 7: Function-Level Permission Extraction
  *
- * Supports resource enum values (e.g., S3Resource.Files) and wildcard patterns.
+ * Uses ts-morph to extract permission metadata from:
+ * 1. Vendor wrapper classes with RequiresXxx method decorators
+ * 2. Lambda handlers with RequiresServices class decorators (legacy, to be removed)
+ *
+ * The script:
+ * 1. Parses vendor wrapper classes for RequiresSNS, RequiresS3, RequiresSQS, RequiresEventBridge
+ * 2. Uses build/graph.json to trace Lambda dependencies
+ * 3. Aggregates permissions from all vendor files each Lambda imports
+ * 4. Generates a JSON manifest for Terraform IAM policy generation
  *
  * Output: build/service-permissions.json
  *
@@ -13,7 +20,7 @@
  * @see docs/wiki/Infrastructure/Lambda-Decorators.md
  */
 import {existsSync, mkdirSync, readFileSync, writeFileSync} from 'fs'
-import {dirname, join} from 'path'
+import {dirname, join, relative} from 'path'
 import {fileURLToPath} from 'url'
 import {Project, SyntaxKind} from 'ts-morph'
 
@@ -37,6 +44,7 @@ interface LambdaServicePermissions {
 
 interface ServicePermissionsManifest {
   lambdas: Record<string, LambdaServicePermissions>
+  vendorMethods: Record<string, VendorMethodPermission>
   generatedAt: string
 }
 
@@ -52,6 +60,31 @@ interface TerraformResourceManifest {
   snsTopics: TerraformResourceEntry[]
   snsPlatformApplications: TerraformResourceEntry[]
   eventBridgeBuses: TerraformResourceEntry[]
+}
+
+interface VendorMethodPermission {
+  className: string
+  methodName: string
+  filePath: string
+  permissions: ServicePermission[]
+}
+
+interface DependencyGraph {
+  files: Record<string, {imports: string[]}>
+  transitiveDependencies: Record<string, string[]>
+}
+
+/**
+ * Load dependency graph from build/graph.json
+ */
+function loadDependencyGraph(): DependencyGraph | null {
+  const graphPath = join(projectRoot, 'build/graph.json')
+  if (!existsSync(graphPath)) {
+    console.warn('Warning: build/graph.json not found. Dependency tracing disabled.')
+    console.warn('Run: pnpm run build first to generate the dependency graph.')
+    return null
+  }
+  return JSON.parse(readFileSync(graphPath, 'utf-8'))
 }
 
 /**
@@ -97,6 +130,19 @@ function getArnRef(service: ServiceType, resourceName: string, terraformResource
 }
 
 /**
+ * Extract service type from decorator name
+ */
+function getServiceFromDecorator(decoratorName: string): ServiceType {
+  const decoratorMap: Record<string, ServiceType> = {
+    'RequiresSNS': 'sns',
+    'RequiresS3': 's3',
+    'RequiresSQS': 'sqs',
+    'RequiresEventBridge': 'events'
+  }
+  return decoratorMap[decoratorName] || 's3'
+}
+
+/**
  * Extract service type from expression like AWSService.S3
  */
 function extractServiceType(expr: string): ServiceType {
@@ -122,7 +168,7 @@ function extractServiceType(expr: string): ServiceType {
  * Extract resource name and wildcard flag from resource expression.
  * Handles:
  * - Enum values: S3Resource.Files - returns name: 'Files', hasWildcard: false
- * - Template literals with wildcard - returns name: 'Files', hasWildcard: true
+ * - Template literals with wildcard: `${S3Resource.Files}/*` - returns name: 'Files', hasWildcard: true
  * - String literals: 'media-bucket/*' - returns name: 'media-bucket', hasWildcard: true
  */
 function extractResourceValue(expr: string): {name: string; hasWildcard: boolean} {
@@ -166,7 +212,9 @@ function extractOperation(expr: string): string {
         'PutObject': 's3:PutObject',
         'DeleteObject': 's3:DeleteObject',
         'ListBucket': 's3:ListBucket',
-        'HeadObject': 's3:HeadObject'
+        'HeadObject': 's3:HeadObject',
+        'AbortMultipartUpload': 's3:AbortMultipartUpload',
+        'ListMultipartUploadParts': 's3:ListMultipartUploadParts'
       },
       'SQSOperation': {
         'SendMessage': 'sqs:SendMessage',
@@ -177,7 +225,11 @@ function extractOperation(expr: string): string {
       },
       'SNSOperation': {
         'Publish': 'sns:Publish',
-        'Subscribe': 'sns:Subscribe'
+        'Subscribe': 'sns:Subscribe',
+        'Unsubscribe': 'sns:Unsubscribe',
+        'ListSubscriptionsByTopic': 'sns:ListSubscriptionsByTopic',
+        'CreatePlatformEndpoint': 'sns:CreatePlatformEndpoint',
+        'DeleteEndpoint': 'sns:DeleteEndpoint'
       },
       'EventBridgeOperation': {
         'PutEvents': 'events:PutEvents'
@@ -199,30 +251,102 @@ function extractLambdaName(filePath: string): string {
 }
 
 /**
- * Main extraction function
+ * Extract RequiresXxx decorators from vendor wrapper class methods
  */
-async function extractPermissions(): Promise<ServicePermissionsManifest> {
-  console.log('Loading TypeScript project...')
+function extractVendorPermissions(
+  project: Project,
+  terraformResources: TerraformResourceManifest | null
+): Record<string, VendorMethodPermission> {
+  const vendorPermissions: Record<string, VendorMethodPermission> = {}
 
-  const terraformResources = loadTerraformResources()
+  // Scan vendor wrapper files
+  const vendorPattern = join(projectRoot, 'src/lib/vendor/AWS/*.ts')
+  project.addSourceFilesAtPaths(vendorPattern)
 
-  const project = new Project({
-    tsConfigFilePath: join(projectRoot, 'tsconfig.json'),
-    skipAddingFilesFromTsConfig: true
-  })
+  const vendorFiles = project.getSourceFiles().filter((f) =>
+    f.getFilePath().includes('src/lib/vendor/AWS/')
+  )
 
-  // Add only Lambda handler files
+  console.log(`Found ${vendorFiles.length} vendor wrapper files`)
+
+  for (const file of vendorFiles) {
+    const filePath = file.getFilePath()
+    const relativePath = relative(projectRoot, filePath)
+
+    for (const classDecl of file.getClasses()) {
+      const className = classDecl.getName()
+      if (!className?.endsWith('Vendor')) continue // Only process Vendor classes
+
+      for (const method of classDecl.getStaticMethods()) {
+        const methodName = method.getName()
+
+        // Find decorator matching our patterns
+        const decorator = method.getDecorators().find((d) =>
+          ['RequiresSNS', 'RequiresS3', 'RequiresSQS', 'RequiresEventBridge'].includes(d.getName())
+        )
+
+        if (!decorator) continue
+
+        // Parse decorator arguments: @RequiresSNS(SNSTopicResource.PushNotifications, [SNSOperation.Subscribe])
+        const args = decorator.getArguments()
+        if (args.length < 2) continue
+
+        const resourceExpr = args[0].getText()
+        const resourceValue = extractResourceValue(resourceExpr)
+        const service = getServiceFromDecorator(decorator.getName())
+        const arnRef = getArnRef(service, resourceValue.name, terraformResources)
+
+        // Extract operations from array argument
+        const operations: string[] = []
+        const opsArray = args[1].asKind(SyntaxKind.ArrayLiteralExpression)
+        if (opsArray) {
+          for (const opElement of opsArray.getElements()) {
+            operations.push(extractOperation(opElement.getText()))
+          }
+        }
+
+        const key = `${className}.${methodName}`
+        vendorPermissions[key] = {
+          className,
+          methodName,
+          filePath: relativePath,
+          permissions: [{
+            service,
+            resource: resourceValue.name,
+            hasWildcard: resourceValue.hasWildcard,
+            arnRef,
+            operations
+          }]
+        }
+
+        console.log(`  ${relativePath}: ${className}.${methodName} -> ${service}:${resourceValue.name}`)
+      }
+    }
+  }
+
+  return vendorPermissions
+}
+
+/**
+ * Extract @RequiresServices from Lambda handlers (legacy support)
+ */
+function extractLambdaLegacyPermissions(
+  project: Project,
+  terraformResources: TerraformResourceManifest | null
+): Record<string, LambdaServicePermissions> {
+  const lambdaPermissions: Record<string, LambdaServicePermissions> = {}
+
+  // Add Lambda handler files
   const lambdaPattern = join(projectRoot, 'src/lambdas/*/src/index.ts')
   project.addSourceFilesAtPaths(lambdaPattern)
 
-  console.log(`Found ${project.getSourceFiles().length} Lambda handler files`)
+  const lambdaFiles = project.getSourceFiles().filter((f) =>
+    f.getFilePath().includes('src/lambdas/') && f.getFilePath().endsWith('/src/index.ts')
+  )
 
-  const manifest: ServicePermissionsManifest = {
-    lambdas: {},
-    generatedAt: new Date().toISOString()
-  }
+  console.log(`Found ${lambdaFiles.length} Lambda handler files`)
 
-  for (const sourceFile of project.getSourceFiles()) {
+  for (const sourceFile of lambdaFiles) {
     const filePath = sourceFile.getFilePath()
     const lambdaName = extractLambdaName(filePath)
 
@@ -231,7 +355,7 @@ async function extractPermissions(): Promise<ServicePermissionsManifest> {
       const decorator = classDecl.getDecorator('RequiresServices')
       if (!decorator) continue
 
-      console.log(`Processing ${lambdaName}...`)
+      console.log(`  ${lambdaName}: Found @RequiresServices (legacy)`)
 
       // Get decorator arguments
       const args = decorator.getArguments()
@@ -284,12 +408,159 @@ async function extractPermissions(): Promise<ServicePermissionsManifest> {
       }
 
       if (services.length > 0) {
-        manifest.lambdas[lambdaName] = {services}
+        lambdaPermissions[lambdaName] = {services}
       }
     }
   }
 
-  return manifest
+  return lambdaPermissions
+}
+
+/**
+ * Trace Lambda dependencies and aggregate permissions from vendor files
+ */
+function traceLambdaDependencies(
+  graph: DependencyGraph,
+  vendorPermissions: Record<string, VendorMethodPermission>,
+  terraformResources: TerraformResourceManifest | null
+): Record<string, LambdaServicePermissions> {
+  const lambdaPermissions: Record<string, LambdaServicePermissions> = {}
+
+  // Find all Lambda entry points (graph.json uses paths without .ts extension)
+  const lambdaEntryPoints = Object.keys(graph.transitiveDependencies || {}).filter((path) =>
+    path.includes('src/lambdas/') && path.endsWith('/src/index.ts')
+  )
+
+  console.log(`\nTracing dependencies for ${lambdaEntryPoints.length} Lambdas...`)
+
+  for (const lambdaPath of lambdaEntryPoints) {
+    const lambdaName = extractLambdaName(lambdaPath)
+    const transitiveImports = graph.transitiveDependencies[lambdaPath] || []
+
+    // Find all vendor files in transitive imports
+    // graph.json uses paths without .ts extension: "src/lib/vendor/AWS/SNS"
+    const vendorImports = transitiveImports.filter((p) =>
+      p.includes('src/lib/vendor/AWS/')
+    )
+
+    if (vendorImports.length === 0) continue
+
+    // Aggregate permissions from all vendor methods in imported files
+    const allPermissions: ServicePermission[] = []
+
+    for (const vendorFile of vendorImports) {
+      // graph.json paths don't have .ts extension, vendor permissions do
+      // Normalize by comparing without extension or adding .ts
+      const vendorWithExt = vendorFile.endsWith('.ts') ? vendorFile : `${vendorFile}.ts`
+
+      for (const methodPerm of Object.values(vendorPermissions)) {
+        // Match by file path (normalize both to same format)
+        const permPath = methodPerm.filePath
+        if (permPath === vendorWithExt || permPath === vendorFile) {
+          allPermissions.push(...methodPerm.permissions)
+        }
+      }
+    }
+
+    if (allPermissions.length > 0) {
+      // Deduplicate permissions by service + resource + operations
+      const deduped = deduplicatePermissions(allPermissions, terraformResources)
+      lambdaPermissions[lambdaName] = {services: deduped}
+      console.log(`  ${lambdaName}: ${deduped.length} service permission(s) from vendor imports`)
+    }
+  }
+
+  return lambdaPermissions
+}
+
+/**
+ * Deduplicate and merge permissions with same service/resource
+ */
+function deduplicatePermissions(
+  permissions: ServicePermission[],
+  terraformResources: TerraformResourceManifest | null
+): ServicePermission[] {
+  const merged = new Map<string, ServicePermission>()
+  for (const perm of permissions) {
+    const key = `${perm.service}:${perm.resource}:${perm.hasWildcard}`
+    const existing = merged.get(key)
+    if (existing) {
+      // Merge operations
+      const allOps = new Set([...existing.operations, ...perm.operations])
+      existing.operations = Array.from(allOps).sort()
+    } else {
+      merged.set(key, {...perm, arnRef: getArnRef(perm.service, perm.resource, terraformResources)})
+    }
+  }
+  return Array.from(merged.values())
+}
+
+/**
+ * Merge legacy and vendor-traced permissions
+ */
+function mergePermissions(
+  legacyPerms: Record<string, LambdaServicePermissions>,
+  vendorPerms: Record<string, LambdaServicePermissions>,
+  terraformResources: TerraformResourceManifest | null
+): Record<string, LambdaServicePermissions> {
+  const merged: Record<string, LambdaServicePermissions> = {}
+
+  // Get all Lambda names
+  const allLambdas = new Set([...Object.keys(legacyPerms), ...Object.keys(vendorPerms)])
+
+  for (const lambdaName of allLambdas) {
+    const legacy = legacyPerms[lambdaName]?.services || []
+    const vendor = vendorPerms[lambdaName]?.services || []
+
+    const combined = deduplicatePermissions([...legacy, ...vendor], terraformResources)
+    if (combined.length > 0) {
+      merged[lambdaName] = {services: combined}
+    }
+  }
+
+  return merged
+}
+
+/**
+ * Main extraction function
+ */
+async function extractPermissions(): Promise<ServicePermissionsManifest> {
+  console.log('Loading TypeScript project...')
+
+  const terraformResources = loadTerraformResources()
+  const graph = loadDependencyGraph()
+
+  const project = new Project({
+    tsConfigFilePath: join(projectRoot, 'tsconfig.json'),
+    skipAddingFilesFromTsConfig: true
+  })
+
+  // Step 1: Extract vendor wrapper permissions
+  console.log('\n=== Extracting Vendor Wrapper Permissions ===')
+  const vendorPermissions = extractVendorPermissions(project, terraformResources)
+  console.log(`Found ${Object.keys(vendorPermissions).length} decorated vendor methods`)
+
+  // Step 2: Extract legacy @RequiresServices from Lambda handlers
+  console.log('\n=== Extracting Legacy Lambda Permissions ===')
+  const legacyPermissions = extractLambdaLegacyPermissions(project, terraformResources)
+  console.log(`Found ${Object.keys(legacyPermissions).length} Lambdas with @RequiresServices`)
+
+  // Step 3: Trace Lambda dependencies and aggregate vendor permissions
+  let vendorTracedPermissions: Record<string, LambdaServicePermissions> = {}
+  if (graph) {
+    console.log('\n=== Tracing Lambda Dependencies ===')
+    vendorTracedPermissions = traceLambdaDependencies(graph, vendorPermissions, terraformResources)
+  }
+
+  // Step 4: Merge legacy and vendor-traced permissions
+  console.log('\n=== Merging Permissions ===')
+  const mergedPermissions = mergePermissions(legacyPermissions, vendorTracedPermissions, terraformResources)
+
+  return {
+    lambdas: mergedPermissions,
+    vendorMethods: vendorPermissions,
+    generatedAt: new Date().toISOString()
+  }
 }
 
 /**
@@ -309,7 +580,7 @@ async function main(): Promise<void> {
     const outputPath = join(buildDir, 'service-permissions.json')
     writeFileSync(outputPath, JSON.stringify(manifest, null, 2))
 
-    console.log(`\nGenerated ${outputPath}`)
+    console.log(`\n=== Generated ${outputPath} ===`)
     console.log(`Found permissions for ${Object.keys(manifest.lambdas).length} Lambdas:`)
 
     for (const [name, perms] of Object.entries(manifest.lambdas)) {
@@ -321,6 +592,8 @@ async function main(): Promise<void> {
         console.log(`        arnRef: ${svc.arnRef}`)
       }
     }
+
+    console.log(`\nVendor methods with permissions: ${Object.keys(manifest.vendorMethods).length}`)
   } catch (error) {
     console.error('Failed to extract permissions:', error)
     process.exit(1)

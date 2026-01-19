@@ -35,7 +35,9 @@ export enum S3Operation {
   PutObject = 's3:PutObject',
   DeleteObject = 's3:DeleteObject',
   ListBucket = 's3:ListBucket',
-  HeadObject = 's3:HeadObject'
+  HeadObject = 's3:HeadObject',
+  AbortMultipartUpload = 's3:AbortMultipartUpload',
+  ListMultipartUploadParts = 's3:ListMultipartUploadParts'
 }
 
 /**
@@ -54,7 +56,11 @@ export enum SQSOperation {
  */
 export enum SNSOperation {
   Publish = 'sns:Publish',
-  Subscribe = 'sns:Subscribe'
+  Subscribe = 'sns:Subscribe',
+  Unsubscribe = 'sns:Unsubscribe',
+  ListSubscriptionsByTopic = 'sns:ListSubscriptionsByTopic',
+  CreatePlatformEndpoint = 'sns:CreatePlatformEndpoint',
+  DeleteEndpoint = 'sns:DeleteEndpoint'
 }
 
 /**
