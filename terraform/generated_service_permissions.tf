@@ -1,5 +1,5 @@
 # Auto-generated Lambda IAM policies from @RequiresServices and @RequiresDynamoDB decorators
-# Generated at: 2026-01-19T19:58:35.294Z
+# Generated at: 2026-01-19T20:07:17.600Z
 # Source: build/service-permissions.json, build/dynamodb-permissions.json
 #
 # DO NOT EDIT - regenerate with: pnpm run generate:service-iam-policies
