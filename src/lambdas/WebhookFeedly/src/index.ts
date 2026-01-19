@@ -173,6 +173,10 @@ class WebhookFeedlyHandler extends AuthenticatedHandler {
     validateRequest(requestBody, feedlyWebhookRequestSchema)
     const fileId = getVideoID(requestBody.articleURL)
 
+    // Register Lambda context for idempotency time tracking
+    // This allows the idempotency handler to check remaining execution time
+    defaultIdempotencyConfig.registerLambdaContext(context)
+
     // Process webhook with idempotency protection
     const result = await getIdempotentProcessor()({fileId, userId: this.userId, articleURL: requestBody.articleURL, correlationId: this.correlationId})
 
