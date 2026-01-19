@@ -1,5 +1,5 @@
 # Auto-generated Lambda IAM policies from @RequiresServices and @RequiresDynamoDB decorators
-# Generated at: 2026-01-19T17:46:37.274Z
+# Generated at: 2026-01-19T19:47:22.852Z
 # Source: build/service-permissions.json, build/dynamodb-permissions.json
 #
 # DO NOT EDIT - regenerate with: pnpm run generate:service-iam-policies
@@ -108,7 +108,7 @@ resource "aws_iam_role_policy_attachment" "StartFileUpload_services" {
   policy_arn = aws_iam_policy.StartFileUpload_services.arn
 }
 
-# WebhookFeedly: EventBridge + SQS + DynamoDB permissions
+# WebhookFeedly: EventBridge + SQS permissions
 data "aws_iam_policy_document" "WebhookFeedly_services" {
   # EventBridge: MediaDownloader
   statement {
@@ -119,11 +119,6 @@ data "aws_iam_policy_document" "WebhookFeedly_services" {
   statement {
     actions   = ["sqs:SendMessage"]
     resources = [aws_sqs_queue.SendPushNotification.arn]
-  }
-  # DynamoDB: IdempotencyTable
-  statement {
-    actions   = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:DeleteItem"]
-    resources = [aws_dynamodb_table.IdempotencyTable.arn]
   }
 }
 

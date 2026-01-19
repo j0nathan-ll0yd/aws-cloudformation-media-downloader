@@ -9,7 +9,6 @@
  *
  * @see docs/wiki/Infrastructure/Lambda-Decorators.md
  */
-import {DynamoDBOperation, DynamoDBResource} from '#types/dynamodbPermissions'
 import type {TablePermissions, WithTablePermissions} from '#types/dynamodbPermissions'
 
 /**
@@ -27,30 +26,6 @@ export function RequiresDynamoDB(permissions: TablePermissions) {
     target.dynamodbPermissions = permissions
     return target
   }
-}
-
-/**
- * Convenience decorator for Lambda handlers using Powertools Idempotency.
- * Pre-configured with IdempotencyTable and all required CRUD operations.
- *
- * @example
- * ```typescript
- * @RequiresIdempotency()
- * class MyHandler extends ApiHandler { ... }
- * ```
- */
-export function RequiresIdempotency() {
-  return RequiresDynamoDB([
-    {
-      table: DynamoDBResource.IdempotencyTable,
-      operations: [
-        DynamoDBOperation.GetItem,
-        DynamoDBOperation.PutItem,
-        DynamoDBOperation.UpdateItem,
-        DynamoDBOperation.DeleteItem
-      ]
-    }
-  ])
 }
 
 /**

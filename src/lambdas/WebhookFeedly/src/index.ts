@@ -27,7 +27,7 @@ import type {WebhookProcessingInput, WebhookProcessingResult} from '#types/lambd
 import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/apiGateway'
 import {getRequiredEnv} from '#lib/system/env'
 import {buildValidatedResponse} from '#lib/lambda/responses'
-import {AuthenticatedHandler, metrics, MetricUnit, RequiresDatabase, RequiresEventBridge, RequiresIdempotency} from '#lib/lambda/handlers'
+import {AuthenticatedHandler, metrics, MetricUnit, RequiresDatabase, RequiresEventBridge} from '#lib/lambda/handlers'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 import {createDownloadReadyNotification} from '#lib/services/notification/transformers'
 import {associateFileToUser} from '#lib/domain/user/userFileService'
@@ -158,7 +158,6 @@ function getIdempotentProcessor() {
   {table: DatabaseTable.FileDownloads, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]},
   {table: DatabaseTable.UserFiles, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}
 ])
-@RequiresIdempotency()
 @RequiresEventBridge({publishes: ['DownloadRequested']})
 class WebhookFeedlyHandler extends AuthenticatedHandler {
   readonly operationName = 'WebhookFeedly'
