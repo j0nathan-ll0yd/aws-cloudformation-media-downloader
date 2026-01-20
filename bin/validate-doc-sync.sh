@@ -72,7 +72,8 @@ main() {
 
   # Count rows in Lambda Trigger Patterns table (lines starting with | and uppercase letter, excluding header)
   # Skip lines containing "Trigger Type" or "---" (header/separator rows)
-  TRIGGER_TABLE_COUNT=$(awk '/### Lambda Trigger Patterns/,/### Data Access/' AGENTS.md 2> /dev/null | grep -E '^\| [A-Z]' | grep -v 'Trigger Type' | grep -vc '\-\-\-' || echo 0)
+  # Table is in docs/wiki/Architecture/System-Diagrams.md
+  TRIGGER_TABLE_COUNT=$(awk '/## Lambda Trigger Patterns/,/## Data Access/' docs/wiki/Architecture/System-Diagrams.md 2> /dev/null | grep -E '^\| [A-Z]' | grep -v 'Trigger Type' | grep -vc '\-\-\-' || echo 0)
 
   if [ "$LAMBDA_COUNT" -ne "$TRIGGER_TABLE_COUNT" ]; then
     echo -e "${RED}MISMATCH${NC}"
@@ -454,8 +455,8 @@ main() {
   #   WebhookFeedly → Webhooks_processFeedlyWebhook
   NON_STANDARD_NAMING="DeviceEvent|UserDelete|UserSubscribe|WebhookFeedly"
 
-  # Get API Lambda names from AGENTS.md trigger table (API Gateway triggered)
-  API_LAMBDAS=$(awk '/### Lambda Trigger Patterns/,/### Data Access/' AGENTS.md 2> /dev/null |
+  # Get API Lambda names from System-Diagrams.md trigger table (API Gateway triggered)
+  API_LAMBDAS=$(awk '/## Lambda Trigger Patterns/,/## Data Access/' docs/wiki/Architecture/System-Diagrams.md 2> /dev/null |
     grep -E '^\| [A-Z].*API Gateway' |
     awk -F'|' '{print $2}' | tr -d ' ')
 
