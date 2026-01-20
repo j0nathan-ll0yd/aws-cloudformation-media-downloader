@@ -77,155 +77,19 @@ AWS Serverless media downloader service built with OpenTofu and TypeScript. Down
 
 ## System Architecture
 
-### Lambda Data Flow
+See [System Diagrams](docs/wiki/Architecture/System-Diagrams.md) for visual representations:
+- **Lambda Data Flow**: API Gateway → Lambdas → Aurora DSQL/S3
+- **Entity Relationships**: Users ↔ Files/Devices (many-to-many), Sessions/Accounts (one-to-many)
+- **Service Interaction Map**: External services, AWS layer
 
-```mermaid
-graph TD
-    %% External Triggers
-    API[API Gateway] --> Authorizer[ApiGatewayAuthorizer]
-    Authorizer --> ListFiles[ListFiles Lambda]
-    Authorizer --> LoginUser[LoginUser Lambda]
-    Authorizer --> RegisterDevice[RegisterDevice Lambda]
-    Authorizer --> RegisterUser[RegisterUser Lambda]
-    Authorizer --> RefreshToken[RefreshToken Lambda]
-    Authorizer --> UserDelete[UserDelete Lambda]
-    Authorizer --> UserSubscribe[UserSubscribe Lambda]
+### Key Architecture Points
 
-    Feedly[Feedly Webhook] --> WebhookFeedly[WebhookFeedly Lambda]
-
-    %% Scheduled Tasks
-    Schedule[CloudWatch Schedule] --> PruneDevices[PruneDevices Lambda]
-
-    %% Event-Driven Downloads
-    WebhookFeedly --> EventBridge[EventBridge]
-    EventBridge --> DownloadQueue[SQS DownloadQueue]
-    DownloadQueue --> StartFileUpload[StartFileUpload Lambda]
-
-    %% S3 Triggers
-    S3Upload[S3 Upload Event] --> S3ObjectCreated[S3ObjectCreated Lambda]
-    S3ObjectCreated --> SQS[SQS Queue]
-    SQS --> SendPushNotification[SendPushNotification Lambda]
-
-    %% Data Stores
-    ListFiles --> DSQL[(Aurora DSQL)]
-    LoginUser --> DSQL
-    RegisterDevice --> DSQL
-    RegisterUser --> DSQL
-    WebhookFeedly --> DSQL
-    UserDelete --> DSQL
-    PruneDevices --> DSQL
-    S3ObjectCreated --> DSQL
-    StartFileUpload --> DSQL
-
-    StartFileUpload --> S3Storage[(S3 Storage)]
-    WebhookFeedly --> S3Storage
-
-    SendPushNotification --> APNS[Apple Push Service]
-```
-
-### Entity Relationship Model
-
-```mermaid
-erDiagram
-    USERS ||--o{ USER_FILES : has
-    USERS ||--o{ USER_DEVICES : owns
-    USERS ||--o{ SESSIONS : has
-    USERS ||--o{ ACCOUNTS : has
-    FILES ||--o{ USER_FILES : shared_with
-    FILES ||--o{ FILE_DOWNLOADS : tracks
-    DEVICES ||--o{ USER_DEVICES : registered_to
-
-    USERS {
-        string userId PK
-        string email
-        string status
-        timestamp createdAt
-    }
-
-    FILES {
-        string fileId PK
-        string fileName
-        string url
-        string status
-        number size
-        timestamp createdAt
-    }
-
-    FILE_DOWNLOADS {
-        string downloadId PK
-        string fileId FK
-        string status
-        timestamp startedAt
-        timestamp completedAt
-    }
-
-    DEVICES {
-        string deviceId PK
-        string deviceToken
-        string platform
-        timestamp lastActive
-    }
-
-    SESSIONS {
-        string sessionId PK
-        string userId FK
-        string token
-        timestamp expiresAt
-    }
-
-    ACCOUNTS {
-        string accountId PK
-        string userId FK
-        string provider
-        string providerAccountId
-    }
-
-    VERIFICATION_TOKENS {
-        string token PK
-        string identifier
-        timestamp expiresAt
-    }
-
-    USER_FILES {
-        string userId FK
-        string fileId FK
-        timestamp createdAt
-    }
-
-    USER_DEVICES {
-        string userId FK
-        string deviceId FK
-        timestamp createdAt
-    }
-```
-
-### Service Interaction Map
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        API Gateway                          │
-│                    (Custom Authorizer)                      │
-└────────────┬────────────────────────────────────┬───────────┘
-             │                                    │
-             ▼                                    ▼
-┌─────────────────────┐              ┌─────────────────────┐
-│   Lambda Functions  │              │   External Services │
-├─────────────────────┤              ├─────────────────────┤
-│ • ListFiles         │              │ • Feedly API        │
-│ • LoginUser         │              │ • YouTube (yt-dlp)  │
-│ • RegisterDevice    │              │ • APNS              │
-│ • StartFileUpload   │              │ • Sign In w/ Apple  │
-│ • WebhookFeedly     │              │ • GitHub API        │
-└──────────┬──────────┘              └─────────────────────┘
-           │
-           ▼
-┌─────────────────────────────────────────────────────────────┐
-│                     AWS Services Layer                      │
-├─────────────────────┬───────────────┬──────────────────────┤
-│   Aurora DSQL       │      S3       │    CloudWatch        │
-│   (Drizzle ORM)     │  (Media Files)│   (Logs/Metrics)     │
-└─────────────────────┴───────────────┴──────────────────────┘
-```
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| Database | Aurora DSQL + Drizzle | Serverless PostgreSQL, type-safe queries |
+| Auth | Better Auth | Sessions, OAuth accounts, tokens |
+| Storage | S3 | Media files with transfer acceleration |
+| Events | EventBridge + SQS | Async processing, notifications |
 
 ### Dependency Analysis with graph.json
 
@@ -266,38 +130,7 @@ The MCP server (`src/mcp/`) and GraphRAG (`graphrag/`) use shared data sources f
 1. Update `graphrag/metadata.json` `lambdaInvocations` array
 2. Run `pnpm run graphrag:extract`
 
-### Lambda Trigger Patterns
-
-| Lambda | Trigger Type | Source | Purpose |
-|--------|-------------|--------|---------|
-| ApiGatewayAuthorizer | API Gateway | All authenticated routes | Authorize API requests via Better Auth |
-| CleanupExpiredRecords | CloudWatch Events | Daily schedule (3 AM UTC) | Clean expired records |
-| CloudfrontMiddleware | CloudFront | Edge requests | Edge processing for CDN |
-| DeviceEvent | API Gateway | POST /device/event | Log client-side device events |
-| ListFiles | API Gateway | GET /files | List user's available files |
-| LoginUser | API Gateway | POST /user/login | Authenticate user |
-| MigrateDSQL | Manual | CLI invocation | Run Drizzle migrations on Aurora DSQL |
-| PruneDevices | CloudWatch Events | Daily schedule | Clean inactive devices |
-| RefreshToken | API Gateway | POST /user/refresh | Refresh authentication token |
-| LogoutUser | API Gateway | POST /user/logout | Invalidate user session and log out |
-| RegisterDevice | API Gateway | POST /device/register | Register iOS device for push |
-| RegisterUser | API Gateway | POST /user/register | Register new user |
-| S3ObjectCreated | S3 Event | s3:ObjectCreated | Handle uploaded files, notify users |
-| SendPushNotification | SQS | S3ObjectCreated | Send APNS notifications |
-| StartFileUpload | SQS | DownloadQueue (via EventBridge) | Download video from YouTube to S3 |
-| UserDelete | API Gateway | DELETE /user | Delete user and cascade |
-| UserSubscribe | API Gateway | POST /user/subscribe | Manage user topic subscriptions |
-| WebhookFeedly | API Gateway | POST /feedly | Process Feedly articles, publish events |
-
-### Data Access Patterns
-
-| Pattern | Entity | Access Method | Query Strategy |
-|---------|--------|--------------|----------------|
-| User's files | UserFiles → Files | Query by userId | JOIN on userId |
-| User's devices | UserDevices → Devices | Query by userId | JOIN on userId |
-| File's users | UserFiles | Query by fileId | JOIN on fileId |
-| Device lookup | Devices | Get by deviceId | Primary key |
-| User resources | getUserResources() | Transaction query | Multi-table JOIN |
+See [System Diagrams](docs/wiki/Architecture/System-Diagrams.md) for Lambda Trigger Patterns and Data Access Patterns tables.
 
 ## Critical Project-Specific Rules
 
@@ -367,50 +200,19 @@ The MCP server (`src/mcp/`) and GraphRAG (`graphrag/`) use shared data sources f
 - **Bash Scripts**: [docs/wiki/Bash/Script-Patterns.md](docs/wiki/Bash/Script-Patterns.md)
 - **OpenTofu/Terraform**: [docs/wiki/Infrastructure/OpenTofu-Patterns.md](docs/wiki/Infrastructure/OpenTofu-Patterns.md)
 
-## Anti-Patterns to Avoid
+## Anti-Patterns (Quick Reference)
 
-The following patterns have caused issues in this project and should be avoided:
+| Anti-Pattern | Severity | Example | Documentation |
+|--------------|----------|---------|---------------|
+| Direct AWS SDK Imports | CRITICAL | `import {S3} from '@aws-sdk/client-s3'` | [Vendor Encapsulation](docs/wiki/Conventions/Vendor-Encapsulation-Policy.md) |
+| Legacy Entity Mocks | CRITICAL | `vi.mock('#entities/Users')` | [Vitest Mocking](docs/wiki/Testing/Vitest-Mocking-Strategy.md) |
+| Promise.all for Cascades | CRITICAL | `Promise.all([deleteUser(), deleteFiles()])` | [Lambda Patterns](docs/wiki/TypeScript/Lambda-Function-Patterns.md) |
+| AI Attribution in Commits | CRITICAL | `Co-Authored-By: Claude` | [Git Workflow](docs/wiki/Conventions/Git-Workflow.md) |
+| Module-Level getRequiredEnv | HIGH | `const X = getRequiredEnv('X')` at top level | [Lambda Patterns](docs/wiki/TypeScript/Lambda-Function-Patterns.md) |
+| Raw Response Objects | HIGH | `return {statusCode: 200, body: ...}` | [Lambda Patterns](docs/wiki/TypeScript/Lambda-Function-Patterns.md) |
+| Underscore-Prefixed Vars | HIGH | `handler(event, _context)` | [Lambda Patterns](docs/wiki/TypeScript/Lambda-Function-Patterns.md) |
 
-### 1. Direct Vendor Library Imports (CRITICAL)
-**Wrong**: `import {DynamoDBClient} from '@aws-sdk/client-dynamodb'`
-**Right**: `import {getDynamoDBClient} from '#lib/vendor/AWS/DynamoDB'`
-**Why**: Breaks encapsulation, makes testing difficult, loses environment detection (LocalStack/X-Ray)
-**Applies to**: AWS SDK, Drizzle, Better Auth, yt-dlp, and all third-party services
-
-### 2. Legacy Entity Module Mocks (CRITICAL)
-**Wrong**: `vi.mock('#entities/Users', () => ({...}))`
-**Right**: `vi.mock('#entities/queries', () => ({getUser: vi.fn(), createUser: vi.fn()}))`
-**Why**: Legacy entity module mocking is deprecated; use query function mocking with `#entities/queries`
-
-### 3. Promise.all for Cascade Deletions (CRITICAL)
-**Wrong**: `await Promise.all([deleteUser(), deleteUserFiles()])`
-**Right**: `await Promise.allSettled([deleteUserFiles(), deleteUser()])`
-**Why**: Partial failures leave orphaned data; children must be deleted before parents
-
-### 4. Try-Catch for Required Environment Variables (CRITICAL)
-**Wrong**: `try { config = JSON.parse(process.env.CONFIG) } catch { return fallback }`
-**Right**: `const config = getRequiredEnv('CONFIG')` - let it fail fast
-**Why**: Silent failures hide configuration errors that should break at cold start
-
-### 5. Underscore-Prefixed Unused Variables (HIGH)
-**Wrong**: `handler(event, _context, _callback)` to suppress warnings
-**Right**: `handler({body}: APIGatewayProxyEvent)` - destructure only what you need
-**Why**: Backwards-compatibility hacks obscure intent and violate project conventions
-
-### 6. AI Attribution in Commits (CRITICAL)
-**Wrong**: Commit messages with "Generated with Claude", emojis, "Co-Authored-By: AI"
-**Right**: Clean commit messages following commitlint format: `feat: add new feature`
-**Why**: Professional commits, code ownership clarity, industry standard
-
-### 7. Module-Level Environment Variable Validation (HIGH)
-**Wrong**: `const config = getRequiredEnv('CONFIG')` at top of module
-**Right**: Call `getRequiredEnv()` inside functions (lazy evaluation)
-**Why**: Module-level calls break tests that need to set up mocks before import
-
-### 8. Raw Response Objects in Lambdas (HIGH)
-**Wrong**: `return {statusCode: 200, body: JSON.stringify(data)}`
-**Right**: `return response(200, data)`
-**Why**: Inconsistent formatting, missing headers, no type safety
+**Quick fixes**: Use `#lib/vendor/AWS/*` for AWS SDK, `#entities/queries` for entity mocks, `response()` helper for Lambda returns.
 
 ## Type Naming Patterns
 
@@ -445,78 +247,20 @@ Queued | Downloading | Downloaded | Failed
 
 ### Essential Commands
 ```bash
-# Build & Check
-pnpm run precheck       # TypeScript type checking and lint (run before commits)
-pnpm run build          # Build Lambda functions with esbuild
-pnpm run format         # Auto-format with dprint (157 char lines)
-
-# Testing
-pnpm run test           # Run unit tests
-
-# Local CI (run before pushing)
-pnpm run ci:local       # Fast CI checks (~2-3 min, no integration)
-pnpm run ci:local:full  # Full CI checks (~5-10 min, with integration)
-
-# Comprehensive cleanup (build, format, lint, validate, test, generate docs)
-pnpm run cleanup        # Full cleanup with integration tests
-pnpm run cleanup:fast   # Skip integration tests (faster)
-pnpm run cleanup:check  # Dry-run: check only, no fixes/generation
-
-# Integration testing
-pnpm run localstack:start        # Start LocalStack
-pnpm run test:integration        # Run integration tests (assumes LocalStack running)
-
-# Remote testing
-pnpm run test:remote:list        # Test file listing
-pnpm run test:remote:hook        # Test Feedly webhook
-pnpm run test:remote:register:device  # Test device registration
-
-# Documentation
-pnpm run document:source         # Generate TSDoc documentation
-
-# AI Context
-pnpm run pack:context    # Pack codebase into repomix-output.xml for context
-pnpm run pack:light      # Pack only interfaces and docs
-pnpm run index:codebase  # Re-index codebase for semantic search (LanceDB)
-pnpm run search:codebase "query" # Search codebase using natural language
-pnpm run validate:conventions # Run AST-based convention checks
-
-# Deployment
-pnpm run deploy          # Deploy infrastructure with OpenTofu
+pnpm run precheck              # Type check + lint (run before commits)
+pnpm run test                  # Unit tests
+pnpm run validate:conventions  # MCP rule validation
+pnpm run ci:local              # Full local CI
 ```
-
-## AI Context Optimization
-This repository is optimized for AI agents using:
-- **Semantic Memory**: Local vector database (LanceDB) for natural language code search. Run `pnpm run index:codebase` to update.
-- **Repomix**: Packed codebase context in `repomix-output.xml`. Run `pnpm run pack:context` to update.
-- **Convention Validation**: CI/CD enforcement of rules in `AGENTS.md` via `pnpm run validate:conventions`.
-- **Gemini Instructions**: Custom instructions in `.gemini/instructions.md`.
-
-### LLM Context Files
-
-| File | Purpose | Git Status | Generation |
-|------|---------|------------|------------|
-| `docs/llms.txt` | Curated index for external AI crawlers (GPTBot, Perplexity) | Committed | Manual |
-| `docs/llms-full.txt` | Complete docs for AI agents needing full context | Gitignored | `pnpm run generate:llms` |
-| `repomix-output.xml` | Full codebase context for local Claude Code sessions | Gitignored | `pnpm run pack:context` |
-
-### Claude Code Context Loading
-Claude Code automatically reads `CLAUDE.md` and `AGENTS.md` at session start. For additional codebase context beyond these files, generate and reference the packed context:
-```bash
-pnpm run pack:context  # Generates repomix-output.xml
-```
-Then drag `repomix-output.xml` into the Claude Code conversation or copy relevant sections as needed.
 
 ### Pre-Commit Checklist
-1. Run `pnpm run validate:conventions` - Ensure no rule violations
-2. Run `pnpm run precheck` - TypeScript type checking and lint
-3. Run `pnpm run format` - Auto-format code
-4. Run `pnpm run pack:context` - Update context for other agents
-5. Run `pnpm test` - Ensure all tests pass
-6. Verify NO AI references in commit message
-7. Stage changes: `git add -A`
-8. Commit with clean message: `git commit -m "type: description"`
-9. **NEVER push automatically** - Wait for user request
+1. `pnpm run validate:conventions` - No rule violations
+2. `pnpm run precheck` - TypeScript + ESLint clean
+3. `pnpm run test` - All tests pass
+4. Verify NO AI references in commit message
+5. **NEVER push automatically** - Wait for user request
+
+See `package.json` for complete command list (cleanup, integration tests, deployment, etc.).
 
 
 ## Integration Points
@@ -586,6 +330,48 @@ Then drag `repomix-output.xml` into the Claude Code conversation or copy relevan
 - **Documentation**: TSDoc + terraform-docs
 - **Error Tracking**: Automated GitHub issue creation
 - **Monitoring**: CloudWatch dashboards and alarms
+
+---
+
+## Changelog
+
+Track major changes to AI agent configuration.
+
+### 2026-01-20 - Token Optimization & Subagents
+- Extracted Mermaid diagrams to `docs/wiki/Architecture/System-Diagrams.md` (47% reduction)
+- Consolidated Anti-Patterns section into summary table with wiki links
+- Streamlined Development Workflow section (66% reduction)
+- Created `.claude/agents/` directory with specialist subagents (testing, infrastructure, review)
+- Updated evaluation report with AI Agent Configuration findings
+
+### 2026-01-19 - Quick Start & Multi-Tool Support
+- Added Quick Start section with TL;DR and session checklist
+- Created `.cursorrules` for Cursor IDE compatibility
+- Created `.github/copilot-instructions.md` for GitHub Copilot
+- Added this changelog section
+- Created GitHub issue templates for convention proposals and quarterly reviews
+- Added wiki link validation MCP rule
+- Updated Conventions-Tracking.md with review process
+
+### Update Process
+
+When making significant changes to AGENTS.md:
+1. Add entry to this changelog with date and summary
+2. Reference the PR number when merged
+3. Update `.gemini/instructions.md` if critical rules changed
+4. Update `.cursorrules` if patterns changed
+5. Update `.github/copilot-instructions.md` if patterns changed
+6. Run `pnpm run validate:conventions` to verify consistency
+
+### Version Compatibility
+
+| File | Synced With | Last Updated |
+|------|-------------|--------------|
+| `CLAUDE.md` | AGENTS.md (passthrough) | Always current |
+| `.claude/agents/` | AGENTS.md (specialist subagents) | 2026-01-20 |
+| `.gemini/instructions.md` | AGENTS.md (condensed) | 2026-01-19 |
+| `.cursorrules` | AGENTS.md (condensed) | 2026-01-19 |
+| `.github/copilot-instructions.md` | AGENTS.md (condensed) | 2026-01-19 |
 
 ---
 

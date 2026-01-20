@@ -1,0 +1,95 @@
+name: Quarterly Convention Review
+description: Quarterly review of AI agent configuration files
+title: "[Quarterly Review] Q_ 20__"
+labels: ["quarterly-review", "maintenance"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Quarterly Convention Review
+
+        Use this template to track the quarterly review of AI agent configuration files.
+        Reviews should occur in January, April, July, and October.
+
+  - type: input
+    id: quarter
+    attributes:
+      label: Review Period
+      description: Which quarter is this review for?
+      placeholder: "Q1 2026"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: file-review
+    attributes:
+      label: Configuration File Review
+      description: Verify each configuration file is current and accurate
+      options:
+        - label: "AGENTS.md - Main context file is up to date"
+        - label: "CLAUDE.md - Passthrough reference is correct"
+        - label: ".cursorrules - Cursor rules match AGENTS.md"
+        - label: ".github/copilot-instructions.md - Copilot instructions match AGENTS.md"
+        - label: ".gemini/instructions.md - Gemini instructions match AGENTS.md"
+        - label: "docs/wiki/Meta/Conventions-Tracking.md - Convention list is complete"
+
+  - type: checkboxes
+    id: validation-review
+    attributes:
+      label: Validation Rule Review
+      description: Verify validation rules are working correctly
+      options:
+        - label: "Run `pnpm run validate:conventions` - All rules pass"
+        - label: "Review MCP rule count in Conventions-Tracking.md matches actual rules"
+        - label: "Check for any new conventions that need rules"
+        - label: "Verify no deprecated rules are still enabled"
+
+  - type: textarea
+    id: changes-made
+    attributes:
+      label: Changes Made This Quarter
+      description: List any changes made to configuration files during this review
+      placeholder: |
+        - Updated Quick Start section with new command
+        - Added new MCP rule for X
+        - Deprecated Y convention
+    validations:
+      required: false
+
+  - type: textarea
+    id: proposed-next
+    attributes:
+      label: Proposed Changes for Next Quarter
+      description: Note any improvements or changes to consider for the next review
+      placeholder: |
+        - Consider adding rule for Z pattern
+        - Review enforcement level for X convention
+        - Update examples in AGENTS.md
+    validations:
+      required: false
+
+  - type: textarea
+    id: metrics
+    attributes:
+      label: Metrics (Optional)
+      description: Any relevant metrics from the quarter
+      placeholder: |
+        - Convention violations caught by CI: X
+        - New conventions added: Y
+        - Rules removed/deprecated: Z
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: completion
+    attributes:
+      label: Review Completion
+      options:
+        - label: All configuration files reviewed and updated if needed
+          required: true
+        - label: Changelog in AGENTS.md updated with review date
+          required: true
+        - label: Version compatibility table updated
+          required: true
