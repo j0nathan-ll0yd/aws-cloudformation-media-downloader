@@ -5,10 +5,11 @@
  * Runs extractors in dependency order:
  * 1. Generate dependency graph
  * 2. Extract Terraform resources
- * 3. Extract service permissions (vendor wrappers)
- * 4. Extract entity permissions (database tables)
- * 5. Extract DynamoDB permissions (Powertools)
- * 6. Generate unified manifest
+ * 3. Extract database permissions (Lambda handler @RequiresDatabase decorators)
+ * 4. Extract service permissions (vendor wrappers)
+ * 5. Extract entity permissions (entity query @RequiresTable decorators)
+ * 6. Extract DynamoDB permissions (Powertools idempotency)
+ * 7. Generate unified manifest
  *
  * Usage: pnpm run extract:all-permissions
  */
@@ -40,23 +41,16 @@ interface DynamoDBPermission {
   operations: string[]
 }
 
-interface SecretPermission {
-  type: string
-  path: string
+interface DbPermission {
+  table: string
   operations: string[]
-}
-
-interface EventBridgePermission {
-  resource: string
-  events: string[]
 }
 
 interface LambdaUnifiedPermissions {
   services: ServicePermission[]
   tables: TablePermission[]
+  dbPermissions: DbPermission[]
   dynamodb: DynamoDBPermission[]
-  secrets: SecretPermission[]
-  eventbridge: EventBridgePermission[]
 }
 
 interface UnifiedPermissionsManifest {
@@ -69,10 +63,9 @@ interface UnifiedPermissionsManifest {
   summary: {
     totalLambdas: number
     lambdasWithServicePermissions: number
+    lambdasWithDbPermissions: number
     lambdasWithEntityPermissions: number
     lambdasWithDynamoDBPermissions: number
-    lambdasWithSecretPermissions: number
-    lambdasWithEventBridgePermissions: number
     uniqueServices: string[]
     uniqueTables: string[]
   }
@@ -88,6 +81,7 @@ interface ExtractorConfig {
 const EXTRACTORS: ExtractorConfig[] = [
   {name: 'graph', script: 'generate:graph', output: 'build/graph.json', required: true},
   {name: 'terraform', script: 'extract:terraform-resources', output: 'build/terraform-resources.json', required: true},
+  {name: 'db-permissions', script: 'extract:db-permissions', output: 'build/db-permissions.json', required: true},
   {name: 'services', script: 'extract:service-permissions', output: 'build/service-permissions.json', required: true},
   {name: 'entities', script: 'extract:entity-permissions', output: 'build/entity-permissions.json', required: true},
   {name: 'dynamodb', script: 'extract:dynamodb-permissions', output: 'build/dynamodb-permissions.json', required: false}
@@ -151,6 +145,10 @@ function generateUnifiedManifest(extractorStatus: Record<string, 'success' | 'sk
     vendorMethods: Record<string, unknown>
   }>('build/service-permissions.json')
 
+  const dbManifest = loadJson<{
+    lambdas: Record<string, {tables: DbPermission[]; computedAccessLevel: string}>
+  }>('build/db-permissions.json')
+
   const entityManifest = loadJson<{
     lambdas: Record<string, {tables: TablePermission[]}>
   }>('build/entity-permissions.json')
@@ -163,6 +161,9 @@ function generateUnifiedManifest(extractorStatus: Record<string, 'success' | 'sk
   const allLambdaNames = new Set<string>()
   if (serviceManifest?.lambdas) {
     Object.keys(serviceManifest.lambdas).forEach((name) => allLambdaNames.add(name))
+  }
+  if (dbManifest?.lambdas) {
+    Object.keys(dbManifest.lambdas).forEach((name) => allLambdaNames.add(name))
   }
   if (entityManifest?.lambdas) {
     Object.keys(entityManifest.lambdas).forEach((name) => allLambdaNames.add(name))
@@ -178,36 +179,35 @@ function generateUnifiedManifest(extractorStatus: Record<string, 'success' | 'sk
 
   for (const name of allLambdaNames) {
     const services = serviceManifest?.lambdas?.[name]?.services || []
+    const dbPermissions = dbManifest?.lambdas?.[name]?.tables || []
     const tables = entityManifest?.lambdas?.[name]?.tables || []
     const dynamodb = dynamodbManifest?.lambdas?.[name]?.tables || []
 
     // Track unique services and tables
     services.forEach((s) => uniqueServices.add(s.service))
+    dbPermissions.forEach((t) => uniqueTables.add(t.table))
     tables.forEach((t) => uniqueTables.add(t.table))
     dynamodb.forEach((d) => uniqueTables.add(d.table))
 
     lambdas[name] = {
       services,
+      dbPermissions,
       tables,
-      dynamodb,
-      secrets: [], // Not currently extracted
-      eventbridge: [] // Extracted as part of services
+      dynamodb
     }
   }
 
   // Count stats
   let lambdasWithServicePermissions = 0
+  let lambdasWithDbPermissions = 0
   let lambdasWithEntityPermissions = 0
   let lambdasWithDynamoDBPermissions = 0
-  let lambdasWithSecretPermissions = 0
-  let lambdasWithEventBridgePermissions = 0
 
   for (const lambda of Object.values(lambdas)) {
     if (lambda.services.length > 0) lambdasWithServicePermissions++
+    if (lambda.dbPermissions.length > 0) lambdasWithDbPermissions++
     if (lambda.tables.length > 0) lambdasWithEntityPermissions++
     if (lambda.dynamodb.length > 0) lambdasWithDynamoDBPermissions++
-    if (lambda.secrets.length > 0) lambdasWithSecretPermissions++
-    if (lambda.eventbridge.length > 0) lambdasWithEventBridgePermissions++
   }
 
   return {
@@ -220,10 +220,9 @@ function generateUnifiedManifest(extractorStatus: Record<string, 'success' | 'sk
     summary: {
       totalLambdas: allLambdaNames.size,
       lambdasWithServicePermissions,
+      lambdasWithDbPermissions,
       lambdasWithEntityPermissions,
       lambdasWithDynamoDBPermissions,
-      lambdasWithSecretPermissions,
-      lambdasWithEventBridgePermissions,
       uniqueServices: Array.from(uniqueServices).sort(),
       uniqueTables: Array.from(uniqueTables).sort()
     }
@@ -273,6 +272,7 @@ async function main(): Promise<void> {
   console.log('\nSummary:')
   console.log(`  Total Lambdas: ${unified.summary.totalLambdas}`)
   console.log(`  With Service Permissions: ${unified.summary.lambdasWithServicePermissions}`)
+  console.log(`  With DB Permissions: ${unified.summary.lambdasWithDbPermissions}`)
   console.log(`  With Entity Permissions: ${unified.summary.lambdasWithEntityPermissions}`)
   console.log(`  With DynamoDB Permissions: ${unified.summary.lambdasWithDynamoDBPermissions}`)
   console.log(`  Unique Services: ${unified.summary.uniqueServices.join(', ')}`)
