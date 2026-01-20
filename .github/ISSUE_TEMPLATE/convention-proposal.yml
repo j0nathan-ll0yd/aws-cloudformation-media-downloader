@@ -1,0 +1,119 @@
+name: Convention Proposal
+description: Propose a new convention or modification to an existing one
+title: "[Convention] "
+labels: ["convention", "needs-review"]
+assignees: []
+
+body:
+  - type: dropdown
+    id: proposal-type
+    attributes:
+      label: Proposal Type
+      description: What kind of change are you proposing?
+      options:
+        - New Convention
+        - Modify Existing Convention
+        - Deprecate Convention
+        - Enforcement Change
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Proposed Severity
+      description: What severity level should this convention have?
+      options:
+        - CRITICAL (Zero tolerance, blocking)
+        - HIGH (Must follow, exceptions need justification)
+        - MEDIUM (Should follow, best practice)
+        - LOW (Nice to have, informational)
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Convention Description
+      description: Describe the convention clearly and concisely
+      placeholder: |
+        Example: All Lambda handlers must use the response() helper function instead of raw response objects.
+    validations:
+      required: true
+
+  - type: textarea
+    id: correct-example
+    attributes:
+      label: Correct Example
+      description: Show an example of code that follows this convention
+      render: typescript
+      placeholder: |
+        import {response} from '#util/response'
+
+        return response(200, {status: ResponseStatus.Success})
+    validations:
+      required: true
+
+  - type: textarea
+    id: incorrect-example
+    attributes:
+      label: Incorrect Example
+      description: Show an example of code that violates this convention
+      render: typescript
+      placeholder: |
+        return {statusCode: 200, body: JSON.stringify({status: 'success'})}
+    validations:
+      required: true
+
+  - type: dropdown
+    id: enforcement
+    attributes:
+      label: Proposed Enforcement Method
+      description: How should this convention be enforced?
+      multiple: true
+      options:
+        - MCP Validation Rule (AST-based)
+        - ESLint Rule
+        - Git Hook
+        - Dependency Cruiser
+        - CI Workflow
+        - Code Review Only
+    validations:
+      required: true
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact Analysis
+      description: What files or areas of the codebase would be affected?
+      placeholder: |
+        - All Lambda handlers in src/lambdas/
+        - Approximately 20 files would need updates
+        - No breaking changes to external APIs
+    validations:
+      required: true
+
+  - type: textarea
+    id: rationale
+    attributes:
+      label: Rationale
+      description: Why is this convention needed? What problems does it solve?
+      placeholder: |
+        This convention ensures consistent response formatting, proper headers,
+        and type safety across all API endpoints.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
+      options:
+        - label: I have searched existing conventions in `docs/wiki/Meta/Conventions-Tracking.md`
+          required: true
+        - label: This convention doesn't duplicate an existing one
+          required: true
+        - label: I have provided both correct and incorrect examples
+          required: true
+        - label: I have considered the impact on existing code
+          required: true
