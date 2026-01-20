@@ -17,6 +17,7 @@ import {
   createSNSSubscriptionListResponse
 } from '#test/helpers/aws-response-factories'
 import {createSNSMock, resetAllAwsMocks} from '#test/helpers/aws-sdk-mock'
+import {TEST_PLATFORM_APPLICATION_ARN, TEST_SNS_ENDPOINT_ARN, TEST_SNS_TOPIC_ARN} from '#test/helpers/test-constants'
 
 const fakeUserId = DEFAULT_USER_ID
 
@@ -39,7 +40,7 @@ import {upsertDevice, upsertUserDevice} from '#entities/queries'
 const existingUserDevices = [createMockUserDevice({userId: fakeUserId})]
 
 // Use a fixed endpoint ARN so CreatePlatformEndpoint and ListSubscriptionsByTopic responses match
-const testEndpointArn = 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS_SANDBOX/MediaDownloader/test-endpoint'
+const testEndpointArn = TEST_SNS_ENDPOINT_ARN
 
 describe('#RegisterDevice', () => {
   const context = createMockContext()
@@ -61,8 +62,8 @@ describe('#RegisterDevice', () => {
     snsMock.on(DeleteEndpointCommand).resolves(createSNSMetadataResponse())
     snsMock.on(UnsubscribeCommand).resolves(createSNSMetadataResponse())
 
-    process.env.PLATFORM_APPLICATION_ARN = 'arn:aws:sns:region:account_id:topic:uuid'
-    process.env.PUSH_NOTIFICATION_TOPIC_ARN = 'arn:aws:sns:us-west-2:203465012143:PushNotifications'
+    process.env.PLATFORM_APPLICATION_ARN = TEST_PLATFORM_APPLICATION_ARN
+    process.env.PUSH_NOTIFICATION_TOPIC_ARN = TEST_SNS_TOPIC_ARN
   })
 
   afterEach(() => {

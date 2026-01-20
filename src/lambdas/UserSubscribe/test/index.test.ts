@@ -6,6 +6,7 @@ import {DeleteEndpointCommand, SubscribeCommand, UnsubscribeCommand} from '@aws-
 import {createSNSMetadataResponse, createSNSSubscribeResponse} from '#test/helpers/aws-response-factories'
 import {createSNSMock, resetAllAwsMocks} from '#test/helpers/aws-sdk-mock'
 import {DEFAULT_USER_ID} from '#test/helpers/entity-fixtures'
+import {TEST_PLATFORM_APPLICATION_ARN} from '#test/helpers/test-constants'
 
 const fakeUserId = DEFAULT_USER_ID
 
@@ -22,7 +23,7 @@ describe('#UserSubscribe', () => {
     // Create event with subscribe request body
     event = createAPIGatewayEvent({path: '/subscribe', httpMethod: 'POST', body: createSubscribeBody(), userId: fakeUserId})
 
-    process.env.PLATFORM_APPLICATION_ARN = 'arn:aws:sns:region:account_id:topic:uuid'
+    process.env.PLATFORM_APPLICATION_ARN = TEST_PLATFORM_APPLICATION_ARN
 
     // Configure SNS mock responses using factories
     snsMock.on(SubscribeCommand).resolves(createSNSSubscribeResponse())

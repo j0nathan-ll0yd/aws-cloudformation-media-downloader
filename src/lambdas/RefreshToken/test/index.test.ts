@@ -127,4 +127,45 @@ describe('#RefreshToken', () => {
       expect(body.error.code).toEqual('custom-5XX-generic')
     })
   })
+
+  describe('#EdgeCases', () => {
+    test('should handle database timeout during session validation', async () => {
+      const timeoutError = new Error('Query timeout after 30000ms')
+      Object.assign(timeoutError, {code: 'ETIMEDOUT'})
+      validateSessionTokenMock.mockRejectedValue(timeoutError)
+
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(500)
+      expect(refreshSessionMock).not.toHaveBeenCalled()
+    })
+
+    test('should handle database timeout during session refresh', async () => {
+      validateSessionTokenMock.mockResolvedValue({userId: fakeUserId, sessionId: fakeSessionId, expiresAt: Date.now() + 1000000})
+      const timeoutError = new Error('Query timeout after 30000ms')
+      Object.assign(timeoutError, {code: 'ETIMEDOUT'})
+      refreshSessionMock.mockRejectedValue(timeoutError)
+
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(500)
+    })
+
+    test('should handle empty Bearer token', async () => {
+      event.headers!['Authorization'] = 'Bearer '
+
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(401)
+      expect(validateSessionTokenMock).not.toHaveBeenCalled()
+    })
+
+    test('should handle session approaching expiration', async () => {
+      // Session expires in 1 minute - should still be refreshable
+      const nearExpiry = Date.now() + 60 * 1000
+      validateSessionTokenMock.mockResolvedValue({userId: fakeUserId, sessionId: fakeSessionId, expiresAt: nearExpiry})
+      refreshSessionMock.mockResolvedValue({expiresAt: futureExpiresAt})
+
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(200)
+      expect(refreshSessionMock).toHaveBeenCalledWith(fakeSessionId)
+    })
+  })
 })

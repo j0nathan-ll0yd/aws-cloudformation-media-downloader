@@ -5,12 +5,13 @@ import {createS3Event} from '#test/helpers/event-factories'
 import {SendMessageCommand} from '@aws-sdk/client-sqs'
 import {createSQSSendMessageResponse} from '#test/helpers/aws-response-factories'
 import {createSQSMock, resetAllAwsMocks} from '#test/helpers/aws-sdk-mock'
+import {TEST_BUCKET_NAME_SANDBOX, TEST_S3_KEY_DECODED, TEST_S3_KEY_WITH_BRACKETS, TEST_SQS_QUEUE_URL, TEST_VIDEO_ID_ALT} from '#test/helpers/test-constants'
 
 // Create SQS mock using helper - injects into vendor client factory
 const sqsMock = createSQSMock()
 
 beforeAll(() => {
-  process.env.SNS_QUEUE_URL = 'https://sqs.us-west-2.amazonaws.com/123456789/test-queue'
+  process.env.SNS_QUEUE_URL = TEST_SQS_QUEUE_URL
 })
 
 vi.mock('#entities/queries', () => ({getFilesByKey: vi.fn(), getUserFilesByFileId: vi.fn()}))
@@ -18,12 +19,12 @@ vi.mock('#entities/queries', () => ({getFilesByKey: vi.fn(), getUserFilesByFileI
 const {handler} = await import('./../src')
 import {getFilesByKey, getUserFilesByFileId} from '#entities/queries'
 
-const mockFileRow = createMockFile({fileId: '4TfEp8oG5gM', key: '20210122-[Philip DeFranco].mp4'})
-const mockUserFileRow = createMockUserFile({fileId: '4TfEp8oG5gM', userId: DEFAULT_USER_ID})
+const mockFileRow = createMockFile({fileId: TEST_VIDEO_ID_ALT, key: TEST_S3_KEY_WITH_BRACKETS})
+const mockUserFileRow = createMockUserFile({fileId: TEST_VIDEO_ID_ALT, userId: DEFAULT_USER_ID})
 
 describe('#S3ObjectCreated', () => {
   // Create base S3 event with URL-encoded key (S3 encodes special characters like [ and ])
-  const baseEvent = createS3Event({records: [{key: '20191209-[sxephil].mp4', bucket: 'lifegames-sandbox-testbucket'}]})
+  const baseEvent = createS3Event({records: [{key: TEST_S3_KEY_DECODED, bucket: TEST_BUCKET_NAME_SANDBOX}]})
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -46,7 +47,7 @@ describe('#S3ObjectCreated', () => {
     expect(output).toBeUndefined()
     expect(sqsMock).toHaveReceivedCommandTimes(SendMessageCommand, 1)
     expect(sqsMock).toHaveReceivedCommandWith(SendMessageCommand, {
-      QueueUrl: 'https://sqs.us-west-2.amazonaws.com/123456789/test-queue',
+      QueueUrl: TEST_SQS_QUEUE_URL,
       MessageBody: expect.stringContaining('DownloadReadyNotification')
     })
   })
@@ -69,9 +70,9 @@ describe('#S3ObjectCreated', () => {
 
   test('should send notifications to multiple users for the same file', async () => {
     const multipleUsers = [
-      createMockUserFile({fileId: '4TfEp8oG5gM', userId: 'user-1'}),
-      createMockUserFile({fileId: '4TfEp8oG5gM', userId: 'user-2'}),
-      createMockUserFile({fileId: '4TfEp8oG5gM', userId: 'user-3'})
+      createMockUserFile({fileId: TEST_VIDEO_ID_ALT, userId: 'user-1'}),
+      createMockUserFile({fileId: TEST_VIDEO_ID_ALT, userId: 'user-2'}),
+      createMockUserFile({fileId: TEST_VIDEO_ID_ALT, userId: 'user-3'})
     ]
     vi.mocked(getUserFilesByFileId).mockResolvedValue(multipleUsers)
     const output = await handler(baseEvent, createMockContext())
@@ -107,8 +108,8 @@ describe('#S3ObjectCreated', () => {
   describe('#PartialFailures', () => {
     test('should continue processing when one notification dispatch fails', async () => {
       const multipleUsers = [
-        createMockUserFile({fileId: '4TfEp8oG5gM', userId: 'user-1'}),
-        createMockUserFile({fileId: '4TfEp8oG5gM', userId: 'user-2'})
+        createMockUserFile({fileId: TEST_VIDEO_ID_ALT, userId: 'user-1'}),
+        createMockUserFile({fileId: TEST_VIDEO_ID_ALT, userId: 'user-2'})
       ]
       vi.mocked(getUserFilesByFileId).mockResolvedValue(multipleUsers)
       // First call fails, second succeeds
@@ -129,6 +130,48 @@ describe('#S3ObjectCreated', () => {
       expect(output).toBeUndefined()
       // Second file should still send notification
       expect(sqsMock).toHaveReceivedCommandTimes(SendMessageCommand, 1)
+    })
+  })
+
+  describe('#EdgeCases', () => {
+    test('should handle database timeout during file lookup', async () => {
+      const timeoutError = new Error('Query timeout after 30000ms')
+      Object.assign(timeoutError, {code: 'ETIMEDOUT'})
+      vi.mocked(getFilesByKey).mockRejectedValue(timeoutError)
+
+      const output = await handler(baseEvent, createMockContext())
+      // Handler catches error and continues (no SQS message sent)
+      expect(output).toBeUndefined()
+      expect(sqsMock).not.toHaveReceivedCommand(SendMessageCommand)
+    })
+
+    test('should handle database timeout during user lookup', async () => {
+      const timeoutError = new Error('Query timeout after 30000ms')
+      Object.assign(timeoutError, {code: 'ETIMEDOUT'})
+      vi.mocked(getFilesByKey).mockResolvedValue([mockFileRow])
+      vi.mocked(getUserFilesByFileId).mockRejectedValue(timeoutError)
+
+      const output = await handler(baseEvent, createMockContext())
+      expect(output).toBeUndefined()
+      expect(sqsMock).not.toHaveReceivedCommand(SendMessageCommand)
+    })
+
+    test('should handle S3 key with complex URL encoding', async () => {
+      // S3 URL encodes special characters like spaces, brackets, etc.
+      const complexKeyEvent = createS3Event({records: [{key: 'file%20with%20spaces%5Bbrackets%5D.mp4'}]})
+
+      const output = await handler(complexKeyEvent, createMockContext())
+      expect(output).toBeUndefined()
+      // Query should have been attempted (even if file not found with our mock)
+      expect(vi.mocked(getFilesByKey)).toHaveBeenCalled()
+    })
+
+    test('should handle empty S3 records array gracefully', async () => {
+      const emptyEvent = createS3Event({records: []})
+
+      const output = await handler(emptyEvent, createMockContext())
+      expect(output).toBeUndefined()
+      expect(vi.mocked(getFilesByKey)).not.toHaveBeenCalled()
     })
   })
 })

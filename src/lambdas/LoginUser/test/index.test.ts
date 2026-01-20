@@ -5,6 +5,9 @@ import {createBetterAuthMock} from '#test/helpers/better-auth-mock'
 import {createAPIGatewayEvent, createLoginUserBody} from '#test/helpers/event-factories'
 import {DEFAULT_SESSION_ID, DEFAULT_USER_ID} from '#test/helpers/entity-fixtures'
 
+/** Test auth token for LoginUser tests */
+const TEST_AUTH_TOKEN = 'mock-auth-token-for-testing'
+
 // Mock Better Auth API - now exports getAuth as async function
 const authMock = createBetterAuthMock()
 vi.mock('#lib/vendor/BetterAuth/config', () => ({getAuth: vi.fn(async () => authMock.auth)}))
@@ -24,7 +27,6 @@ describe('#LoginUser', () => {
     // Mock Better Auth sign-in response using consistent test fixtures
     const userId = DEFAULT_USER_ID
     const sessionId = DEFAULT_SESSION_ID
-    const token = 'mock-auth-token-for-testing'
     const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000
 
     authMock.mocks.signInSocial.mockResolvedValue({
@@ -35,7 +37,7 @@ describe('#LoginUser', () => {
         createdAt: new Date(Date.now() - 86400000).toISOString() // Created yesterday
       },
       session: {id: sessionId, expiresAt},
-      token
+      token: TEST_AUTH_TOKEN
     })
 
     const output = await handler(event, context)
@@ -137,6 +139,15 @@ describe('#LoginUser', () => {
       expect(output.statusCode).toEqual(500)
       const body = JSON.parse(output.body)
       expect(body.error).toBeDefined()
+    })
+
+    test('should handle Better Auth timeout', async () => {
+      const timeoutError = new Error('Network timeout')
+      Object.assign(timeoutError, {code: 'ETIMEDOUT'})
+      authMock.mocks.signInSocial.mockRejectedValue(timeoutError)
+
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(500)
     })
   })
 })
