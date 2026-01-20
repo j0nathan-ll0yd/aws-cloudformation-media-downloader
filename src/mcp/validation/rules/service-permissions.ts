@@ -1,19 +1,28 @@
 /**
  * Service Permissions Rule
  * HIGH: Lambda handlers that use AWS services must have `@RequiresServices` decorator
+ *       OR import from vendor wrappers with function-level permission decorators.
  *
  * This rule ensures that AWS service access requirements are explicitly declared.
+ *
+ * Note: With the function-level decorator architecture, permissions can be declared on
+ * vendor wrapper methods via @RequiresXxx decorators. The extraction scripts trace
+ * Lambda → vendor imports to automatically derive permissions. Therefore, Lambda handlers
+ * that import from vendor wrappers with decorated methods don't need @RequiresServices.
+ *
+ * @see docs/wiki/Infrastructure/Lambda-Decorators.md#function-level-permission-decorators
  */
 
 import type {SourceFile} from 'ts-morph'
-import {createViolation} from '../types'
 import type {ValidationRule, Violation} from '../types'
 
 const RULE_NAME = 'service-permissions'
 const SEVERITY = 'HIGH' as const
 
 /**
- * AWS vendor wrapper import patterns and their service mappings
+ * AWS vendor wrapper import patterns and their service mappings.
+ * These vendor wrappers have function-level permission decorators (@RequiresXxx)
+ * that are extracted at build time to generate IAM policies.
  */
 const SERVICE_IMPORT_MAP: Record<string, string> = {
   '#lib/vendor/AWS/S3': 'S3',
@@ -59,7 +68,8 @@ function hasRequiresServicesDecorator(sourceFile: SourceFile): boolean {
 
 export const servicePermissionsRule: ValidationRule = {
   name: RULE_NAME,
-  description: 'Lambda handlers that access AWS services must have @RequiresServices decorator.',
+  description:
+    'Lambda handlers that access AWS services must have @RequiresServices decorator or import from vendor wrappers with function-level decorators.',
   severity: SEVERITY,
   appliesTo: ['src/lambdas/*/src/index.ts'],
   excludes: [],
@@ -69,13 +79,23 @@ export const servicePermissionsRule: ValidationRule = {
     const violations: Violation[] = []
 
     // Check for AWS service imports
-    const {importing, services} = importsServiceWrappers(sourceFile)
+    const {importing} = importsServiceWrappers(sourceFile)
 
     // If no service imports detected, no validation needed
     if (!importing) {
       return violations
     }
 
+    // With function-level decorators, Lambda handlers that import from vendor wrappers
+    // don't need @RequiresServices - permissions are traced via extraction scripts.
+    // The vendor wrapper methods have @RequiresXxx decorators that declare permissions.
+    //
+    // See: docs/wiki/Infrastructure/Lambda-Decorators.md#function-level-permission-decorators
+    //
+    // @RequiresServices is now optional for Lambda handlers - keeping this check disabled.
+    // If you want to require explicit @RequiresServices, uncomment the block below.
+
+    /*
     // Check if @RequiresServices decorator exists
     if (!hasRequiresServicesDecorator(sourceFile)) {
       // Find the first service import line for better error location
@@ -92,6 +112,10 @@ export const servicePermissionsRule: ValidationRule = {
         })
       )
     }
+    */
+
+    // Suppress unused variable warning
+    void hasRequiresServicesDecorator
 
     return violations
   }
