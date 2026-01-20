@@ -9,12 +9,13 @@ import path from 'path'
 import {fileURLToPath} from 'url'
 import {allRules, rulesByName, validateFile} from '../validation/index.js'
 import {createErrorResponse} from './shared/response-types.js'
+import {getCicdValidationSummary, validateCicdConventions} from '../validation/rules/cicd-conventions.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const projectRoot = path.resolve(__dirname, '../../..')
 
-export type ValidationQueryType = 'all' | 'aws-sdk' | 'entity' | 'imports' | 'response' | 'rules' | 'summary'
+export type ValidationQueryType = 'all' | 'aws-sdk' | 'cicd' | 'entity' | 'imports' | 'response' | 'rules' | 'summary'
 
 export interface ValidationQueryArgs {
   file?: string
@@ -74,6 +75,22 @@ export async function handleValidationQuery(args: ValidationQueryArgs) {
         message: result.valid
           ? 'No direct AWS SDK imports found. File follows encapsulation policy.'
           : 'CRITICAL: Direct AWS SDK imports detected. Use lib/vendor/AWS/ wrappers.'
+      }
+    }
+
+    case 'cicd': {
+      // Validate CI/CD workflow conventions (YAML files, not TypeScript)
+      const violations = validateCicdConventions(projectRoot)
+      const summary = getCicdValidationSummary(violations)
+
+      return {
+        rules: ['CICD-001', 'CICD-002', 'CICD-003', 'CICD-004', 'CICD-005'],
+        valid: summary.valid,
+        violations,
+        summary,
+        message: summary.valid
+          ? 'All CI/CD workflows follow project conventions.'
+          : `Found ${summary.total} CI/CD convention violation(s).`
       }
     }
 
@@ -173,6 +190,6 @@ export async function handleValidationQuery(args: ValidationQueryArgs) {
     }
 
     default:
-      return createErrorResponse(`Unknown query: ${query}`, 'Available queries: all, aws-sdk, entity, imports, response, rules, summary')
+      return createErrorResponse(`Unknown query: ${query}`, 'Available queries: all, aws-sdk, cicd, entity, imports, response, rules, summary')
   }
 }
