@@ -37,8 +37,10 @@ import {databasePermissionsRule} from './rules/database-permissions'
 import {secretPermissionsRule} from './rules/secret-permissions'
 import {servicePermissionsRule} from './rules/service-permissions'
 import {eventBridgePermissionsRule} from './rules/eventbridge-permissions'
+import {vendorDecoratorCoverageRule} from './rules/vendor-decorator-coverage'
+import {permissionGapDetectionRule} from './rules/permission-gap-detection'
 
-// Export all rules (25 total: 7 CRITICAL + 14 HIGH + 4 MEDIUM)
+// Export all rules (27 total: 7 CRITICAL + 16 HIGH + 4 MEDIUM)
 export const allRules: ValidationRule[] = [
   // CRITICAL
   awsSdkEncapsulationRule,
@@ -53,6 +55,8 @@ export const allRules: ValidationRule[] = [
   secretPermissionsRule,
   servicePermissionsRule,
   eventBridgePermissionsRule,
+  vendorDecoratorCoverageRule,
+  permissionGapDetectionRule,
   // HIGH
   responseHelpersRule,
   typesLocationRule,
@@ -106,6 +110,10 @@ export const rulesByName: Record<string, ValidationRule> = {
   'eventbridge-permissions': eventBridgePermissionsRule,
   eventbridge: eventBridgePermissionsRule, // alias
   events: eventBridgePermissionsRule, // alias
+  'vendor-decorator-coverage': vendorDecoratorCoverageRule,
+  'vendor-decorators': vendorDecoratorCoverageRule, // alias
+  'permission-gap-detection': permissionGapDetectionRule,
+  'permission-gap': permissionGapDetectionRule, // alias
   // HIGH rules
   'response-helpers': responseHelpersRule,
   response: responseHelpersRule, // alias
@@ -161,13 +169,15 @@ export {
   migrationsSafetyRule,
   mockFormattingRule,
   namingConventionsRule,
+  permissionGapDetectionRule,
   powertoolsMetricsRule,
   responseEnumRule,
   responseHelpersRule,
   scanPaginationRule,
   secretPermissionsRule,
   servicePermissionsRule,
-  typesLocationRule
+  typesLocationRule,
+  vendorDecoratorCoverageRule
 }
 
 // Export types

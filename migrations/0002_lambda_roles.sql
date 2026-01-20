@@ -1,7 +1,7 @@
 -- Migration: 0002_lambda_roles
 -- Description: Per-Lambda PostgreSQL roles with fine-grained table permissions
 -- Auto-generated from @RequiresDatabase decorators
--- Generated at: 2026-01-19T20:07:17.474Z
+-- Generated at: 2026-01-20T02:35:15.697Z
 --
 -- This migration creates per-Lambda PostgreSQL roles and grants them
 -- exactly the table permissions declared in their @RequiresDatabase decorators.

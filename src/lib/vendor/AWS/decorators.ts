@@ -13,7 +13,7 @@
  * @see docs/wiki/Infrastructure/Lambda-Decorators.md
  */
 import type {ServicePermission} from '#types/servicePermissions'
-import {AWSService, EventBridgeOperation, S3Operation, SNSOperation, SQSOperation} from '#types/servicePermissions'
+import {ApiGatewayOperation, AWSService, EventBridgeOperation, LambdaOperation, S3Operation, SNSOperation, SQSOperation} from '#types/servicePermissions'
 import type {EventBridgeResource, S3Resource, SNSPlatformResource, SNSTopicResource, SQSResource} from '#types/generatedResources'
 
 /**
@@ -119,6 +119,54 @@ export function RequiresEventBridge(resource: EventBridgeResource, operations: E
   return function(_target: unknown, _propertyKey: string, descriptor: PropertyDescriptor) {
     const method = descriptor.value as AnyFunction & WithMethodPermissions
     method.__permissions = [{service: AWSService.EventBridge, resource, operations}]
+    return descriptor
+  }
+}
+
+/**
+ * Method decorator that declares API Gateway permissions.
+ * API Gateway uses different resource patterns - typically the entire API or specific resources.
+ *
+ * @param resource - API Gateway resource pattern (e.g., '*' for all APIs)
+ * @param operations - Array of API Gateway operations required
+ * @returns Method decorator
+ *
+ * @example
+ * ```typescript
+ * class ApiGatewayVendor {
+ *   @RequiresApiGateway('*', [ApiGatewayOperation.GetApiKeys])
+ *   static async getApiKeys() {...}
+ * }
+ * ```
+ */
+export function RequiresApiGateway(resource: string, operations: ApiGatewayOperation[]) {
+  return function(_target: unknown, _propertyKey: string, descriptor: PropertyDescriptor) {
+    const method = descriptor.value as AnyFunction & WithMethodPermissions
+    method.__permissions = [{service: AWSService.ApiGateway, resource, operations}]
+    return descriptor
+  }
+}
+
+/**
+ * Method decorator that declares Lambda invocation permissions.
+ * Used for Lambda-to-Lambda invocation patterns.
+ *
+ * @param resource - Lambda function ARN pattern (e.g., '*' or specific function ARN)
+ * @param operations - Array of Lambda operations required
+ * @returns Method decorator
+ *
+ * @example
+ * ```typescript
+ * class LambdaVendor {
+ *   @RequiresLambda('*', [LambdaOperation.Invoke])
+ *   static async invokeLambda(functionName: string, payload: object) {...}
+ * }
+ * ```
+ */
+export function RequiresLambda(resource: string, operations: LambdaOperation[]) {
+  return function(_target: unknown, _propertyKey: string, descriptor: PropertyDescriptor) {
+    const method = descriptor.value as AnyFunction & WithMethodPermissions
+    method.__permissions = [{service: AWSService.Lambda, resource, operations}]
     return descriptor
   }
 }

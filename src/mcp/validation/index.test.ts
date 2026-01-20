@@ -30,7 +30,7 @@ describe('validation exports', () => {
   describe('allRules', () => {
     test('should export array of rules', () => {
       expect(Array.isArray(allRules)).toBe(true)
-      expect(allRules.length).toBe(25)
+      expect(allRules.length).toBe(27)
     })
 
     test('should contain all expected rules', () => {
@@ -52,6 +52,8 @@ describe('validation exports', () => {
       expect(ruleNames).toContain('secret-permissions')
       expect(ruleNames).toContain('service-permissions')
       expect(ruleNames).toContain('eventbridge-permissions')
+      expect(ruleNames).toContain('vendor-decorator-coverage')
+      expect(ruleNames).toContain('permission-gap-detection')
       expect(ruleNames).toContain('comment-conventions')
       // MEDIUM rules
       expect(ruleNames).toContain('import-order')
@@ -86,6 +88,8 @@ describe('validation exports', () => {
       expect(rulesByName['secret-permissions']).toBeDefined()
       expect(rulesByName['service-permissions']).toBeDefined()
       expect(rulesByName['eventbridge-permissions']).toBeDefined()
+      expect(rulesByName['vendor-decorator-coverage']).toBeDefined()
+      expect(rulesByName['permission-gap-detection']).toBeDefined()
       expect(rulesByName['comment-conventions']).toBeDefined()
       expect(rulesByName['naming-conventions']).toBeDefined()
       expect(rulesByName['authenticated-handler-enforcement']).toBeDefined()
@@ -118,6 +122,8 @@ describe('validation exports', () => {
       expect(rulesByName['services']).toBe(rulesByName['service-permissions'])
       expect(rulesByName['eventbridge']).toBe(rulesByName['eventbridge-permissions'])
       expect(rulesByName['events']).toBe(rulesByName['eventbridge-permissions'])
+      expect(rulesByName['vendor-decorators']).toBe(rulesByName['vendor-decorator-coverage'])
+      expect(rulesByName['permission-gap']).toBe(rulesByName['permission-gap-detection'])
       expect(rulesByName['comments']).toBe(rulesByName['comment-conventions'])
       // MEDIUM aliases
       expect(rulesByName['imports']).toBe(rulesByName['import-order'])

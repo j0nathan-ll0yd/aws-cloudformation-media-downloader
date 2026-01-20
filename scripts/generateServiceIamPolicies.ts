@@ -19,7 +19,7 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 const projectRoot = join(__dirname, '..')
 
-type ServiceType = 's3' | 'sqs' | 'sns' | 'events'
+type ServiceType = 's3' | 'sqs' | 'sns' | 'events' | 'apigateway' | 'lambda'
 
 interface ServicePermission {
   service: ServiceType
@@ -83,9 +83,11 @@ function getServiceDescription(service: ServiceType): string {
     's3': 'S3',
     'sqs': 'SQS',
     'sns': 'SNS',
-    'events': 'EventBridge'
+    'events': 'EventBridge',
+    'apigateway': 'API Gateway',
+    'lambda': 'Lambda'
   }
-  return descriptions[service]
+  return descriptions[service] || service
 }
 
 /**
