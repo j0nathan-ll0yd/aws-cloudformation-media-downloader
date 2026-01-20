@@ -101,7 +101,7 @@ describe('Legacy Lambda Wrappers', () => {
       expect(handler).toHaveBeenCalledWith({event: mockAuthEvent, context: mockContext, metadata: {traceId: 'trace-123', correlationId: 'corr-123'}})
       expect(logger.appendKeys).toHaveBeenCalledWith({correlationId: 'corr-123', traceId: 'trace-123'})
       expect(logIncomingFixture).toHaveBeenCalledWith(mockAuthEvent)
-      expect(logDebug).toHaveBeenCalledWith('response ==', policyResult)
+      expect(logDebug).toHaveBeenCalledWith('response =>', policyResult)
     })
 
     it('should propagate Unauthorized error without logging', async () => {
@@ -185,7 +185,7 @@ describe('Legacy Lambda Wrappers', () => {
       const wrapped = wrapEventHandler(handler, {getRecords})
       await wrapped({} as unknown, mockContext)
 
-      // Only called with 'response ==' not with errors
+      // Only called with 'response =>' not with errors
       expect(logError).not.toHaveBeenCalled()
     })
 

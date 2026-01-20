@@ -30,7 +30,7 @@ describe('validation exports', () => {
   describe('allRules', () => {
     test('should export array of rules', () => {
       expect(Array.isArray(allRules)).toBe(true)
-      expect(allRules.length).toBe(27)
+      expect(allRules.length).toBe(28)
     })
 
     test('should contain all expected rules', () => {
@@ -67,6 +67,8 @@ describe('validation exports', () => {
       expect(ruleNames).toContain('docs-structure')
       // MEDIUM (metrics) rules
       expect(ruleNames).toContain('powertools-metrics')
+      // MEDIUM (observability) rules
+      expect(ruleNames).toContain('logging-conventions')
     })
   })
 
@@ -101,6 +103,8 @@ describe('validation exports', () => {
       expect(rulesByName['docs-structure']).toBeDefined()
       // MEDIUM (metrics) rules
       expect(rulesByName['powertools-metrics']).toBeDefined()
+      // MEDIUM (observability) rules
+      expect(rulesByName['logging-conventions']).toBeDefined()
     })
 
     test('should have aliases', () => {
@@ -137,6 +141,8 @@ describe('validation exports', () => {
       expect(rulesByName['docs-location']).toBe(rulesByName['docs-structure'])
       // MEDIUM (metrics) aliases
       expect(rulesByName['metrics']).toBe(rulesByName['powertools-metrics'])
+      // MEDIUM (observability) aliases
+      expect(rulesByName['logging']).toBe(rulesByName['logging-conventions'])
     })
   })
 

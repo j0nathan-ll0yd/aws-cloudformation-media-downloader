@@ -22,7 +22,7 @@ export function wrapAuthorizer(
     logIncomingFixture(event)
     try {
       const result = await handler({event, context, metadata: {traceId, correlationId}})
-      logDebug('response ==', result)
+      logDebug('response =>', result)
       return result
     } catch (error) {
       // Let 'Unauthorized' errors propagate (API Gateway returns 401)

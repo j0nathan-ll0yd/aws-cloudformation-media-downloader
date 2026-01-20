@@ -8,7 +8,7 @@ Central registry of all project conventions with their documentation and enforce
 
 | Method | Count | Description |
 |--------|-------|-------------|
-| **MCP Rules** | 25 | AST-based validation via ts-morph |
+| **MCP Rules** | 28 | AST-based validation via ts-morph |
 | **ESLint** | 26 | Linting rules including 9 JSDoc rules + 2 Drizzle safety rules + 10 local rules + TSDoc |
 | **Git Hooks** | 5 | Pre-commit (deps + secrets), commit-msg, pre-push, post-checkout |
 | **Dependency Cruiser** | 8 | Architectural boundary enforcement |
@@ -45,6 +45,7 @@ Central registry of all project conventions with their documentation and enforce
 | response-enum | enum | MEDIUM | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) |
 | mock-formatting | mock | MEDIUM | [Vitest Mocking Strategy](../Testing/Vitest-Mocking-Strategy.md) |
 | powertools-metrics | metrics | MEDIUM | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) |
+| logging-conventions | logging | MEDIUM | [Logging Conventions](../Conventions/Logging-Conventions.md) |
 
 ---
 
@@ -116,6 +117,7 @@ Central registry of all project conventions with their documentation and enforce
 | camelCase TypeScript File Naming | [Naming Conventions](../Conventions/Naming-Conventions.md) | Code review + MCP |
 | Vendor Class `*Vendor` Naming | [Lambda Decorators](../Infrastructure/Lambda-Decorators.md#function-level-permission-decorators) | Build Scripts |
 | Bound Method Re-exports | [Lambda Decorators](../Infrastructure/Lambda-Decorators.md#function-level-permission-decorators) | Code review |
+| Logging Message Conventions | [Logging Conventions](../Conventions/Logging-Conventions.md) | MCP `logging-conventions` |
 | GraphRAG Synchronization | [GraphRAG Automation](../Infrastructure/GraphRAG-Automation.md) | GitHub Actions |
 | YouTube Cookie Rotation (30-60 days) | [Secret-Rotation-Runbook](../Security/Secret-Rotation-Runbook.md) | Auto-detection via 403 errors |
 | Document Secret Expiration Dates | [Secret-Rotation-Runbook](../Security/Secret-Rotation-Runbook.md) | Manual (runbook) |

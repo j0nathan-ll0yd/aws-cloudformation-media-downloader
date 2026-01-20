@@ -39,8 +39,9 @@ import {servicePermissionsRule} from './rules/service-permissions'
 import {eventBridgePermissionsRule} from './rules/eventbridge-permissions'
 import {vendorDecoratorCoverageRule} from './rules/vendor-decorator-coverage'
 import {permissionGapDetectionRule} from './rules/permission-gap-detection'
+import {loggingConventionsRule} from './rules/logging-conventions'
 
-// Export all rules (27 total: 7 CRITICAL + 16 HIGH + 4 MEDIUM)
+// Export all rules (28 total: 7 CRITICAL + 16 HIGH + 5 MEDIUM)
 export const allRules: ValidationRule[] = [
   // CRITICAL
   awsSdkEncapsulationRule,
@@ -77,7 +78,8 @@ export const allRules: ValidationRule[] = [
   // HIGH (docs structure)
   docsStructureRule,
   // MEDIUM (observability)
-  powertoolsMetricsRule
+  powertoolsMetricsRule,
+  loggingConventionsRule
 ]
 
 // Export rules by name for selective validation
@@ -146,7 +148,9 @@ export const rulesByName: Record<string, ValidationRule> = {
   'docs-location': docsStructureRule, // alias
   // MEDIUM (observability) rules
   'powertools-metrics': powertoolsMetricsRule,
-  metrics: powertoolsMetricsRule // alias
+  metrics: powertoolsMetricsRule, // alias
+  'logging-conventions': loggingConventionsRule,
+  logging: loggingConventionsRule // alias
 }
 
 // Export individual rules
@@ -166,6 +170,7 @@ export {
   envValidationRule,
   eventBridgePermissionsRule,
   importOrderRule,
+  loggingConventionsRule,
   migrationsSafetyRule,
   mockFormattingRule,
   namingConventionsRule,
