@@ -213,5 +213,14 @@ describe('#RegisterUser', () => {
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(429)
     })
+
+    test('should handle Better Auth timeout', async () => {
+      const timeoutError = new Error('Network timeout')
+      Object.assign(timeoutError, {code: 'ETIMEDOUT'})
+      authMock.mocks.signInSocial.mockRejectedValue(timeoutError)
+
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(500)
+    })
   })
 })

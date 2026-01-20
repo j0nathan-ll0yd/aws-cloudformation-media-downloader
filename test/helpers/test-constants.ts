@@ -72,11 +72,116 @@ export const TEST_CLOUDFRONT_DOMAIN = 'test-cdn.cloudfront.net'
 /** Test SQS queue URL format */
 export const TEST_SQS_QUEUE_URL = `https://sqs.${TEST_REGION}.amazonaws.com/${TEST_ACCOUNT_ID}/TestQueue`
 
+/** Test SQS push notification queue URL */
+export const TEST_SQS_PUSH_NOTIFICATION_URL = `https://sqs.${TEST_REGION}.amazonaws.com/${TEST_ACCOUNT_ID}/SendPushNotification`
+
 /** Test S3 bucket name */
 export const TEST_BUCKET_NAME = 'test-bucket'
 
+/** Test S3 sandbox bucket name */
+export const TEST_BUCKET_NAME_SANDBOX = 'lifegames-sandbox-testbucket'
+
 /** Test EventBridge bus name */
 export const TEST_EVENT_BUS_NAME = 'MediaDownloader'
+
+/** Test thumbnail URL */
+export const TEST_THUMBNAIL_URL = 'https://example.com/thumbnail.jpg'
+
+/** Test YouTube thumbnail URL (specific format) */
+export const TEST_YOUTUBE_THUMBNAIL_URL = 'https://i.ytimg.com/vi/7jEzw5WLiMI/maxresdefault.jpg'
+
+// ============================================================================
+// SNS ARNs (Push Notifications)
+// ============================================================================
+
+/** Test SNS platform application ARN */
+export const TEST_PLATFORM_APPLICATION_ARN = `arn:aws:sns:${TEST_REGION}:${TEST_ACCOUNT_ID}:app/APNS_SANDBOX/MediaDownloader`
+
+/** Test SNS endpoint ARN (for device registration) */
+export const TEST_SNS_ENDPOINT_ARN = `${TEST_SNS_ARN_PREFIX}:endpoint/APNS_SANDBOX/MediaDownloader/test-endpoint`
+
+/** Test SNS push notification topic ARN */
+export const TEST_SNS_TOPIC_ARN = `${TEST_SNS_ARN_PREFIX}:PushNotifications`
+
+// ============================================================================
+// S3 Object Keys (Media Files)
+// ============================================================================
+
+/** Test S3 object key with special characters (brackets) */
+export const TEST_S3_KEY_WITH_BRACKETS = '20210122-[Philip DeFranco].mp4'
+
+/** Test S3 object key (URL-encoded brackets) */
+export const TEST_S3_KEY_URL_ENCODED = '20191209-%5Bsxephil%5D.mp4'
+
+/** Test S3 object key (decoded) */
+export const TEST_S3_KEY_DECODED = '20191209-[sxephil].mp4'
+
+/** Test S3 URL result from upload */
+export const TEST_S3_URL = `s3://${TEST_BUCKET_NAME}/test-video.mp4`
+
+// ============================================================================
+// YouTube/Video URLs
+// ============================================================================
+
+/** Test YouTube video URL */
+export const TEST_YOUTUBE_URL = 'https://www.youtube.com/watch?v=wRG7lAGdRII'
+
+/** Test YouTube playlist URL */
+export const TEST_YOUTUBE_PLAYLIST_URL = 'https://www.youtube.com/playlist?list=UUlFSU9_bUb4Rc6OYfTt5SPw'
+
+/** Test YouTube channel uploads URL */
+export const TEST_YOUTUBE_CHANNEL_URL = 'https://youtube.com/playlist?list=UUlFSU9_bUb4Rc6OYfTt5SPw'
+
+// ============================================================================
+// Feedly Webhook Data
+// ============================================================================
+
+/** Test Feedly article title */
+export const TEST_FEEDLY_ARTICLE_TITLE = 'WOW! Ariana Grande Meme Backlash & Meme War, COVID-19 Contact Tracing Problems, Mr. Beast & More'
+
+/** Test Feedly source title */
+export const TEST_FEEDLY_SOURCE_TITLE = 'Philip DeFranco (uploads) on YouTube'
+
+/** Test Feedly category */
+export const TEST_FEEDLY_CATEGORY = 'YouTube'
+
+/** Test Feedly published date */
+export const TEST_FEEDLY_PUBLISHED_AT = 'April 27, 2020 at 04:10PM'
+
+// ============================================================================
+// Video Metadata
+// ============================================================================
+
+/** Test video title */
+export const TEST_VIDEO_TITLE = 'Test Video'
+
+/** Test video uploader/author name */
+export const TEST_VIDEO_UPLOADER = 'Test Uploader'
+
+/** Test video description */
+export const TEST_VIDEO_DESCRIPTION = 'Test description'
+
+/** Test video upload date (YouTube format: YYYYMMDD) */
+export const TEST_VIDEO_UPLOAD_DATE = '20231201'
+
+/** Test video duration in seconds */
+export const TEST_VIDEO_DURATION = 300
+
+/** Test video file size in bytes (~79MB) */
+export const TEST_VIDEO_FILE_SIZE = 82784319
+
+/** Test large video file size in bytes (100MB) */
+export const TEST_VIDEO_FILE_SIZE_LARGE = 104857600
+
+// ============================================================================
+// DynamoDB/Database
+// ============================================================================
+
+/** Test DynamoDB table name */
+export const TEST_DYNAMODB_TABLE_NAME = 'test-table'
+
+/** Test idempotency table name */
+export const TEST_IDEMPOTENCY_TABLE_NAME = 'IdempotencyTable'
 
 // ============================================================================
 // GitHub API

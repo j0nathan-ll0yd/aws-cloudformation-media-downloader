@@ -178,4 +178,48 @@ describe('#APIGatewayAuthorizer', () => {
       await expect(handler(event, createMockContext())).rejects.toThrow(UnexpectedError)
     })
   })
+
+  describe('#EdgeCases', () => {
+    let event: APIGatewayRequestAuthorizerEvent
+    beforeEach(() => {
+      event = createApiGatewayAuthorizerEvent({queryStringParameters: {ApiKey: fakeUsageIdentifierKey}, headers: {Authorization: 'Bearer test-token'}})
+      process.env.MULTI_AUTHENTICATION_PATH_PARTS = 'files'
+    })
+
+    test('should handle session validation timeout', async () => {
+      const timeoutError = new Error('Session validation timeout')
+      Object.assign(timeoutError, {code: 'ETIMEDOUT'})
+      getApiKeysMock.mockReturnValue(getApiKeysDefaultResponse)
+      getUsagePlansMock.mockReturnValue(getUsagePlansResponse)
+      getUsageMock.mockReturnValue(getUsageResponse)
+      validateSessionTokenMock.mockRejectedValue(timeoutError)
+      await expect(handler(event, createMockContext())).rejects.toThrow(unauthorizedError)
+    })
+
+    test('should handle API key with special characters', async () => {
+      const specialKey = 'key+with/special=chars'
+      event.queryStringParameters!['ApiKey'] = specialKey
+      getApiKeysMock.mockReturnValue(getApiKeysDefaultResponse)
+      await expect(handler(event, createMockContext())).rejects.toThrow(unauthorizedError)
+    })
+
+    test('should handle very long authorization token', async () => {
+      const longToken = 'Bearer ' + 'a'.repeat(10000)
+      event.headers!['Authorization'] = longToken
+      getApiKeysMock.mockReturnValue(getApiKeysDefaultResponse)
+      getUsagePlansMock.mockReturnValue(getUsagePlansResponse)
+      getUsageMock.mockReturnValue(getUsageResponse)
+      validateSessionTokenMock.mockRejectedValue(new Error('Invalid token'))
+      await expect(handler(event, createMockContext())).rejects.toThrow(unauthorizedError)
+    })
+
+    test('should handle empty Bearer token', async () => {
+      event.headers!['Authorization'] = 'Bearer '
+      getApiKeysMock.mockReturnValue(getApiKeysDefaultResponse)
+      getUsagePlansMock.mockReturnValue(getUsagePlansResponse)
+      getUsageMock.mockReturnValue(getUsageResponse)
+      // Empty token should be rejected during validation
+      await expect(handler(event, createMockContext())).rejects.toThrow(unauthorizedError)
+    })
+  })
 })
