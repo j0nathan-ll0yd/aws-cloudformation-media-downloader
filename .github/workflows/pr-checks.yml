@@ -1,0 +1,73 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches: [master, main]
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  # Quick validation (no build required)
+  quick-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - uses: ./.github/actions/setup-node-pnpm
+
+      - name: Cache TypeSpec output
+        uses: actions/cache@v4
+        with:
+          path: tsp-output/
+          key: typespec-${{ runner.os }}-${{ hashFiles('tsp/**') }}
+          restore-keys: |
+            typespec-${{ runner.os }}-
+
+      - name: TypeSpec Check
+        run: pnpm run typespec:check
+
+      - name: Format Check
+        run: pnpm run format:check
+
+      - name: Lint
+        run: pnpm run lint
+
+  # Full CI (depends on quick checks)
+  full-ci:
+    needs: quick-checks
+    uses: ./.github/workflows/unit-tests.yml
+
+  integration:
+    needs: quick-checks
+    uses: ./.github/workflows/integration-tests.yml
+
+  # Final status check for branch protection
+  pr-ready:
+    needs: [full-ci, integration]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check all jobs succeeded
+        run: |
+          if [ "${{ needs.full-ci.result }}" != "success" ]; then
+            echo "::error::Unit tests failed"
+            exit 1
+          fi
+          if [ "${{ needs.integration.result }}" != "success" ]; then
+            echo "::error::Integration tests failed"
+            exit 1
+          fi
+          echo "All checks passed!"
+
+      - name: Post summary
+        run: |
+          echo "## PR Check Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Check | Status |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|-------|--------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Quick Checks | ${{ needs.quick-checks.result }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Unit Tests | ${{ needs.full-ci.result }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Integration Tests | ${{ needs.integration.result }} |" >> "$GITHUB_STEP_SUMMARY"

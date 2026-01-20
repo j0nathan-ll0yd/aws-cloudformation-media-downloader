@@ -8,10 +8,20 @@ runs:
       uses: pnpm/action-setup@v4
 
     - name: Setup Node.js
+      id: setup-node
       uses: actions/setup-node@v6
       with:
         node-version-file: '.nvmrc'
         cache: 'pnpm'
+
+    - name: Report cache status
+      shell: bash
+      run: |
+        if [ "${{ steps.setup-node.outputs.cache-hit }}" = "true" ]; then
+          echo "::notice::pnpm cache HIT - dependencies restored from cache"
+        else
+          echo "::notice::pnpm cache MISS - installing dependencies fresh"
+        fi
 
     - name: Install dependencies
       shell: bash

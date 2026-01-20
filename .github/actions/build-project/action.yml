@@ -18,8 +18,11 @@ runs:
       if: inputs.cache-build == 'true'
       uses: actions/cache@v4
       with:
-        path: build
-        key: build-${{ runner.os }}-${{ hashFiles('src/**', 'webpack.config.js') }}
+        path: |
+          build
+        key: build-${{ runner.os }}-${{ hashFiles('src/**', 'config/esbuild.config.ts', 'scripts/generateDependencyGraph.ts') }}
+        restore-keys: |
+          build-${{ runner.os }}-
 
     - name: Build dependencies
       shell: bash

@@ -5,6 +5,7 @@ on:
     branches: ['**']
   pull_request:
     branches: [master]
+  workflow_call:
 
 jobs:
   # Parallel job 1: Validation checks (TypeSpec, API docs, config)
@@ -15,6 +16,14 @@ jobs:
         uses: actions/checkout@v6
 
       - uses: ./.github/actions/setup-node-pnpm
+
+      - name: Cache TypeSpec output
+        uses: actions/cache@v4
+        with:
+          path: tsp-output/
+          key: typespec-${{ runner.os }}-${{ hashFiles('tsp/**') }}
+          restore-keys: |
+            typespec-${{ runner.os }}-
 
       - name: Compile TypeSpec
         run: pnpm run typespec:check
@@ -165,3 +174,16 @@ jobs:
         run: |
           echo "## Unit Test Coverage" >> "$GITHUB_STEP_SUMMARY"
           cat coverage/unit/coverage-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Post timing summary
+        if: always()
+        run: |
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "## CI Job Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Job | Status |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|-----|--------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Validate | ${{ needs.validate.result }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Lint & Types | ${{ needs.lint-and-types.result }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Build | ${{ needs.build-and-validate.result }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Tests | ${{ job.status }} |" >> "$GITHUB_STEP_SUMMARY"

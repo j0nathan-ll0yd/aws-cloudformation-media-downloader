@@ -85,7 +85,8 @@ main() {
   # Check 3: MCP validation rule count
   # =============================================================================
   echo -n "  [3/11] Checking MCP rule count... "
-  MCP_RULE_COUNT=$(find src/mcp/validation/rules -name "*.ts" ! -name "*.test.ts" ! -name "index.ts" ! -name "types.ts" 2> /dev/null | wc -l | tr -d ' ')
+  # Exclude cicd-conventions.ts as it's a YAML validator, not a TypeScript AST rule
+  MCP_RULE_COUNT=$(find src/mcp/validation/rules -name "*.ts" ! -name "*.test.ts" ! -name "index.ts" ! -name "types.ts" ! -name "cicd-conventions.ts" 2> /dev/null | wc -l | tr -d ' ')
 
   # Count rules in the allRules array by counting lines ending with "Rule" or "Rule,"
   # This counts the actual rule references in the array
