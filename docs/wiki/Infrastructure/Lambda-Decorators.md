@@ -223,6 +223,216 @@ These decorators attach metadata to handler classes but do not modify runtime be
 
 The actual permissions must still be configured in IAM policies via Terraform.
 
+---
+
+## Function-Level Permission Decorators
+
+In addition to class-level decorators on Lambda handlers, this project uses **method-level decorators** on vendor wrapper functions and entity query methods. These provide fine-grained permission documentation at the source of each operation.
+
+### Architecture Overview
+
+The project uses a dual-layer decorator architecture:
+
+```
+Lambda Handler (@RequiresDatabase, @RequiresEventBridge)  ← Class-level: precise permissions
+    ↓ imports
+Service Layer
+    ↓ imports
+Vendor Wrapper (@RequiresSNS, @RequiresS3, etc.)          ← Method-level: documented at source
+Entity Queries (@RequiresTable)                           ← Method-level: documented at source
+    ↓ calls
+AWS SDK / Drizzle ORM
+```
+
+**Why two layers?**
+
+- **Class-level decorators** on Lambda handlers declare the **precise, minimal permissions** the Lambda actually needs. These are used for IAM policy and database role generation.
+- **Method-level decorators** on vendor wrappers and entity queries document the permissions each **individual operation** requires. These enable dependency tracing and serve as self-documenting code.
+
+### AWS Service Method Decorators
+
+Located in `src/lib/vendor/AWS/decorators.ts`, these decorators attach permission metadata to vendor wrapper methods.
+
+#### @RequiresSNS
+
+```typescript
+import {RequiresSNS} from '#lib/vendor/AWS/decorators'
+import {SNSTopicResource, SNSPlatformResource} from '#types/generatedResources'
+import {SNSOperation} from '#types/servicePermissions'
+
+class SNSVendor {
+  @RequiresSNS(SNSTopicResource.PushNotifications, [SNSOperation.Subscribe])
+  static subscribe(params: SubscribeInput): Promise<SubscribeResponse> {
+    const command = new SubscribeCommand(params)
+    return snsClient.send(command)
+  }
+}
+
+export const subscribe = SNSVendor.subscribe.bind(SNSVendor)
+```
+
+#### @RequiresS3
+
+```typescript
+import {RequiresS3} from '#lib/vendor/AWS/decorators'
+import {S3Resource} from '#types/generatedResources'
+import {S3Operation} from '#types/servicePermissions'
+
+class S3Vendor {
+  @RequiresS3(`${S3Resource.Files}/*`, [S3Operation.PutObject, S3Operation.HeadObject])
+  static createS3Upload(bucket: string, key: string, body: Readable, contentType: string): Upload {
+    // implementation
+  }
+}
+
+export const createS3Upload = S3Vendor.createS3Upload.bind(S3Vendor)
+```
+
+#### @RequiresSQS
+
+```typescript
+import {RequiresSQS} from '#lib/vendor/AWS/decorators'
+import {SQSResource} from '#types/generatedResources'
+import {SQSOperation} from '#types/servicePermissions'
+
+class SQSVendor {
+  @RequiresSQS(SQSResource.SendPushNotification, [SQSOperation.SendMessage])
+  static sendMessage(params: SendMessageRequest): Promise<SendMessageResult> {
+    // implementation
+  }
+}
+
+export const sendMessage = SQSVendor.sendMessage.bind(SQSVendor)
+```
+
+#### @RequiresEventBridge
+
+```typescript
+import {RequiresEventBridge} from '#lib/vendor/AWS/decorators'
+import {EventBridgeResource} from '#types/generatedResources'
+import {EventBridgeOperation} from '#types/servicePermissions'
+
+class EventBridgeVendor {
+  @RequiresEventBridge(EventBridgeResource.MediaDownloader, [EventBridgeOperation.PutEvents])
+  static publishEvent<TDetail>(detailType: string, detail: TDetail): Promise<PutEventsResponse> {
+    // implementation
+  }
+}
+
+export const publishEvent = EventBridgeVendor.publishEvent.bind(EventBridgeVendor)
+```
+
+### DynamoDB/Powertools Method Decorator
+
+Located in `src/lib/vendor/Powertools/decorators.ts`, for idempotency and other DynamoDB operations.
+
+#### @RequiresDynamoDB (Method-Level)
+
+```typescript
+import {RequiresDynamoDB} from '#lib/vendor/Powertools/decorators'
+import {DynamoDBResource, DynamoDBOperation} from '#types/dynamodbPermissions'
+
+class IdempotencyVendor {
+  @RequiresDynamoDB([{
+    table: DynamoDBResource.IdempotencyTable,
+    operations: [
+      DynamoDBOperation.GetItem,
+      DynamoDBOperation.PutItem,
+      DynamoDBOperation.UpdateItem,
+      DynamoDBOperation.DeleteItem
+    ]
+  }])
+  static createPersistenceStore(): DynamoDBPersistenceLayer {
+    // implementation
+  }
+}
+
+export const createPersistenceStore = IdempotencyVendor.createPersistenceStore.bind(IdempotencyVendor)
+```
+
+### Entity Query Method Decorator
+
+Located in `src/entities/decorators.ts`, for database table permissions on query methods.
+
+#### @RequiresTable
+
+```typescript
+import {RequiresTable, DatabaseOperation, DatabaseTable} from '#entities/decorators'
+
+class UserQueries {
+  @RequiresTable([{table: DatabaseTable.Users, operations: [DatabaseOperation.Select]}])
+  static getUser(id: string): Promise<UserItem | null> {
+    // implementation
+  }
+
+  @RequiresTable([{table: DatabaseTable.Users, operations: [DatabaseOperation.Insert]}])
+  static createUser(input: CreateUserInput): Promise<UserItem> {
+    // implementation
+  }
+}
+
+export const getUser = UserQueries.getUser.bind(UserQueries)
+export const createUser = UserQueries.createUser.bind(UserQueries)
+```
+
+**Multi-table queries (JOINs):**
+
+```typescript
+@RequiresTable([
+  {table: DatabaseTable.UserFiles, operations: [DatabaseOperation.Select]},
+  {table: DatabaseTable.Files, operations: [DatabaseOperation.Select]}
+])
+static getFilesForUser(userId: string): Promise<FileRow[]> {
+  // JOIN query implementation
+}
+```
+
+### Build-Time Extraction
+
+Extraction scripts parse decorated methods using ts-morph and trace Lambda dependencies:
+
+```bash
+# Extract AWS service permissions from vendor wrappers
+pnpm run extract:service-permissions
+# Output: build/service-permissions.json
+
+# Extract DynamoDB permissions from Powertools wrappers
+pnpm run extract:dynamodb-permissions
+# Output: build/dynamodb-permissions.json
+
+# Extract database permissions from entity queries
+pnpm run extract:entity-permissions
+# Output: build/entity-permissions.json
+```
+
+### Extraction Flow
+
+1. **Parse**: Extract `@RequiresXxx` decorators from vendor/entity class methods
+2. **Map**: Build `className.methodName → permissions` mapping
+3. **Trace**: Use `build/graph.json` to find Lambda → file transitive dependencies
+4. **Aggregate**: Combine permissions from all imported vendor/entity files
+5. **Generate**: Output JSON manifests for Terraform generation
+
+### Permission Generation Sources
+
+| Permission Type | Source | Generator |
+|-----------------|--------|-----------|
+| Database (DSQL) | `@RequiresDatabase` on Lambda handlers | `build/db-permissions.json` |
+| AWS Services | `@RequiresXxx` on vendor wrapper methods | `build/service-permissions.json` |
+| DynamoDB | `@RequiresDynamoDB` on Powertools methods | `build/dynamodb-permissions.json` |
+
+**Note**: Database permissions use class-level `@RequiresDatabase` for precise, minimal permissions. The method-level `@RequiresTable` on entity queries serves as documentation and enables future function-level tracing.
+
+### Class vs Method Decorators Summary
+
+| Aspect | Class-Level | Method-Level |
+|--------|-------------|--------------|
+| **Location** | Lambda handler class | Vendor wrapper / entity query method |
+| **Purpose** | Declare Lambda's actual permissions | Document operation's required permissions |
+| **Used for generation** | Yes (database permissions) | Yes (AWS service permissions) |
+| **Granularity** | Entire Lambda | Single function |
+| **Example** | `@RequiresDatabase([...])` | `@RequiresSNS(resource, [ops])` |
+
 ## Related Documentation
 
 - [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md)

@@ -81,6 +81,9 @@ Central registry of all project conventions with their documentation and enforce
 | Secret Permissions Decorator | [Lambda Decorators](../Infrastructure/Lambda-Decorators.md) | MCP |
 | Service Permissions Decorator | [Lambda Decorators](../Infrastructure/Lambda-Decorators.md) | MCP |
 | EventBridge Permissions Decorator | [Lambda Decorators](../Infrastructure/Lambda-Decorators.md) | MCP |
+| Vendor Wrapper Method Decorators | [Lambda Decorators](../Infrastructure/Lambda-Decorators.md#aws-service-method-decorators) | Build Scripts |
+| Entity Query Method Decorators | [Lambda Decorators](../Infrastructure/Lambda-Decorators.md#entity-query-method-decorator) | Build Scripts |
+| Powertools Method Decorators | [Lambda Decorators](../Infrastructure/Lambda-Decorators.md#dynamodbpowertools-method-decorator) | Build Scripts |
 | Lambda Response Helper | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) | MCP + ESLint |
 | Type Definitions Location | [Type Definitions](../TypeScript/Type-Definitions.md) | MCP |
 | Batch Operation Retry | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) | MCP |
@@ -111,6 +114,8 @@ Central registry of all project conventions with their documentation and enforce
 | AWS SDK Mock Pattern | [Vitest Mocking Strategy](../Testing/Vitest-Mocking-Strategy.md) | ESLint `aws-sdk-mock-pattern` |
 | Lambda Directory Naming | [Naming Conventions](../Conventions/Naming-Conventions.md) | Code review |
 | camelCase TypeScript File Naming | [Naming Conventions](../Conventions/Naming-Conventions.md) | Code review + MCP |
+| Vendor Class `*Vendor` Naming | [Lambda Decorators](../Infrastructure/Lambda-Decorators.md#function-level-permission-decorators) | Build Scripts |
+| Bound Method Re-exports | [Lambda Decorators](../Infrastructure/Lambda-Decorators.md#function-level-permission-decorators) | Code review |
 | GraphRAG Synchronization | [GraphRAG Automation](../Infrastructure/GraphRAG-Automation.md) | GitHub Actions |
 | YouTube Cookie Rotation (30-60 days) | [Secret-Rotation-Runbook](../Security/Secret-Rotation-Runbook.md) | Auto-detection via 403 errors |
 | Document Secret Expiration Dates | [Secret-Rotation-Runbook](../Security/Secret-Rotation-Runbook.md) | Manual (runbook) |
