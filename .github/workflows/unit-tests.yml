@@ -68,21 +68,23 @@ jobs:
               continue
             fi
             echo "Checking $file..."
+            # Strip SQL comments before checking (lines starting with --)
+            sql_content=$(grep -v '^[[:space:]]*--' "$file")
             # Check for CREATE INDEX without ASYNC (DSQL requires ASYNC for non-blocking)
-            if grep -qE "CREATE INDEX\s+(?!ASYNC)" "$file" 2>/dev/null; then
+            if echo "$sql_content" | grep -qE "CREATE INDEX\s+(?!ASYNC)" 2>/dev/null; then
               # Allow IF NOT EXISTS without ASYNC (idempotent recreations)
-              if grep -E "CREATE INDEX\s+(?!ASYNC)" "$file" | grep -qv "IF NOT EXISTS"; then
+              if echo "$sql_content" | grep -E "CREATE INDEX\s+(?!ASYNC)" | grep -qv "IF NOT EXISTS"; then
                 echo "ERROR: $file uses CREATE INDEX without ASYNC or IF NOT EXISTS"
                 echo "Aurora DSQL requires CREATE INDEX ASYNC for non-blocking index creation"
                 errors=$((errors + 1))
               fi
             fi
-            # Check for unsupported DSQL features
-            if grep -qi "ALTER TABLE.*DROP COLUMN" "$file"; then
+            # Check for unsupported DSQL features (in actual SQL, not comments)
+            if echo "$sql_content" | grep -qi "ALTER TABLE.*DROP COLUMN"; then
               echo "ERROR: $file uses ALTER TABLE DROP COLUMN (not supported in Aurora DSQL)"
               errors=$((errors + 1))
             fi
-            if grep -qi "JSONB" "$file"; then
+            if echo "$sql_content" | grep -qi "JSONB"; then
               echo "ERROR: $file uses JSONB (not supported in Aurora DSQL)"
               errors=$((errors + 1))
             fi
