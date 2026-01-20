@@ -3,6 +3,9 @@
  *
  * Tests Lambda invocation patterns via LocalStack including
  * function invocation, payload handling, and error responses.
+ *
+ * Note: Tests will skip gracefully if Lambda function deployment
+ * is not available or fails in LocalStack.
  */
 
 // Set environment variables before imports
@@ -43,9 +46,9 @@ describe('Lambda Invocation Integration Tests', () => {
     console.log(`Lambda service available: ${available}`)
   })
 
-  test('should list Lambda functions', async () => {
+  test('should list Lambda functions', async ({skip}) => {
     if (!lambdaAvailable) {
-      console.log('Skipping: Lambda not available')
+      skip()
       return
     }
 
@@ -58,9 +61,9 @@ describe('Lambda Invocation Integration Tests', () => {
     }
   })
 
-  test('should invoke Lambda function with payload', async () => {
+  test('should invoke Lambda function with payload', async ({skip}) => {
     if (!lambdaAvailable || !functionCreated) {
-      console.log('Skipping: Lambda function not available')
+      skip()
       return
     }
 
@@ -79,9 +82,9 @@ describe('Lambda Invocation Integration Tests', () => {
     }
   })
 
-  test('should handle empty payload', async () => {
+  test('should handle empty payload', async ({skip}) => {
     if (!lambdaAvailable || !functionCreated) {
-      console.log('Skipping: Lambda function not available')
+      skip()
       return
     }
 
@@ -91,9 +94,9 @@ describe('Lambda Invocation Integration Tests', () => {
     expect(result.payload).toBeDefined()
   })
 
-  test('should handle complex payload', async () => {
+  test('should handle complex payload', async ({skip}) => {
     if (!lambdaAvailable || !functionCreated) {
-      console.log('Skipping: Lambda function not available')
+      skip()
       return
     }
 
@@ -105,9 +108,9 @@ describe('Lambda Invocation Integration Tests', () => {
     expect(result.payload).toBeDefined()
   })
 
-  test('should handle invocation of non-existent function', async () => {
+  test('should handle invocation of non-existent function', async ({skip}) => {
     if (!lambdaAvailable) {
-      console.log('Skipping: Lambda not available')
+      skip()
       return
     }
 

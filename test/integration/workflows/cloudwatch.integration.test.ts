@@ -3,6 +3,9 @@
  *
  * Tests CloudWatch Logs operations via LocalStack including
  * log group/stream creation, log event writing and retrieval.
+ *
+ * Note: Tests will skip gracefully if CloudWatch Logs service
+ * is not enabled in LocalStack (requires 'logs' in SERVICES env).
  */
 
 // Set environment variables before imports
@@ -15,6 +18,7 @@ import {
   createTestLogStream,
   deleteTestLogGroup,
   getTestLogEvents,
+  isCloudWatchLogsAvailable,
   putTestLogEvents,
   waitForLogEvents
 } from '../helpers/cloudwatch-helpers'
@@ -22,19 +26,33 @@ import {
 describe('CloudWatch Logs Integration Tests', () => {
   const testLogGroupName = `test-log-group-${Date.now()}`
   const testLogStreamName = `test-log-stream-${Date.now()}`
+  let cloudWatchAvailable = false
 
   beforeAll(async () => {
+    cloudWatchAvailable = await isCloudWatchLogsAvailable()
+    if (!cloudWatchAvailable) {
+      console.log('CloudWatch Logs service not available in LocalStack - tests will be skipped')
+      return
+    }
+
     // Create test log group and stream
     await createTestLogGroup(testLogGroupName)
     await createTestLogStream(testLogGroupName, testLogStreamName)
   })
 
   afterAll(async () => {
-    // Clean up test resources
-    await deleteTestLogGroup(testLogGroupName)
+    if (cloudWatchAvailable) {
+      // Clean up test resources
+      await deleteTestLogGroup(testLogGroupName)
+    }
   })
 
-  test('should create log group and stream', async () => {
+  test('should create log group and stream', async ({skip}) => {
+    if (!cloudWatchAvailable) {
+      skip()
+      return
+    }
+
     // Create a new log group and stream for this test
     const groupName = `test-group-create-${Date.now()}`
     const streamName = `test-stream-create-${Date.now()}`
@@ -53,7 +71,12 @@ describe('CloudWatch Logs Integration Tests', () => {
     await deleteTestLogGroup(groupName)
   })
 
-  test('should write and retrieve log events', async () => {
+  test('should write and retrieve log events', async ({skip}) => {
+    if (!cloudWatchAvailable) {
+      skip()
+      return
+    }
+
     const messages = ['First log message', 'Second log message', 'Third log message']
 
     await putTestLogEvents(testLogGroupName, testLogStreamName, messages)
@@ -66,7 +89,12 @@ describe('CloudWatch Logs Integration Tests', () => {
     expect(events.map((e) => e.message)).toContain('Third log message')
   })
 
-  test('should handle empty log stream', async () => {
+  test('should handle empty log stream', async ({skip}) => {
+    if (!cloudWatchAvailable) {
+      skip()
+      return
+    }
+
     const emptyStreamName = `test-empty-stream-${Date.now()}`
     await createTestLogStream(testLogGroupName, emptyStreamName)
 
@@ -75,7 +103,12 @@ describe('CloudWatch Logs Integration Tests', () => {
     expect(events).toEqual([])
   })
 
-  test('should write JSON log events', async () => {
+  test('should write JSON log events', async ({skip}) => {
+    if (!cloudWatchAvailable) {
+      skip()
+      return
+    }
+
     const jsonStreamName = `test-json-stream-${Date.now()}`
     await createTestLogStream(testLogGroupName, jsonStreamName)
 

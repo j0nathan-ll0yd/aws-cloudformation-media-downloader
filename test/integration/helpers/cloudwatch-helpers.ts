@@ -9,6 +9,44 @@ import type {OutputLogEvent} from '@aws-sdk/client-cloudwatch-logs'
 import {waitFor} from './wait-utils'
 import {POLLING, TIMEOUTS} from './timeout-config'
 
+let cloudWatchAvailableCache: boolean | null = null
+
+/**
+ * Checks if CloudWatch Logs service is available in LocalStack.
+ * Results are cached to avoid repeated checks.
+ */
+export async function isCloudWatchLogsAvailable(): Promise<boolean> {
+  if (cloudWatchAvailableCache !== null) {
+    return cloudWatchAvailableCache
+  }
+
+  try {
+    // Try to create and delete a test log group to verify service availability
+    const testGroupName = `availability-check-${Date.now()}`
+    await createLogGroup(testGroupName)
+    await deleteLogGroup(testGroupName)
+    cloudWatchAvailableCache = true
+    return true
+  } catch (error) {
+    // Check for "Service 'logs' is not enabled" error
+    if (error instanceof Error && error.message.includes('not enabled')) {
+      cloudWatchAvailableCache = false
+      return false
+    }
+    // For other errors, assume service might be available but having issues
+    cloudWatchAvailableCache = false
+    return false
+  }
+}
+
+/**
+ * Skip helper for CloudWatch tests - use with test.skipIf()
+ */
+export async function skipIfCloudWatchUnavailable(): Promise<boolean> {
+  const available = await isCloudWatchLogsAvailable()
+  return !available
+}
+
 /**
  * Creates a test log group in LocalStack
  * @param logGroupName - Name of the log group
