@@ -44,6 +44,8 @@ import {handlePatternConsistencyQuery} from './handlers/cross-repo/pattern-consi
 import type {PatternConsistencyArgs} from './handlers/cross-repo/pattern-consistency.js'
 import {handleConventionSyncQuery} from './handlers/cross-repo/convention-sync.js'
 import type {SyncConventionsArgs} from './handlers/cross-repo/convention-sync.js'
+import {handleSchemaDriftQuery} from './handlers/cross-repo/schema-drift.js'
+import type {SchemaDriftArgs} from './handlers/cross-repo/schema-drift.js'
 import {handleExtractModuleQuery} from './handlers/refactoring/extract-module.js'
 import type {ExtractModuleArgs} from './handlers/refactoring/extract-module.js'
 import {handleInlineConstantQuery} from './handlers/refactoring/inline-constant.js'
@@ -453,6 +455,22 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           },
           required: ['query']
         }
+      },
+      {
+        name: 'check_schema_drift',
+        description: 'Detect discrepancies between Drizzle ORM schema and SQL migrations',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            query: {
+              type: 'string',
+              description: 'Query type: check (detect drift), tables (list tables), columns (compare columns), indexes (compare indexes)',
+              enum: ['check', 'tables', 'columns', 'indexes']
+            },
+            table: {type: 'string', description: 'Specific table name to analyze (optional)'}
+          },
+          required: ['query']
+        }
       }
     ]
   }
@@ -534,6 +552,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'analyze_cold_start':
         return wrapResult(await handleColdStartQuery(args as unknown as ColdStartArgs))
+
+      case 'check_schema_drift':
+        return await handleSchemaDriftQuery(args as unknown as SchemaDriftArgs)
 
       default:
         throw new Error(`Unknown tool: ${name}`)

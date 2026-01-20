@@ -11,7 +11,7 @@
  *
  * @see {@link https://orm.drizzle.team/docs/perf-queries | Drizzle Prepared Statements}
  */
-import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
+import {getDrizzleClient, onConnectionInvalidated} from '#lib/vendor/Drizzle/client'
 import {files, sessions, userFiles} from '#lib/vendor/Drizzle/schema'
 import {eq, sql} from '#lib/vendor/Drizzle/types'
 import {DatabaseOperation, DatabaseTable, RequiresTable} from '../decorators'
@@ -23,6 +23,19 @@ import type {SessionRow} from './sessionQueries'
 let preparedGetFileByKey: ReturnType<typeof createPreparedGetFileByKey> | null = null
 let preparedGetUserFiles: ReturnType<typeof createPreparedGetUserFiles> | null = null
 let preparedGetSessionByToken: ReturnType<typeof createPreparedGetSessionByToken> | null = null
+
+/**
+ * Internal function to reset all prepared statement caches.
+ * Called when database connection is invalidated (e.g., token refresh).
+ */
+function resetPreparedStatementCaches(): void {
+  preparedGetFileByKey = null
+  preparedGetUserFiles = null
+  preparedGetSessionByToken = null
+}
+
+// Register for connection invalidation events to automatically reset prepared statements
+onConnectionInvalidated(resetPreparedStatementCaches)
 
 type DrizzleClient = Awaited<ReturnType<typeof getDrizzleClient>>
 
@@ -100,13 +113,11 @@ class PreparedQueries {
 
   /**
    * Resets all prepared statements.
-   * Call this after database connection changes (e.g., token refresh).
-   * Typically not needed - connection refresh creates new Drizzle client.
+   * This is called automatically when the database connection is invalidated.
+   * Manual calls are typically not needed - included for test cleanup.
    */
   static resetPreparedStatements(): void {
-    preparedGetFileByKey = null
-    preparedGetUserFiles = null
-    preparedGetSessionByToken = null
+    resetPreparedStatementCaches()
   }
 }
 

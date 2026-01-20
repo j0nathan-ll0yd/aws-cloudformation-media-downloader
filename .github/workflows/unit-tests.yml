@@ -57,6 +57,44 @@ jobs:
       - name: Run convention validation
         run: pnpm run validate:conventions
 
+      - name: Validate DSQL migration compatibility
+        run: |
+          echo "Checking Aurora DSQL migration compatibility..."
+          errors=0
+          for file in migrations/*.sql; do
+            [ -f "$file" ] || continue
+            # Skip lambda_roles migration (doesn't contain CREATE INDEX)
+            if [[ "$file" == *"lambda_roles"* ]]; then
+              continue
+            fi
+            echo "Checking $file..."
+            # Strip SQL comments before checking (lines starting with --)
+            sql_content=$(grep -v '^[[:space:]]*--' "$file")
+            # Check for CREATE INDEX without ASYNC (DSQL requires ASYNC for non-blocking)
+            if echo "$sql_content" | grep -qE "CREATE INDEX\s+(?!ASYNC)" 2>/dev/null; then
+              # Allow IF NOT EXISTS without ASYNC (idempotent recreations)
+              if echo "$sql_content" | grep -E "CREATE INDEX\s+(?!ASYNC)" | grep -qv "IF NOT EXISTS"; then
+                echo "ERROR: $file uses CREATE INDEX without ASYNC or IF NOT EXISTS"
+                echo "Aurora DSQL requires CREATE INDEX ASYNC for non-blocking index creation"
+                errors=$((errors + 1))
+              fi
+            fi
+            # Check for unsupported DSQL features (in actual SQL, not comments)
+            if echo "$sql_content" | grep -qi "ALTER TABLE.*DROP COLUMN"; then
+              echo "ERROR: $file uses ALTER TABLE DROP COLUMN (not supported in Aurora DSQL)"
+              errors=$((errors + 1))
+            fi
+            if echo "$sql_content" | grep -qi "JSONB"; then
+              echo "ERROR: $file uses JSONB (not supported in Aurora DSQL)"
+              errors=$((errors + 1))
+            fi
+          done
+          if [ $errors -gt 0 ]; then
+            echo "::error::Found $errors DSQL compatibility issues in migrations"
+            exit 1
+          fi
+          echo "All migrations are DSQL-compatible"
+
   # Parallel job 2: Type checking and linting
   lint-and-types:
     runs-on: ubuntu-latest
