@@ -160,4 +160,43 @@ describe('#UserDelete', () => {
       expect(output.statusCode).toEqual(401)
     })
   })
+
+  describe('#EdgeCases', () => {
+    test('should handle database timeout during device lookup', async () => {
+      const timeoutError = new Error('Query timeout after 30000ms')
+      Object.assign(timeoutError, {code: 'ETIMEDOUT'})
+      getUserDevicesMock.mockImplementation(() => {
+        throw timeoutError
+      })
+
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(500)
+    })
+
+    test('should handle SNS endpoint deletion timeout gracefully', async () => {
+      // SNS endpoint deletion failures are logged but don't block user deletion
+      getUserDevicesMock.mockReturnValue(fakeUserDevicesResponse)
+      vi.mocked(getDevicesBatch).mockResolvedValue([fakeDevice1, fakeDevice2])
+      const timeoutError = new Error('Network timeout')
+      Object.assign(timeoutError, {code: 'ETIMEDOUT'})
+      snsMock.on(DeleteEndpointCommand).rejects(timeoutError)
+
+      const output = await handler(event, context)
+      // User deletion succeeds even with SNS failures - endpoints are cleaned up eventually
+      expect(output.statusCode).toEqual(204)
+    })
+
+    test('should handle user with many devices (batch processing)', async () => {
+      // Create 10 devices to test batch processing
+      const manyDevices = Array.from({length: 10}, (_, i) => createMockDevice({deviceId: `device-${i}`, name: `Device ${i}`}))
+      const manyUserDevices = manyDevices.map((d) => createMockUserDevice({deviceId: d.deviceId, userId: fakeUserId}))
+
+      getUserDevicesMock.mockReturnValue(manyUserDevices)
+      vi.mocked(getDevicesBatch).mockResolvedValue(manyDevices)
+
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(204)
+      expect(deleteDeviceMock).toHaveBeenCalledTimes(10)
+    })
+  })
 })

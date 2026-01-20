@@ -127,4 +127,45 @@ describe('#LogoutUser', () => {
       expect(body.error.code).toEqual('custom-5XX-generic')
     })
   })
+
+  describe('#EdgeCases', () => {
+    test('should handle database timeout during session validation', async () => {
+      const timeoutError = new Error('Query timeout after 30000ms')
+      Object.assign(timeoutError, {code: 'ETIMEDOUT'})
+      validateSessionTokenMock.mockRejectedValue(timeoutError)
+
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(500)
+      expect(updateSessionMock).not.toHaveBeenCalled()
+    })
+
+    test('should handle database timeout during session update', async () => {
+      validateSessionTokenMock.mockResolvedValue({userId: fakeUserId, sessionId: fakeSessionId, expiresAt: Date.now() + 1000000})
+      const timeoutError = new Error('Query timeout after 30000ms')
+      Object.assign(timeoutError, {code: 'ETIMEDOUT'})
+      updateSessionMock.mockRejectedValue(timeoutError)
+
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(500)
+    })
+
+    test('should handle empty Bearer token', async () => {
+      event.headers!['Authorization'] = 'Bearer '
+
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(401)
+      expect(validateSessionTokenMock).not.toHaveBeenCalled()
+    })
+
+    test('should handle whitespace-only Bearer token', async () => {
+      // Whitespace-only tokens pass initial format validation but fail session lookup
+      // Note: Authorization header parsing trims extra spaces: "Bearer    " -> " "
+      event.headers!['Authorization'] = 'Bearer    '
+      validateSessionTokenMock.mockRejectedValue(new Error('Session not found'))
+
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(500)
+      expect(validateSessionTokenMock).toHaveBeenCalled()
+    })
+  })
 })
