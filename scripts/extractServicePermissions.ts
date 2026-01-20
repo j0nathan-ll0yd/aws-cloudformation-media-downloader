@@ -28,7 +28,7 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 const projectRoot = join(__dirname, '..')
 
-type ServiceType = 's3' | 'sqs' | 'sns' | 'events'
+type ServiceType = 's3' | 'sqs' | 'sns' | 'events' | 'apigateway' | 'lambda'
 
 interface ServicePermission {
   service: ServiceType
@@ -104,6 +104,11 @@ function loadTerraformResources(): TerraformResourceManifest | null {
  * Get Terraform ARN reference for a resource
  */
 function getArnRef(service: ServiceType, resourceName: string, terraformResources: TerraformResourceManifest | null): string {
+  // Handle wildcard resources (used by ApiGateway and Lambda)
+  if (resourceName === '*') {
+    return '"*"'
+  }
+
   if (!terraformResources) {
     return `${resourceName}.arn`
   }
@@ -123,6 +128,11 @@ function getArnRef(service: ServiceType, resourceName: string, terraformResource
     case 'events':
       resources = terraformResources.eventBridgeBuses
       break
+    case 'apigateway':
+    case 'lambda':
+      // These services don't have generated Terraform resources
+      // Return wildcard for IAM policy
+      return '"*"'
   }
 
   const entry = resources.find((r) => r.name === resourceName)
@@ -137,7 +147,9 @@ function getServiceFromDecorator(decoratorName: string): ServiceType {
     'RequiresSNS': 'sns',
     'RequiresS3': 's3',
     'RequiresSQS': 'sqs',
-    'RequiresEventBridge': 'events'
+    'RequiresEventBridge': 'events',
+    'RequiresApiGateway': 'apigateway',
+    'RequiresLambda': 'lambda'
   }
   return decoratorMap[decoratorName] || 's3'
 }
@@ -152,7 +164,9 @@ function extractServiceType(expr: string): ServiceType {
       'S3': 's3',
       'SQS': 'sqs',
       'SNS': 'sns',
-      'EventBridge': 'events'
+      'EventBridge': 'events',
+      'ApiGateway': 'apigateway',
+      'Lambda': 'lambda'
     }
     return serviceMap[match[1]] || 's3'
   }
@@ -161,6 +175,8 @@ function extractServiceType(expr: string): ServiceType {
   if (lower.includes('sqs')) return 'sqs'
   if (lower.includes('sns')) return 'sns'
   if (lower.includes('events') || lower.includes('eventbridge')) return 'events'
+  if (lower.includes('apigateway')) return 'apigateway'
+  if (lower.includes('lambda')) return 'lambda'
   return 's3'
 }
 
@@ -233,6 +249,15 @@ function extractOperation(expr: string): string {
       },
       'EventBridgeOperation': {
         'PutEvents': 'events:PutEvents'
+      },
+      'ApiGatewayOperation': {
+        'GetApiKeys': 'apigateway:GET:/apikeys',
+        'GetUsage': 'apigateway:GET:/usageplans/*/usage',
+        'GetUsagePlans': 'apigateway:GET:/usageplans'
+      },
+      'LambdaOperation': {
+        'Invoke': 'lambda:InvokeFunction',
+        'InvokeAsync': 'lambda:InvokeAsync'
       }
     }
     return opMaps[operationType]?.[opName] || expr
@@ -282,7 +307,7 @@ function extractVendorPermissions(
 
         // Find decorator matching our patterns
         const decorator = method.getDecorators().find((d) =>
-          ['RequiresSNS', 'RequiresS3', 'RequiresSQS', 'RequiresEventBridge'].includes(d.getName())
+          ['RequiresSNS', 'RequiresS3', 'RequiresSQS', 'RequiresEventBridge', 'RequiresApiGateway', 'RequiresLambda'].includes(d.getName())
         )
 
         if (!decorator) continue

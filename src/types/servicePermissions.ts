@@ -21,7 +21,9 @@ export enum AWSService {
   S3 = 's3',
   SQS = 'sqs',
   SNS = 'sns',
-  EventBridge = 'events'
+  EventBridge = 'events',
+  ApiGateway = 'apigateway',
+  Lambda = 'lambda'
 }
 
 // Re-export generated resource enums for convenience
@@ -71,6 +73,25 @@ export enum EventBridgeOperation {
 }
 
 /**
+ * API Gateway operation types matching IAM action names.
+ * Note: API Gateway uses action-based permissions, with GET operations mapping
+ * to specific resource paths rather than distinct IAM actions.
+ */
+export enum ApiGatewayOperation {
+  GetApiKeys = 'apigateway:GET:/apikeys',
+  GetUsage = 'apigateway:GET:/usageplans/*/usage',
+  GetUsagePlans = 'apigateway:GET:/usageplans'
+}
+
+/**
+ * Lambda invocation operation types matching IAM action names.
+ */
+export enum LambdaOperation {
+  Invoke = 'lambda:InvokeFunction',
+  InvokeAsync = 'lambda:InvokeAsync'
+}
+
+/**
  * Maps AWS service types to their corresponding Terraform resource enum types.
  * This enables type-safe resource references in @RequiresServices decorators.
  */
@@ -97,10 +118,10 @@ export type AnyServiceResource = S3Resource | SQSResource | SNSTopicResource | S
 export interface ServicePermission {
   /** The AWS service being accessed */
   service: AWSService
-  /** Resource enum value or wildcard pattern */
-  resource: AnyServiceResource | `${AnyServiceResource}/*`
+  /** Resource enum value, wildcard pattern, or string pattern (for ApiGateway/Lambda) */
+  resource: AnyServiceResource | `${AnyServiceResource}/*` | string
   /** The operations required on this resource */
-  operations: (S3Operation | SQSOperation | SNSOperation | EventBridgeOperation | string)[]
+  operations: (S3Operation | SQSOperation | SNSOperation | EventBridgeOperation | ApiGatewayOperation | LambdaOperation | string)[]
 }
 
 /**

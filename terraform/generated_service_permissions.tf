@@ -1,5 +1,5 @@
 # Auto-generated Lambda IAM policies from @RequiresServices and @RequiresDynamoDB decorators
-# Generated at: 2026-01-19T20:07:17.600Z
+# Generated at: 2026-01-20T02:36:16.948Z
 # Source: build/service-permissions.json, build/dynamodb-permissions.json
 #
 # DO NOT EDIT - regenerate with: pnpm run generate:service-iam-policies
@@ -7,6 +7,26 @@
 # This file creates IAM policies based on the @RequiresServices and @RequiresDynamoDB
 # decorator declarations in Lambda handler code. Each Lambda gets a policy document,
 # an IAM policy, and a role policy attachment.
+
+# ApiGatewayAuthorizer: API Gateway permissions
+data "aws_iam_policy_document" "ApiGatewayAuthorizer_services" {
+  # API Gateway: *
+  statement {
+    actions   = ["apigateway:GET:/apikeys", "apigateway:GET:/usageplans", "apigateway:GET:/usageplans/*/usage"]
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_policy" "ApiGatewayAuthorizer_services" {
+  name   = "ApiGatewayAuthorizer-services"
+  policy = data.aws_iam_policy_document.ApiGatewayAuthorizer_services.json
+  tags   = local.common_tags
+}
+
+resource "aws_iam_role_policy_attachment" "ApiGatewayAuthorizer_services" {
+  role       = aws_iam_role.ApiGatewayAuthorizer.name
+  policy_arn = aws_iam_policy.ApiGatewayAuthorizer_services.arn
+}
 
 # RegisterDevice: SNS permissions
 data "aws_iam_policy_document" "RegisterDevice_services" {
