@@ -30,7 +30,7 @@ services:
     ports:
       - "4566:4566"
     environment:
-      - SERVICES=s3,dynamodb,lambda,sns,sqs,apigateway
+      - SERVICES=s3,dynamodb,lambda,sns,sqs,apigateway,logs,events
       - AWS_DEFAULT_REGION=us-west-2
 ```
 
@@ -271,10 +271,12 @@ const appName = generateIsolatedAppName('test-push')
 | CleanupExpiredRecords | CloudWatch Schedule | `cleanupExpiredRecords.workflow.integration.test.ts` | Full |
 | DeviceEvent | API Gateway | `deviceRegistration.integration.test.ts` | Partial |
 | ListFiles | API Gateway | `listFiles.workflow.integration.test.ts` | Full |
-| LoginUser | API Gateway | `auth.flow.integration.test.ts` | Partial |
+| LoginUser | API Gateway | `auth.flow.integration.test.ts` | Full |
+| LogoutUser | API Gateway | `logoutUser.workflow.integration.test.ts` | Full |
 | PruneDevices | CloudWatch Schedule | `pruneDevices.workflow.integration.test.ts` | Full |
 | RefreshToken | API Gateway | `refreshToken.workflow.integration.test.ts` | Full |
 | RegisterDevice | API Gateway | `deviceRegistration.integration.test.ts` | Full |
+| RegisterUser | API Gateway | `auth.flow.integration.test.ts` | Full |
 | S3ObjectCreated | S3 Event | `s3ObjectCreated.workflow.integration.test.ts` | Full |
 | SendPushNotification | SQS | `sendPushNotification.workflow.integration.test.ts` | Full |
 | StartFileUpload | SQS (EventBridge) | `startFileUpload.workflow.integration.test.ts` | Partial |
@@ -285,12 +287,25 @@ const appName = generateIsolatedAppName('test-push')
 | MigrateDSQL | Manual CLI | N/A | None (utility) |
 
 **Trigger Coverage Summary:**
-- API Gateway: 10/10 tested
+- API Gateway: 12/12 tested (added LogoutUser, RegisterUser)
 - SQS: 2/2 tested
 - S3 Events: 1/1 tested
 - CloudWatch Schedule: 2/2 tested
 - EventBridge: 1/1 tested (E2E chain)
 - CloudFront: 0/1 tested (edge functions not supported)
+
+**LocalStack Service Coverage:**
+
+| Service | Test Files | Status |
+|---------|-----------|--------|
+| S3 | `s3ObjectCreated.workflow.integration.test.ts` | Full |
+| SQS | `sendPushNotification.workflow.integration.test.ts`, `sqs-helpers.ts` | Full |
+| SNS | `sendPushNotification.workflow.integration.test.ts` | Full |
+| EventBridge | `eventChain.e2e.integration.test.ts` | Full |
+| PostgreSQL | All workflow tests | Full |
+| CloudWatch Logs | `cloudwatch.integration.test.ts` | Full |
+| API Gateway | `apiGatewayRouting.integration.test.ts` | Partial (LocalStack tier-dependent) |
+| Lambda | `lambdaInvocation.integration.test.ts` | Partial (deployment testing) |
 
 ## Worker Schema Isolation
 

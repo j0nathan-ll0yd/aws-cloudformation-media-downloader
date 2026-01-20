@@ -134,6 +134,9 @@ jobs:
       - name: Run integration tests (with CI-level retry)
         id: integration-tests
         run: |
+          # Capture start time
+          START_TIME=$(date +%s)
+
           # Run tests with automatic retry on failure
           # First attempt
           if pnpm run test:integration --coverage; then
@@ -151,9 +154,18 @@ jobs:
             else
               echo "Tests failed after retry"
               echo "attempt=failed" >> "$GITHUB_OUTPUT"
+              # Capture duration even on failure
+              END_TIME=$(date +%s)
+              DURATION=$((END_TIME - START_TIME))
+              echo "duration=${DURATION}" >> "$GITHUB_OUTPUT"
               exit 1
             fi
           fi
+
+          # Capture duration on success
+          END_TIME=$(date +%s)
+          DURATION=$((END_TIME - START_TIME))
+          echo "duration=${DURATION}" >> "$GITHUB_OUTPUT"
         env:
           CI: true
           USE_LOCALSTACK: true
@@ -181,20 +193,40 @@ jobs:
             echo "| Total Tests | $TESTS |" >> "$GITHUB_STEP_SUMMARY"
             echo "| Failures | $FAILURES |" >> "$GITHUB_STEP_SUMMARY"
             echo "| Errors | $ERRORS |" >> "$GITHUB_STEP_SUMMARY"
-            echo "| Duration | ${TIME}s |" >> "$GITHUB_STEP_SUMMARY"
+            echo "| Test Duration | ${TIME}s |" >> "$GITHUB_STEP_SUMMARY"
+            echo "| Total Run Duration | ${{ steps.integration-tests.outputs.duration }}s |" >> "$GITHUB_STEP_SUMMARY"
+            echo "| CI Attempt | ${{ steps.integration-tests.outputs.attempt }} |" >> "$GITHUB_STEP_SUMMARY"
           else
             echo "JUnit report generated at test-results/integration-results.xml" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "| Metric | Value |" >> "$GITHUB_STEP_SUMMARY"
+            echo "|--------|-------|" >> "$GITHUB_STEP_SUMMARY"
+            echo "| Total Run Duration | ${{ steps.integration-tests.outputs.duration }}s |" >> "$GITHUB_STEP_SUMMARY"
+            echo "| CI Attempt | ${{ steps.integration-tests.outputs.attempt }} |" >> "$GITHUB_STEP_SUMMARY"
           fi
 
           # Check for flaky test warnings in the test output
           if grep -q "\[FLAKY\]" test-results/integration-results.xml 2>/dev/null; then
             echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "### ⚠️ Flaky Tests Detected" >> "$GITHUB_STEP_SUMMARY"
+            echo "### Flaky Tests Detected" >> "$GITHUB_STEP_SUMMARY"
             echo "" >> "$GITHUB_STEP_SUMMARY"
             echo "The following tests required retries to pass:" >> "$GITHUB_STEP_SUMMARY"
             echo "" >> "$GITHUB_STEP_SUMMARY"
             grep -o '\[FLAKY\][^<]*' test-results/integration-results.xml | head -20 >> "$GITHUB_STEP_SUMMARY" || true
           fi
+
+          # Write metrics JSON for artifact
+          cat > test-results/metrics.json << EOF
+          {
+            "totalTests": $TESTS,
+            "failures": $FAILURES,
+            "errors": $ERRORS,
+            "testDuration": "$TIME",
+            "runDuration": "${{ steps.integration-tests.outputs.duration }}",
+            "ciAttempt": "${{ steps.integration-tests.outputs.attempt }}",
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          }
+          EOF
 
       - name: Post coverage to job summary
         if: always() && hashFiles('coverage/integration/coverage-summary.md') != ''
