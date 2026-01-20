@@ -22,6 +22,7 @@ cd "$PROJECT_ROOT"
 STALE=""
 
 # Check 1: TSDoc freshness (docs/source/ vs src/)
+# Skip in CI if docs/source doesn't exist - TSDoc generation is done locally
 echo -n "  [1/3] Checking TSDoc freshness... "
 if [ -d "docs/source" ]; then
   # Use stat with format that works on both macOS and Linux
@@ -43,7 +44,13 @@ if [ -d "docs/source" ]; then
     echo -e "${GREEN}OK${NC}"
   fi
 else
-  echo -e "${YELLOW}MISSING${NC} (run pnpm run document-source)"
+  # In CI, docs/source may not exist if TSDoc hasn't been generated
+  # This is not a failure - TSDoc generation is a local development task
+  if [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
+    echo -e "${YELLOW}SKIP${NC} (not generated in CI)"
+  else
+    echo -e "${YELLOW}MISSING${NC} (run pnpm run document-source)"
+  fi
 fi
 
 # Check 2: OpenAPI freshness (docs/api/ vs tsp/)
@@ -69,9 +76,11 @@ else
   echo -e "${YELLOW}MISSING${NC} (run pnpm run document-api)"
 fi
 
-# Check 3: Terraform docs freshness
+# Check 3: Terraform docs freshness (skip if terraform-docs not installed)
 echo -n "  [3/3] Checking Terraform docs freshness... "
-if [ -f "docs/terraform.md" ]; then
+if ! command -v terraform-docs &> /dev/null; then
+  echo -e "${YELLOW}SKIP${NC} (terraform-docs not installed)"
+elif [ -f "docs/terraform.md" ]; then
   if stat --version &> /dev/null; then
     # GNU stat (Linux)
     TF_DOC_MTIME=$(stat -c %Y docs/terraform.md 2> /dev/null || echo "0")

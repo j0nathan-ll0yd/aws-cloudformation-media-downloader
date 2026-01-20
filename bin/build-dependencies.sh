@@ -129,11 +129,21 @@ main() {
   echo 'Generating service IAM policies (Terraform)'
   node --import tsx "${PROJECT_ROOT}/scripts/generateServiceIamPolicies.ts"
 
-  echo 'Formatting generated Terraform files'
-  tofu fmt -recursive "${PROJECT_ROOT}/terraform/"
+  # Format Terraform files (optional - tofu may not be installed in CI)
+  if command -v tofu &> /dev/null; then
+    echo 'Formatting generated Terraform files'
+    tofu fmt -recursive "${PROJECT_ROOT}/terraform/"
+  else
+    echo -e "${YELLOW}Skipping Terraform formatting (tofu not installed)${NC}"
+  fi
 
-  echo 'Regenerating Terraform documentation'
-  terraform-docs markdown "${PROJECT_ROOT}/terraform/" > "${PROJECT_ROOT}/docs/terraform.md"
+  # Regenerate Terraform documentation (optional - terraform-docs may not be installed in CI)
+  if command -v terraform-docs &> /dev/null; then
+    echo 'Regenerating Terraform documentation'
+    terraform-docs markdown "${PROJECT_ROOT}/terraform/" > "${PROJECT_ROOT}/docs/terraform.md"
+  else
+    echo -e "${YELLOW}Skipping Terraform docs generation (terraform-docs not installed)${NC}"
+  fi
 
   success "Permission Terraform files generated"
 
