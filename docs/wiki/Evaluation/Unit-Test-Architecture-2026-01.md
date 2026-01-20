@@ -443,10 +443,10 @@ expect(eventBridgeMock).toHaveReceivedCommandWith(PutEventsCommand, {
 
 ## 7. Related Documentation
 
-- [Vitest Mocking Strategy](wiki/Testing/Vitest-Mocking-Strategy.md) - Comprehensive mocking guide
-- [Mock Type Annotations](wiki/Testing/Mock-Type-Annotations.md) - TypeScript mock patterns
-- [Coverage Philosophy](wiki/Testing/Coverage-Philosophy.md) - Test strategy principles
-- [Entity Query Patterns](wiki/TypeScript/Entity-Query-Patterns.md) - Database access patterns
+- [Vitest Mocking Strategy](../Testing/Vitest-Mocking-Strategy.md) - Comprehensive mocking guide
+- [Mock Type Annotations](../Testing/Mock-Type-Annotations.md) - TypeScript mock patterns
+- [Coverage Philosophy](../Testing/Coverage-Philosophy.md) - Test strategy principles
+- [Entity Query Patterns](../TypeScript/Entity-Query-Patterns.md) - Database access patterns
 
 ---
 
