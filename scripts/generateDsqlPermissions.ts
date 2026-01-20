@@ -14,9 +14,10 @@
  *
  * @see docs/wiki/Infrastructure/Database-Permissions.md
  */
-import {existsSync, mkdirSync, readFileSync, writeFileSync} from 'fs'
+import {existsSync, mkdirSync, readFileSync} from 'fs'
 import {dirname, join} from 'path'
 import {fileURLToPath} from 'url'
+import {writeIfChanged, WriteResult} from './lib/writeIfChanged.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -285,20 +286,29 @@ async function main(): Promise<void> {
   // Generate Terraform HCL
   const terraformHcl = generateTerraformHcl(manifest)
   const terraformPath = join(terraformDir, 'dsql_permissions.tf')
-  writeFileSync(terraformPath, terraformHcl)
-  console.log(`Generated: ${terraformPath}`)
+  const terraformResult = writeIfChanged(terraformPath, terraformHcl)
 
   // Generate SQL migration
   const sqlMigration = generateSqlMigration(manifest)
   const migrationPath = join(migrationsDir, '0002_lambda_roles.sql')
-  writeFileSync(migrationPath, sqlMigration)
-  console.log(`Generated: ${migrationPath}`)
+  const migrationResult = writeIfChanged(migrationPath, sqlMigration)
 
   // Generate report
   const report = generateReport(manifest)
   const reportPath = join(buildDir, 'dsql-permissions-report.md')
-  writeFileSync(reportPath, report)
-  console.log(`Generated: ${reportPath}`)
+  const reportResult = writeIfChanged(reportPath, report)
+
+  // Report write results
+  const logResult = (result: WriteResult) => {
+    if (result.written) {
+      console.log(`${result.reason === 'new' ? 'Created' : 'Updated'}: ${result.path}`)
+    } else {
+      console.log(`No changes: ${result.path}`)
+    }
+  }
+  logResult(terraformResult)
+  logResult(migrationResult)
+  logResult(reportResult)
 
   // Summary
   console.log('')
