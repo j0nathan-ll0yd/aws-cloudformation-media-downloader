@@ -98,3 +98,11 @@ export function hadFlakyTests(): boolean {
 export function getFlakyTestCount(): number {
   return retriedTests.length
 }
+
+/**
+ * Export metrics data for CI integration.
+ * Returns data compatible with ci-metrics.ts.
+ */
+export function exportMetricsData(): {flakyTests: number; retriedTests: string[]} {
+  return {flakyTests: retriedTests.length, retriedTests: retriedTests.map((t) => `${t.testName} (attempt ${t.attempt})`)}
+}

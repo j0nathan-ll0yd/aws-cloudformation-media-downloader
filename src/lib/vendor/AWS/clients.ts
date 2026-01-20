@@ -25,6 +25,8 @@ import {APIGateway} from '@aws-sdk/client-api-gateway'
 import type {APIGatewayClientConfig} from '@aws-sdk/client-api-gateway'
 import {EventBridgeClient} from '@aws-sdk/client-eventbridge'
 import type {EventBridgeClientConfig} from '@aws-sdk/client-eventbridge'
+import {CloudWatchLogsClient} from '@aws-sdk/client-cloudwatch-logs'
+import type {CloudWatchLogsClientConfig} from '@aws-sdk/client-cloudwatch-logs'
 
 const LOCALSTACK_ENDPOINT = 'http://localhost:4566'
 const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
@@ -37,6 +39,7 @@ let testSNSClient: SNSClient | null = null
 let testEventBridgeClient: EventBridgeClient | null = null
 let testDynamoDBClient: DynamoDBClient | null = null
 let testLambdaClient: LambdaClient | null = null
+let testCloudWatchLogsClient: CloudWatchLogsClient | null = null
 
 /* c8 ignore start - Test-only code */
 /** @internal Set test S3 client for unit tests */
@@ -62,6 +65,10 @@ export function setTestDynamoDBClient(client: DynamoDBClient | null): void {
 /** @internal Set test Lambda client for unit tests */
 export function setTestLambdaClient(client: LambdaClient | null): void {
   testLambdaClient = client
+}
+/** @internal Set test CloudWatch Logs client for unit tests */
+export function setTestCloudWatchLogsClient(client: CloudWatchLogsClient | null): void {
+  testCloudWatchLogsClient = client
 }
 /* c8 ignore stop */
 
@@ -174,4 +181,17 @@ export function createEventBridgeClient(): EventBridgeClient {
   }
   const config: EventBridgeClientConfig = getBaseConfig()
   return new EventBridgeClient(config)
+}
+
+/**
+ * Create a CloudWatch Logs client instance
+ * Configured for LocalStack when USE_LOCALSTACK=true, otherwise production AWS
+ * Automatically traced via OpenTelemetry AwsInstrumentation
+ */
+export function createCloudWatchLogsClient(): CloudWatchLogsClient {
+  if (testCloudWatchLogsClient) {
+    return testCloudWatchLogsClient
+  }
+  const config: CloudWatchLogsClientConfig = getBaseConfig()
+  return new CloudWatchLogsClient(config)
 }
