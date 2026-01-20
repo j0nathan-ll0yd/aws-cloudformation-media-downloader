@@ -40,8 +40,9 @@ import {eventBridgePermissionsRule} from './rules/eventbridge-permissions'
 import {vendorDecoratorCoverageRule} from './rules/vendor-decorator-coverage'
 import {permissionGapDetectionRule} from './rules/permission-gap-detection'
 import {loggingConventionsRule} from './rules/logging-conventions'
+import {wikiLinkValidationRule} from './rules/wiki-link-validation'
 
-// Export all rules (28 total: 7 CRITICAL + 16 HIGH + 5 MEDIUM)
+// Export all rules (29 total: 7 CRITICAL + 17 HIGH + 5 MEDIUM)
 export const allRules: ValidationRule[] = [
   // CRITICAL
   awsSdkEncapsulationRule,
@@ -79,7 +80,9 @@ export const allRules: ValidationRule[] = [
   docsStructureRule,
   // MEDIUM (observability)
   powertoolsMetricsRule,
-  loggingConventionsRule
+  loggingConventionsRule,
+  // HIGH (documentation links)
+  wikiLinkValidationRule
 ]
 
 // Export rules by name for selective validation
@@ -150,7 +153,10 @@ export const rulesByName: Record<string, ValidationRule> = {
   'powertools-metrics': powertoolsMetricsRule,
   metrics: powertoolsMetricsRule, // alias
   'logging-conventions': loggingConventionsRule,
-  logging: loggingConventionsRule // alias
+  logging: loggingConventionsRule, // alias
+  // HIGH (documentation links) rules
+  'wiki-link-validation': wikiLinkValidationRule,
+  'wiki-links': wikiLinkValidationRule // alias
 }
 
 // Export individual rules
@@ -182,7 +188,8 @@ export {
   secretPermissionsRule,
   servicePermissionsRule,
   typesLocationRule,
-  vendorDecoratorCoverageRule
+  vendorDecoratorCoverageRule,
+  wikiLinkValidationRule
 }
 
 // Export types
