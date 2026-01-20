@@ -11,9 +11,10 @@
  *
  * @see docs/wiki/Infrastructure/Lambda-Decorators.md
  */
-import {existsSync, readFileSync, writeFileSync} from 'fs'
+import {existsSync, readFileSync} from 'fs'
 import {dirname, join} from 'path'
 import {fileURLToPath} from 'url'
+import {writeIfChanged} from './lib/writeIfChanged.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -216,11 +217,15 @@ async function main(): Promise<void> {
 
   const content = header + policies.join('\n\n') + '\n'
 
-  // Write to terraform directory
+  // Write to terraform directory (only if content changed)
   const outputPath = join(projectRoot, 'terraform/generated_service_permissions.tf')
-  writeFileSync(outputPath, content)
+  const result = writeIfChanged(outputPath, content)
 
-  console.log(`\nGenerated ${outputPath}`)
+  if (result.written) {
+    console.log(`\n${result.reason === 'new' ? 'Created' : 'Updated'}: ${outputPath}`)
+  } else {
+    console.log(`\nNo changes: ${outputPath}`)
+  }
   console.log(`\nCreated IAM policies for:`)
   for (const lambdaName of [...allLambdas].sort()) {
     const servicePerms = serviceManifest.lambdas[lambdaName]

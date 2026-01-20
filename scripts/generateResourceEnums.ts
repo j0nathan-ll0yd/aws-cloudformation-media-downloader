@@ -10,9 +10,10 @@
  *
  * @see docs/wiki/Infrastructure/Lambda-Decorators.md
  */
-import {existsSync, readFileSync, writeFileSync} from 'fs'
+import {existsSync, readFileSync} from 'fs'
 import {dirname, join} from 'path'
 import {fileURLToPath} from 'url'
+import {writeIfChanged} from './lib/writeIfChanged.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -59,7 +60,7 @@ function generateTypeScriptFile(manifest: TerraformResourceManifest): string {
  *
  * Regenerate with: pnpm run generate:resource-enums
  * Source: build/terraform-resources.json
- * Generated at: ${manifest.generatedAt}
+ * Generated at: ${new Date().toISOString()}
  */
 
 `
@@ -114,11 +115,15 @@ async function main(): Promise<void> {
   // Generate TypeScript file
   const content = generateTypeScriptFile(manifest)
 
-  // Write to src/types/generatedResources.ts
+  // Write to src/types/generatedResources.ts (only if content changed)
   const outputPath = join(projectRoot, 'src/types/generatedResources.ts')
-  writeFileSync(outputPath, content)
+  const result = writeIfChanged(outputPath, content)
 
-  console.log(`\nGenerated ${outputPath}`)
+  if (result.written) {
+    console.log(`\n${result.reason === 'new' ? 'Created' : 'Updated'}: ${outputPath}`)
+  } else {
+    console.log(`\nNo changes: ${outputPath}`)
+  }
   console.log('\nGenerated enums:')
   console.log(`  S3Resource:           ${manifest.s3Buckets.length} value(s)`)
   console.log(`  SQSResource:          ${manifest.sqsQueues.length} value(s)`)
