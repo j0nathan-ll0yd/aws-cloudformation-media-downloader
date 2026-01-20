@@ -73,14 +73,14 @@ function formatResponse(
   // Note: 3xx responses are treated as success (not wrapped in error format)
   if (isError) {
     const rawBody = {error: {code, message: body}, requestId: context.awsRequestId}
-    logDebug('response ==', rawBody)
+    logDebug('response =>', rawBody)
     return {body: JSON.stringify(rawBody), headers, statusCode} as APIGatewayProxyResult
   } else if (body) {
     const rawBody = {body, requestId: context.awsRequestId}
-    logDebug('response ==', rawBody)
+    logDebug('response =>', rawBody)
     return {body: JSON.stringify(rawBody), headers, statusCode} as APIGatewayProxyResult
   } else {
-    logDebug('response ==', '')
+    logDebug('response =>', '')
     return {body: '', headers, statusCode} as APIGatewayProxyResult
   }
 }
