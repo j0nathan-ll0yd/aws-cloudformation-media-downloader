@@ -21,12 +21,44 @@ import type {PgTransaction} from 'drizzle-orm/pg-core'
 import type {PostgresJsDatabase, PostgresJsQueryResultHKT} from 'drizzle-orm/postgres-js'
 
 import {getOptionalEnv, getRequiredEnv} from '#lib/system/env'
-import {recordConnectionMetric} from './instrumentation'
+import {recordActiveConnections, recordConnectionLatency, recordConnectionMetric} from './instrumentation'
 import * as schema from './schema'
 
 let cachedClient: PostgresJsDatabase<typeof schema> | null = null
 let cachedSql: ReturnType<typeof postgres> | null = null
 let tokenExpiry: number = 0
+
+/**
+ * Callbacks invoked when connection is invalidated (e.g., token refresh).
+ * Used to reset prepared statements that are tied to the old connection.
+ */
+const connectionInvalidationCallbacks: Array<() => void> = []
+
+/**
+ * Register a callback to be invoked when the database connection is invalidated.
+ * This is used by prepared statements to reset their cached state.
+ *
+ * @param callback - Function to call when connection is invalidated
+ * @returns Unregister function to remove the callback
+ */
+export function onConnectionInvalidated(callback: () => void): () => void {
+  connectionInvalidationCallbacks.push(callback)
+  return () => {
+    const index = connectionInvalidationCallbacks.indexOf(callback)
+    if (index > -1) {
+      connectionInvalidationCallbacks.splice(index, 1)
+    }
+  }
+}
+
+/**
+ * Notify all registered callbacks that the connection has been invalidated.
+ */
+function notifyConnectionInvalidated(): void {
+  for (const callback of connectionInvalidationCallbacks) {
+    callback()
+  }
+}
 
 /**
  * Check if running in test mode with local PostgreSQL.
@@ -118,6 +150,7 @@ export async function getDrizzleClient(): Promise<PostgresJsDatabase<typeof sche
 
   if (cachedSql) {
     await cachedSql.end()
+    notifyConnectionInvalidated()
   }
 
   // Test mode: use TEST_DATABASE_URL with local PostgreSQL
@@ -134,6 +167,7 @@ export async function getDrizzleClient(): Promise<PostgresJsDatabase<typeof sche
   }
 
   // Production mode: use Aurora DSQL with IAM authentication
+  const connectionStart = performance.now()
   const endpoint = getRequiredEnv('DSQL_CLUSTER_ENDPOINT')
   const region = getOptionalEnv('DSQL_REGION', getRequiredEnv('AWS_REGION'))
   const signer = new DsqlSigner({hostname: endpoint, region})
@@ -158,9 +192,12 @@ export async function getDrizzleClient(): Promise<PostgresJsDatabase<typeof sche
   cachedClient = drizzle(cachedSql, {schema})
   tokenExpiry = now + TOKEN_VALIDITY_MS
 
-  // Record connection metric (skip in test mode to avoid test pollution)
+  // Record connection metrics (skip in test mode to avoid test pollution)
   if (!isTestMode()) {
+    const connectionLatency = performance.now() - connectionStart
     recordConnectionMetric(isRefresh ? 'token_refreshed' : 'established')
+    recordConnectionLatency(connectionLatency, isRefresh)
+    recordActiveConnections(1)
   }
 
   return cachedClient
@@ -173,13 +210,15 @@ export async function getDrizzleClient(): Promise<PostgresJsDatabase<typeof sche
 export async function closeDrizzleClient(): Promise<void> {
   if (cachedSql) {
     await cachedSql.end()
+    notifyConnectionInvalidated()
     cachedSql = null
     cachedClient = null
     tokenExpiry = 0
 
-    // Record connection close metric (skip in test mode)
+    // Record connection close metrics (skip in test mode)
     if (!isTestMode()) {
       recordConnectionMetric('closed')
+      recordActiveConnections(0)
     }
   }
 }

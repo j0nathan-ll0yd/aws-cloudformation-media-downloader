@@ -148,3 +148,37 @@ export function recordConnectionMetric(eventType: 'established' | 'token_refresh
 
   logDebug('recordConnectionMetric', {eventType})
 }
+
+/**
+ * Records DSQL connection latency metric.
+ *
+ * Tracks the time taken to establish a database connection, including
+ * IAM token generation and PostgreSQL connection setup.
+ *
+ * @param latencyMs - Connection establishment time in milliseconds
+ * @param isTokenRefresh - Whether this was a token refresh vs initial connection
+ */
+export function recordConnectionLatency(latencyMs: number, isTokenRefresh: boolean): void {
+  const metric = metrics.singleMetric()
+  metric.addDimension('ConnectionType', isTokenRefresh ? 'token_refresh' : 'initial')
+  metric.addMetric('DSQLConnectionLatency', MetricUnit.Milliseconds, latencyMs)
+
+  logDebug('recordConnectionLatency', {latencyMs, isTokenRefresh})
+}
+
+/**
+ * Records the current number of active DSQL connections.
+ *
+ * In Lambda environment, this should typically be 0 or 1 per invocation.
+ * Higher values may indicate connection leaks.
+ *
+ * @param count - Number of active connections
+ */
+export function recordActiveConnections(count: number): void {
+  const metric = metrics.singleMetric()
+  metric.addMetric('DSQLActiveConnections', MetricUnit.Count, count)
+
+  if (count > 1) {
+    logDebug('multiple active connections detected', {count})
+  }
+}
