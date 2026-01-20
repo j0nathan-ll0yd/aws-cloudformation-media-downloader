@@ -11,6 +11,7 @@ import {devices} from '#lib/vendor/Drizzle/schema'
 import {eq, inArray} from '#lib/vendor/Drizzle/types'
 import type {InferInsertModel, InferSelectModel} from '#lib/vendor/Drizzle/types'
 import {deviceInsertSchema, deviceUpdateSchema} from '#lib/vendor/Drizzle/zodSchemas'
+import {DatabaseOperation, DatabaseTable, RequiresTable} from '../decorators'
 
 export type DeviceRow = InferSelectModel<typeof devices>
 
@@ -18,101 +19,127 @@ export type CreateDeviceInput = InferInsertModel<typeof devices>
 export type UpdateDeviceInput = Partial<Omit<InferInsertModel<typeof devices>, 'deviceId'>>
 
 /**
- * Gets a device by ID.
- * @param deviceId - The device's unique identifier
- * @returns The device row or null if not found
+ * Device entity query operations with declarative permission metadata.
+ * Each method declares the database permissions it requires via decorators.
+ * Permissions are extracted at build time to generate Lambda database roles.
  */
-export async function getDevice(deviceId: string): Promise<DeviceRow | null> {
-  return withQueryMetrics('Devices.get', async () => {
-    const db = await getDrizzleClient()
-    const result = await db.select().from(devices).where(eq(devices.deviceId, deviceId)).limit(1)
-    return result.length > 0 ? result[0] : null
-  })
+class DeviceQueries {
+  /**
+   * Gets a device by ID.
+   * @param deviceId - The device's unique identifier
+   * @returns The device row or null if not found
+   */
+  @RequiresTable([{table: DatabaseTable.Devices, operations: [DatabaseOperation.Select]}])
+  static getDevice(deviceId: string): Promise<DeviceRow | null> {
+    return withQueryMetrics('Devices.get', async () => {
+      const db = await getDrizzleClient()
+      const result = await db.select().from(devices).where(eq(devices.deviceId, deviceId)).limit(1)
+      return result.length > 0 ? result[0] : null
+    })
+  }
+
+  /**
+   * Gets multiple devices by IDs (batch operation).
+   * @param deviceIds - Array of device IDs to retrieve
+   * @returns Array of device rows
+   */
+  @RequiresTable([{table: DatabaseTable.Devices, operations: [DatabaseOperation.Select]}])
+  static getDevicesBatch(deviceIds: string[]): Promise<DeviceRow[]> {
+    return withQueryMetrics('Devices.getBatch', async () => {
+      if (deviceIds.length === 0) {
+        return []
+      }
+      const db = await getDrizzleClient()
+      return await db.select().from(devices).where(inArray(devices.deviceId, deviceIds))
+    })
+  }
+
+  /**
+   * Creates a new device.
+   * @param input - The device data to create
+   * @returns The created device row
+   */
+  @RequiresTable([{table: DatabaseTable.Devices, operations: [DatabaseOperation.Insert]}])
+  static createDevice(input: CreateDeviceInput): Promise<DeviceRow> {
+    return withQueryMetrics('Devices.create', async () => {
+      // Validate device input against schema
+      const validatedInput = deviceInsertSchema.parse(input)
+      const db = await getDrizzleClient()
+      const [device] = await db.insert(devices).values(validatedInput).returning()
+      return device
+    })
+  }
+
+  /**
+   * Upserts a device (create if not exists, update if exists).
+   * Uses atomic ON CONFLICT DO UPDATE to avoid race conditions.
+   * @param input - The device data to upsert
+   * @returns The created or updated device row
+   */
+  @RequiresTable([{table: DatabaseTable.Devices, operations: [DatabaseOperation.Insert, DatabaseOperation.Update]}])
+  static upsertDevice(input: CreateDeviceInput): Promise<DeviceRow> {
+    return withQueryMetrics('Devices.upsert', async () => {
+      // Validate device input against schema
+      const validatedInput = deviceInsertSchema.parse(input)
+      const db = await getDrizzleClient()
+      const [result] = await db.insert(devices).values(validatedInput).onConflictDoUpdate({
+        target: devices.deviceId,
+        set: {name: input.name, token: input.token, systemVersion: input.systemVersion, systemName: input.systemName, endpointArn: input.endpointArn}
+      }).returning()
+      return result
+    })
+  }
+
+  /**
+   * Updates a device by ID.
+   * @param deviceId - The device's unique identifier
+   * @param data - The fields to update
+   * @returns The updated device row
+   */
+  @RequiresTable([{table: DatabaseTable.Devices, operations: [DatabaseOperation.Update]}])
+  static updateDevice(deviceId: string, data: UpdateDeviceInput): Promise<DeviceRow> {
+    return withQueryMetrics('Devices.update', async () => {
+      // Validate partial update data against schema
+      const validatedData = deviceUpdateSchema.partial().parse(data)
+      const db = await getDrizzleClient()
+      const [updated] = await db.update(devices).set(validatedData).where(eq(devices.deviceId, deviceId)).returning()
+      return updated
+    })
+  }
+
+  /**
+   * Deletes a device by ID.
+   * @param deviceId - The device's unique identifier
+   */
+  @RequiresTable([{table: DatabaseTable.Devices, operations: [DatabaseOperation.Delete]}])
+  static deleteDevice(deviceId: string): Promise<void> {
+    return withQueryMetrics('Devices.delete', async () => {
+      const db = await getDrizzleClient()
+      await db.delete(devices).where(eq(devices.deviceId, deviceId))
+    })
+  }
+
+  /**
+   * Gets all devices (for scheduled jobs like PruneDevices).
+   * @returns Array of all device rows
+   */
+  @RequiresTable([{table: DatabaseTable.Devices, operations: [DatabaseOperation.Select]}])
+  static getAllDevices(): Promise<DeviceRow[]> {
+    return withQueryMetrics('Devices.getAll', async () => {
+      const db = await getDrizzleClient()
+      return await db.select().from(devices)
+    })
+  }
 }
 
-/**
- * Gets multiple devices by IDs (batch operation).
- * @param deviceIds - Array of device IDs to retrieve
- * @returns Array of device rows
- */
-export async function getDevicesBatch(deviceIds: string[]): Promise<DeviceRow[]> {
-  return withQueryMetrics('Devices.getBatch', async () => {
-    if (deviceIds.length === 0) {
-      return []
-    }
-    const db = await getDrizzleClient()
-    return await db.select().from(devices).where(inArray(devices.deviceId, deviceIds))
-  })
-}
+// Re-export static methods as named exports for backwards compatibility
+export const getDevice = DeviceQueries.getDevice.bind(DeviceQueries)
+export const getDevicesBatch = DeviceQueries.getDevicesBatch.bind(DeviceQueries)
+export const createDevice = DeviceQueries.createDevice.bind(DeviceQueries)
+export const upsertDevice = DeviceQueries.upsertDevice.bind(DeviceQueries)
+export const updateDevice = DeviceQueries.updateDevice.bind(DeviceQueries)
+export const deleteDevice = DeviceQueries.deleteDevice.bind(DeviceQueries)
+export const getAllDevices = DeviceQueries.getAllDevices.bind(DeviceQueries)
 
-/**
- * Creates a new device.
- * @param input - The device data to create
- * @returns The created device row
- */
-export async function createDevice(input: CreateDeviceInput): Promise<DeviceRow> {
-  return withQueryMetrics('Devices.create', async () => {
-    // Validate device input against schema
-    const validatedInput = deviceInsertSchema.parse(input)
-    const db = await getDrizzleClient()
-    const [device] = await db.insert(devices).values(validatedInput).returning()
-    return device
-  })
-}
-
-/**
- * Upserts a device (create if not exists, update if exists).
- * Uses atomic ON CONFLICT DO UPDATE to avoid race conditions.
- * @param input - The device data to upsert
- * @returns The created or updated device row
- */
-export async function upsertDevice(input: CreateDeviceInput): Promise<DeviceRow> {
-  return withQueryMetrics('Devices.upsert', async () => {
-    // Validate device input against schema
-    const validatedInput = deviceInsertSchema.parse(input)
-    const db = await getDrizzleClient()
-    const [result] = await db.insert(devices).values(validatedInput).onConflictDoUpdate({
-      target: devices.deviceId,
-      set: {name: input.name, token: input.token, systemVersion: input.systemVersion, systemName: input.systemName, endpointArn: input.endpointArn}
-    }).returning()
-    return result
-  })
-}
-
-/**
- * Updates a device by ID.
- * @param deviceId - The device's unique identifier
- * @param data - The fields to update
- * @returns The updated device row
- */
-export async function updateDevice(deviceId: string, data: UpdateDeviceInput): Promise<DeviceRow> {
-  return withQueryMetrics('Devices.update', async () => {
-    // Validate partial update data against schema
-    const validatedData = deviceUpdateSchema.partial().parse(data)
-    const db = await getDrizzleClient()
-    const [updated] = await db.update(devices).set(validatedData).where(eq(devices.deviceId, deviceId)).returning()
-    return updated
-  })
-}
-
-/**
- * Deletes a device by ID.
- * @param deviceId - The device's unique identifier
- */
-export async function deleteDevice(deviceId: string): Promise<void> {
-  return withQueryMetrics('Devices.delete', async () => {
-    const db = await getDrizzleClient()
-    await db.delete(devices).where(eq(devices.deviceId, deviceId))
-  })
-}
-
-/**
- * Gets all devices (for scheduled jobs like PruneDevices).
- * @returns Array of all device rows
- */
-export async function getAllDevices(): Promise<DeviceRow[]> {
-  return withQueryMetrics('Devices.getAll', async () => {
-    const db = await getDrizzleClient()
-    return await db.select().from(devices)
-  })
-}
+// Export class for extraction script access
+export { DeviceQueries }

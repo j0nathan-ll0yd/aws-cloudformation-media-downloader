@@ -6,7 +6,6 @@ build
 coverage
 dist
 docs/source
-docs/terraform.md
 
 # Dependency cruiser generated files
 dependency-graph.svg

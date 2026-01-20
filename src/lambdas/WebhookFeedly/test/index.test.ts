@@ -26,7 +26,7 @@ vi.mock('#lib/vendor/AWS/EventBridge', () => ({publishEventWithRetry: publishEve
 // Mock Powertools idempotency to bypass DynamoDB persistence
 vi.mock('#lib/vendor/Powertools/idempotency', () => ({
   createPersistenceStore: vi.fn(),
-  defaultIdempotencyConfig: {},
+  defaultIdempotencyConfig: {registerLambdaContext: vi.fn()},
   // makeIdempotent passes through the function unchanged (no idempotency wrapping in tests)
   makeIdempotent: <T extends (...args: unknown[]) => unknown>(fn: T) => fn
 }))

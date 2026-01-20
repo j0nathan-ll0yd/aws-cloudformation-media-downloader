@@ -137,7 +137,7 @@ resource "aws_lambda_function" "S3ObjectCreated" {
   runtime          = "nodejs24.x"
   architectures    = [local.lambda_architecture]
   timeout          = local.default_lambda_timeout
-  depends_on       = [aws_iam_role_policy.S3ObjectCreatedLogging]
+  depends_on       = [aws_iam_role_policy.S3ObjectCreatedLogging, aws_iam_role_policy_attachment.S3ObjectCreated_services]
   filename         = data.archive_file.S3ObjectCreated.output_path
   source_code_hash = data.archive_file.S3ObjectCreated.output_base64sha256
   layers           = [local.adot_layer_arn]
@@ -165,23 +165,8 @@ resource "aws_iam_role" "S3ObjectCreated" {
   tags               = local.common_tags
 }
 
-data "aws_iam_policy_document" "S3ObjectCreated" {
-  statement {
-    actions   = ["sqs:SendMessage"]
-    resources = [aws_sqs_queue.SendPushNotification.arn]
-  }
-}
-
-resource "aws_iam_policy" "S3ObjectCreated" {
-  name   = local.s3_object_created_function_name
-  policy = data.aws_iam_policy_document.S3ObjectCreated.json
-  tags   = local.common_tags
-}
-
-resource "aws_iam_role_policy_attachment" "S3ObjectCreated" {
-  role       = aws_iam_role.S3ObjectCreated.name
-  policy_arn = aws_iam_policy.S3ObjectCreated.arn
-}
+# Service permissions (SQS) are now generated from @RequiresServices decorator in:
+# terraform/generated_service_permissions.tf
 
 resource "aws_iam_role_policy" "S3ObjectCreatedLogging" {
   name = "S3ObjectCreatedLogging"

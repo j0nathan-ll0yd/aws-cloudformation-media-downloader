@@ -27,7 +27,7 @@ import type {WebhookProcessingInput, WebhookProcessingResult} from '#types/lambd
 import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/apiGateway'
 import {getRequiredEnv} from '#lib/system/env'
 import {buildValidatedResponse} from '#lib/lambda/responses'
-import {AuthenticatedHandler, metrics, MetricUnit, RequiresDatabase} from '#lib/lambda/handlers'
+import {AuthenticatedHandler, metrics, MetricUnit, RequiresDatabase, RequiresEventBridge} from '#lib/lambda/handlers'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 import {createDownloadReadyNotification} from '#lib/services/notification/transformers'
 import {associateFileToUser} from '#lib/domain/user/userFileService'
@@ -158,6 +158,7 @@ function getIdempotentProcessor() {
   {table: DatabaseTable.FileDownloads, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]},
   {table: DatabaseTable.UserFiles, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}
 ])
+@RequiresEventBridge({publishes: ['DownloadRequested']})
 class WebhookFeedlyHandler extends AuthenticatedHandler {
   readonly operationName = 'WebhookFeedly'
 
@@ -171,6 +172,10 @@ class WebhookFeedlyHandler extends AuthenticatedHandler {
     const requestBody = getPayloadFromEvent(event) as FeedlyWebhookRequest
     validateRequest(requestBody, feedlyWebhookRequestSchema)
     const fileId = getVideoID(requestBody.articleURL)
+
+    // Register Lambda context for idempotency time tracking
+    // This allows the idempotency handler to check remaining execution time
+    defaultIdempotencyConfig.registerLambdaContext(context)
 
     // Process webhook with idempotency protection
     const result = await getIdempotentProcessor()({fileId, userId: this.userId, articleURL: requestBody.articleURL, correlationId: this.correlationId})

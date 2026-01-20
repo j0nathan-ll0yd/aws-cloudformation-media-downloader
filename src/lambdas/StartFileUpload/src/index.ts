@@ -26,7 +26,7 @@ import {validateSchema} from '#lib/validation/constraints'
 import {getRequiredEnv} from '#lib/system/env'
 import {UnexpectedError} from '#lib/system/errors'
 import {closeCookieExpirationIssueIfResolved, createCookieExpirationIssue, createVideoDownloadFailureIssue} from '#lib/integrations/github/issueService'
-import {metrics, MetricUnit, RequiresDatabase, SqsHandler} from '#lib/lambda/handlers'
+import {metrics, MetricUnit, RequiresDatabase, RequiresEventBridge, SqsHandler} from '#lib/lambda/handlers'
 import type {SqsRecordContext} from '#lib/lambda/handlers'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 import {createFailureNotification, createMetadataNotification} from '#lib/services/notification/transformers'
@@ -541,6 +541,7 @@ async function processDownloadRequest(message: ValidatedDownloadQueueMessage, re
   {table: DatabaseTable.FileDownloads, operations: [DatabaseOperation.Select, DatabaseOperation.Insert, DatabaseOperation.Update]},
   {table: DatabaseTable.UserFiles, operations: [DatabaseOperation.Select]}
 ])
+@RequiresEventBridge({publishes: ['DownloadCompleted', 'DownloadFailed']})
 class StartFileUploadHandler extends SqsHandler<unknown> {
   readonly operationName = 'StartFileUpload'
 

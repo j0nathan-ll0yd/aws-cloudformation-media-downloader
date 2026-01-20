@@ -30,7 +30,7 @@ describe('validation exports', () => {
   describe('allRules', () => {
     test('should export array of rules', () => {
       expect(Array.isArray(allRules)).toBe(true)
-      expect(allRules.length).toBe(22)
+      expect(allRules.length).toBe(25)
     })
 
     test('should contain all expected rules', () => {
@@ -49,6 +49,9 @@ describe('validation exports', () => {
       expect(ruleNames).toContain('scan-pagination')
       expect(ruleNames).toContain('doc-sync')
       expect(ruleNames).toContain('database-permissions')
+      expect(ruleNames).toContain('secret-permissions')
+      expect(ruleNames).toContain('service-permissions')
+      expect(ruleNames).toContain('eventbridge-permissions')
       expect(ruleNames).toContain('comment-conventions')
       // MEDIUM rules
       expect(ruleNames).toContain('import-order')
@@ -80,6 +83,9 @@ describe('validation exports', () => {
       expect(rulesByName['batch-retry']).toBeDefined()
       expect(rulesByName['scan-pagination']).toBeDefined()
       expect(rulesByName['doc-sync']).toBeDefined()
+      expect(rulesByName['secret-permissions']).toBeDefined()
+      expect(rulesByName['service-permissions']).toBeDefined()
+      expect(rulesByName['eventbridge-permissions']).toBeDefined()
       expect(rulesByName['comment-conventions']).toBeDefined()
       expect(rulesByName['naming-conventions']).toBeDefined()
       expect(rulesByName['authenticated-handler-enforcement']).toBeDefined()
@@ -108,6 +114,10 @@ describe('validation exports', () => {
       expect(rulesByName['batch']).toBe(rulesByName['batch-retry'])
       expect(rulesByName['scan']).toBe(rulesByName['scan-pagination'])
       expect(rulesByName['docs']).toBe(rulesByName['doc-sync'])
+      expect(rulesByName['secrets']).toBe(rulesByName['secret-permissions'])
+      expect(rulesByName['services']).toBe(rulesByName['service-permissions'])
+      expect(rulesByName['eventbridge']).toBe(rulesByName['eventbridge-permissions'])
+      expect(rulesByName['events']).toBe(rulesByName['eventbridge-permissions'])
       expect(rulesByName['comments']).toBe(rulesByName['comment-conventions'])
       // MEDIUM aliases
       expect(rulesByName['imports']).toBe(rulesByName['import-order'])

@@ -6,6 +6,8 @@
 import {IdempotencyConfig, makeIdempotent} from '@aws-lambda-powertools/idempotency'
 import {DynamoDBPersistenceLayer} from '@aws-lambda-powertools/idempotency/dynamodb'
 import {createDynamoDBClient} from '#lib/vendor/AWS/clients'
+import {DynamoDBOperation, DynamoDBResource} from '#types/dynamodbPermissions'
+import {RequiresDynamoDB} from './decorators'
 
 /**
  * Get the idempotency table name from environment
@@ -20,13 +22,40 @@ function getTableName(): string {
 }
 
 /**
- * DynamoDB persistence layer for idempotency records
- * Automatically manages record creation, expiration, and cleanup via TTL
- * Uses project's LocalStack-aware DynamoDB client for testing compatibility
+ * Idempotency vendor wrapper with declarative permission metadata.
+ * Permissions are extracted at build time to generate Lambda IAM policies.
  */
-export function createPersistenceStore(): DynamoDBPersistenceLayer {
-  return new DynamoDBPersistenceLayer({tableName: getTableName(), awsSdkV3Client: createDynamoDBClient()})
+class IdempotencyVendor {
+  /**
+   * DynamoDB persistence layer for idempotency records.
+   * Automatically manages record creation, expiration, and cleanup via TTL.
+   * Uses project's LocalStack-aware DynamoDB client for testing compatibility.
+   *
+   * Requires all CRUD operations on IdempotencyTable:
+   * - GetItem: Check if request already processed
+   * - PutItem: Store new idempotency record
+   * - UpdateItem: Update record status (in_progress → completed)
+   * - DeleteItem: Cleanup expired records
+   */
+  @RequiresDynamoDB([{
+    table: DynamoDBResource.IdempotencyTable,
+    operations: [
+      DynamoDBOperation.GetItem,
+      DynamoDBOperation.PutItem,
+      DynamoDBOperation.UpdateItem,
+      DynamoDBOperation.DeleteItem
+    ]
+  }])
+  static createPersistenceStore(): DynamoDBPersistenceLayer {
+    return new DynamoDBPersistenceLayer({tableName: getTableName(), awsSdkV3Client: createDynamoDBClient()})
+  }
 }
+
+// Re-export static methods as named exports
+export const createPersistenceStore = IdempotencyVendor.createPersistenceStore.bind(IdempotencyVendor)
+
+// Export class for extraction script access
+export { IdempotencyVendor }
 
 /**
  * Default idempotency configuration

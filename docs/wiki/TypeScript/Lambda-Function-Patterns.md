@@ -92,6 +92,41 @@ class ListFilesHandler extends AuthenticatedHandler<ListFilesResponse> {
 
 See [Database Permissions](../Infrastructure/Database-Permissions.md) for complete documentation.
 
+## Infrastructure Permission Decorators
+
+In addition to `@RequiresDatabase`, Lambda handlers can declare other infrastructure dependencies using class decorators:
+
+| Decorator | Purpose | Usage |
+|-----------|---------|-------|
+| `@RequiresSecrets` | Secrets Manager/Parameter Store dependencies | Declare secret access requirements |
+| `@RequiresServices` | AWS service dependencies (S3, SQS, SNS, EventBridge) | Declare service access requirements |
+| `@RequiresEventBridge` | EventBridge event patterns | Declare published/subscribed events |
+
+### Example: Multiple Decorators
+
+```typescript
+import {RequiresDatabase, RequiresEventBridge, RequiresServices, SqsHandler} from '#lib/lambda/handlers'
+import {AWSService, EventBridgeOperation, S3Operation, SQSOperation} from '#types/servicePermissions'
+import {DatabaseOperation, DatabaseTable} from '#types/databasePermissions'
+
+@RequiresDatabase([
+  {table: DatabaseTable.Files, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]},
+  {table: DatabaseTable.FileDownloads, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}
+])
+@RequiresServices([
+  {service: AWSService.S3, resource: 'media-bucket/*', operations: [S3Operation.HeadObject, S3Operation.PutObject]},
+  {service: AWSService.SQS, resource: 'notification-queue', operations: [SQSOperation.SendMessage]}
+])
+@RequiresEventBridge({
+  publishes: ['DownloadCompleted', 'DownloadFailed']
+})
+class StartFileUploadHandler extends SqsHandler {
+  // handler implementation
+}
+```
+
+See [Lambda Decorators](../Infrastructure/Lambda-Decorators.md) for complete documentation.
+
 ### Available Tables
 
 | Enum Value | Table Name |

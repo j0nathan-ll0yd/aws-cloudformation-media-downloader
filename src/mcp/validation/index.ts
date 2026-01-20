@@ -34,8 +34,11 @@ import {powertoolsMetricsRule} from './rules/powertools-metrics'
 import {migrationsSafetyRule} from './rules/migrations-safety'
 import {auroraDsqlAsyncIndexRule} from './rules/aurora-dsql-async-index'
 import {databasePermissionsRule} from './rules/database-permissions'
+import {secretPermissionsRule} from './rules/secret-permissions'
+import {servicePermissionsRule} from './rules/service-permissions'
+import {eventBridgePermissionsRule} from './rules/eventbridge-permissions'
 
-// Export all rules (22 total: 7 CRITICAL + 11 HIGH + 4 MEDIUM)
+// Export all rules (25 total: 7 CRITICAL + 14 HIGH + 4 MEDIUM)
 export const allRules: ValidationRule[] = [
   // CRITICAL
   awsSdkEncapsulationRule,
@@ -45,13 +48,17 @@ export const allRules: ValidationRule[] = [
   envValidationRule,
   cascadeSafetyRule,
   migrationsSafetyRule,
+  // HIGH (permissions)
+  databasePermissionsRule,
+  secretPermissionsRule,
+  servicePermissionsRule,
+  eventBridgePermissionsRule,
   // HIGH
   responseHelpersRule,
   typesLocationRule,
   batchRetryRule,
   scanPaginationRule,
   auroraDsqlAsyncIndexRule,
-  databasePermissionsRule,
   // MEDIUM
   importOrderRule,
   responseEnumRule,
@@ -92,6 +99,13 @@ export const rulesByName: Record<string, ValidationRule> = {
   'database-permissions': databasePermissionsRule,
   'db-permissions': databasePermissionsRule, // alias
   database: databasePermissionsRule, // alias
+  'secret-permissions': secretPermissionsRule,
+  secrets: secretPermissionsRule, // alias
+  'service-permissions': servicePermissionsRule,
+  services: servicePermissionsRule, // alias
+  'eventbridge-permissions': eventBridgePermissionsRule,
+  eventbridge: eventBridgePermissionsRule, // alias
+  events: eventBridgePermissionsRule, // alias
   // HIGH rules
   'response-helpers': responseHelpersRule,
   response: responseHelpersRule, // alias
@@ -142,6 +156,7 @@ export {
   drizzleOrmEncapsulationRule,
   entityMockingRule,
   envValidationRule,
+  eventBridgePermissionsRule,
   importOrderRule,
   migrationsSafetyRule,
   mockFormattingRule,
@@ -150,6 +165,8 @@ export {
   responseEnumRule,
   responseHelpersRule,
   scanPaginationRule,
+  secretPermissionsRule,
+  servicePermissionsRule,
   typesLocationRule
 }
 
