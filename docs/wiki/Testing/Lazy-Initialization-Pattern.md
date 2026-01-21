@@ -191,7 +191,7 @@ grep -rn "= new.*Client({" lib/vendor/AWS/*.ts | grep -v "function\|if ("
 
 ## Related Patterns
 - [Vitest Mocking Strategy](Vitest-Mocking-Strategy.md) - Mocking before imports
-- [LocalStack Testing](../Integration/LocalStack-Testing.md) - Testing with LocalStack
+- [LocalStack Testing](./LocalStack-Testing.md) - Testing with LocalStack
 - [AWS SDK Encapsulation Policy](../Conventions/Vendor-Encapsulation-Policy.md) - Vendor wrapper pattern
 
 ---

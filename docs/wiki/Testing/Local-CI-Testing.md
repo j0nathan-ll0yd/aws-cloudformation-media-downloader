@@ -233,4 +233,4 @@ Both CI and local development use the **same scripts**, ensuring:
 
 - [Coverage Philosophy](./Coverage-Philosophy.md)
 - [Vitest Mocking Strategy](./Vitest-Mocking-Strategy.md)
-- [LocalStack Testing](../Integration/LocalStack-Testing.md)
+- [LocalStack Testing](./LocalStack-Testing.md)

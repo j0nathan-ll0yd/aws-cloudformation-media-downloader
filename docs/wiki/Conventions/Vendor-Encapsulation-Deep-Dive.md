@@ -303,5 +303,5 @@ export async function performOperation(params: Params): Promise<Result> {
 ## References
 
 - [Vendor Encapsulation Policy](./Vendor-Encapsulation-Policy.md) - Quick reference and examples
-- [LocalStack Testing](../Integration/LocalStack-Testing.md) - Integration testing setup
+- [LocalStack Testing](../Testing/LocalStack-Testing.md) - Integration testing setup
 - [Vitest Mocking Strategy](../Testing/Vitest-Mocking-Strategy.md) - Test patterns

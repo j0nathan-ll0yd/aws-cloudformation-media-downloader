@@ -1,3 +1,9 @@
+---
+last_updated: 2026-01-20
+next_review: 2026-07-20
+status: current
+---
+
 # Unit Test Architecture Evaluation
 
 **Date:** January 2026

@@ -146,6 +146,6 @@ The following Aurora DSQL-specific syntax is adapted for PostgreSQL compatibilit
 
 ## Related Documentation
 
-- [LocalStack Testing](../Integration/LocalStack-Testing.md) - LocalStack configuration
+- [LocalStack Testing](./LocalStack-Testing.md) - LocalStack configuration
 - [Vitest Mocking Strategy](Vitest-Mocking-Strategy.md) - Unit test mocking patterns
 - [Test Suite Audit](Test-Suite-Audit.md) - Comprehensive test analysis

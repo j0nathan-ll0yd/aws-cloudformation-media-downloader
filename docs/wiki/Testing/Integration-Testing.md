@@ -110,7 +110,7 @@ services:
 
 ## Related Patterns
 
-- [LocalStack Testing](../Integration/LocalStack-Testing.md)
+- [LocalStack Testing](./LocalStack-Testing.md)
 - [Vitest Mocking Strategy](Vitest-Mocking-Strategy.md)
 
 ---

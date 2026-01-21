@@ -2,6 +2,12 @@
 
 This guide helps you understand and use this development conventions wiki effectively.
 
+## Hands-On Tutorials
+
+Learn by doing with these step-by-step tutorials:
+
+- **[Tutorial: Create Your First Lambda](Getting-Started/Tutorial-First-Lambda.md)** - Build a complete Lambda function from scratch, including handler implementation, tests, and infrastructure
+
 ## What Is This Wiki?
 
 This is a **centralized knowledge base** of development conventions, patterns, and best practices that apply across TypeScript/AWS projects. It represents institutional knowledge captured over time through the Convention Capture System.

@@ -1,3 +1,9 @@
+---
+last_updated: 2026-01-03
+next_review: 2026-04-03
+status: current
+---
+
 # Authentication Security Assessment
 
 **Date**: January 3, 2026

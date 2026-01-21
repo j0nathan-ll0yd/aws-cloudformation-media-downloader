@@ -275,4 +275,4 @@ When adding a new npm script:
 
 - [Bash Script Patterns](../Bash/Script-Patterns.md) - Shell script conventions
 - [GitHub Wiki Sync](../Meta/GitHub-Wiki-Sync.md) - CI/CD documentation
-- [LocalStack Testing](../Integration/LocalStack-Testing.md) - Integration test setup
+- [LocalStack Testing](../Testing/LocalStack-Testing.md) - Integration test setup

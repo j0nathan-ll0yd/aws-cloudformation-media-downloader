@@ -1,3 +1,9 @@
+---
+last_updated: 2026-01-20
+next_review: 2026-07-20
+status: current
+---
+
 # Comprehensive Serverless Project Evaluation
 
 ## Executive Summary

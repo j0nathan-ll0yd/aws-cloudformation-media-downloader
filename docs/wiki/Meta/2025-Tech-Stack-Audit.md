@@ -1,3 +1,9 @@
+---
+last_updated: 2025-12-21
+next_review: 2026-12-21
+status: current
+---
+
 # 2025 Tech Stack Audit
 
 **Date:** December 21, 2025

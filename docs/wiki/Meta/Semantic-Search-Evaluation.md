@@ -1,3 +1,9 @@
+---
+last_updated: 2026-01-03
+next_review: 2026-07-03
+status: current
+---
+
 # Semantic Search Quality Evaluation
 
 **Generated**: 2026-01-03T20:08:53.361Z
