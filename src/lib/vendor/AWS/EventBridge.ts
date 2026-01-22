@@ -304,3 +304,28 @@ export async function publishEventDownloadFailed(
 ): Promise<PutEventsResponse> {
   return EventBridgeVendor.publishEvent(EventType.DownloadFailed, detail, options)
 }
+
+// ============================================================================
+// Event-Specific Publisher Functions with Retry
+// ============================================================================
+// Use these for critical events where delivery is important.
+
+/**
+ * Publish a DownloadRequested event with automatic retry.
+ *
+ * Use this for the critical WebhookFeedly → DownloadQueue path where
+ * we want retry logic on transient EventBridge failures.
+ *
+ * @param detail - DownloadRequested event payload
+ * @param options - Optional correlation context for distributed tracing
+ * @param retryConfig - Optional retry configuration
+ * @returns PutEvents response on success
+ * @throws EventBridgePublishError if all retry attempts fail
+ */
+export async function publishEventDownloadRequestedWithRetry(
+  detail: DownloadRequestedDetail,
+  options?: PublishEventOptions,
+  retryConfig?: PublishRetryConfig
+): Promise<PutEventsResponse> {
+  return EventBridgeVendor.publishEventWithRetry(EventType.DownloadRequested, detail, options, retryConfig)
+}

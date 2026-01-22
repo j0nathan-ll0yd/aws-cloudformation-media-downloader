@@ -11,7 +11,7 @@
 import {createFileDownload, getFile, getFileDownload, getUserFilesByFileId, updateFile, updateFileDownload} from '#entities/queries'
 import {headObject} from '#lib/vendor/AWS/S3'
 import {sendMessage} from '#lib/vendor/AWS/SQS'
-import {publishEvent} from '#lib/vendor/AWS/EventBridge'
+import {publishEventDownloadCompleted, publishEventDownloadFailed} from '#lib/vendor/AWS/EventBridge'
 import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
 import {downloadVideoToS3, fetchVideoInfo} from '#lib/vendor/YouTube'
 import type {File} from '#types/domainModels'
@@ -162,7 +162,7 @@ async function recoverFromS3(message: ValidatedDownloadQueueMessage, s3Size: num
 
   // Publish DownloadCompleted event for observability
   const completedDetail: DownloadCompletedDetail = {fileId, correlationId, s3Key: fileName, fileSize: s3Size, completedAt: new Date().toISOString()}
-  await publishEvent('DownloadCompleted', completedDetail, {correlationId})
+  await publishEventDownloadCompleted(completedDetail, {correlationId})
 
   metrics.addMetric('S3FileRecoverySuccess', MetricUnit.Count, 1)
   logInfo('File recovered from S3 successfully', {fileId, correlationId, s3Size, hasYouTubeMetadata: !!videoInfo})
@@ -327,7 +327,7 @@ async function handleDownloadFailure(
     retryCount: newRetryCount,
     failedAt: new Date().toISOString()
   }
-  await publishEvent('DownloadFailed', failedDetail, {correlationId})
+  await publishEventDownloadFailed(failedDetail, {correlationId})
 
   // Handle retryable errors - let SQS handle retry via visibility timeout
   if (classification.retryable && !isRetryExhausted(newRetryCount, maxRetries)) {
@@ -522,7 +522,7 @@ async function processDownloadRequest(message: ValidatedDownloadQueueMessage, re
     fileSize: uploadResult.fileSize,
     completedAt: new Date().toISOString()
   }
-  await publishEvent('DownloadCompleted', completedDetail, {correlationId})
+  await publishEventDownloadCompleted(completedDetail, {correlationId})
 
   metrics.addMetric('LambdaExecutionSuccess', MetricUnit.Count, 1)
 

@@ -12,7 +12,7 @@ import type {APIGatewayProxyResult, Context} from 'aws-lambda'
 import {createFile, createFileDownload, getFile as getFileRecord} from '#entities/queries'
 import {sendMessage} from '#lib/vendor/AWS/SQS'
 import type {SendMessageRequest} from '#lib/vendor/AWS/SQS'
-import {publishEventWithRetry} from '#lib/vendor/AWS/EventBridge'
+import {publishEventDownloadRequestedWithRetry} from '#lib/vendor/AWS/EventBridge'
 import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
 import {createPersistenceStore, defaultIdempotencyConfig, makeIdempotent} from '#lib/vendor/Powertools/idempotency'
 import {getVideoID} from '#lib/vendor/YouTube'
@@ -121,7 +121,7 @@ async function processWebhookRequest(input: WebhookProcessingInput): Promise<Web
       // Publish DownloadRequested event to EventBridge with retry on transient failures
       // EventBridge routes to DownloadQueue -> StartFileUpload Lambda
       const eventDetail: DownloadRequestedDetail = {fileId, userId, sourceUrl: articleURL, correlationId, requestedAt: new Date().toISOString()}
-      await publishEventWithRetry('DownloadRequested', eventDetail, {correlationId})
+      await publishEventDownloadRequestedWithRetry(eventDetail, {correlationId})
       logInfo('Published DownloadRequested event', {fileId, correlationId})
       addMetadata(span, 'action', 'accepted')
       endSpan(span)
