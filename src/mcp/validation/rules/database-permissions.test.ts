@@ -1,5 +1,10 @@
 /**
  * Tests for database-permissions validation rule
+ *
+ * DEPRECATED: This rule is no longer active.
+ * Database permissions are now derived automatically from @RequiresTable decorators
+ * on entity query methods via build-time call-graph analysis.
+ * See: scripts/extractEntityPermissions.ts
  */
 
 import {describe, expect, it} from 'vitest'
@@ -11,23 +16,8 @@ function createSourceFile(code: string) {
   return project.createSourceFile('test.ts', code)
 }
 
-describe('database-permissions rule', () => {
-  it('should pass for Lambda with no entity imports', () => {
-    const code = `
-      import {ApiHandler} from '#lib/lambda/handlers'
-
-      class MyHandler extends ApiHandler {
-        async executeApi() {
-          return {statusCode: 200, body: '{}'}
-        }
-      }
-    `
-    const sourceFile = createSourceFile(code)
-    const violations = databasePermissionsRule.validate(sourceFile, 'src/lambdas/Test/src/index.ts')
-    expect(violations).toHaveLength(0)
-  })
-
-  it('should fail for Lambda with entity imports but no @RequiresDatabase', () => {
+describe('database-permissions rule (DEPRECATED)', () => {
+  it('should return no violations (rule is deprecated)', () => {
     const code = `
       import {getUser} from '#entities/queries'
       import {ApiHandler} from '#lib/lambda/handlers'
@@ -41,56 +31,12 @@ describe('database-permissions rule', () => {
     `
     const sourceFile = createSourceFile(code)
     const violations = databasePermissionsRule.validate(sourceFile, 'src/lambdas/Test/src/index.ts')
-    expect(violations).toHaveLength(1)
-    expect(violations[0].message).toContain('missing @RequiresDatabase decorator')
-  })
-
-  it('should pass for Lambda with @RequiresDatabase decorator and matching permissions', () => {
-    const code = `
-      import {getUser} from '#entities/queries'
-      import {ApiHandler, RequiresDatabase} from '#lib/lambda/handlers'
-      import {DatabaseTable, DatabaseOperation} from '#types/databasePermissions'
-
-      @RequiresDatabase([
-        {table: DatabaseTable.Users, operations: [DatabaseOperation.Select]}
-      ])
-      class MyHandler extends ApiHandler {
-        async executeApi() {
-          const user = await getUser('123')
-          return {statusCode: 200, body: JSON.stringify(user)}
-        }
-      }
-    `
-    const sourceFile = createSourceFile(code)
-    const violations = databasePermissionsRule.validate(sourceFile, 'src/lambdas/Test/src/index.ts')
     expect(violations).toHaveLength(0)
   })
 
-  it('should fail for Lambda with @RequiresDatabase but missing table permissions', () => {
-    const code = `
-      import {getUser, getFile} from '#entities/queries'
-      import {ApiHandler, RequiresDatabase} from '#lib/lambda/handlers'
-      import {DatabaseTable, DatabaseOperation} from '#types/databasePermissions'
-
-      @RequiresDatabase([
-        {table: DatabaseTable.Users, operations: [DatabaseOperation.Select]}
-      ])
-      class MyHandler extends ApiHandler {
-        async executeApi() {
-          const user = await getUser('123')
-          const file = await getFile('456')
-          return {statusCode: 200, body: JSON.stringify({user, file})}
-        }
-      }
-    `
-    const sourceFile = createSourceFile(code)
-    const violations = databasePermissionsRule.validate(sourceFile, 'src/lambdas/Test/src/index.ts')
-    expect(violations).toHaveLength(1)
-    expect(violations[0].message).toContain('missing permissions for tables')
-    expect(violations[0].message).toContain('files')
-  })
-
-  it('should correctly apply to Lambda handler files', () => {
+  it('should have correct metadata', () => {
+    expect(databasePermissionsRule.name).toBe('database-permissions')
+    expect(databasePermissionsRule.description).toContain('DEPRECATED')
     expect(databasePermissionsRule.appliesTo).toContain('src/lambdas/*/src/index.ts')
   })
 })
