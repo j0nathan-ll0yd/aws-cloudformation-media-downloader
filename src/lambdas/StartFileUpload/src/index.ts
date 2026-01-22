@@ -501,7 +501,12 @@ async function processDownloadRequest(message: ValidatedDownloadQueueMessage, re
     publishDate: videoInfo.upload_date || new Date().toISOString(),
     contentType: 'video/mp4',
     status: FileStatus.Downloaded,
-    url: `https://${cloudfrontDomain}/${fileName}`
+    url: `https://${cloudfrontDomain}/${fileName}`,
+    // Rich metadata fields (Issue #151)
+    duration: videoInfo.duration,
+    uploadDate: videoInfo.upload_date,
+    viewCount: videoInfo.view_count,
+    thumbnailUrl: videoInfo.thumbnail
   }
 
   logDebug('upsertFile <=', fileData)

@@ -245,6 +245,58 @@ Queued | Downloading | Downloaded | Failed
 
 ## Development Workflow
 
+### Crew Member Setup (AUTO-RUN ON FIRST TASK)
+
+**CRITICAL**: When you start working in a crew workspace, FIRST check if setup is complete:
+
+```bash
+# Check if symlinks exist
+ls -la secrets.yaml .env .sops.yaml .claude terraform/terraform.tfstate 2>/dev/null | grep -q "^l" || echo "SETUP REQUIRED"
+```
+
+**If setup is required, run this BEFORE any other work:**
+
+```bash
+MAIN_REPO=~/Repositories/aws-cloudformation-media-downloader
+
+# 1. Create symlinks to shared files from main repo
+ln -sf "$MAIN_REPO/.claude" .claude
+ln -sf "$MAIN_REPO/secrets.yaml" secrets.yaml
+ln -sf "$MAIN_REPO/secrets.enc.yaml" secrets.enc.yaml
+ln -sf "$MAIN_REPO/.sops.yaml" .sops.yaml
+ln -sf "$MAIN_REPO/.env" .env
+ln -sf "$MAIN_REPO/terraform/terraform.tfstate" terraform/terraform.tfstate
+ln -sf "$MAIN_REPO/terraform/terraform.tfstate.backup" terraform/terraform.tfstate.backup
+
+# 2. Install dependencies
+pnpm install
+
+# 3. Initialize OpenTofu providers
+cd terraform && tofu init && cd ..
+
+# 4. Build Lambda functions and layers
+pnpm run build:bgutil:layer && pnpm run build
+```
+
+**Why?** Crew members are git clones, not worktrees, so the `.husky/post-checkout` hook doesn't run automatically. These symlinks ensure:
+- Shared Claude Code settings (`.claude/`)
+- Decrypted secrets for deployment (`secrets.yaml`)
+- SOPS configuration (`.sops.yaml`, `.env`)
+- Shared Terraform state (prevents state conflicts)
+
+### Script Naming (CRITICAL)
+
+**NEVER assume script names** - always verify first:
+```bash
+cat package.json | jq '.scripts | keys'
+```
+
+| You might guess | Actual script name |
+|-----------------|-------------------|
+| `typecheck` | `check:types` |
+| `generate:api-types` | `gen:api:types` |
+| `lint` | `precheck` (includes lint) |
+
 ### Essential Commands
 ```bash
 pnpm run precheck              # Type check + lint (run before commits)
@@ -259,6 +311,33 @@ pnpm run ci:local              # Full local CI
 3. `pnpm run test` - All tests pass
 4. Verify NO AI references in commit message
 5. **NEVER push automatically** - Wait for user request
+
+### Deployment Pipeline (REQUIRED)
+
+**CRITICAL**: Always run the full pipeline before deploying. This ensures IAM policies are correctly generated from decorator metadata.
+
+```bash
+# 1. Build dependencies (infrastructure types, dependency graph, terraform resources)
+pnpm run build:dependencies
+
+# 2. Build Lambda functions
+pnpm run build
+
+# 3. Deploy to AWS
+pnpm run deploy
+```
+
+**Why this order matters:**
+- `build:dependencies` generates `build/terraform-resources.json` which maps resource names to Terraform ARN references
+- `build` compiles Lambda functions and extracts permission decorators
+- `deploy` uses the extracted permissions to generate IAM policies
+
+**Permission extraction scripts (run automatically by build:dependencies):**
+- `extract:service-permissions` - S3, SQS, SNS, EventBridge, Lambda, API Gateway
+- `extract:dynamodb-permissions` - DynamoDB tables (IdempotencyTable, etc.)
+- `extract:all-permissions` - Runs both extraction scripts
+
+**Common mistake:** Running only `extract:service-permissions` will DROP DynamoDB permissions from IAM policies!
 
 See `package.json` for complete command list (cleanup, integration tests, deployment, etc.).
 

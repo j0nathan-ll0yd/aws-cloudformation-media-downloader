@@ -11,11 +11,11 @@ export const fileStatusSchema = z.enum(['Queued', 'Downloading', 'Downloaded', '
 
 export const errorResponseSchema = z.object({error: z.object({code: z.string(), message: z.string()}), requestId: z.string()})
 
-export const unauthorizedErrorSchema = z.object({error: z.object({code: z.literal('Unauthorized'), message: z.string()}), requestId: z.string()})
+export const unauthorizedErrorSchema = z.object({error: z.object({code: z.string(), message: z.string()}), requestId: z.string()})
 
-export const forbiddenErrorSchema = z.object({error: z.object({code: z.literal('Forbidden'), message: z.string()}), requestId: z.string()})
+export const forbiddenErrorSchema = z.object({error: z.object({code: z.string(), message: z.string()}), requestId: z.string()})
 
-export const internalServerErrorSchema = z.object({error: z.object({code: z.literal('InternalServerError'), message: z.string()}), requestId: z.string()})
+export const internalServerErrorSchema = z.object({error: z.object({code: z.string(), message: z.string()}), requestId: z.string()})
 
 export const fileSchema = z.object({
   fileId: z.string(),
@@ -28,7 +28,11 @@ export const fileSchema = z.object({
   authorUser: z.string().optional(),
   contentType: z.string().optional(),
   description: z.string().optional(),
-  url: z.string().url().optional()
+  url: z.string().url().optional(),
+  duration: z.number().optional(),
+  uploadDate: z.string().optional(),
+  viewCount: z.number().optional(),
+  thumbnailUrl: z.string().url().optional()
 })
 
 export const fileListResponseSchema = z.object({contents: z.array(fileSchema), keyCount: z.number()})

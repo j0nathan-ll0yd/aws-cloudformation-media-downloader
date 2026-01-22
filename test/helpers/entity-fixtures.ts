@@ -25,6 +25,11 @@ export interface FileRow {
   contentType: string
   title: string
   status: string
+  // Rich metadata fields (Issue #151)
+  duration: number | null
+  uploadDate: string | null
+  viewCount: number | null
+  thumbnailUrl: string | null
 }
 
 export interface DeviceRow {
@@ -137,6 +142,11 @@ export function createMockFile(overrides: Partial<FileRow> = {}): FileRow {
     contentType: 'video/mp4',
     title: 'Test Video Title',
     status: 'Downloaded',
+    // Rich metadata fields (Issue #151)
+    duration: 612,
+    uploadDate: '20210122',
+    viewCount: 1250000,
+    thumbnailUrl: `https://i.ytimg.com/vi/${fileId}/maxresdefault.jpg`,
     ...overrides
   }
 }

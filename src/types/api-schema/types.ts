@@ -5,14 +5,14 @@
 import {z} from 'zod'
 import * as schemas from './schemas'
 
-export type FileStatusApi = z.infer<typeof schemas.fileStatusSchema>
+export type FileStatus = z.infer<typeof schemas.fileStatusSchema>
 export type ErrorResponse = z.infer<typeof schemas.errorResponseSchema>
 export type UnauthorizedError = z.infer<typeof schemas.unauthorizedErrorSchema>
 export type ForbiddenError = z.infer<typeof schemas.forbiddenErrorSchema>
 export type InternalServerError = z.infer<typeof schemas.internalServerErrorSchema>
-export type FileApi = z.infer<typeof schemas.fileSchema>
+export type File = z.infer<typeof schemas.fileSchema>
 export type FileListResponse = z.infer<typeof schemas.fileListResponseSchema>
-export type DeviceApi = z.infer<typeof schemas.deviceSchema>
+export type Device = z.infer<typeof schemas.deviceSchema>
 export type DeviceRegistrationRequest = z.infer<typeof schemas.deviceRegistrationRequestSchema>
 export type DeviceRegistrationResponse = z.infer<typeof schemas.deviceRegistrationResponseSchema>
 export type FeedlyWebhookRequest = z.infer<typeof schemas.feedlyWebhookRequestSchema>
