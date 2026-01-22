@@ -64,7 +64,7 @@ status: archived
 
 Add freshness metadata to documents that:
 - Contain assessments or audits
-- Have dates in their filenames (e.g., `*-2026-01.md`)
+- Have dates in their filenames (for example, `*-2026-01.md`)
 - Evaluate current system state
 - Make recommendations that may become outdated
 

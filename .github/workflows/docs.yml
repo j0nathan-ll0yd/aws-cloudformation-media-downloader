@@ -21,7 +21,6 @@ jobs:
         with:
           files: docs/wiki/
           reporter: github-check
-          # Don't fail on style issues in existing documentation
-          fail_on_error: false
+          fail_on_error: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -209,7 +209,7 @@ Device tokens are stored for push notifications when downloads complete.
 
 | Component | Pricing Model | Optimization |
 |-----------|---------------|--------------|
-| Lambda | Per-request + duration | Memory tuning (1024MB default) |
+| Lambda | Per-request + duration | Memory tuning (1024 MB default) |
 | Aurora DSQL | On-demand I/O | Prepared statements for hot paths |
 | S3 | Storage + transfer | Standard class, lifecycle policies |
 | API Gateway | Per-request | Caching for list endpoints |
