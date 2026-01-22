@@ -6,7 +6,7 @@
  * is complex. These helpers provide simplified testing patterns.
  */
 
-import {CreateFunctionCommand, DeleteFunctionCommand, InvokeCommand, ListFunctionsCommand} from '@aws-sdk/client-lambda'
+import {CreateFunctionCommand, DeleteFunctionCommand, GetFunctionCommand, InvokeCommand, ListFunctionsCommand} from '@aws-sdk/client-lambda'
 import {createLambdaClient} from '#lib/vendor/AWS/clients'
 
 const lambdaClient = createLambdaClient()
@@ -21,6 +21,36 @@ export async function isLambdaAvailable(): Promise<boolean> {
   } catch {
     return false
   }
+}
+
+/**
+ * Wait for a Lambda function to become Active
+ * LocalStack Lambdas start in "Pending" state and transition to "Active"
+ * @param functionName - Name of the function to wait for
+ * @param maxAttempts - Maximum polling attempts (default 30)
+ * @param delayMs - Delay between attempts in ms (default 500)
+ * @returns True if function became Active, false if timeout
+ */
+export async function waitForFunctionActive(functionName: string, maxAttempts = 30, delayMs = 500): Promise<boolean> {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      const result = await lambdaClient.send(new GetFunctionCommand({FunctionName: functionName}))
+      const state = result.Configuration?.State
+      if (state === 'Active') {
+        return true
+      }
+      if (state === 'Failed') {
+        console.log(`Function ${functionName} is in Failed state`)
+        return false
+      }
+      // State is Pending or other transitional state, wait and retry
+    } catch {
+      // Function may not exist yet, wait and retry
+    }
+    await new Promise((resolve) => setTimeout(resolve, delayMs))
+  }
+  console.log(`Timeout waiting for function ${functionName} to become Active`)
+  return false
 }
 
 /**
@@ -57,9 +87,10 @@ export async function invokeFunction(functionName: string, payload: unknown): Pr
 /**
  * Create a minimal test Lambda function in LocalStack
  * Note: This creates a very simple function that echoes input
+ * Waits for the function to become Active before returning
  *
  * @param functionName - Name for the function
- * @returns True if created successfully
+ * @returns True if created and became Active successfully
  */
 export async function createTestFunction(functionName: string): Promise<boolean> {
   // Minimal Lambda code that echoes input
@@ -87,7 +118,8 @@ export async function createTestFunction(functionName: string): Promise<boolean>
         Code: {ZipFile: zipBuffer}
       })
     )
-    return true
+    // Wait for function to become Active before returning
+    return await waitForFunctionActive(functionName)
   } catch (error) {
     console.log(`Failed to create function ${functionName}:`, error)
     return false
