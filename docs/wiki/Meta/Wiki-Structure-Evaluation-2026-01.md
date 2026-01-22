@@ -199,8 +199,8 @@ Total:         112 files (+ 2 root files = 114)
 2. **@reference syntax** - AGENTS.md uses `@` references to wiki pages
 
 3. **Convention Capture System** - Real-time detection signals:
-   - CRITICAL: "NEVER", "FORBIDDEN", "Zero-tolerance"
-   - HIGH: "MUST", "REQUIRED", "ALWAYS"
+   - CRITICAL: "NEVER," "FORBIDDEN," "Zero-tolerance"
+   - HIGH: "MUST," "REQUIRED," "ALWAYS"
    - MEDIUM: "Prefer X over Y"
 
 4. **MCP server integration** - Convention validation via 28 AST-based rules

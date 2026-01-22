@@ -50,7 +50,7 @@ Scripts documented in `AGENTS.md` and `README.md` are automatically validated ag
 **Purpose**: Run integration tests against LocalStack
 **Dependencies**: LocalStack (Docker), vitest
 **CI Coverage**: Yes (integration-tests.yml)
-**Notes**: Requires LocalStack already running. Use for fast iteration when developing integration tests (~30s). For full lifecycle management, use `ci:local:full` instead.
+**Notes**: Requires LocalStack already running. Use for fast iteration when developing integration tests (~30 s). For full lifecycle management, use `ci:local:full` instead.
 
 ---
 

@@ -224,7 +224,7 @@ logDebug('Drizzle query', {model, data})  // email, name: [REDACTED]
 
 - **Negligible**: Sanitization only runs when `LOG_LEVEL=DEBUG`
 - **Production**: No overhead when debug logging is disabled
-- **Testing**: Adds ~1-2ms per sanitization call
+- **Testing**: Adds ~1-2 ms per sanitization call
 
 ---
 

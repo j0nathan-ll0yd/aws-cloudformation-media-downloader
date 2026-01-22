@@ -59,7 +59,7 @@ Use present tense for most technical documentation.
 
 ### 4. Second Person
 
-Address the reader directly using "you" instead of "users" or "developers".
+Address the reader directly by using "you" rather than "users" or "developers."
 
 | Third person (avoid) | Second person (prefer) |
 |----------------------|------------------------|

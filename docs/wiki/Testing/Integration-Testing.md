@@ -11,7 +11,7 @@
 
 ### When to Use
 - **Validation**: Verifying that local logic works against real AWS IAM permissions and service quotas.
-- **End-to-End**: Testing flows that are difficult to emulate (e.g., complex CloudFront behaviors, actual Apple Push Notification delivery).
+- **End-to-End**: Testing flows that are difficult to emulate (for example, complex CloudFront behaviors, actual Apple Push Notification delivery).
 
 ### Project Scripts
 We provide specific scripts for remocal testing:

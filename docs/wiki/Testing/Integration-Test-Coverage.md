@@ -57,7 +57,7 @@ These tests validate cross-cutting concerns and multi-service orchestration:
 
 CloudFront Lambda@Edge functions execute at AWS edge locations with specific constraints:
 - No VPC access
-- Limited runtime (viewer request/response: 5s, origin request/response: 30s)
+- Limited runtime (viewer request/response: 5 s, origin request/response: 30 s)
 - Region-specific deployment (us-east-1 only)
 - Edge-specific event structure
 

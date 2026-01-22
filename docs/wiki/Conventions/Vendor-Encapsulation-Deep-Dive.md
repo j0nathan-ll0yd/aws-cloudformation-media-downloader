@@ -35,7 +35,7 @@ Key characteristics:
 - **Consistent region handling**: Falls back to `AWS_REGION` environment variable
 - **Type-safe configuration**: Each client has proper TypeScript typing
 
-#### Service-Specific Wrappers (e.g., `S3.ts`, `DynamoDB.ts`)
+#### Service-Specific Wrappers (for example, `S3.ts`, `DynamoDB.ts`)
 ```typescript
 // Domain-focused API instead of raw SDK commands
 export async function headObject(bucket: string, key: string): Promise<HeadObjectCommandOutput> {
@@ -273,7 +273,7 @@ export async function performOperation(params: Params): Promise<Result> {
 
 1. Create wrapper directory: `src/lib/vendor/VendorName/`
 2. Implement lazy initialization pattern
-3. Add environment detection if needed (e.g., test mode)
+3. Add environment detection if needed (for example, test mode)
 4. Export domain-specific functions
 5. Add validation rule if zero-tolerance enforcement required
 6. Update `Vendor-Encapsulation-Policy.md`

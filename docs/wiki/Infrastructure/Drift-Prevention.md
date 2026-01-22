@@ -110,7 +110,7 @@ tofu import aws_iam_policy.PolicyName arn:aws:iam::ACCOUNT:policy/policy-name
 
 ### Scenario 2: Duplicate Resources
 
-Multiple resources with similar names (e.g., `ListFiles`, `ListFiles-1`).
+Multiple resources with similar names (for example, `ListFiles`, `ListFiles-1`).
 
 **Solution:**
 1. Identify which is the "real" one (in Terraform state)

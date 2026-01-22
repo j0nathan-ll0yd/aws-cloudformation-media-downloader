@@ -208,12 +208,12 @@ test/integration/workflows/
 ✅ Tests describe business requirements
 ✅ Tests fail when logic breaks
 ✅ High coverage of YOUR code
-✅ Fast unit tests (< 1s)
+✅ Fast unit tests (< 1 s)
 
 ### Bad
 ❌ Tests describe implementation
 ❌ High coverage via shallow tests
-❌ Slow unit tests (> 5s)
+❌ Slow unit tests (> 5 s)
 ❌ Many integration tests for CRUD
 
 ## Related Patterns

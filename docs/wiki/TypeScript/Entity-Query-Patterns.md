@@ -369,7 +369,7 @@ try {
 }
 ```
 
-**Note**: `upsert*` functions (e.g., `upsertUserFile`, `upsertUserDevice`) do NOT validate FK references. They're designed for scenarios where the caller has already created the parent entities (like RegisterDevice where the device is created immediately before the user-device relationship).
+**Note**: `upsert*` functions (for example, `upsertUserFile`, `upsertUserDevice`) do NOT validate FK references. They're designed for scenarios where the caller has already created the parent entities (like RegisterDevice where the device is created immediately before the user-device relationship).
 
 ## Prepared Statements
 

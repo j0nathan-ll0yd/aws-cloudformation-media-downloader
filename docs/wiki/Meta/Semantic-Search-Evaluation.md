@@ -20,7 +20,7 @@ status: current
 ## Key Improvements
 
 1. **Query Expansion**: Conceptual queries like "cascade deletion" now find relevant code by expanding to technical terms (Promise.allSettled, UserDelete, etc.)
-2. **Enhanced Context Headers**: File path hints improve semantic matching (e.g., "User deletion with cascade delete pattern")
+2. **Enhanced Context Headers**: File path hints improve semantic matching (for example, "User deletion with cascade delete pattern")
 3. **Type Boosting**: Functions are prioritized over variables for better relevance
 4. **Distance Filtering**: Results above threshold are filtered out
 
@@ -250,4 +250,4 @@ Based on this evaluation:
 
 1. **Low Precision Queries**: None
 2. **Missing First Rank**: None
-3. **Low Coverage**: "error handling patterns", "authentication flow"
+3. **Low Coverage**: "error handling patterns" and "authentication flow"

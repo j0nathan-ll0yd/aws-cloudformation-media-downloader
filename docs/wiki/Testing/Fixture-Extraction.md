@@ -137,7 +137,7 @@ Recursive processing handles nested objects/arrays.
 **CloudWatch Logs Insights**:
 - $0.005 per GB ingested
 - $0.005 per GB scanned in queries
-- ~10KB per fixture × 50 fixtures/week = 500KB/week = 26MB/year
+- ~10 KB per fixture × 50 fixtures/week = 500 KB/week = 26 MB/year
 - **Total**: ~$1.30/year ingestion + $4.20/year scanning = **$5.50/year**
 
 ## Troubleshooting

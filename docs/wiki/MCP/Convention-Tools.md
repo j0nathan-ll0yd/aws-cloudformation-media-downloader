@@ -76,7 +76,7 @@ Validate TypeScript files against project conventions using AST analysis (ts-mor
 |------|-------|----------|-------------|
 | aws-sdk-encapsulation | aws-sdk | CRITICAL | No direct AWS SDK imports outside src/lib/vendor/AWS/ |
 | entity-mocking | entity | CRITICAL | Test files must use createEntityMock() for Drizzle entities |
-| config-enforcement | config | CRITICAL | Detects configuration drift (e.g., ESLint allowing underscore vars) |
+| config-enforcement | config | CRITICAL | Detects configuration drift (for example, ESLint allowing underscore vars) |
 | env-validation | env | CRITICAL | Raw process.env access must use getRequiredEnv() wrapper |
 | cascade-safety | cascade | CRITICAL | Promise.all with delete operations must use Promise.allSettled |
 | response-helpers | response | HIGH | Lambda handlers must use response() helper |

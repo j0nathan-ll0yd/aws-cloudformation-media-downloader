@@ -194,7 +194,7 @@ const deps = query.findDependencies('lambda:UserDelete')
 
 ### "Embeddings generation slow"
 
-- First run downloads the embedding model (~100MB)
+- First run downloads the embedding model (~100 MB)
 - Subsequent runs use cached model
 - Indexing large codebases takes 1-2 minutes
 

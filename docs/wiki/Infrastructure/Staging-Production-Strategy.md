@@ -28,11 +28,11 @@ We recommend using **OpenTofu Workspaces** to manage the environments without du
 ```text
 terraform/
 ├── main.tf             # Core logic (remains mostly as is)
-├── variables.tf        # Define input variables (e.g., environment_name, instance_size)
+├── variables.tf        # Define input variables (for example, environment_name, instance_size)
 ├── backend.tf          # Configured for dynamic state paths or separate keys
 ├── environments/       # New directory for env-specific vars
-│   ├── staging.tfvars  # e.g., environment="staging", log_level="DEBUG"
-│   └── prod.tfvars     # e.g., environment="production", log_level="INFO"
+│   ├── staging.tfvars  # for example, environment="staging", log_level="DEBUG"
+│   └── prod.tfvars     # for example, environment="production", log_level="INFO"
 ```
 
 ### 3.2. Secrets Management (SOPS)
@@ -58,7 +58,7 @@ data "sops_file" "secrets" {
 ### 3.3. AWS Account Strategy
 
 **Best Practice:** Separate AWS Accounts.
-*   **Staging Account:** Used for all `develop` branch deploys. Loose limits, cost-optimized (e.g., smaller instances, reduced retention).
+*   **Staging Account:** Used for all `develop` branch deploys. Loose limits, cost-optimized (for example, smaller instances, reduced retention).
 *   **Production Account:** Used for `main` branch deploys. Strict IAM roles, high availability.
 
 **Single Account Fallback:**
@@ -96,7 +96,7 @@ We will replace the manual `npm run deploy` scripts with an automated pipeline.
 2.  **Update SOPS:**
     *   Create `secrets.staging.enc.yaml` (encrypted with Staging KMS/PGP).
     *   Create `secrets.prod.enc.yaml`.
-3.  **Backend Config:** Ensure the backend (S3/DynamoDB) can handle multiple states (e.g., using `workspace_key_prefix` or distinct keys).
+3.  **Backend Config:** Ensure the backend (S3/DynamoDB) can handle multiple states (for example, using `workspace_key_prefix` or distinct keys).
 
 ### Phase 2: Pipeline Creation
 1.  Create `.github/workflows/deploy.yml`.
