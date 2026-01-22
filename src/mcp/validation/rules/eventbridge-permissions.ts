@@ -26,7 +26,7 @@ const EVENT_SPECIFIC_FUNCTIONS = [
   'publishEventDownloadRequested',
   'publishEventDownloadRequestedWithRetry',
   'publishEventDownloadCompleted',
-  'publishEventDownloadFailed',
+  'publishEventDownloadFailed'
 ]
 
 /**
@@ -34,7 +34,7 @@ const EVENT_SPECIFIC_FUNCTIONS = [
  */
 const GENERIC_FUNCTIONS = [
   'publishEvent',
-  'publishEventWithRetry',
+  'publishEventWithRetry'
 ]
 
 /**
@@ -74,7 +74,7 @@ function getEventBridgeCalls(sourceFile: SourceFile): {eventSpecific: string[]; 
 
     // Check for generic functions (but not if they match an event-specific pattern)
     for (const genericFunc of GENERIC_FUNCTIONS) {
-      if (funcName.includes(genericFunc) && !EVENT_SPECIFIC_FUNCTIONS.some(s => funcName.includes(s))) {
+      if (funcName.includes(genericFunc) && !EVENT_SPECIFIC_FUNCTIONS.some((s) => funcName.includes(s))) {
         generic.push(genericFunc)
         break
       }
@@ -109,16 +109,10 @@ export const eventBridgePermissionsRule: ValidationRule = {
       const line = ebImport ? ebImport.getStartLineNumber() : 1
 
       violations.push(
-        createViolation(
-          RULE_NAME,
-          SEVERITY,
-          line,
-          `Lambda handler uses generic EventBridge functions: ${generic.join(', ')}`,
-          {
-            suggestion: 'Use event-specific functions instead: publishEventDownloadRequested(), publishEventDownloadCompleted(), publishEventDownloadFailed()',
-            codeSnippet: `Replace with event-specific function for type safety and static analysis`
-          }
-        )
+        createViolation(RULE_NAME, SEVERITY, line, `Lambda handler uses generic EventBridge functions: ${generic.join(', ')}`, {
+          suggestion: 'Use event-specific functions instead: publishEventDownloadRequested(), publishEventDownloadCompleted(), publishEventDownloadFailed()',
+          codeSnippet: `Replace with event-specific function for type safety and static analysis`
+        })
       )
     }
 

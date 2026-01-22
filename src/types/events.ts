@@ -30,7 +30,7 @@ export enum EventType {
   /** Published after successful download to S3 */
   DownloadCompleted = 'DownloadCompleted',
   /** Published when download fails after all retries */
-  DownloadFailed = 'DownloadFailed',
+  DownloadFailed = 'DownloadFailed'
 }
 
 /**

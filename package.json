@@ -44,6 +44,7 @@
     "extract:service-permissions": "node --import tsx scripts/extractServicePermissions.ts",
     "extract:dynamodb-permissions": "node --import tsx scripts/extractDynamoDBPermissions.ts",
     "extract:entity-permissions": "node --import tsx scripts/extractEntityPermissions.ts",
+    "extract:event-permissions": "node --import tsx scripts/extractEventPermissions.ts",
     "extract:all-permissions": "node --import tsx scripts/extractAllPermissions.ts",
     "generate:dsql-permissions": "node --import tsx scripts/generateDsqlPermissions.ts",
     "dsql:sync": "pnpm run extract:db-permissions && pnpm run extract:entity-permissions && pnpm run generate:dsql-permissions",

@@ -17,7 +17,8 @@ Lambda class decorators provide declarative infrastructure requirements in code.
 | `@RequiresDatabase` | Database table access permissions | HIGH |
 | `@RequiresSecrets` | Secrets Manager/Parameter Store dependencies | HIGH |
 | `@RequiresServices` | AWS service dependencies (S3, SQS, SNS, EventBridge) | HIGH |
-| `@RequiresEventBridge` | EventBridge event patterns published/subscribed | HIGH |
+
+> **Note**: EventBridge event publishing no longer uses a decorator. See [EventBridge Event Publishing](#eventbridge-event-publishing) for the function-based pattern.
 
 ## @RequiresDatabase
 
@@ -125,34 +126,98 @@ class MyHandler extends ApiHandler {
 **EventBridgeOperation:**
 - `PutEvents`
 
-## @RequiresEventBridge
+## EventBridge Event Publishing
 
-Declares which EventBridge events a Lambda handler publishes or subscribes to.
+EventBridge event publishing uses **event-specific functions** rather than decorators. This approach provides:
+- **Self-documenting code**: The function name encodes the event type
+- **Type safety**: Each function is typed for its specific event detail
+- **Static analysis**: Event permissions can be extracted by detecting function calls
 
-### Import
+### Event Types
+
+Event types are defined in `src/types/events.ts`:
 
 ```typescript
-import {RequiresEventBridge} from '#lib/lambda/handlers'
+export enum EventType {
+  DownloadRequested = 'DownloadRequested',
+  DownloadCompleted = 'DownloadCompleted',
+  DownloadFailed = 'DownloadFailed',
+}
+```
+
+### Event-Specific Publisher Functions
+
+Import from the EventBridge vendor wrapper:
+
+```typescript
+import {
+  publishEventDownloadRequested,
+  publishEventDownloadCompleted,
+  publishEventDownloadFailed,
+  publishEventDownloadRequestedWithRetry,
+} from '#lib/vendor/AWS/EventBridge'
 ```
 
 ### Usage
 
 ```typescript
-@RequiresEventBridge({
-  publishes: ['DownloadRequested', 'DownloadCompleted', 'DownloadFailed'],
-  subscribes: ['ArticleReceived'],
-  eventBus: 'default'  // optional, defaults to 'default'
+// Publish a download request
+await publishEventDownloadRequested({
+  userId: user.id,
+  url: request.url,
+  metadata: request.metadata,
 })
-class MyHandler extends SqsHandler {
-  // handler implementation
-}
+
+// Publish completion
+await publishEventDownloadCompleted({
+  userId: user.id,
+  fileId: file.id,
+  s3Key: file.s3Key,
+})
+
+// Publish failure
+await publishEventDownloadFailed({
+  userId: user.id,
+  url: request.url,
+  error: error.message,
+})
 ```
 
-### Properties
+### Retry Support
 
-- `publishes`: Array of event detail-types this Lambda publishes
-- `subscribes`: Array of event detail-types this Lambda subscribes to
-- `eventBus`: (optional) Custom event bus name
+For critical events, use the retry variant:
+
+```typescript
+await publishEventDownloadRequestedWithRetry(
+  {userId, url, metadata},
+  {source: 'webhook.feedly'},
+  {maxAttempts: 3, initialDelayMs: 100}
+)
+```
+
+### Build-Time Extraction
+
+The extraction script detects event-specific function calls:
+
+```bash
+pnpm run extract:event-permissions
+# Output: build/event-permissions.json
+```
+
+The manifest maps Lambda handlers to their published/subscribed events:
+
+```json
+{
+  "lambdas": {
+    "StartFileUpload": {
+      "publishes": ["DownloadCompleted", "DownloadFailed"],
+      "subscribes": ["DownloadRequested"],
+      "sourceFile": "src/lambdas/StartFileUpload/src/index.ts"
+    }
+  },
+  "eventTypes": ["DownloadCompleted", "DownloadFailed", "DownloadRequested"]
+}
+```
 
 ## Combining Decorators
 
@@ -168,11 +233,13 @@ Decorators can be combined on a single handler class:
   {service: AWSService.SQS, resource: 'notification-queue', operations: [SQSOperation.SendMessage]},
   {service: AWSService.EventBridge, resource: 'default', operations: [EventBridgeOperation.PutEvents]}
 ])
-@RequiresEventBridge({
-  publishes: ['DownloadCompleted', 'DownloadFailed']
-})
 class StartFileUploadHandler extends SqsHandler {
-  // handler implementation
+  async processRecord(context: SqsRecordContext) {
+    // ... processing logic ...
+
+    // EventBridge events are published using event-specific functions
+    await publishEventDownloadCompleted({userId, fileId, s3Key})
+  }
 }
 ```
 
@@ -193,9 +260,9 @@ pnpm run extract:secret-permissions
 pnpm run extract:service-permissions
 # Output: build/service-permissions.json
 
-# Extract EventBridge permissions
-pnpm run extract:eventbridge-permissions
-# Output: build/eventbridge-permissions.json
+# Extract EventBridge event permissions (via function call detection)
+pnpm run extract:event-permissions
+# Output: build/event-permissions.json
 ```
 
 ## MCP Validation
@@ -205,7 +272,7 @@ The MCP server validates that:
 1. **Database permissions**: Lambdas importing entity queries have `@RequiresDatabase` with matching tables
 2. **Secret permissions**: Lambdas importing secret utilities have `@RequiresSecrets`
 3. **Service permissions**: Lambdas importing AWS vendor wrappers have `@RequiresServices`
-4. **EventBridge permissions**: Lambdas calling `publishEvent()` have `@RequiresEventBridge` with matching event types
+4. **EventBridge permissions**: Lambdas should use event-specific functions (`publishEventDownloadRequested`, etc.) instead of generic `publishEvent()`
 
 Run validation:
 
@@ -305,22 +372,36 @@ class SQSVendor {
 export const sendMessage = SQSVendor.sendMessage.bind(SQSVendor)
 ```
 
-#### @RequiresEventBridge
+#### EventBridge (Event-Specific Functions)
+
+EventBridge publishing uses event-specific functions rather than a method decorator. The vendor wrapper exposes typed functions for each event:
 
 ```typescript
-import {RequiresEventBridge} from '#lib/vendor/AWS/decorators'
-import {EventBridgeResource} from '#types/generatedResources'
-import {EventBridgeOperation} from '#types/servicePermissions'
+// src/lib/vendor/AWS/EventBridge.ts
+import {EventType} from '#types/events'
 
 class EventBridgeVendor {
   @RequiresEventBridge(EventBridgeResource.MediaDownloader, [EventBridgeOperation.PutEvents])
-  static publishEvent<TDetail>(detailType: string, detail: TDetail): Promise<PutEventsResponse> {
-    // implementation
+  private static publishEvent<TDetail>(eventType: EventType, detail: TDetail): Promise<PutEventsResponse> {
+    // internal implementation
   }
 }
 
-export const publishEvent = EventBridgeVendor.publishEvent.bind(EventBridgeVendor)
+// Event-specific functions (public API)
+export async function publishEventDownloadRequested(detail: DownloadRequestedDetail): Promise<PutEventsResponse> {
+  return EventBridgeVendor.publishEvent(EventType.DownloadRequested, detail)
+}
+
+export async function publishEventDownloadCompleted(detail: DownloadCompletedDetail): Promise<PutEventsResponse> {
+  return EventBridgeVendor.publishEvent(EventType.DownloadCompleted, detail)
+}
+
+export async function publishEventDownloadFailed(detail: DownloadFailedDetail): Promise<PutEventsResponse> {
+  return EventBridgeVendor.publishEvent(EventType.DownloadFailed, detail)
+}
 ```
+
+> **Note**: Consumers should always use the event-specific functions, not the internal `publishEvent` method. This enables static analysis of event permissions via function call detection.
 
 ### DynamoDB/Powertools Method Decorator
 

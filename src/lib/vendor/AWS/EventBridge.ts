@@ -20,12 +20,7 @@ import {getRequiredEnv} from '#lib/system/env'
 import {logDebug, logInfo} from '#lib/system/logging'
 import {calculateDelayWithJitter, sleep} from '#lib/system/retry'
 import {EventType} from '#types/events'
-import type {
-  MediaDownloaderEventType,
-  DownloadRequestedDetail,
-  DownloadCompletedDetail,
-  DownloadFailedDetail,
-} from '#types/events'
+import type {DownloadCompletedDetail, DownloadFailedDetail, DownloadRequestedDetail, MediaDownloaderEventType} from '#types/events'
 
 const eventBridge = createEventBridgeClient()
 
@@ -240,10 +235,7 @@ export { EventBridgeVendor }
  * }, { correlationId: context.awsRequestId })
  * ```
  */
-export async function publishEventDownloadRequested(
-  detail: DownloadRequestedDetail,
-  options?: PublishEventOptions
-): Promise<PutEventsResponse> {
+export async function publishEventDownloadRequested(detail: DownloadRequestedDetail, options?: PublishEventOptions): Promise<PutEventsResponse> {
   return EventBridgeVendor.publishEvent(EventType.DownloadRequested, detail, options)
 }
 
@@ -268,10 +260,7 @@ export async function publishEventDownloadRequested(
  * }, { correlationId: context.awsRequestId })
  * ```
  */
-export async function publishEventDownloadCompleted(
-  detail: DownloadCompletedDetail,
-  options?: PublishEventOptions
-): Promise<PutEventsResponse> {
+export async function publishEventDownloadCompleted(detail: DownloadCompletedDetail, options?: PublishEventOptions): Promise<PutEventsResponse> {
   return EventBridgeVendor.publishEvent(EventType.DownloadCompleted, detail, options)
 }
 
@@ -298,10 +287,7 @@ export async function publishEventDownloadCompleted(
  * }, { correlationId: context.awsRequestId })
  * ```
  */
-export async function publishEventDownloadFailed(
-  detail: DownloadFailedDetail,
-  options?: PublishEventOptions
-): Promise<PutEventsResponse> {
+export async function publishEventDownloadFailed(detail: DownloadFailedDetail, options?: PublishEventOptions): Promise<PutEventsResponse> {
   return EventBridgeVendor.publishEvent(EventType.DownloadFailed, detail, options)
 }
 
