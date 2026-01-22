@@ -1,11 +1,11 @@
 /**
  * DSQL Permissions Generator
  *
- * Generates per-Lambda database permissions from `@RequiresDatabase` decorators.
+ * Generates per-Lambda database permissions from entity query `@RequiresTable` decorators.
  * This is a comprehensive generator that replaces both generateTerraformPermissions.ts
  * and generateDbRolesMigration.ts with a unified approach.
  *
- * Generates from build/db-permissions.json:
+ * Generates from build/entity-permissions.json:
  * 1. terraform/dsql_permissions.tf - Terraform locals and for_each resources
  * 2. migrations/0002_lambda_roles.sql - Per-Lambda PostgreSQL roles with GRANTs
  * 3. build/dsql-permissions-report.md - Human-readable report
@@ -71,7 +71,7 @@ function generateGrants(roleName: string, tables: TablePermission[]): string[] {
  */
 function generateTerraformHcl(manifest: PermissionsManifest): string {
   const lines: string[] = [
-    '# Auto-generated from @RequiresDatabase decorators',
+    '# Auto-generated from @RequiresTable decorators',
     '# Do not edit manually - run: pnpm run generate:dsql-permissions',
     `# Generated at: ${new Date().toISOString()}`,
     '',
@@ -137,11 +137,11 @@ function generateSqlMigration(manifest: PermissionsManifest): string {
   const lines: string[] = [
     '-- Migration: 0002_lambda_roles',
     '-- Description: Per-Lambda PostgreSQL roles with fine-grained table permissions',
-    '-- Auto-generated from @RequiresDatabase decorators',
+    '-- Auto-generated from @RequiresTable decorators',
     `-- Generated at: ${new Date().toISOString()}`,
     '--',
     '-- This migration creates per-Lambda PostgreSQL roles and grants them',
-    '-- exactly the table permissions declared in their @RequiresDatabase decorators.',
+    '-- exactly the table permissions declared in their @RequiresTable decorators.',
     '-- Note: ${AWS_ACCOUNT_ID} is replaced at runtime by MigrateDSQL handler.',
     '',
     '-- =============================================================================',
@@ -255,15 +255,61 @@ function generateReport(manifest: PermissionsManifest): string {
  * Main entry point
  */
 async function main(): Promise<void> {
-  const manifestPath = join(projectRoot, 'build/db-permissions.json')
+  const manifestPath = join(projectRoot, 'build/entity-permissions.json')
 
   if (!existsSync(manifestPath)) {
-    console.error('Error: build/db-permissions.json not found.')
-    console.error('Run: pnpm run extract:db-permissions first.')
+    console.error('Error: build/entity-permissions.json not found.')
+    console.error('Run: pnpm run extract:entity-permissions first.')
     process.exit(1)
   }
 
   const manifest: PermissionsManifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
+
+  // Manual overrides for Lambdas that access DB through service layers not traced by dependency graph
+  // These Lambdas use sessionService, BetterAuth, or Drizzle directly instead of entity queries
+  const manualOverrides: Record<string, LambdaPermissions> = {
+    // Uses sessionService -> entity queries (indirect, not traced)
+    ApiGatewayAuthorizer: {
+      tables: [{table: 'sessions', operations: ['SELECT']}],
+      computedAccessLevel: 'readonly'
+    },
+    // Uses sessionService -> entity queries (indirect, not traced)
+    RefreshToken: {
+      tables: [{table: 'sessions', operations: ['SELECT', 'UPDATE']}],
+      computedAccessLevel: 'readwrite'
+    },
+    // Uses BetterAuth which manages sessions/accounts/users internally
+    LoginUser: {
+      tables: [
+        {table: 'users', operations: ['SELECT', 'INSERT', 'UPDATE']},
+        {table: 'sessions', operations: ['SELECT', 'INSERT', 'UPDATE', 'DELETE']},
+        {table: 'accounts', operations: ['SELECT', 'INSERT']}
+      ],
+      computedAccessLevel: 'readwrite'
+    },
+    // Uses Drizzle directly for cleanup operations
+    CleanupExpiredRecords: {
+      tables: [
+        {table: 'sessions', operations: ['SELECT', 'DELETE']},
+        {table: 'verification', operations: ['SELECT', 'DELETE']},
+        {table: 'file_downloads', operations: ['SELECT', 'DELETE']}
+      ],
+      computedAccessLevel: 'readwrite'
+    },
+    // Uses Drizzle directly for migrations - needs admin access
+    MigrateDSQL: {
+      tables: [], // Admin uses all tables
+      computedAccessLevel: 'admin'
+    }
+  }
+
+  // Merge manual overrides (don't override if already present from entity tracing)
+  for (const [name, perms] of Object.entries(manualOverrides)) {
+    if (!manifest.lambdas[name]) {
+      manifest.lambdas[name] = perms
+      console.log(`Added manual override: ${name} (${perms.computedAccessLevel})`)
+    }
+  }
 
   console.log(`Loaded permissions for ${Object.keys(manifest.lambdas).length} Lambdas`)
   console.log('')
