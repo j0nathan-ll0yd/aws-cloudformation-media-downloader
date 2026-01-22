@@ -5,20 +5,40 @@
  * These events enable loose coupling between Lambdas via event-driven architecture.
  *
  * Event Flow:
- * 1. WebhookFeedly publishes DownloadRequested
+ * 1. WebhookFeedly publishes DownloadRequested via publishEventDownloadRequested()
  * 2. EventBridge routes to DownloadQueue (SQS)
  * 3. StartFileUpload consumes from SQS, publishes DownloadCompleted/DownloadFailed
  *
  * @see terraform/eventbridge.tf for routing rules
  * @see terraform/download_queue.tf for SQS configuration
+ * @see src/lib/vendor/AWS/EventBridge.ts for event-specific publisher functions
  */
+
+/**
+ * EventBridge Event Type Catalog
+ *
+ * Single source of truth for all domain events in the MediaDownloader system.
+ * Used by:
+ * - Event-specific publisher functions (publishEventDownloadRequested, etc.)
+ * - EventBridge routing rules (terraform/eventbridge.tf)
+ * - MCP validation rules
+ * - Event flow documentation generation
+ */
+export enum EventType {
+  /** Published when user requests a new video download */
+  DownloadRequested = 'DownloadRequested',
+  /** Published after successful download to S3 */
+  DownloadCompleted = 'DownloadCompleted',
+  /** Published when download fails after all retries */
+  DownloadFailed = 'DownloadFailed',
+}
 
 /**
  * Event types for routing in EventBridge rules.
  *
- * These match the `detail-type` field in EventBridge events.
+ * @deprecated Use EventType enum instead for type-safe event references
  */
-export type MediaDownloaderEventType = 'DownloadRequested' | 'DownloadCompleted' | 'DownloadFailed'
+export type MediaDownloaderEventType = `${EventType}`
 
 /**
  * Detail payload for DownloadRequested event.
