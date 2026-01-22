@@ -11,9 +11,8 @@
 import type {APIGatewayProxyResult, Context} from 'aws-lambda'
 import {updateSession} from '#entities/queries'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
-import {DatabaseOperation, DatabaseTable} from '#types/databasePermissions'
 import {extractBearerToken} from '#lib/lambda/auth-helpers'
-import {ApiHandler, RequiresDatabase} from '#lib/lambda/handlers'
+import {ApiHandler} from '#lib/lambda/handlers'
 import {buildValidatedResponse} from '#lib/lambda/responses'
 import {validateSessionToken} from '#lib/domain/auth/sessionService'
 import {logDebug, logInfo} from '#lib/system/logging'
@@ -22,7 +21,6 @@ import {logDebug, logInfo} from '#lib/system/logging'
  * Handler for logging out users by invalidating their session
  * Validates the current session and then sets expiresAt to the past
  */
-@RequiresDatabase([{table: DatabaseTable.Sessions, operations: [DatabaseOperation.Select, DatabaseOperation.Update]}])
 class LogoutUserHandler extends ApiHandler<CustomAPIGatewayRequestAuthorizerEvent> {
   readonly operationName = 'LogoutUser'
 

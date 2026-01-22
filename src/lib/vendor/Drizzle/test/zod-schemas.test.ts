@@ -112,7 +112,11 @@ describe('Drizzle Zod Schemas', () => {
         url: 'https://example.com/video.mp4',
         contentType: 'video/mp4',
         title: 'Test Title',
-        status: 'Downloaded'
+        status: 'Downloaded',
+        duration: null,
+        uploadDate: null,
+        viewCount: null,
+        thumbnailUrl: null
       })
       expect(result.success).toBe(true)
     })

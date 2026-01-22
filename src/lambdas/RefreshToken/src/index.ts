@@ -10,8 +10,7 @@
 import type {APIGatewayProxyResult, Context} from 'aws-lambda'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
 import {userLoginResponseSchema} from '#types/api-schema'
-import {DatabaseOperation, DatabaseTable} from '#types/databasePermissions'
-import {ApiHandler, RequiresDatabase} from '#lib/lambda/handlers'
+import {ApiHandler} from '#lib/lambda/handlers'
 import {buildValidatedResponse} from '#lib/lambda/responses'
 import {logDebug, logInfo} from '#lib/system/logging'
 import {refreshSession, validateSessionToken} from '#lib/domain/auth/sessionService'
@@ -21,7 +20,6 @@ import {extractBearerToken} from '#lib/lambda/auth-helpers'
  * Handler for refreshing session tokens
  * Validates the current session and extends its expiration
  */
-@RequiresDatabase([{table: DatabaseTable.Sessions, operations: [DatabaseOperation.Select, DatabaseOperation.Update]}])
 class RefreshTokenHandler extends ApiHandler<CustomAPIGatewayRequestAuthorizerEvent> {
   readonly operationName = 'RefreshToken'
 

@@ -14,7 +14,6 @@ import {sendMessage} from '#lib/vendor/AWS/SQS'
 import {publishEvent} from '#lib/vendor/AWS/EventBridge'
 import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
 import {downloadVideoToS3, fetchVideoInfo} from '#lib/vendor/YouTube'
-import {DatabaseOperation, DatabaseTable} from '#types/databasePermissions'
 import type {File} from '#types/domainModels'
 import type {DownloadCompletedDetail, DownloadFailedDetail} from '#types/events'
 import type {DownloadFailureResult} from '#types/lambda'
@@ -26,7 +25,7 @@ import {validateSchema} from '#lib/validation/constraints'
 import {getRequiredEnv} from '#lib/system/env'
 import {UnexpectedError} from '#lib/system/errors'
 import {closeCookieExpirationIssueIfResolved, createCookieExpirationIssue, createVideoDownloadFailureIssue} from '#lib/integrations/github/issueService'
-import {metrics, MetricUnit, RequiresDatabase, RequiresEventBridge, SqsHandler} from '#lib/lambda/handlers'
+import {metrics, MetricUnit, RequiresEventBridge, SqsHandler} from '#lib/lambda/handlers'
 import type {SqsRecordContext} from '#lib/lambda/handlers'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 import {createFailureNotification, createMetadataNotification} from '#lib/services/notification/transformers'
@@ -541,11 +540,6 @@ async function processDownloadRequest(message: ValidatedDownloadQueueMessage, re
  * Consumes messages from DownloadQueue (routed via EventBridge from WebhookFeedly).
  * Uses ReportBatchItemFailures to enable partial batch success.
  */
-@RequiresDatabase([
-  {table: DatabaseTable.Files, operations: [DatabaseOperation.Select, DatabaseOperation.Insert, DatabaseOperation.Update]},
-  {table: DatabaseTable.FileDownloads, operations: [DatabaseOperation.Select, DatabaseOperation.Insert, DatabaseOperation.Update]},
-  {table: DatabaseTable.UserFiles, operations: [DatabaseOperation.Select]}
-])
 @RequiresEventBridge({publishes: ['DownloadCompleted', 'DownloadFailed']})
 class StartFileUploadHandler extends SqsHandler<unknown> {
   readonly operationName = 'StartFileUpload'

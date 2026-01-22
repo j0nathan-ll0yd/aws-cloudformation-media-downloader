@@ -12,11 +12,10 @@ import type {APIGatewayRequestAuthorizerEvent, CustomAuthorizerResult} from 'aws
 import {getApiKeys, getUsage, getUsagePlans} from '#lib/vendor/AWS/ApiGateway'
 import type {ApiKey, UsagePlan} from '#lib/vendor/AWS/ApiGateway'
 import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
-import {DatabaseOperation, DatabaseTable} from '#types/databasePermissions'
 import {validateSessionToken} from '#lib/domain/auth/sessionService'
 import {getOptionalEnv, getRequiredEnv} from '#lib/system/env'
 import {providerFailureErrorMessage, UnexpectedError} from '#lib/system/errors'
-import {AuthorizerHandler, metrics, MetricUnit, RequiresDatabase} from '#lib/lambda/handlers'
+import {AuthorizerHandler, metrics, MetricUnit} from '#lib/lambda/handlers'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 
 const generatePolicy = (principalId: string, effect: string, resource: string, usageIdentifierKey?: string) => {
@@ -163,7 +162,6 @@ function isRemoteTestRequest(event: APIGatewayRequestAuthorizerEvent): boolean {
  * Handler for API Gateway custom authorization.
  * Validates API keys and session tokens, returns IAM policies.
  */
-@RequiresDatabase([{table: DatabaseTable.Sessions, operations: [DatabaseOperation.Select, DatabaseOperation.Update]}])
 class ApiGatewayAuthorizerHandler extends AuthorizerHandler {
   readonly operationName = 'ApiGatewayAuthorizer'
 

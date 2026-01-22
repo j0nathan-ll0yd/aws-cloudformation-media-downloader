@@ -14,9 +14,8 @@ import type {File} from '#types/domainModels'
 import {FileStatus, UserStatus} from '#types/enums'
 import {fileListResponseSchema} from '#types/api-schema'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
-import {DatabaseOperation, DatabaseTable} from '#types/databasePermissions'
 import {getDefaultFile} from '#config/constants'
-import {metrics, MetricUnit, OptionalAuthHandler, RequiresDatabase} from '#lib/lambda/handlers'
+import {metrics, MetricUnit, OptionalAuthHandler} from '#lib/lambda/handlers'
 import {buildValidatedResponse} from '#lib/lambda/responses'
 import {logDebug} from '#lib/system/logging'
 
@@ -32,10 +31,6 @@ async function getFilesByUser(userId: string): Promise<File[]> {
  * Handler for listing files
  * Returns files for authenticated users or demo file for anonymous
  */
-@RequiresDatabase([
-  {table: DatabaseTable.UserFiles, operations: [DatabaseOperation.Select]},
-  {table: DatabaseTable.Files, operations: [DatabaseOperation.Select]}
-])
 class ListFilesHandler extends OptionalAuthHandler {
   readonly operationName = 'ListFiles'
 

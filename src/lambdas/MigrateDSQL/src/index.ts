@@ -19,9 +19,8 @@ import {fileURLToPath} from 'url'
 import {sql} from '#lib/vendor/Drizzle/types'
 import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
 import {addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
-import {DatabaseOperation, DatabaseTable} from '#types/databasePermissions'
 import type {MigrationFile, MigrationResult} from '#types/lambda'
-import {InvokeHandler, metrics, MetricUnit, RequiresDatabase} from '#lib/lambda/handlers'
+import {InvokeHandler, metrics, MetricUnit} from '#lib/lambda/handlers'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -201,17 +200,6 @@ interface MigrateDSQLInput {
  * Handler for database migration invocation.
  * Applies pending migrations from SQL files.
  */
-@RequiresDatabase([
-  {table: DatabaseTable.Users, operations: [DatabaseOperation.All]},
-  {table: DatabaseTable.Files, operations: [DatabaseOperation.All]},
-  {table: DatabaseTable.FileDownloads, operations: [DatabaseOperation.All]},
-  {table: DatabaseTable.Devices, operations: [DatabaseOperation.All]},
-  {table: DatabaseTable.Sessions, operations: [DatabaseOperation.All]},
-  {table: DatabaseTable.Accounts, operations: [DatabaseOperation.All]},
-  {table: DatabaseTable.VerificationTokens, operations: [DatabaseOperation.All]},
-  {table: DatabaseTable.UserFiles, operations: [DatabaseOperation.All]},
-  {table: DatabaseTable.UserDevices, operations: [DatabaseOperation.All]}
-])
 class MigrateDSQLHandler extends InvokeHandler<MigrateDSQLInput, MigrationResult> {
   readonly operationName = 'MigrateDSQL'
 
