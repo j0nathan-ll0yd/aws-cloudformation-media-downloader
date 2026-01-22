@@ -39,8 +39,8 @@ export { getSecretPermissions, RequiresSecrets } from './RequiresSecrets'
 // AWS service permissions decorator
 export { getServicePermissions, RequiresServices } from './RequiresServices'
 
-// EventBridge permissions decorator
-export { getEventBridgePermissions, RequiresEventBridge } from './RequiresEventBridge'
+// EventBridge permissions - DELETED: Event types now inferred from function names
+// See publishEventDownloadRequested(), publishEventDownloadCompleted(), etc.
 
 // DynamoDB permissions decorator
 export { getDynamoDBPermissions, RequiresDynamoDB } from './RequiresDynamoDB'

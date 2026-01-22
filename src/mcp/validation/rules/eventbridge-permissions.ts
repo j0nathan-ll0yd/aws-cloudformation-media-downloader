@@ -1,8 +1,14 @@
 /**
  * EventBridge Permissions Rule
- * HIGH: Lambda handlers that publish events must have `@RequiresEventBridge` decorator
+ * LOW: Validates Lambda handlers use event-specific publisher functions
  *
- * This rule ensures that event publishing/subscribing is explicitly declared.
+ * Event types are now inferred from function names:
+ * - publishEventDownloadRequested() → publishes DownloadRequested
+ * - publishEventDownloadCompleted() → publishes DownloadCompleted
+ * - publishEventDownloadFailed() → publishes DownloadFailed
+ *
+ * This rule ensures the new pattern is followed and warns about deprecated
+ * generic publishEvent() calls.
  */
 
 import type {SourceFile} from 'ts-morph'
@@ -11,15 +17,24 @@ import {createViolation} from '../types'
 import type {ValidationRule, Violation} from '../types'
 
 const RULE_NAME = 'eventbridge-permissions'
-const SEVERITY = 'HIGH' as const
+const SEVERITY = 'LOW' as const
 
 /**
- * EventBridge-related function names
+ * Event-specific publisher functions (preferred pattern)
  */
-const EVENTBRIDGE_FUNCTIONS = [
+const EVENT_SPECIFIC_FUNCTIONS = [
+  'publishEventDownloadRequested',
+  'publishEventDownloadRequestedWithRetry',
+  'publishEventDownloadCompleted',
+  'publishEventDownloadFailed',
+]
+
+/**
+ * Generic publisher functions (deprecated pattern)
+ */
+const GENERIC_FUNCTIONS = [
   'publishEvent',
   'publishEventWithRetry',
-  'putEvents'
 ]
 
 /**
@@ -37,94 +52,41 @@ function importsEventBridge(sourceFile: SourceFile): boolean {
 }
 
 /**
- * Check if source file calls event publishing functions and extract event types
+ * Get all EventBridge function calls in the source file
  */
-function getPublishedEvents(sourceFile: SourceFile): string[] {
-  const events: string[] = []
+function getEventBridgeCalls(sourceFile: SourceFile): {eventSpecific: string[]; generic: string[]} {
+  const eventSpecific: string[] = []
+  const generic: string[] = []
 
-  // Find all call expressions
   const callExpressions = sourceFile.getDescendantsOfKind(SyntaxKind.CallExpression)
 
   for (const call of callExpressions) {
     const expression = call.getExpression()
     const funcName = expression.getText()
 
-    // Check if this is a publishEvent or publishEventWithRetry call
-    if (EVENTBRIDGE_FUNCTIONS.some((f) => funcName.includes(f))) {
-      const args = call.getArguments()
-      if (args.length > 0) {
-        // First argument is typically the event type
-        const eventTypeArg = args[0].getText()
-        // Extract string value if it's a string literal
-        const match = eventTypeArg.match(/['"`]([^'"`]+)['"`]/)
-        if (match) {
-          events.push(match[1])
-        }
+    // Check for event-specific functions
+    for (const specificFunc of EVENT_SPECIFIC_FUNCTIONS) {
+      if (funcName.includes(specificFunc)) {
+        eventSpecific.push(specificFunc)
+        break
+      }
+    }
+
+    // Check for generic functions (but not if they match an event-specific pattern)
+    for (const genericFunc of GENERIC_FUNCTIONS) {
+      if (funcName.includes(genericFunc) && !EVENT_SPECIFIC_FUNCTIONS.some(s => funcName.includes(s))) {
+        generic.push(genericFunc)
+        break
       }
     }
   }
 
-  return [...new Set(events)]
-}
-
-/**
- * Check if a class has the `@RequiresEventBridge` decorator
- */
-function hasRequiresEventBridgeDecorator(sourceFile: SourceFile): boolean {
-  const classes = sourceFile.getClasses()
-  for (const classDecl of classes) {
-    const decorator = classDecl.getDecorator('RequiresEventBridge')
-    if (decorator) {
-      return true
-    }
-  }
-  return false
-}
-
-/**
- * Get declared published events from @RequiresEventBridge decorator
- */
-function getDeclaredPublishedEvents(sourceFile: SourceFile): string[] {
-  const events: string[] = []
-  const classes = sourceFile.getClasses()
-
-  for (const classDecl of classes) {
-    const decorator = classDecl.getDecorator('RequiresEventBridge')
-    if (!decorator) {
-      continue
-    }
-
-    const args = decorator.getArguments()
-    if (args.length === 0) {
-      continue
-    }
-
-    const eventObj = args[0].asKind(SyntaxKind.ObjectLiteralExpression)
-    if (!eventObj) {
-      continue
-    }
-
-    for (const prop of eventObj.getProperties()) {
-      if (prop.isKind(SyntaxKind.PropertyAssignment) && prop.getName() === 'publishes') {
-        const arrayLiteral = prop.getInitializer()?.asKind(SyntaxKind.ArrayLiteralExpression)
-        if (arrayLiteral) {
-          for (const element of arrayLiteral.getElements()) {
-            const match = element.getText().match(/['"`]([^'"`]+)['"`]/)
-            if (match) {
-              events.push(match[1])
-            }
-          }
-        }
-      }
-    }
-  }
-
-  return events
+  return {eventSpecific: [...new Set(eventSpecific)], generic: [...new Set(generic)]}
 }
 
 export const eventBridgePermissionsRule: ValidationRule = {
   name: RULE_NAME,
-  description: 'Lambda handlers that publish EventBridge events must have @RequiresEventBridge decorator.',
+  description: 'Lambda handlers should use event-specific publisher functions (publishEventDownloadRequested, etc.).',
   severity: SEVERITY,
   appliesTo: ['src/lambdas/*/src/index.ts'],
   excludes: [],
@@ -134,52 +96,37 @@ export const eventBridgePermissionsRule: ValidationRule = {
     const violations: Violation[] = []
 
     // Check for EventBridge imports
-    const importing = importsEventBridge(sourceFile)
-
-    // If no EventBridge imports, no validation needed
-    if (!importing) {
+    if (!importsEventBridge(sourceFile)) {
       return violations
     }
 
-    // Get published events from code
-    const publishedEvents = getPublishedEvents(sourceFile)
+    const {eventSpecific, generic} = getEventBridgeCalls(sourceFile)
 
-    // If no events are published, skip (might just import utilities)
-    if (publishedEvents.length === 0) {
-      return violations
-    }
-
-    // Check if @RequiresEventBridge decorator exists
-    if (!hasRequiresEventBridgeDecorator(sourceFile)) {
-      // Find the EventBridge import line for better error location
+    // Warn about generic function usage (deprecated pattern)
+    if (generic.length > 0) {
       const imports = sourceFile.getImportDeclarations()
       const ebImport = imports.find((i) => i.getModuleSpecifierValue().includes('EventBridge'))
       const line = ebImport ? ebImport.getStartLineNumber() : 1
 
       violations.push(
-        createViolation(RULE_NAME, SEVERITY, line, 'Lambda handler publishes events but is missing @RequiresEventBridge decorator', {
-          suggestion: 'Add @RequiresEventBridge decorator to the handler class with published event types',
-          codeSnippet: `Events published: ${publishedEvents.join(', ')}`
-        })
+        createViolation(
+          RULE_NAME,
+          SEVERITY,
+          line,
+          `Lambda handler uses generic EventBridge functions: ${generic.join(', ')}`,
+          {
+            suggestion: 'Use event-specific functions instead: publishEventDownloadRequested(), publishEventDownloadCompleted(), publishEventDownloadFailed()',
+            codeSnippet: `Replace with event-specific function for type safety and static analysis`
+          }
+        )
       )
-      return violations
     }
 
-    // Check if all published events are declared
-    const declaredEvents = getDeclaredPublishedEvents(sourceFile)
-    const undeclaredEvents = publishedEvents.filter((e) => !declaredEvents.includes(e))
-
-    if (undeclaredEvents.length > 0) {
-      const classes = sourceFile.getClasses()
-      const classWithDecorator = classes.find((c) => c.getDecorator('RequiresEventBridge'))
-      const line = classWithDecorator ? classWithDecorator.getStartLineNumber() : 1
-
-      violations.push(
-        createViolation(RULE_NAME, SEVERITY, line, `@RequiresEventBridge decorator is missing published events: ${undeclaredEvents.join(', ')}`, {
-          suggestion: 'Add the missing event types to the publishes array',
-          codeSnippet: `Declared: [${declaredEvents.join(', ')}], Actual: [${publishedEvents.join(', ')}]`
-        })
-      )
+    // Info: Log event-specific functions found (for documentation purposes)
+    // This is informational only - no violation for using the correct pattern
+    if (eventSpecific.length > 0) {
+      // Events are now self-documenting via function names
+      // No violation needed - this is the desired pattern
     }
 
     return violations
