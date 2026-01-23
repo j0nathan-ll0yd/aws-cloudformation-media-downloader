@@ -128,7 +128,12 @@ class FileQueries {
           url: input.url,
           contentType: input.contentType,
           title: input.title,
-          status: input.status
+          status: input.status,
+          // Rich metadata fields (Issue #151)
+          duration: input.duration,
+          uploadDate: input.uploadDate,
+          viewCount: input.viewCount,
+          thumbnailUrl: input.thumbnailUrl
         }
       }).returning()
       return result

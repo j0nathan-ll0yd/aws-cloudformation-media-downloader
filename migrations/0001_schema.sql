@@ -96,7 +96,12 @@ CREATE TABLE IF NOT EXISTS files (
   url TEXT DEFAULT NULL,
   content_type TEXT NOT NULL,
   title TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'Queued'
+  status TEXT NOT NULL DEFAULT 'Queued',
+  -- Rich metadata fields (Issue #151)
+  duration INTEGER DEFAULT NULL,
+  upload_date TEXT DEFAULT NULL,
+  view_count INTEGER DEFAULT NULL,
+  thumbnail_url TEXT DEFAULT NULL
 );
 
 -- File Downloads table - Download orchestration state

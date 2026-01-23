@@ -304,55 +304,67 @@ main() {
   STALE_PATHS=""
 
   # Check for common stale path patterns in wiki docs
+  # Use a single awk pass per file to extract backtick-wrapped paths outside code blocks
   while IFS= read -r md_file; do
-    # Extract backtick-wrapped paths and check if they exist
-    while IFS= read -r line_content; do
-      # Look for paths that start with common prefixes
-      # shellcheck disable=SC2016 # Backticks in pattern are intentional
-      while IFS= read -r path; do
-        [ -z "$path" ] && continue
+    # Extract all backtick-wrapped paths in a single awk pass (skip fenced code blocks)
+    # This avoids nested loops and process substitutions that cause memory issues
+    paths=$(awk '
+      BEGIN { in_code = 0 }
+      /^```/ { in_code = !in_code; next }
+      !in_code {
+        # Match backtick-wrapped content and print it
+        while (match($0, /`[^`]+`/)) {
+          path = substr($0, RSTART+1, RLENGTH-2)
+          print path
+          $0 = substr($0, RSTART+RLENGTH)
+        }
+      }
+    ' "$md_file" 2>/dev/null || true)
 
-        # Skip bare directory names (types/, util/, lib/) - these are conceptual references
-        [[ "$path" == "types/" ]] && continue
-        [[ "$path" == "util/" ]] && continue
-        [[ "$path" == "lib/" ]] && continue
+    # Check each extracted path
+    while IFS= read -r path; do
+      [ -z "$path" ] && continue
 
-        # Only check paths that look like file/directory references
-        if [[ "$path" =~ ^(src|test|util|types|build|graphrag|terraform|bin|scripts)/ ]]; then
-          # Skip glob patterns (*, **, etc.)
-          [[ "$path" == *"*"* ]] && continue
-          # Skip template patterns ([name], {name}, etc.)
-          [[ "$path" == *"["* ]] && continue
-          [[ "$path" == *"{"* ]] && continue
-          # Skip line number references (file.ts:123)
-          [[ "$path" =~ :[0-9] ]] && continue
-          # Skip generated files that may not exist (in .gitignore)
-          [[ "$path" == "build/graph.json" ]] && continue
-          # Skip template/example paths in documentation
-          [[ "$path" == *"VendorName"* ]] && continue
-          [[ "$path" == *"NewService"* ]] && continue
-          [[ "$path" == "test/test" ]] && continue
-          [[ "$path" == "test/fixtures/"* ]] && continue
-          # Skip planned test files documented in audit (may not exist yet)
-          [[ "$path" == *"/test/"*".test.ts" ]] && continue
-          [[ "$path" == "test/helpers/"* ]] && continue
-          [[ "$path" == "test/integration/helpers/"* ]] && continue
+      # Skip bare directory names (types/, util/, lib/) - these are conceptual references
+      [[ "$path" == "types/" ]] && continue
+      [[ "$path" == "util/" ]] && continue
+      [[ "$path" == "lib/" ]] && continue
 
-          # Check if path exists
-          if [ ! -e "$path" ]; then
-            STALE_PATHS="$STALE_PATHS\n  - $md_file: stale path '$path'"
-            CODE_PATHS_OK=false
-          fi
-        elif [[ "$path" =~ ^lib/ ]]; then
-          # Check for common error: lib/ without src/ prefix
-          correct_path="src/$path"
-          if [ -e "$correct_path" ]; then
-            STALE_PATHS="$STALE_PATHS\n  - $md_file: path '$path' should be '$correct_path'"
-            CODE_PATHS_OK=false
-          fi
+      # Only check paths that look like file/directory references
+      if [[ "$path" =~ ^(src|test|util|types|build|graphrag|terraform|bin|scripts)/ ]]; then
+        # Skip glob patterns (*, **, etc.)
+        [[ "$path" == *"*"* ]] && continue
+        # Skip template patterns ([name], {name}, etc.)
+        [[ "$path" == *"["* ]] && continue
+        [[ "$path" == *"{"* ]] && continue
+        # Skip line number references (file.ts:123)
+        [[ "$path" =~ :[0-9] ]] && continue
+        # Skip generated files that may not exist (in .gitignore)
+        [[ "$path" == "build/graph.json" ]] && continue
+        # Skip template/example paths in documentation
+        [[ "$path" == *"VendorName"* ]] && continue
+        [[ "$path" == *"NewService"* ]] && continue
+        [[ "$path" == "test/test" ]] && continue
+        [[ "$path" == "test/fixtures/"* ]] && continue
+        # Skip planned test files documented in audit (may not exist yet)
+        [[ "$path" == *"/test/"*".test.ts" ]] && continue
+        [[ "$path" == "test/helpers/"* ]] && continue
+        [[ "$path" == "test/integration/helpers/"* ]] && continue
+
+        # Check if path exists
+        if [ ! -e "$path" ]; then
+          STALE_PATHS="$STALE_PATHS\n  - $md_file: stale path '$path'"
+          CODE_PATHS_OK=false
         fi
-      done < <(echo "$line_content" | grep -oE '`[^`]+`' | tr -d '`' || true)
-    done < <(awk 'BEGIN{c=0; bt=sprintf("%c",96); pat="^" bt bt bt} $0 ~ pat {c=1-c; next} c==0{print}' "$md_file" 2> /dev/null || true)
+      elif [[ "$path" =~ ^lib/ ]]; then
+        # Check for common error: lib/ without src/ prefix
+        correct_path="src/$path"
+        if [ -e "$correct_path" ]; then
+          STALE_PATHS="$STALE_PATHS\n  - $md_file: path '$path' should be '$correct_path'"
+          CODE_PATHS_OK=false
+        fi
+      fi
+    done <<< "$paths"
   done < <(find docs/wiki -name "*.md" 2> /dev/null)
 
   if [ "$CODE_PATHS_OK" = true ]; then

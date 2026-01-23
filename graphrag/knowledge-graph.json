@@ -392,7 +392,11 @@
           "authorUser",
           "contentType",
           "description",
-          "url"
+          "url",
+          "duration",
+          "uploadDate",
+          "viewCount",
+          "thumbnailUrl"
         ]
       }
     },

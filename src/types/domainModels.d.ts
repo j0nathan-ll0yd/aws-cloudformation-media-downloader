@@ -73,6 +73,14 @@ export interface File {
   title: string
   /** Current download/availability status */
   status: FileStatus
+  /** Video duration in seconds */
+  duration?: number
+  /** Original YouTube upload date (ISO 8601) */
+  uploadDate?: string
+  /** View count at time of download */
+  viewCount?: number
+  /** YouTube thumbnail URL */
+  thumbnailUrl?: string
 }
 
 /**

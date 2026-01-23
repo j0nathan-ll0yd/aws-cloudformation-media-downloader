@@ -251,9 +251,9 @@ function extractOperation(expr: string): string {
         'PutEvents': 'events:PutEvents'
       },
       'ApiGatewayOperation': {
-        'GetApiKeys': 'apigateway:GET:/apikeys',
-        'GetUsage': 'apigateway:GET:/usageplans/*/usage',
-        'GetUsagePlans': 'apigateway:GET:/usageplans'
+        'GetApiKeys': 'apigateway:GET',
+        'GetUsage': 'apigateway:GET',
+        'GetUsagePlans': 'apigateway:GET'
       },
       'LambdaOperation': {
         'Invoke': 'lambda:InvokeFunction',

@@ -61,18 +61,32 @@ function generateStatement(permission: ServicePermission, comment: string): stri
   const actions = permission.operations.map((op) => `"${op}"`).join(', ')
 
   // Build resource ARN reference
-  let resourceArn: string
-  if (permission.hasWildcard) {
+  let resourceArns: string[]
+
+  if (permission.service === 'apigateway') {
+    // API Gateway requires specific ARN paths for resources
+    // Format: arn:aws:apigateway:{region}::/{path}
+    resourceArns = [
+      '"arn:aws:apigateway:${data.aws_region.current.name}::/apikeys"',
+      '"arn:aws:apigateway:${data.aws_region.current.name}::/apikeys/*"',
+      '"arn:aws:apigateway:${data.aws_region.current.name}::/usageplans"',
+      '"arn:aws:apigateway:${data.aws_region.current.name}::/usageplans/*"'
+    ]
+  } else if (permission.hasWildcard) {
     // For wildcard permissions (like S3 objects), append /* to the ARN
-    resourceArn = `"\${${permission.arnRef}}/*"`
+    resourceArns = [`"\${${permission.arnRef}}/*"`]
   } else {
-    resourceArn = `${permission.arnRef}`
+    resourceArns = [`${permission.arnRef}`]
   }
+
+  const resourcesStr = resourceArns.length === 1
+    ? resourceArns[0]
+    : `[\n      ${resourceArns.join(',\n      ')}\n    ]`
 
   return `  # ${comment}
   statement {
     actions   = [${actions}]
-    resources = [${resourceArn}]
+    resources = ${resourceArns.length === 1 ? `[${resourcesStr}]` : resourcesStr}
   }`
 }
 

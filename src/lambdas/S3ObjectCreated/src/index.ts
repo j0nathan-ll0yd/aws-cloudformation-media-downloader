@@ -12,9 +12,8 @@ import {getFilesByKey, getUserFilesByFileId} from '#entities/queries'
 import {sendMessage} from '#lib/vendor/AWS/SQS'
 import type {SendMessageRequest} from '#lib/vendor/AWS/SQS'
 import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
-import {DatabaseOperation, DatabaseTable} from '#types/databasePermissions'
 import type {File} from '#types/domainModels'
-import {metrics, MetricUnit, RequiresDatabase, S3EventHandler} from '#lib/lambda/handlers'
+import {metrics, MetricUnit, S3EventHandler} from '#lib/lambda/handlers'
 import type {S3RecordContext} from '#lib/lambda/handlers'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 import {createDownloadReadyNotification} from '#lib/services/notification/transformers'
@@ -61,10 +60,6 @@ function dispatchFileNotificationToUser(file: File, userId: string) {
  * Handler for S3 object creation events.
  * Dispatches download-ready notifications to all users waiting for the file.
  */
-@RequiresDatabase([
-  {table: DatabaseTable.Files, operations: [DatabaseOperation.Select]},
-  {table: DatabaseTable.UserFiles, operations: [DatabaseOperation.Select]}
-])
 class S3ObjectCreatedHandler extends S3EventHandler {
   readonly operationName = 'S3ObjectCreated'
 

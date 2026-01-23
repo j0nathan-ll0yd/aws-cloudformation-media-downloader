@@ -269,7 +269,15 @@ export async function getFile(fileId: string): Promise<Partial<File> | null> {
 
   // Convert null to undefined for optional fields and cast status to enum
   const row = result[0]
-  return {...row, url: row.url ?? undefined, status: row.status as FileStatus}
+  return {
+    ...row,
+    url: row.url ?? undefined,
+    status: row.status as FileStatus,
+    duration: row.duration ?? undefined,
+    uploadDate: row.uploadDate ?? undefined,
+    viewCount: row.viewCount ?? undefined,
+    thumbnailUrl: row.thumbnailUrl ?? undefined
+  }
 }
 
 /**
@@ -631,7 +639,15 @@ export async function getFilesByKey(key: string): Promise<Array<Partial<File>>> 
   await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
 
   const result = await db.select().from(files).where(eq(files.key, key))
-  return result.map((row) => ({...row, url: row.url ?? undefined, status: row.status as FileStatus}))
+  return result.map((row) => ({
+    ...row,
+    url: row.url ?? undefined,
+    status: row.status as FileStatus,
+    duration: row.duration ?? undefined,
+    uploadDate: row.uploadDate ?? undefined,
+    viewCount: row.viewCount ?? undefined,
+    thumbnailUrl: row.thumbnailUrl ?? undefined
+  }))
 }
 
 // ============================================================================

@@ -59,7 +59,15 @@ export const files = pgTable('files', {
   url: text('url'),
   contentType: text('content_type').notNull(),
   title: text('title').notNull(),
-  status: text('status').notNull().default('Queued')
+  status: text('status').notNull().default('Queued'),
+  /** Video duration in seconds */
+  duration: integer('duration'),
+  /** Original YouTube upload date (ISO 8601) */
+  uploadDate: text('upload_date'),
+  /** View count at download time */
+  viewCount: integer('view_count'),
+  /** YouTube thumbnail URL */
+  thumbnailUrl: text('thumbnail_url')
 }, (table) => [
   index('files_key_idx').on(table.key)
 ])

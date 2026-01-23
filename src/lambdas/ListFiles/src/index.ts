@@ -14,28 +14,49 @@ import type {File} from '#types/domainModels'
 import {FileStatus, UserStatus} from '#types/enums'
 import {fileListResponseSchema} from '#types/api-schema'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
-import {DatabaseOperation, DatabaseTable} from '#types/databasePermissions'
 import {getDefaultFile} from '#config/constants'
-import {metrics, MetricUnit, OptionalAuthHandler, RequiresDatabase} from '#lib/lambda/handlers'
+import {metrics, MetricUnit, OptionalAuthHandler} from '#lib/lambda/handlers'
 import {buildValidatedResponse} from '#lib/lambda/responses'
 import {logDebug} from '#lib/system/logging'
+
+/**
+ * Transform database row to domain File type.
+ * Converts null values to undefined for API response compatibility.
+ */
+function toFile(row: Awaited<ReturnType<typeof getFilesForUser>>[0]): File {
+  return {
+    fileId: row.fileId,
+    size: row.size,
+    authorName: row.authorName,
+    authorUser: row.authorUser,
+    publishDate: row.publishDate,
+    description: row.description,
+    key: row.key,
+    contentType: row.contentType,
+    title: row.title,
+    status: row.status as File['status'],
+    // Convert null to undefined for optional fields
+    url: row.url ?? undefined,
+    duration: row.duration ?? undefined,
+    uploadDate: row.uploadDate ?? undefined,
+    viewCount: row.viewCount ?? undefined,
+    thumbnailUrl: row.thumbnailUrl ?? undefined
+  }
+}
 
 /** Get files for a user using a single JOIN query */
 async function getFilesByUser(userId: string): Promise<File[]> {
   logDebug('getFilesByUser <=', userId)
-  const files = await getFilesForUser(userId)
+  const rows = await getFilesForUser(userId)
+  const files = rows.map(toFile)
   logDebug('getFilesByUser =>', files)
-  return files as File[]
+  return files
 }
 
 /**
  * Handler for listing files
  * Returns files for authenticated users or demo file for anonymous
  */
-@RequiresDatabase([
-  {table: DatabaseTable.UserFiles, operations: [DatabaseOperation.Select]},
-  {table: DatabaseTable.Files, operations: [DatabaseOperation.Select]}
-])
 class ListFilesHandler extends OptionalAuthHandler {
   readonly operationName = 'ListFiles'
 

@@ -104,6 +104,26 @@ model File {
    * CloudFront URL for downloading the file
    */
   url?: url;
+
+  /**
+   * Video duration in seconds
+   */
+  duration?: int32;
+
+  /**
+   * Original YouTube upload date (ISO 8601)
+   */
+  uploadDate?: string;
+
+  /**
+   * View count at time of download
+   */
+  viewCount?: int64;
+
+  /**
+   * YouTube thumbnail URL
+   */
+  thumbnailUrl?: url;
 }
 
 /**

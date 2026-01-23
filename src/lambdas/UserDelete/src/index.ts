@@ -12,8 +12,7 @@ import type {APIGatewayProxyResult, Context} from 'aws-lambda'
 import {deleteUser as deleteUserRecord, deleteUserDevicesByUserId, deleteUserFilesByUserId, getDevicesBatch} from '#entities/queries'
 import type {Device} from '#types/domainModels'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
-import {DatabaseOperation, DatabaseTable} from '#types/databasePermissions'
-import {AuthenticatedHandler, RequiresDatabase} from '#lib/lambda/handlers'
+import {AuthenticatedHandler} from '#lib/lambda/handlers'
 import {buildValidatedResponse} from '#lib/lambda/responses'
 import {createFailedUserDeletionIssue} from '#lib/integrations/github/issueService'
 import {deleteDevice, getUserDevices} from '#lib/services/device/deviceService'
@@ -45,12 +44,6 @@ async function deleteUser(userId: string): Promise<void> {
  * Handler for user deletion with cascade
  * Deletes user files, devices, and finally the user record
  */
-@RequiresDatabase([
-  {table: DatabaseTable.Users, operations: [DatabaseOperation.Delete]},
-  {table: DatabaseTable.Devices, operations: [DatabaseOperation.Select, DatabaseOperation.Delete]},
-  {table: DatabaseTable.UserFiles, operations: [DatabaseOperation.Select, DatabaseOperation.Delete]},
-  {table: DatabaseTable.UserDevices, operations: [DatabaseOperation.Select, DatabaseOperation.Delete]}
-])
 class UserDeleteHandler extends AuthenticatedHandler {
   readonly operationName = 'UserDelete'
 
