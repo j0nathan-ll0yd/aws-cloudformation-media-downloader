@@ -94,6 +94,15 @@ main() {
   mkdir -p build
   pnpm install --frozen-lockfile
   echo -e "${GREEN}  Dependencies installed${NC}"
+
+  # Security audit (part of dependency check)
+  echo "  Running security audit..."
+  if ! pnpm audit --audit-level=high; then
+    echo -e "${RED}  Security audit found high severity vulnerabilities${NC}"
+    echo "  Run 'pnpm audit' for details"
+    exit 1
+  fi
+  echo -e "${GREEN}  Security audit passed${NC}"
   echo ""
 
   # Step 3: TypeSpec compilation
@@ -260,9 +269,9 @@ main() {
   echo "All checks passed in ${MINUTES}m ${SECONDS}s"
   echo ""
   echo "What was checked:"
-  echo "  Environment, dependencies, TypeSpec, build, types, lint, formatting (dprint),"
-  echo "  ShellCheck, ESLint local rules, documentation, docs freshness, dependency rules,"
-  echo "  GraphRAG, documentation sync, unit tests, test output validation"
+  echo "  Environment, dependencies, security audit, TypeSpec, build, types, lint,"
+  echo "  formatting (dprint), ShellCheck, ESLint local rules, documentation, docs freshness,"
+  echo "  dependency rules, GraphRAG, documentation sync, unit tests, test output validation"
   echo ""
   echo "What was NOT checked (run ci:local:full for these):"
   echo "  Integration tests (LocalStack)"

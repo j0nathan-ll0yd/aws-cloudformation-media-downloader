@@ -25,7 +25,7 @@ import {validateSchema} from '#lib/validation/constraints'
 import {getRequiredEnv} from '#lib/system/env'
 import {UnexpectedError} from '#lib/system/errors'
 import {closeCookieExpirationIssueIfResolved, createCookieExpirationIssue, createVideoDownloadFailureIssue} from '#lib/integrations/github/issueService'
-import {metrics, MetricUnit, RequiresEventBridge, SqsHandler} from '#lib/lambda/handlers'
+import {metrics, MetricUnit, SqsHandler} from '#lib/lambda/handlers'
 import type {SqsRecordContext} from '#lib/lambda/handlers'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 import {createFailureNotification, createMetadataNotification} from '#lib/services/notification/transformers'
@@ -540,7 +540,6 @@ async function processDownloadRequest(message: ValidatedDownloadQueueMessage, re
  * Consumes messages from DownloadQueue (routed via EventBridge from WebhookFeedly).
  * Uses ReportBatchItemFailures to enable partial batch success.
  */
-@RequiresEventBridge({publishes: ['DownloadCompleted', 'DownloadFailed']})
 class StartFileUploadHandler extends SqsHandler<unknown> {
   readonly operationName = 'StartFileUpload'
 

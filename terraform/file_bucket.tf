@@ -5,6 +5,10 @@ locals {
 resource "aws_s3_bucket" "Files" {
   bucket = "lifegames-media-downloader-files"
   tags   = local.common_tags
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "aws_s3_bucket_intelligent_tiering_configuration" "FilesTiering" {

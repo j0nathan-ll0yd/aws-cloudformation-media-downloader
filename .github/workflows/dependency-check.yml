@@ -17,6 +17,9 @@ jobs:
 
       - uses: ./.github/actions/setup-node-pnpm
 
+      - name: Security audit
+        run: pnpm audit --audit-level=high
+
       - name: Generate dependency graph
         run: pnpm run generate:graph
 

@@ -7,6 +7,10 @@ resource "aws_dsql_cluster" "media_downloader" {
   tags = merge(local.common_tags, {
     Name = "MediaDownloader-DSQL"
   })
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 # =============================================================================
