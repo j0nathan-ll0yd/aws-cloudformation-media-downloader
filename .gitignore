@@ -25,6 +25,7 @@ terraform/.terraform
 .webpackCache
 .python-version
 layers/yt-dlp/bin/ffmpeg
+layers/yt-dlp/cookies
 layers/ffmpeg/bin/ffmpeg
 layers/bgutil/build/
 layers/bgutil/bgutil-layer.zip
