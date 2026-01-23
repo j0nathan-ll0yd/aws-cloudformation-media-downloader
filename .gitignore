@@ -41,6 +41,12 @@ test/fixtures/raw
 
 # Claude Code (keep commands, exclude user-specific settings)
 .claude/settings.local.json
+
+# gt crew management (local workspace state)
+state.json
+
+# Implementation plans (local working documents)
+PLAN-*.md
 .lancedb
 
 # Repomix context (generated on demand)
