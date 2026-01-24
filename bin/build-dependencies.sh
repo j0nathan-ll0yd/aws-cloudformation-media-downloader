@@ -155,50 +155,67 @@ main() {
   # ============================================================
   section "Phase 6: Secrets Encryption"
 
-  echo 'Checking Secrets (secrets.yaml) via SOPS'
-  local secrets_file_path="${PROJECT_ROOT}/secrets.yaml"
-  local encrypted_secrets_file_path="${PROJECT_ROOT}/secrets.enc.yaml"
   local sops_config_path="${PROJECT_ROOT}/.sops.yaml"
 
-  if [ ! -f "$secrets_file_path" ]; then
-    echo -e "${YELLOW}Warning:${NC} Secrets file does not exist at $secrets_file_path"
-    echo "Please refer to the README for setup instructions"
-    echo "Skipping encryption step"
-  elif [ ! -f "$sops_config_path" ]; then
+  # Check for SOPS config
+  if [ ! -f "$sops_config_path" ]; then
     echo -e "${YELLOW}Warning:${NC} SOPS config file does not exist at $sops_config_path"
     echo "Please refer to the README for SOPS configuration instructions"
     echo "Skipping encryption step"
-  elif grep -q "^sops:" "$secrets_file_path" 2> /dev/null; then
-    # Source file is already encrypted (has sops metadata) - skip
-    echo -e "${YELLOW}Warning:${NC} secrets.yaml appears to already be encrypted - skipping"
-    echo "If this is unintentional, decrypt it with: sops --decrypt secrets.yaml > secrets_plain.yaml"
-  elif [ ! -f "$encrypted_secrets_file_path" ]; then
-    # No encrypted file exists yet - encrypt for the first time
-    echo "Encrypting secrets for the first time..."
-    sops --config "${sops_config_path}" --encrypt --output "${encrypted_secrets_file_path}" "${secrets_file_path}"
   else
-    # Compare hashes to avoid unnecessary re-encryption (AES-GCM uses random IVs)
-    # This requires the age private key to decrypt - skip comparison if unavailable
-    local source_hash
-    local decrypted_content
-    local decrypt_exit_code
-    source_hash=$(shasum -a 256 "${secrets_file_path}" | cut -d' ' -f1)
-    decrypted_content=$(sops --config "${sops_config_path}" --decrypt "${encrypted_secrets_file_path}" 2> /dev/null) || true
-    decrypt_exit_code=$?
+    # Encrypt environment-specific secrets files
+    for env in staging prod; do
+      local secrets_file_path="${PROJECT_ROOT}/secrets.${env}.yaml"
+      local encrypted_secrets_file_path="${PROJECT_ROOT}/secrets.${env}.enc.yaml"
 
-    if [ $decrypt_exit_code -ne 0 ]; then
-      echo "Cannot decrypt secrets (missing age key?) - skipping encryption"
-      echo "To re-encrypt, ensure SOPS_AGE_KEY_FILE is set or key is in ~/.config/sops/age/keys.txt"
-    else
-      local decrypted_hash
-      decrypted_hash=$(echo "$decrypted_content" | shasum -a 256 | cut -d' ' -f1)
+      echo "Checking secrets.${env}.yaml..."
 
-      if [ "$source_hash" != "$decrypted_hash" ]; then
-        echo "Secrets changed - re-encrypting..."
+      if [ ! -f "$secrets_file_path" ]; then
+        echo "  No secrets.${env}.yaml found - skipping"
+        continue
+      fi
+
+      if grep -q "^sops:" "$secrets_file_path" 2> /dev/null; then
+        # Source file is already encrypted (has sops metadata) - skip
+        echo -e "  ${YELLOW}Warning:${NC} secrets.${env}.yaml appears to already be encrypted - skipping"
+        continue
+      fi
+
+      if [ ! -f "$encrypted_secrets_file_path" ]; then
+        # No encrypted file exists yet - encrypt for the first time
+        echo "  Encrypting secrets.${env}.yaml for the first time..."
         sops --config "${sops_config_path}" --encrypt --output "${encrypted_secrets_file_path}" "${secrets_file_path}"
       else
-        echo "Secrets unchanged - skipping encryption"
+        # Compare hashes to avoid unnecessary re-encryption (AES-GCM uses random IVs)
+        local source_hash
+        local decrypted_content
+        local decrypt_exit_code
+        source_hash=$(shasum -a 256 "${secrets_file_path}" | cut -d' ' -f1)
+        decrypted_content=$(sops --config "${sops_config_path}" --decrypt "${encrypted_secrets_file_path}" 2> /dev/null) || true
+        decrypt_exit_code=$?
+
+        if [ $decrypt_exit_code -ne 0 ]; then
+          echo "  Cannot decrypt (missing age key?) - skipping"
+        else
+          local decrypted_hash
+          decrypted_hash=$(echo "$decrypted_content" | shasum -a 256 | cut -d' ' -f1)
+
+          if [ "$source_hash" != "$decrypted_hash" ]; then
+            echo "  Secrets changed - re-encrypting..."
+            sops --config "${sops_config_path}" --encrypt --output "${encrypted_secrets_file_path}" "${secrets_file_path}"
+          else
+            echo "  Secrets unchanged - skipping"
+          fi
+        fi
       fi
+    done
+
+    # Also check legacy secrets.yaml for migration period
+    local legacy_secrets="${PROJECT_ROOT}/secrets.yaml"
+    local legacy_encrypted="${PROJECT_ROOT}/secrets.enc.yaml"
+    if [ -f "$legacy_secrets" ] && [ ! -f "$legacy_encrypted" ]; then
+      echo "Encrypting legacy secrets.yaml..."
+      sops --config "${sops_config_path}" --encrypt --output "${legacy_encrypted}" "${legacy_secrets}"
     fi
   fi
 

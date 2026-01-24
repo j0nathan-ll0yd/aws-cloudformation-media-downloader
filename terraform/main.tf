@@ -76,9 +76,10 @@ locals {
   }
 }
 
-# Read encrypted secrets from YAML
+# Read encrypted secrets based on environment
+# Staging uses secrets.staging.enc.yaml, production uses secrets.prod.enc.yaml
 data "sops_file" "secrets" {
-  source_file = "../secrets.enc.yaml"
+  source_file = "../secrets.${var.environment == "staging" ? "staging" : "prod"}.enc.yaml"
 }
 
 data "aws_iam_policy_document" "CommonLambdaXRay" {
