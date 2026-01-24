@@ -1,0 +1,7 @@
+# Bootstrap terraform uses local state (it's the chicken-and-egg)
+# State is intentionally local since this is run once manually
+.terraform/
+terraform.tfstate
+terraform.tfstate.backup
+*.tfstate.*
+.terraform.lock.hcl
