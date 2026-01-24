@@ -11,6 +11,29 @@
 2. **Match Terraform ID to AWS name**
 3. **Include resource type suffix** (Role, Policy, Queue)
 4. **Be descriptive and specific**
+5. **Use environment prefix** (`stag-*` or `prod-*`)
+
+## Environment Prefix Convention
+
+All AWS resources MUST use an environment prefix via `${var.resource_prefix}`:
+
+| Environment | Prefix | Example |
+|-------------|--------|---------|
+| Staging | `stag` | `stag-RegisterUser`, `stag-media-files-*` |
+| Production | `prod` | `prod-RegisterUser`, `prod-media-files-*` |
+
+```hcl
+# All Lambda functions, IAM roles, queues, etc. use the prefix
+resource "aws_lambda_function" "RegisterUser" {
+  function_name = "${var.resource_prefix}-RegisterUser"
+  # ...
+}
+```
+
+This enables:
+- **Resource isolation** between staging and production in a single AWS account
+- **Easy identification** of which environment owns a resource
+- **CloudWatch filtering** by prefix for monitoring
 
 ## Resource Patterns
 

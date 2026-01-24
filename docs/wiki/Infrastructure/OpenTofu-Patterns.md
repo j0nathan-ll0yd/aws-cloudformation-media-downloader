@@ -348,10 +348,74 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "MediaFilesEncrypt
 - ❌ Leave S3 buckets publicly accessible
 - ❌ Keep CloudWatch logs forever
 
+## Workspace-Based Deployments
+
+### Overview
+
+This project uses OpenTofu workspaces to manage staging and production environments with a single codebase. State is isolated per workspace in S3.
+
+### Workspace Commands
+
+```bash
+# Initialize workspaces (one-time setup)
+./bin/init-workspaces.sh
+
+# Deploy to staging (local agents)
+pnpm run deploy:staging
+
+# Deploy to production (automated via GitHub Actions on merge to master)
+# Or manual deployment:
+./bin/deploy-production.sh
+```
+
+### State Isolation
+
+```hcl
+# terraform/backend.tf
+terraform {
+  backend "s3" {
+    bucket               = "lifegames-media-downloader-tfstate"
+    key                  = "terraform.tfstate"
+    region               = "us-west-2"
+    workspace_key_prefix = "env"
+  }
+}
+```
+
+State file paths:
+- Staging: `s3://lifegames-media-downloader-tfstate/env/staging/terraform.tfstate`
+- Production: `s3://lifegames-media-downloader-tfstate/env/production/terraform.tfstate`
+
+### Environment-Specific Variables
+
+```hcl
+# terraform/environments/staging.tfvars
+environment        = "staging"
+resource_prefix    = "stag"
+log_level          = "DEBUG"
+log_retention_days = 3
+enable_cloudwatch_alarms = false
+
+# terraform/environments/production.tfvars
+environment        = "production"
+resource_prefix    = "prod"
+log_level          = "INFO"
+log_retention_days = 7
+enable_cloudwatch_alarms = true
+```
+
+### Deployment Model
+
+| Environment | Method | When |
+|-------------|--------|------|
+| Staging | Local (`deploy:staging`) | During development |
+| Production | GitHub Actions | Automatic on merge to master |
+
 ## Related Patterns
 
 - [Naming Conventions](../Conventions/Naming-Conventions.md) - PascalCase for resources
 - [Code Comments](../Conventions/Code-Comments.md) - Git as source of truth
+- [Resource-Naming](Resource-Naming.md) - Environment prefix convention
 
 ---
 

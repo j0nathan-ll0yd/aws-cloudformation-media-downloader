@@ -253,6 +253,14 @@ pnpm run validate:conventions  # MCP rule validation
 pnpm run ci:local              # Full local CI
 ```
 
+### Deployment Commands
+```bash
+pnpm run deploy:staging        # Deploy to staging (local agents)
+pnpm run deploy:production     # Deploy to production (manual, or auto via GitHub Actions)
+```
+
+**Note**: Production deployments auto-trigger on merge to master via GitHub Actions.
+
 ### Pre-Commit Checklist
 1. `pnpm run validate:conventions` - No rule violations
 2. `pnpm run precheck` - TypeScript + ESLint clean
