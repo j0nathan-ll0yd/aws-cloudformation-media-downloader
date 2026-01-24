@@ -169,7 +169,7 @@ Powertools Logger **always outputs structured JSON** regardless of Lambda's `log
 | Log size | Smaller | ~20% larger |
 | Structured data | Difficult | Native support |
 
-### Why We Chose JSON
+### Why JSON Was Chosen
 
 1. **CloudWatch Logs Insights** auto-discovers JSON fields - you can filter by `level`, `message`, `requestId`, etc.
 2. **Correlation**: X-Ray trace IDs, request IDs, and service names are automatically included

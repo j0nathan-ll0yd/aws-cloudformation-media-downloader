@@ -265,7 +265,7 @@ When adding a new npm script:
    - Dependencies
    - CI Coverage (add to workflow if appropriate)
    - Notes
-3. If documented in `AGENTS.md` or `README.md`, CI will validate it exists
+3. If documented in `AGENTS.md` or `README.md`, CI validates it exists
 
 **Convention**: Script documentation must stay synchronized with `package.json`. CI enforces this for scripts referenced in main documentation files.
 

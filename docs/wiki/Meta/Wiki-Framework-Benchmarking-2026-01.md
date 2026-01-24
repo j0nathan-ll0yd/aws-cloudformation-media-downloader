@@ -224,8 +224,10 @@ The project wiki was evaluated against 12 industry documentation frameworks. The
 - **Collectively Exhaustive:** All topics covered
 
 **Current Wiki Assessment:**
+<!-- vale Google.FirstPerson = NO -->
 - **ME (No overlap):** No significant redundancy detected
 - **CE (Complete):** Gaps exist (tutorials, architecture overview)
+<!-- vale Google.FirstPerson = YES -->
 
 ---
 

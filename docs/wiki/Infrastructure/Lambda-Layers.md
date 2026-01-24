@@ -86,7 +86,7 @@ The Terraform configuration automatically:
 
 ## Why No Shared Code Layer?
 
-We evaluated adding a shared code layer for common modules (logging, powertools, entity queries) but decided against it:
+The team evaluated adding a shared code layer for common modules (logging, powertools, entity queries) but decided against it:
 
 | Factor | Impact |
 |--------|--------|
@@ -152,7 +152,7 @@ AWS Lambda has a 250 MB unzipped deployment limit (including all layers):
 
 ### Architecture Mismatch
 
-StartFileUpload uses x86_64 for binary compatibility. Using ARM64 binaries will cause "cannot execute binary file" errors.
+StartFileUpload uses x86_64 for binary compatibility. Using ARM64 binaries causes "cannot execute binary file" errors.
 
 ### Cookie File Issues
 

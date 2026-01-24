@@ -20,7 +20,7 @@ This project employs a cutting-edge, "paranoid-security" stack (Node 22, pnpm 10
   - *Action:* Maintain a "Feature Parity Watchlist" in `docs/wiki/Infrastructure/OpenTofu-Patterns.md` to monitor divergence (for example, state encryption features).
 - **Node.js 22 (Verified):** Project explicitly targets `node22`.
   - *Cold Start Risk:* Node 22 has known initial cold start regressions with `http` loading.
-  - *Mitigation:* We use `esbuild` with `external: [aws-sdk]` to utilize the Lambda runtime's pre-loaded SDK, effectively mitigating bundle-size related cold starts.
+  - *Mitigation:* The project uses `esbuild` with `external: [aws-sdk]` to utilize the Lambda runtime's pre-loaded SDK, effectively mitigating bundle-size related cold starts.
   - *Status:* ✅ **Optimized**.
 
 ### 2. Build System

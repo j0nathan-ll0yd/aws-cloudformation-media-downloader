@@ -12,7 +12,7 @@ Before starting, ensure you have:
 
 ## Learning Objectives
 
-By the end of this tutorial, you will:
+By the end of this tutorial, you:
 1. Create the Lambda directory structure
 2. Write a handler following project patterns
 3. Use vendor wrappers for AWS SDK calls

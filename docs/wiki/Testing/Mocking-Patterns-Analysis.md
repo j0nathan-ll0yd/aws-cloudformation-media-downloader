@@ -253,7 +253,7 @@ expect(sqsMock).toHaveReceivedCommandWith(SendMessageCommand, {
 
 ### Hybrid Approach
 
-Given the vendor encapsulation architecture, we can use aws-sdk-client-mock at the client factory level:
+Given the vendor encapsulation architecture, aws-sdk-client-mock can be used at the client factory level:
 
 1. **Modify client factory** to allow test injection:
 

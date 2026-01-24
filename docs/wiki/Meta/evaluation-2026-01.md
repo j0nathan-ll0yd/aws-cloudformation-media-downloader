@@ -384,7 +384,9 @@ resource "aws_lambda_provisioned_concurrency_config" "auth" {
 **Effort**: High
 
 **Current State:**
+<!-- vale Google.We = NO -->
 - Single-region deployment (us-east-1)
+<!-- vale Google.We = YES -->
 - No documented DR strategy
 
 **Recommendations:**

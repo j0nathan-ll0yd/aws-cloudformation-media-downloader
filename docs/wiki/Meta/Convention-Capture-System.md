@@ -184,4 +184,4 @@ Each project maintains its own:
 
 ---
 
-*The Convention Capture System ensures valuable patterns and conventions are never lost. By systematically detecting, tracking, and documenting conventions as they emerge, we build persistent institutional memory that benefits all future work.*
+*The Convention Capture System ensures valuable patterns and conventions are never lost. By systematically detecting, tracking, and documenting conventions as they emerge, the project builds persistent institutional memory that benefits all future work.*

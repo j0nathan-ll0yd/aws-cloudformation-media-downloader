@@ -92,7 +92,7 @@ Complete reference for all GitHub Actions workflows in the project.
 - Response helpers
 - Environment variable handling
 - Cascade delete order
-- And more...
+- And more
 
 ---
 

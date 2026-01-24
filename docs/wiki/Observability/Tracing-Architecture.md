@@ -51,7 +51,7 @@ EventBridge preserves trace context through the event routing.
 StartFileUpload -> S3 -> S3ObjectCreated
      (ADOT)      (event)    (ADOT)
 ```
-**Note**: S3 events do not propagate X-Ray context. We use custom `correlationId` via S3 object metadata for logical correlation.
+**Note**: S3 events do not propagate X-Ray context. The project uses custom `correlationId` via S3 object metadata for logical correlation.
 
 ## OpenTelemetry API
 

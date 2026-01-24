@@ -158,7 +158,9 @@ test('user files relationship', async () => {
 | Connection refused | Ensure LocalStack is running |
 | Service not available | Check SERVICES env var |
 | Credentials error | Use 'test' for both key and secret |
+<!-- vale Google.We = NO -->
 | Region mismatch | Use us-west-2 consistently |
+<!-- vale Google.We = YES -->
 
 ## True Integration vs Mock Disguised
 
@@ -331,7 +333,9 @@ postgres-helpers.ts  → getWorkerSchema() uses VITEST_POOL_ID
 | Mechanism | Implementation | Purpose |
 |-----------|---------------|---------|
 | CI Isolation | `GITHUB_RUN_ID` prefix | Prevents concurrent CI runs from conflicting |
+<!-- vale Google.Ellipses = NO -->
 | Worker Isolation | Schemas (worker_1...worker_8) | Each Vitest worker gets own schema |
+<!-- vale Google.Ellipses = YES -->
 | Test Isolation | `truncateAllTables()` in afterEach | Clears data between tests |
 | Connection Management | `max: 1` per worker | Avoids search_path issues with pool |
 

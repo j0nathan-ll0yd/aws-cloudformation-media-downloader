@@ -89,7 +89,7 @@ project/
 @AGENTS.md
 ```
 
-That's it. One line. Claude Code will read AGENTS.md via this reference.
+That's it. One line. Claude Code reads AGENTS.md via this reference.
 
 ### GEMINI.md Passthrough
 

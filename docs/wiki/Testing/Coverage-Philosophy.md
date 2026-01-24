@@ -13,9 +13,11 @@ Coverage should be a side effect of testing business logic, not a goal itself. I
 
 ## Test Focus
 
+<!-- vale Google.FirstPerson = NO -->
 ### ❌ Wrong: Testing Libraries
 - "Can I upload to S3?" → Testing AWS SDK
 - "Does DynamoDB query work?" → Testing AWS SDK
+<!-- vale Google.FirstPerson = YES -->
 
 ### ✅ Correct: Testing YOUR Logic
 - "Does download workflow complete?" → Testing YOUR orchestration
@@ -102,7 +104,7 @@ Use this flowchart to decide which test type to write:
 
 ### Quick Reference
 
-| Testing... | Test Type | Mock Strategy |
+| Testing | Test Type | Mock Strategy |
 |------------|-----------|---------------|
 | Pure business logic | Unit | Mock everything |
 | Data transformations | Unit | Mock everything |

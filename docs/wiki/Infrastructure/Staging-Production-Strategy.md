@@ -22,7 +22,7 @@ This document outlines the strategy for establishing distinct Staging and Produc
 
 ### 3.1. Infrastructure Structure
 
-We recommend using **OpenTofu Workspaces** to manage the environments without duplicating the `.tf` code, as the infrastructure is expected to be nearly identical between Staging and Production.
+The recommended approach is **OpenTofu Workspaces** to manage the environments without duplicating the `.tf` code, as the infrastructure is expected to be nearly identical between Staging and Production.
 
 **Proposed Directory/File Changes:**
 ```text
@@ -62,13 +62,13 @@ data "sops_file" "secrets" {
 *   **Production Account:** Used for `main` branch deploys. Strict IAM roles, high availability.
 
 **Single Account Fallback:**
-If separate accounts are not feasible immediately, we must use:
+If separate accounts are not feasible immediately, use:
 *   **Resource Naming Prefixes:** `${var.environment}-media-downloader-...`
 *   **Tagging:** Enforce `Environment = var.environment` on ALL resources.
 
 ## 4. CI/CD Pipeline (GitHub Actions)
 
-We will replace the manual `npm run deploy` scripts with an automated pipeline.
+This replaces the manual `npm run deploy` scripts with an automated pipeline.
 
 **Workflow Stages:**
 

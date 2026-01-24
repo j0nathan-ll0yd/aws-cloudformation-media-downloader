@@ -9,7 +9,7 @@
 
 This project uses **pure ESM (ECMAScript Modules)** for AWS Lambda functions running on Node.js 22+. All Lambda bundles are output as `.mjs` files with `format: 'esm'` in esbuild.
 
-However, not all npm packages support ESM natively. This guide documents our approach to maintaining ESM compatibility while using CommonJS (CJS) dependencies.
+However, not all npm packages support ESM natively. This guide documents the project's approach to maintaining ESM compatibility while using CommonJS (CJS) dependencies.
 
 ---
 
@@ -87,7 +87,7 @@ This is the correct pattern for CJS-only packages used in specific functions.
 
 ## Architecture Decision: The `createRequire` Shim
 
-### What We Use
+### What the Project Uses
 
 ```typescript
 // config/esbuild.config.ts
@@ -243,7 +243,7 @@ pnpm patch-commit /path/to/temp/dir
 
 **When to use**: Package has a small, specific CJS pattern that breaks ESM.
 
-**Example**: Our `jsonschema@1.2.7` patch converts `require('url')` to ESM imports:
+**Example**: The `jsonschema@1.2.7` patch converts `require('url')` to ESM imports:
 
 ```diff
 // patches/jsonschema@1.2.7.patch
@@ -287,7 +287,7 @@ Jest requires special configuration to handle ESM and patched packages:
 }
 ```
 
-The `transformIgnorePatterns` regex tells Jest to transform `jsonschema` even though it's in `node_modules`, because our patch introduces ESM syntax.
+The `transformIgnorePatterns` regex tells Jest to transform `jsonschema` even though it's in `node_modules`, because the patch introduces ESM syntax.
 
 ---
 

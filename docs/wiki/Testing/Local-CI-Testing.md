@@ -6,7 +6,7 @@ This guide explains how to run CI checks locally before pushing to GitHub, ensur
 
 Previously, this project used `nektos/act` for local GitHub Actions testing. It was removed due to Apple Silicon (ARM64) incompatibility - the x86-64 Linux containers required for GitHub Actions cause Rosetta translation failures on M1/M2/M3 Macs.
 
-Instead, we use **workflow decomposition**: CI logic is extracted into reusable shell scripts that run both locally and in GitHub Actions, ensuring consistency.
+Instead, the project uses **workflow decomposition**: CI logic is extracted into reusable shell scripts that run both locally and in GitHub Actions, ensuring consistency.
 
 ## Quick Start
 
