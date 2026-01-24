@@ -38,7 +38,7 @@ This runbook documents all secrets used in the media downloader infrastructure, 
    pnpm run extract-cookies:chrome
    ```
 2. Follow the prompts:
-   - Chrome will open automatically
+   - Chrome opens automatically
    - Log into YouTube when prompted
    - Press Enter when logged in (avatar visible)
    - Script extracts and saves cookies to layer
@@ -152,7 +152,7 @@ curl -H "Authorization: token YOUR_TOKEN" \
 
 **Purpose**: Used for session token signing and encryption.
 
-**Impact**: Rotating this secret will invalidate ALL existing user sessions.
+**Impact**: Rotating this secret invalidates ALL existing user sessions.
 
 **Procedure**:
 1. Generate a new random secret:
@@ -171,7 +171,7 @@ curl -H "Authorization: token YOUR_TOKEN" \
    ```
 
 **Post-rotation**:
-- All users will need to re-authenticate
+- All users need to re-authenticate
 - Monitor authentication Lambda logs for issues
 
 ---

@@ -1,6 +1,6 @@
 # Domain Layer Purity
 
-> **Status**: This is an architectural guideline for future development. The `src/lib/domain/` directory will be created as business logic is extracted from Lambda handlers.
+> **Status**: This is an architectural guideline for future development. The `src/lib/domain/` directory is created as business logic is extracted from Lambda handlers.
 
 The domain layer (`src/lib/domain/`) contains pure business logic that must remain infrastructure-agnostic.
 

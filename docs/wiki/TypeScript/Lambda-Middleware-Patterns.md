@@ -112,8 +112,10 @@ export const handler = withPowertools(wrapAuthenticatedHandler(
 ))
 ```
 
+<!-- vale Google.FirstPerson = NO -->
 **When to use**:
 - User-specific operations (get my files, update my settings)
+<!-- vale Google.FirstPerson = YES -->
 - Actions that modify user data
 - Any endpoint that should never work without authentication
 
@@ -212,7 +214,7 @@ export const handler = withPowertools(wrapScheduledHandler(async ({event, contex
 }))
 ```
 
-**Error behavior**: Errors are logged then rethrown. CloudWatch will mark the invocation as failed, triggering any configured alarms.
+**Error behavior**: Errors are logged then rethrown. CloudWatch marks the invocation as failed, triggering any configured alarms.
 
 ---
 

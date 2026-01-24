@@ -4,13 +4,13 @@ When implementing workarounds for upstream dependency issues, follow this proces
 
 ## The Problem
 
-Workarounds for upstream bugs or limitations can persist indefinitely if not tracked. When the upstream issue is fixed, we may continue using unnecessary workaround code.
+Workarounds for upstream bugs or limitations can persist indefinitely if not tracked. When the upstream issue is fixed, the project may continue using unnecessary workaround code.
 
 ## The Solution
 
 Every workaround requires two things:
 
-1. **Tracking GitHub Issue** - Documents the workaround in our repository
+1. **Tracking GitHub Issue** - Documents the workaround in the repository
 2. **Automated Monitoring Workflow** - Checks upstream issue status weekly
 
 ## Process
@@ -29,7 +29,7 @@ process.env.NODE_OPTIONS = '--no-deprecation'
 
 ### 2. Create a Tracking Issue
 
-Create a GitHub issue in our repository that:
+Create a GitHub issue in the repository that:
 - Describes the problem
 - Links to the upstream issue
 - Documents the workaround impact
@@ -54,8 +54,8 @@ trackedIssues:
 
 The workflow runs weekly and:
 - Checks if each tracked upstream issue is closed
-- Posts a comment to our tracking issue when upstream is fixed
-- Allows us to remove the workaround
+- Posts a comment to the tracking issue when upstream is fixed
+- Enables removal of the workaround
 
 ## Workflow Configuration
 
@@ -117,7 +117,7 @@ jobs:
 
 ## Example Workarounds
 
-| Workaround | Upstream Issue | Our Tracking | Status |
+| Workaround | Upstream Issue | Tracking | Status |
 |------------|---------------|--------------|--------|
 | OTEL deprecation suppression | opentelemetry-js#4173 | #216 | Active |
 
@@ -125,5 +125,5 @@ jobs:
 
 1. **No forgotten workarounds**: Automated monitoring ensures cleanup
 2. **Clear documentation**: Comments link to tracking issues
-3. **Proactive notification**: We know when to act
+3. **Proactive notification**: Alerts trigger timely action
 4. **Reduced tech debt**: Workarounds are temporary by design

@@ -148,7 +148,7 @@ Skip formatting for an entire file (use sparingly):
 - **Matrix/grid data** - Visual alignment matters
 - **Complex regex** - Manual formatting aids readability
 - **Generated code** - Preserve generator's formatting
-- **Temporary debugging** - Will be removed soon
+- **Temporary debugging** - Removed before commit
 
 ## Type Aliases for Line Width Management
 

@@ -471,7 +471,7 @@ The primary opportunities for improvement are:
 2. **Extracting magic strings** to a centralized constants file
 3. **Adding timeout/network error tests** to database-accessing Lambdas
 
-Implementing these recommendations will improve test maintainability and ensure consistent coverage patterns across the entire Lambda suite.
+Implementing these recommendations improves test maintainability and ensures consistent coverage patterns across the entire Lambda suite.
 
 ---
 

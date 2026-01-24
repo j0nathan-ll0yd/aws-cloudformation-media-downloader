@@ -14,7 +14,7 @@
 - **End-to-End**: Testing flows that are difficult to emulate (for example, complex CloudFront behaviors, actual Apple Push Notification delivery).
 
 ### Project Scripts
-We provide specific scripts for remocal testing:
+The project provides specific scripts for remocal testing:
 - `npm run test-remote-list`: Hits the deployed API Gateway to list files.
 - `npm run test-remote-hook`: Sends a payload to the deployed Feedly webhook.
 - `npm run test-remote-registerDevice`: Registers a device against the production DB.

@@ -180,15 +180,15 @@ func loginUser(idToken: String) {
 ### ID Token vs Authorization Code
 
 - **ID Token**: A JWT containing user identity claims (email, sub, etc.). Available immediately after Apple Sign In.
-- **Authorization Code**: A one-time code that must be exchanged for tokens via Apple's token endpoint. This is what we used before.
+- **Authorization Code**: A one-time code that must be exchanged for tokens via Apple's token endpoint. This is what the project used before.
 
 ### Name Availability
 
 Apple's privacy design means:
 1. `fullName` is ONLY populated on the first sign-in
-2. Subsequent sign-ins will have `nil` for `fullName`
+2. Subsequent sign-ins have `nil` for `fullName`
 3. The ID token does NOT contain first/last name for privacy reasons
-4. This is why we send name separately in the RegisterUser request
+4. This is why the name is sent separately in the RegisterUser request
 
 The backend detects new users (created within last 5 seconds) and updates their name from the iOS app's request.
 

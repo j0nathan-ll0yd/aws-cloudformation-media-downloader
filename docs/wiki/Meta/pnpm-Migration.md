@@ -156,7 +156,7 @@ GitHub Actions workflows updated to use pnpm:
 
 When adding a new package that requires install scripts:
 
-1. **Try installing** - pnpm will block and error if scripts needed
+1. **Try installing** - pnpm blocks and errors if scripts needed
 2. **Audit the package** - Check package code on npm/GitHub
 3. **Verify legitimacy** - Ensure it's the correct package (not typosquatted)
 4. **Review scripts** - Look at `package.json` scripts field

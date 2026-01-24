@@ -301,4 +301,4 @@ git log --oneline docs/wiki/ | head -10
 
 ---
 
-*Remember: This wiki is a living document. It grows through the Convention Capture System and represents our collective knowledge. Use it, improve it, and help it evolve.*
+*Remember: This wiki is a living document. It grows through the Convention Capture System and represents the project's collective knowledge. Use it, improve it, and help it evolve.*

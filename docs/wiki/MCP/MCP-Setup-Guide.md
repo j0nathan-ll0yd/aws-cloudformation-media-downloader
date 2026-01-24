@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Model Context Protocol (MCP) is an open protocol that standardizes how AI assistants interact with external data sources and tools. For this project, we've implemented an MCP server that provides structured, queryable access to our codebase architecture.
+The Model Context Protocol (MCP) is an open protocol that standardizes how AI assistants interact with external data sources and tools. For this project, an MCP server is implemented that provides structured, queryable access to the codebase architecture.
 
 ## Why MCP?
 

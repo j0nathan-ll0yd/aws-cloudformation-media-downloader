@@ -85,7 +85,7 @@ When adding new components:
 
 1. **Add Lambda**: Update `metadata.json` with trigger type and purpose
 2. **Add Invocation**: Add to `lambdaInvocations` array
-3. **Commit**: GraphRAG will auto-update on push
+3. **Commit**: GraphRAG auto-updates on push
 
 ```bash
 # Manually regenerate (optional)

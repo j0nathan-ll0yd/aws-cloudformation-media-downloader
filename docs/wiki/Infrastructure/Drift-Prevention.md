@@ -130,7 +130,7 @@ Resources in AWS that are no longer needed.
 ./bin/aws-audit.sh --prune
 ```
 
-This will prompt for confirmation before deleting.
+This prompts for confirmation before deleting.
 
 ## Automated Detection
 

@@ -78,7 +78,7 @@ When replacing a function/pattern, update ALL of these in the same PR:
 
 ## Anti-Patterns to Avoid
 
-### "We'll Clean It Up Later"
+### "Clean It Up Later"
 
 ```typescript
 // ❌ BAD - Leaving both implementations

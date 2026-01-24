@@ -31,11 +31,13 @@ vale docs/wiki/Getting-Started.md
 
 Write as if explaining to a colleague. Avoid overly formal or academic language.
 
+<!-- vale Google.We = NO -->
 | Instead of | Use |
 |------------|-----|
-| "It is recommended that one should" | "We recommend" or "You should" |
+| "It is recommended that one should" | "You should" |
 | "The aforementioned functionality" | "This feature" |
 | "Utilize" | "Use" |
+<!-- vale Google.We = YES -->
 
 ### 2. Active Voice
 
@@ -51,11 +53,15 @@ Use active voice where the subject performs the action.
 
 Use present tense for most technical documentation.
 
+<!-- vale Google.Will = NO -->
+<!-- vale Google.Ellipses = NO -->
 | Future (avoid) | Present (prefer) |
 |----------------|------------------|
 | "This function will return a promise" | "This function returns a promise" |
 | "The build will fail if..." | "The build fails if..." |
 | "You will see an error" | "You see an error" |
+<!-- vale Google.Will = YES -->
+<!-- vale Google.Ellipses = YES -->
 
 ### 4. Second Person
 
@@ -176,7 +182,7 @@ Vale checks documentation against these rule categories:
 
 - Use of passive voice
 - Future tense
-- First person plural ("we")
+- First person plural
 - Heading capitalization
 - Acronym usage
 

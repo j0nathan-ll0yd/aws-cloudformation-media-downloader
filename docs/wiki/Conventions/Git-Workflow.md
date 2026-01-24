@@ -235,9 +235,9 @@ claude
 - `graphrag/knowledge-graph.json` (knowledge graph)
 - `build/graph.json` (dependency analysis)
 
-If you start from the main repo, MCP queries will use the **main repo's indexes**, not the worktree's.
+If you start from the main repo, MCP queries use the **main repo's indexes**, not the worktree's.
 
-**Fallback**: If you must work from another directory, use `/add-dir` for file access (but MCP will still use the starting directory's indexes):
+**Fallback**: If you must work from another directory, use `/add-dir` for file access (but MCP still uses the starting directory's indexes):
 ```bash
 /add-dir ~/wt/my-feature
 ```
