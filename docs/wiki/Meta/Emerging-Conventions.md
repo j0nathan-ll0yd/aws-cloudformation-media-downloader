@@ -124,7 +124,7 @@ function getS3Client(): S3Client {
 ```
 
 **Status**: Validated (used in multiple vendor wrappers)
-**Wiki Page**: Could be added to Integration/LocalStack-Testing.md or Testing/Integration-Testing.md
+**Wiki Page**: Could be added to Testing/LocalStack-Testing.md or Testing/Integration-Testing.md
 
 ---
 

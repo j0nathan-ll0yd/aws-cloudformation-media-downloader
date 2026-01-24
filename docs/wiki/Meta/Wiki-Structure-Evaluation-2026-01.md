@@ -353,7 +353,7 @@ Security policies and assessments:
 
 - [Security Audit Report](Security/Security-Audit-Report.md) - Latest assessment
 - [Secret Rotation Runbook](Security/Secret-Rotation-Runbook.md) - Operational guide
-- [Better Auth Architecture](Authentication/Better-Auth-Architecture.md) - Auth system
+- [Better Auth Architecture](Security/Better-Auth-Architecture.md) - Auth system
 
 ### 👁️ Observability
 Monitoring, logging, and tracing:
