@@ -1,0 +1,82 @@
+name: Rollback Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to rollback'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+      commit_sha:
+        description: 'Commit SHA to rollback to (leave empty for previous commit)'
+        required: false
+        type: string
+
+env:
+  AWS_REGION: us-west-2
+  TOFU_VERSION: '1.8.0'
+
+jobs:
+  rollback:
+    name: Rollback ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Determine rollback target
+        id: target
+        run: |
+          if [ -n "${{ inputs.commit_sha }}" ]; then
+            echo "sha=${{ inputs.commit_sha }}" >> $GITHUB_OUTPUT
+          else
+            echo "sha=${{ github.event.before }}" >> $GITHUB_OUTPUT
+          fi
+
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ steps.target.outputs.sha }}
+
+      - uses: ./.github/actions/setup-node-pnpm
+
+      - uses: ./.github/actions/setup-homebrew-tools
+
+      - name: Build
+        run: |
+          pnpm run build:dependencies
+          pnpm run build
+
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: ${{ env.TOFU_VERSION }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ inputs.environment == 'production' && secrets.AWS_ROLE_PRODUCTION || secrets.AWS_ROLE_STAGING }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Decrypt secrets
+        run: |
+          echo "${{ secrets.SOPS_AGE_KEY }}" > /tmp/age-key.txt
+          export SOPS_AGE_KEY_FILE=/tmp/age-key.txt
+          ENV_SUFFIX=${{ inputs.environment == 'production' && 'prod' || 'staging' }}
+          sops --decrypt secrets.${ENV_SUFFIX}.enc.yaml > secrets.${ENV_SUFFIX}.yaml
+
+      - name: Rollback deployment
+        working-directory: terraform
+        run: |
+          tofu init
+          tofu workspace select ${{ inputs.environment }}
+
+          ENV_FILE=${{ inputs.environment == 'production' && 'production' || 'staging' }}
+          tofu apply -var-file=environments/${ENV_FILE}.tfvars -auto-approve
+
+      - name: Post rollback notification
+        run: |
+          echo "::warning::Rolled back ${{ inputs.environment }} to commit ${{ steps.target.outputs.sha }}"

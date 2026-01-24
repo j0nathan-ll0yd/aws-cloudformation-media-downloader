@@ -1,0 +1,112 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - 'terraform/**'
+      - 'src/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "deploy" to confirm production deployment'
+        required: true
+        type: string
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-west-2
+  TOFU_VERSION: '1.8.0'
+
+jobs:
+  # ==========================================================================
+  # Build & Test
+  # ==========================================================================
+  build:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/setup-node-pnpm
+
+      - uses: ./.github/actions/setup-homebrew-tools
+
+      - name: Build dependencies
+        run: pnpm run build:dependencies
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Run unit tests
+        run: pnpm test
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            build/
+            terraform/*.tf
+          retention-days: 1
+
+  # ==========================================================================
+  # Deploy Production (automatic on merge to main)
+  # ==========================================================================
+  deploy-production:
+    name: Deploy Production
+    needs: build
+    runs-on: ubuntu-latest
+    environment: production  # No approval required - auto-deploy
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Validate manual trigger
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          if [ "${{ inputs.confirm }}" != "deploy" ]; then
+            echo "::error::You must type 'deploy' to confirm production deployment"
+            exit 1
+          fi
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: ${{ env.TOFU_VERSION }}
+
+      - name: Configure AWS credentials (Production)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_PRODUCTION }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Decrypt production secrets
+        run: |
+          echo "${{ secrets.SOPS_AGE_KEY }}" > /tmp/age-key.txt
+          export SOPS_AGE_KEY_FILE=/tmp/age-key.txt
+          sops --decrypt secrets.prod.enc.yaml > secrets.prod.yaml
+
+      - name: Deploy to Production
+        working-directory: terraform
+        run: |
+          tofu init
+          tofu workspace select production || tofu workspace new production
+          tofu apply -var-file=environments/production.tfvars -auto-approve
+
+      - name: Post deployment notification
+        if: success()
+        run: |
+          echo "::notice::Production deployment successful! Commit: ${{ github.sha }}"
