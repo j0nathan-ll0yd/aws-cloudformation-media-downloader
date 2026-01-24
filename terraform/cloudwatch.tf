@@ -331,11 +331,11 @@ resource "aws_cloudwatch_dashboard" "Main" {
           period = 300
           view   = "timeSeries"
           metrics = [
-            ["AWS/Lambda", "Invocations", "FunctionName", "WebhookFeedly", { label = "1. WebhookFeedly" }],
+            ["AWS/Lambda", "Invocations", "FunctionName", "${var.resource_prefix}-WebhookFeedly", { label = "1. WebhookFeedly" }],
             ["AWS/Events", "Invocations", "RuleName", aws_cloudwatch_event_rule.DownloadRequested.name, { label = "2. EventBridge" }],
-            ["AWS/Lambda", "Invocations", "FunctionName", "StartFileUpload", { label = "3. StartFileUpload" }],
-            ["AWS/Lambda", "Invocations", "FunctionName", "S3ObjectCreated", { label = "4. S3ObjectCreated" }],
-            ["AWS/Lambda", "Invocations", "FunctionName", "SendPushNotification", { label = "5. SendPushNotification" }]
+            ["AWS/Lambda", "Invocations", "FunctionName", "${var.resource_prefix}-StartFileUpload", { label = "3. StartFileUpload" }],
+            ["AWS/Lambda", "Invocations", "FunctionName", "${var.resource_prefix}-S3ObjectCreated", { label = "4. S3ObjectCreated" }],
+            ["AWS/Lambda", "Invocations", "FunctionName", "${var.resource_prefix}-SendPushNotification", { label = "5. SendPushNotification" }]
           ]
         }
       },
