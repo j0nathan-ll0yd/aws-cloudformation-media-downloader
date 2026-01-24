@@ -28,7 +28,7 @@ resource "aws_s3_bucket_intelligent_tiering_configuration" "FilesTiering" {
 
 # Origin Access Control for CloudFront (replaces public-read ACL)
 resource "aws_cloudfront_origin_access_control" "MediaFilesOAC" {
-  name                              = "media-files-oac"
+  name                              = "${var.resource_prefix}-media-files-oac"
   description                       = "OAC for media files S3 bucket"
   origin_access_control_origin_type = "s3"
   signing_behavior                  = "always"

@@ -1,6 +1,6 @@
-# Auto-generated from @RequiresDatabase decorators
+# Auto-generated from @RequiresTable decorators
 # Do not edit manually - run: pnpm run generate:dsql-permissions
-# Generated at: 2026-01-21T20:04:28.623Z
+# Generated at: 2026-01-24T23:11:31.932Z
 
 locals {
   # Per-Lambda PostgreSQL role configuration
@@ -88,12 +88,12 @@ locals {
 
 resource "aws_iam_role_policy_attachment" "lambda_dsql_connect" {
   for_each   = local.lambda_dsql_connect
-  role       = each.key
+  role       = "${var.resource_prefix}-${each.key}"
   policy_arn = aws_iam_policy.LambdaDSQLConnect.arn
 }
 
 resource "aws_iam_role_policy_attachment" "lambda_dsql_admin" {
   for_each   = local.lambda_dsql_admin
-  role       = each.key
+  role       = "${var.resource_prefix}-${each.key}"
   policy_arn = aws_iam_policy.LambdaDSQLAdminConnect.arn
 }

@@ -26,7 +26,7 @@ data "aws_iam_policy_document" "RegisterDevice_infrastructure" {
 }
 
 resource "aws_iam_policy" "RegisterDevice_infrastructure" {
-  name   = "RegisterDevice-infrastructure"
+  name   = "${var.resource_prefix}-RegisterDevice-infrastructure"
   policy = data.aws_iam_policy_document.RegisterDevice_infrastructure.json
   tags   = local.common_tags
 }
@@ -137,7 +137,7 @@ resource "aws_api_gateway_integration" "RegisterDevicePost" {
 }
 
 resource "aws_sns_topic" "PushNotifications" {
-  name = "PushNotifications"
+  name = "${var.resource_prefix}-PushNotifications"
 }
 
 resource "aws_sns_platform_application" "OfflineMediaDownloader" {
@@ -145,7 +145,7 @@ resource "aws_sns_platform_application" "OfflineMediaDownloader" {
   # TODO: Set calendar reminder for 2026-12-01 to renew certificate
   # Renewal process: Generate new cert in Apple Developer Portal, update SOPS secrets
   count                     = 1
-  name                      = "OfflineMediaDownloader"
+  name                      = "${var.resource_prefix}-OfflineMediaDownloader"
   platform                  = "APNS_SANDBOX"
   platform_credential       = data.sops_file.secrets.data["apns.staging.privateKey"]  # APNS PRIVATE KEY
   platform_principal        = data.sops_file.secrets.data["apns.staging.certificate"] # APNS CERTIFICATE
@@ -154,7 +154,7 @@ resource "aws_sns_platform_application" "OfflineMediaDownloader" {
 }
 
 resource "aws_iam_role" "SNSLoggingRole" {
-  name               = "SNSLoggingRole"
+  name               = "${var.resource_prefix}-SNSLoggingRole"
   assume_role_policy = data.aws_iam_policy_document.SNSAssumeRole.json
   tags               = local.common_tags
 }

@@ -136,7 +136,7 @@ resource "aws_api_gateway_gateway_response" "Default500GatewayResponse" {
 }
 
 resource "aws_iam_role" "ApiGatewayCloudwatch" {
-  name               = "ApiGatewayCloudwatch"
+  name               = "${var.resource_prefix}-ApiGatewayCloudwatch"
   assume_role_policy = data.aws_iam_policy_document.ApiGatewayCloudwatch.json
   tags               = local.common_tags
 }

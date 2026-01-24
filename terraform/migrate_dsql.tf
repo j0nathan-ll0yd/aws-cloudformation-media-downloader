@@ -97,7 +97,8 @@ data "aws_lambda_invocation" "run_migration" {
 
   depends_on = [
     aws_lambda_function.MigrateDSQL,
-    time_sleep.wait_for_dsql
+    time_sleep.wait_for_dsql,
+    aws_iam_role_policy_attachment.lambda_dsql_admin
   ]
 }
 

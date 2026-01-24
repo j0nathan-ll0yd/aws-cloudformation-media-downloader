@@ -53,7 +53,7 @@ data "aws_iam_policy_document" "SendPushNotification_infrastructure" {
 }
 
 resource "aws_iam_policy" "SendPushNotification_infrastructure" {
-  name   = "SendPushNotification-infrastructure"
+  name   = "${var.resource_prefix}-SendPushNotification-infrastructure"
   policy = data.aws_iam_policy_document.SendPushNotification_infrastructure.json
   tags   = local.common_tags
 }

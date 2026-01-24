@@ -93,7 +93,7 @@ data "aws_iam_policy_document" "CommonLambdaXRay" {
 }
 
 resource "aws_iam_policy" "CommonLambdaXRay" {
-  name        = "CommonLambdaXRay"
+  name        = "${var.resource_prefix}-CommonLambdaXRay"
   description = "Allows Lambda functions to write X-Ray traces"
   policy      = data.aws_iam_policy_document.CommonLambdaXRay.json
   tags        = local.common_tags

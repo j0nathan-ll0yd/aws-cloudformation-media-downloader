@@ -167,7 +167,7 @@ resource "aws_iam_role" "StartFileUpload" {
 }
 
 resource "aws_iam_policy" "StartFileUpload_infrastructure" {
-  name   = "StartFileUpload-infrastructure"
+  name   = "${var.resource_prefix}-StartFileUpload-infrastructure"
   policy = data.aws_iam_policy_document.StartFileUpload_infrastructure.json
   tags   = local.common_tags
 }
