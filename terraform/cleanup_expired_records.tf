@@ -3,7 +3,7 @@
 # Runs daily at 3 AM UTC to delete expired records from Aurora DSQL
 
 locals {
-  cleanup_expired_records_function_name = "CleanupExpiredRecords"
+  cleanup_expired_records_function_name = "${var.resource_prefix}-CleanupExpiredRecords"
 }
 
 resource "aws_iam_role" "CleanupExpiredRecords" {
@@ -41,7 +41,7 @@ resource "aws_iam_role_policy_attachment" "CleanupExpiredRecordsXRay" {
 
 resource "aws_cloudwatch_log_group" "CleanupExpiredRecords" {
   name              = "/aws/lambda/${aws_lambda_function.CleanupExpiredRecords.function_name}"
-  retention_in_days = 7
+  retention_in_days = var.log_retention_days
   tags              = local.common_tags
 }
 

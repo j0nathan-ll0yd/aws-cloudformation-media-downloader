@@ -1,5 +1,5 @@
 locals {
-  register_device_function_name = "RegisterDevice"
+  register_device_function_name = "${var.resource_prefix}-RegisterDevice"
 }
 
 resource "aws_iam_role" "RegisterDevice" {
@@ -71,7 +71,7 @@ resource "aws_lambda_permission" "RegisterDevice" {
 
 resource "aws_cloudwatch_log_group" "RegisterDevice" {
   name              = "/aws/lambda/${aws_lambda_function.RegisterDevice.function_name}"
-  retention_in_days = 7
+  retention_in_days = var.log_retention_days
   tags              = local.common_tags
 }
 

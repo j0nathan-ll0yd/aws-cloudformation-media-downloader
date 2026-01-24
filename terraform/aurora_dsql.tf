@@ -3,9 +3,9 @@
 # See: https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/issues/196
 
 resource "aws_dsql_cluster" "media_downloader" {
-  deletion_protection_enabled = true
+  deletion_protection_enabled = var.dsql_deletion_protection
   tags = merge(local.common_tags, {
-    Name = "MediaDownloader-DSQL"
+    Name = "${var.resource_prefix}-MediaDownloader-DSQL"
   })
 
   lifecycle {

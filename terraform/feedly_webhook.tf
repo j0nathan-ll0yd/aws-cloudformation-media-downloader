@@ -1,6 +1,6 @@
 locals {
-  webhook_feedly_function_name    = "WebhookFeedly"
-  start_file_upload_function_name = "StartFileUpload"
+  webhook_feedly_function_name    = "${var.resource_prefix}-WebhookFeedly"
+  start_file_upload_function_name = "${var.resource_prefix}-StartFileUpload"
 }
 
 resource "aws_iam_role" "WebhookFeedly" {
@@ -48,7 +48,7 @@ resource "aws_lambda_permission" "WebhookFeedly" {
 
 resource "aws_cloudwatch_log_group" "WebhookFeedly" {
   name              = "/aws/lambda/${aws_lambda_function.WebhookFeedly.function_name}"
-  retention_in_days = 7
+  retention_in_days = var.log_retention_days
   tags              = local.common_tags
 }
 
@@ -458,7 +458,7 @@ resource "aws_lambda_function" "StartFileUpload" {
   depends_on                     = [aws_iam_role_policy_attachment.StartFileUpload_infrastructure, aws_iam_role_policy_attachment.StartFileUpload_services]
   timeout                        = 900
   memory_size                    = 2048
-  reserved_concurrent_executions = 10 # Prevent YouTube rate limiting
+  reserved_concurrent_executions = var.download_reserved_concurrency # Prevent YouTube rate limiting
   filename                       = data.archive_file.StartFileUpload.output_path
   source_code_hash               = data.archive_file.StartFileUpload.output_base64sha256
   # NOTE: Total unzipped layer size must be < 250MB. With Deno (138MB) + ffmpeg + yt-dlp + bgutil,
@@ -501,6 +501,6 @@ resource "aws_lambda_function" "StartFileUpload" {
 
 resource "aws_cloudwatch_log_group" "StartFileUpload" {
   name              = "/aws/lambda/${aws_lambda_function.StartFileUpload.function_name}"
-  retention_in_days = 7
+  retention_in_days = var.log_retention_days
   tags              = local.common_tags
 }

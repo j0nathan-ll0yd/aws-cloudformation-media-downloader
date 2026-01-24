@@ -12,7 +12,7 @@
 # @see terraform/download_queue.tf for SQS configuration
 
 locals {
-  event_bus_name = "MediaDownloader"
+  event_bus_name = "${var.resource_prefix}-MediaDownloader"
 }
 
 # Event Bus: Central routing for all domain events

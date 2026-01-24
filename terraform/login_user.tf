@@ -1,5 +1,5 @@
 locals {
-  login_user_function_name = "LoginUser"
+  login_user_function_name = "${var.resource_prefix}-LoginUser"
 }
 
 resource "aws_iam_role" "LoginUser" {
@@ -43,7 +43,7 @@ resource "aws_lambda_permission" "LoginUser" {
 
 resource "aws_cloudwatch_log_group" "LoginUser" {
   name              = "/aws/lambda/${aws_lambda_function.LoginUser.function_name}"
-  retention_in_days = 7
+  retention_in_days = var.log_retention_days
   tags              = local.common_tags
 }
 

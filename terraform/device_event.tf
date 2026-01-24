@@ -1,5 +1,5 @@
 locals {
-  device_event_function_name = "DeviceEvent"
+  device_event_function_name = "${var.resource_prefix}-DeviceEvent"
 }
 
 resource "aws_iam_role" "DeviceEvent" {
@@ -43,7 +43,7 @@ resource "aws_lambda_permission" "DeviceEvent" {
 
 resource "aws_cloudwatch_log_group" "DeviceEvent" {
   name              = "/aws/lambda/${aws_lambda_function.DeviceEvent.function_name}"
-  retention_in_days = 7
+  retention_in_days = var.log_retention_days
   tags              = local.common_tags
 }
 

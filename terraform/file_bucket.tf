@@ -1,9 +1,9 @@
 locals {
-  s3_object_created_function_name = "S3ObjectCreated"
+  s3_object_created_function_name = "${var.resource_prefix}-S3ObjectCreated"
 }
 
 resource "aws_s3_bucket" "Files" {
-  bucket = "lifegames-media-downloader-files"
+  bucket = "lifegames-${var.resource_prefix}-media-files"
   tags   = local.common_tags
 
   lifecycle {
@@ -123,7 +123,7 @@ resource "aws_lambda_permission" "S3ObjectCreated" {
 
 resource "aws_cloudwatch_log_group" "S3ObjectCreated" {
   name              = "/aws/lambda/${aws_lambda_function.S3ObjectCreated.function_name}"
-  retention_in_days = 7
+  retention_in_days = var.log_retention_days
   tags              = local.common_tags
 }
 

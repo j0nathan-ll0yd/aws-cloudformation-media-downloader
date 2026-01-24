@@ -1,5 +1,5 @@
 resource "aws_api_gateway_rest_api" "Main" {
-  name           = "OfflineMediaDownloader"
+  name           = "${var.resource_prefix}-OfflineMediaDownloader"
   description    = "The API that supports the App"
   api_key_source = "HEADER"
 
@@ -65,7 +65,7 @@ resource "aws_api_gateway_method_settings" "Production" {
 }
 
 resource "aws_api_gateway_usage_plan" "iOSApp" {
-  name        = "iOSApp"
+  name        = "${var.resource_prefix}-iOSApp"
   description = "Internal consumption"
 
   api_stages {
@@ -77,13 +77,13 @@ resource "aws_api_gateway_usage_plan" "iOSApp" {
   # Burst: Maximum concurrent requests allowed
   # Rate: Steady-state requests per second
   throttle_settings {
-    burst_limit = 100
-    rate_limit  = 50
+    burst_limit = var.api_throttle_burst_limit
+    rate_limit  = var.api_throttle_rate_limit
   }
 
   # Daily request quota to prevent abuse
   quota_settings {
-    limit  = 10000
+    limit  = var.api_quota_limit
     period = "DAY"
   }
 }

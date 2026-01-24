@@ -31,6 +31,10 @@ locals {
   # Project name used for resource naming
   project_name = "media-downloader"
 
+  # Environment-aware resource naming prefix
+  # Examples: stag-RegisterUser, prod-RegisterUser
+  name_prefix = var.resource_prefix
+
   # Default Lambda timeout in seconds
   # 30s accommodates DSQL cold start (~2-3s) + connection (~1s) + queries
   default_lambda_timeout = 30
@@ -47,15 +51,15 @@ locals {
   # Common tags for all resources (drift detection & identification)
   common_tags = {
     ManagedBy   = "terraform"
-    Project     = "media-downloader"
-    Environment = "production"
+    Project     = local.project_name
+    Environment = var.environment
   }
 
   # Common environment variables for all lambdas with ADOT layer
   # OPENTELEMETRY_EXTENSION_LOG_LEVEL=warn silences extension INFO logs (~14 lines per cold start)
   # OPENTELEMETRY_COLLECTOR_CONFIG_URI points to custom config that fixes deprecated telemetry.metrics.address
   # NODE_OPTIONS suppresses url.parse() deprecation warning from AWS SDK v3
-  # LOG_LEVEL=DEBUG for development visibility (change to INFO for production)
+  # LOG_LEVEL configured via var.log_level (DEBUG for staging, INFO for production)
   #
   # Note: OTEL_EXPORTER_OTLP_ENDPOINT and OTEL_PROPAGATORS are not needed as ADOT layer
   # defaults to localhost:4318 (HTTP) and X-Ray propagation respectively.
@@ -63,7 +67,8 @@ locals {
     OPENTELEMETRY_EXTENSION_LOG_LEVEL  = "warn"
     OPENTELEMETRY_COLLECTOR_CONFIG_URI = "/var/task/collector.yaml"
     NODE_OPTIONS                       = "--no-deprecation"
-    LOG_LEVEL                          = "DEBUG"
+    LOG_LEVEL                          = var.log_level
+    ENVIRONMENT                        = var.environment
     # Aurora DSQL connection configuration
     # Aurora DSQL endpoints follow the pattern: <identifier>.dsql.<region>.on.aws
     DSQL_CLUSTER_ENDPOINT = "${aws_dsql_cluster.media_downloader.identifier}.dsql.${data.aws_region.current.id}.on.aws"
