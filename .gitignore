@@ -72,3 +72,6 @@ reports/mutation/
 stryker.log
 build/lambdas/*.zip
 playwright-screenshots/
+
+# Vale downloaded packages (use 'vale sync' to fetch)
+.vale/styles/
