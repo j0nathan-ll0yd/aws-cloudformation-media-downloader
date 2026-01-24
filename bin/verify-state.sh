@@ -121,12 +121,7 @@ main() {
   echo "Summary"
   echo "-------"
   echo "  Total managed resources: $((AWS_RESOURCES + DATA_SOURCES + LOCAL_RESOURCES))"
-  echo "  State file location: ${TERRAFORM_DIR}/terraform.tfstate"
-
-  if [[ -L "${TERRAFORM_DIR}/terraform.tfstate" ]]; then
-    echo "  State symlinked to: $(readlink "${TERRAFORM_DIR}/terraform.tfstate")"
-  fi
-
+  echo "  State backend: S3 (remote)"
   echo ""
 }
 

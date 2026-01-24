@@ -182,7 +182,8 @@ git worktree add -b feature/my-feature ~/wt/my-feature master
 
 # 2. Navigate to worktree (auto-setup runs via post-checkout hook)
 cd ~/wt/my-feature
-# Symlinks created automatically (.env, terraform state, etc.)
+# Symlinks created automatically (.env, secrets, etc.)
+# Terraform state is remote (S3) - no symlinks needed
 # Dependencies installed (pnpm install)
 # Terraform initialized (tofu init)
 
@@ -211,9 +212,8 @@ The `.husky/post-checkout` hook automatically configures worktrees:
 | `.claude/` | Symlinked from main repo |
 | `secrets.yaml` | Symlinked from main repo |
 | `.sops.yaml` | Symlinked from main repo |
-| `terraform/terraform.tfstate*` | Symlinked from main repo |
 | Dependencies | `pnpm install` runs automatically |
-| Terraform | `tofu init` runs automatically |
+| Terraform | `tofu init` runs automatically (state is remote) |
 | GraphRAG | `graphrag:extract` generates knowledge graph |
 | Semantic search | `index:codebase` runs in background |
 | Repomix | `pack:context` generates AI context (background) |
