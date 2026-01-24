@@ -110,7 +110,7 @@ All other Lambdas rely on ADOT for automatic AWS SDK call tracing:
 
 ### CloudfrontMiddleware
 
-**No tracing** - Lambda@Edge has strict size limits (~1MB) and cannot use layers. The ADOT layer would add too much to the bundle size.
+**No tracing** - Lambda@Edge has strict size limits (~1 MB) and cannot use layers. The ADOT layer would add too much to the bundle size.
 
 ## Database Query Tracing
 

@@ -1,3 +1,9 @@
+---
+last_updated: 2025-12-21
+next_review: 2026-12-21
+status: current
+---
+
 # 2025 Tech Stack Audit
 
 **Date:** December 21, 2025
@@ -11,7 +17,7 @@ This project employs a cutting-edge, "paranoid-security" stack (Node 22, pnpm 10
 ### 1. Infrastructure & Runtime
 - **OpenTofu (Verified):** The project uses OpenTofu as a drop-in replacement for Terraform.
   - *Status:* ✅ **Safe**. Current compatibility is high.
-  - *Action:* Maintain a "Feature Parity Watchlist" in `docs/wiki/Infrastructure/OpenTofu-Patterns.md` to monitor divergence (e.g., state encryption features).
+  - *Action:* Maintain a "Feature Parity Watchlist" in `docs/wiki/Infrastructure/OpenTofu-Patterns.md` to monitor divergence (for example, state encryption features).
 - **Node.js 22 (Verified):** Project explicitly targets `node22`.
   - *Cold Start Risk:* Node 22 has known initial cold start regressions with `http` loading.
   - *Mitigation:* We use `esbuild` with `external: [aws-sdk]` to utilize the Lambda runtime's pre-loaded SDK, effectively mitigating bundle-size related cold starts.

@@ -12,7 +12,7 @@ This project migrated from npm to pnpm v10+ to implement strategic security hard
 
 **Attack Vector**:
 1. Attackers study which package names LLMs frequently hallucinate
-2. Create typosquatted packages matching those hallucinations (e.g., `stripe-node` vs `stripe`, `aws-s3` vs `@aws-sdk/client-s3`)
+2. Create typosquatted packages matching those hallucinations (for example, `stripe-node` vs `stripe`, `aws-s3` vs `@aws-sdk/client-s3`)
 3. Add malicious `postinstall` scripts that execute **before** developer realizes the mistake
 4. Scripts steal: AWS credentials, environment variables, source code, SSH keys
 

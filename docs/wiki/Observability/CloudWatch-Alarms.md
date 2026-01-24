@@ -8,7 +8,7 @@
 | LambdaErrorsBackground | 3 | Background jobs less tolerant |
 | LambdaThrottles | 0 | Zero tolerance - capacity issue |
 | SqsDlqMessages | 0 | Any DLQ message needs investigation |
-| SqsQueueAge | 3600s | 1 hour max before alerting |
+| SqsQueueAge | 3600 s | 1 hour max before alerting |
 | YouTubeAuthBotDetection | 3 | 3 failures suggest cookie rotation needed |
 | YouTubeAuthCookieExpired | 2 | Quick alert for expired cookies |
 | YouTubeAuthRateLimited | 5 | Allow some rate limiting before alert |

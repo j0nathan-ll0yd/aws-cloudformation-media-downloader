@@ -17,7 +17,7 @@ This document defines the structure and organization of the `docs/` directory.
 
 - Organized by topic: AWS/, Testing/, TypeScript/, MCP/, Meta/, etc.
 - Synced to GitHub Wiki automatically via GitHub Actions
-- Use descriptive file names with PascalCase (e.g., `Lambda-Function-Patterns.md`)
+- Use descriptive file names with PascalCase (for example, `Lambda-Function-Patterns.md`)
 
 **Examples:**
 - Style guides → `docs/wiki/Conventions/`
@@ -86,7 +86,7 @@ docs/
 
 1. **Determine the topic category** (Testing, AWS, TypeScript, etc.)
 2. **Create the file in `docs/wiki/{Category}/`**
-3. **Use PascalCase with hyphens** for the filename (e.g., `New-Feature-Guide.md`)
+3. **Use PascalCase with hyphens** for the filename (for example, `New-Feature-Guide.md`)
 4. **Add cross-references** to related wiki pages
 5. **Update AGENTS.md** if the new doc describes a critical convention
 

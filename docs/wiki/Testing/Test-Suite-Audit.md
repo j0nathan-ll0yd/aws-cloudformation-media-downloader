@@ -1,3 +1,9 @@
+---
+last_updated: 2025-12-30
+next_review: 2026-06-30
+status: current
+---
+
 # Test Suite Audit
 
 > Generated: 2025-12-30

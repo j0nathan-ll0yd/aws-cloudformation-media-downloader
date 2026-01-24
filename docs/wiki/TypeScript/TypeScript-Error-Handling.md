@@ -144,7 +144,7 @@ All error responses follow this structure:
 }
 ```
 
-The `code` field contains the specific error code from the error class (e.g., `VALIDATION_ERROR`, `UNAUTHORIZED`). This enables consistent client-side error handling.
+The `code` field contains the specific error code from the error class (for example, `VALIDATION_ERROR`, `UNAUTHORIZED`). This enables consistent client-side error handling.
 
 ## Error Logging
 

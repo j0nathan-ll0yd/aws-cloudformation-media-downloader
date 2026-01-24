@@ -118,7 +118,7 @@ Semantic git history queries for tracking symbol evolution and blame.
 |-----------|------|----------|-------------|
 | query | string | Yes | Query type: file, symbol, pattern, blame_semantic |
 | target | string | Yes | Target file path or pattern (for symbol: file:symbolName format) |
-| since | string | No | Since date filter (e.g., 2024-01-01) |
+| since | string | No | Since date filter (for example, 2024-01-01) |
 | limit | number | No | Maximum commits to return (default: 10) |
 
 **Query Types**:

@@ -45,7 +45,7 @@ Mocks integrate via `setTestXXXClient()` functions for dependency injection.
 - `createMockUser()` - User entity with Sign In With Apple fields
 - `createMockFile()` - File entity with video defaults
 - `createMockDevice()` - Device entity with APNS token
-- `createMockSession()` - Session with 24h expiry
+- `createMockSession()` - Session with 24 h expiry
 - Relationship factories: `createMockUserFile()`, `createMockUserDevice()`
 
 ### Usage

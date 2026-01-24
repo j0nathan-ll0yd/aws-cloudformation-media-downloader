@@ -13,8 +13,8 @@ This project uses AWS Lambda layers for:
 |-------|------|------|---------|------------------|
 | ADOT (ARM64) | AWS-managed | N/A | 15 Lambdas | AWS-managed |
 | ADOT (x86_64) | AWS-managed | N/A | StartFileUpload | AWS-managed |
-| yt-dlp | Custom binary | 34MB | StartFileUpload | `layers/yt-dlp/VERSION` |
-| ffmpeg | Custom binary | 29MB | StartFileUpload | `layers/ffmpeg/VERSION` |
+| yt-dlp | Custom binary | 34 MB | StartFileUpload | `layers/yt-dlp/VERSION` |
+| ffmpeg | Custom binary | 29 MB | StartFileUpload | `layers/ffmpeg/VERSION` |
 
 ## Layer Architecture
 
@@ -35,7 +35,7 @@ The ADOT layer provides OpenTelemetry instrumentation for distributed tracing vi
 
 | Property | Value |
 |----------|-------|
-| Size | ~34MB compressed |
+| Size | ~34 MB compressed |
 | Contents | `/opt/bin/yt-dlp_linux`, `/opt/cookies/youtube-cookies.txt` |
 | Architecture | x86_64 (amd64) |
 | Version Tracking | `layers/yt-dlp/VERSION` |
@@ -61,7 +61,7 @@ The Terraform configuration automatically:
 
 | Property | Value |
 |----------|-------|
-| Size | ~29MB compressed |
+| Size | ~29 MB compressed |
 | Contents | `/opt/bin/ffmpeg` |
 | Architecture | x86_64 (amd64) |
 | Version Tracking | `layers/ffmpeg/VERSION` |
@@ -146,8 +146,8 @@ If Terraform fails to download binaries:
 
 ### Layer Size Limits
 
-AWS Lambda has a 250MB unzipped deployment limit (including all layers):
-- Current usage: ~63MB (yt-dlp + ffmpeg) + ~500KB (code) + ADOT
+AWS Lambda has a 250 MB unzipped deployment limit (including all layers):
+- Current usage: ~63 MB (yt-dlp + ffmpeg) + ~500 KB (code) + ADOT
 - Well within limits
 
 ### Architecture Mismatch

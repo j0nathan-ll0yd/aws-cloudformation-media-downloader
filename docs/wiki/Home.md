@@ -5,6 +5,7 @@ Welcome to the centralized development conventions wiki. This wiki contains univ
 ## Quick Start
 
 - **New to the wiki?** Start with [Getting Started](Getting-Started.md)
+- **Want to learn hands-on?** Try the [Tutorial: Create Your First Lambda](Getting-Started/Tutorial-First-Lambda.md)
 - **Looking for specific patterns?** Use the navigation below
 - **Contributing?** See [Working with AI Assistants](Meta/Working-with-AI-Assistants.md)
 
@@ -17,6 +18,14 @@ Core development conventions that apply universally:
 - [Git Workflow](Conventions/Git-Workflow.md) - Commit messages, NO AI attribution
 - [Code Comments](Conventions/Code-Comments.md) - Git as source of truth principle
 - [Import Organization](Conventions/Import-Organization.md) - ES modules, destructuring patterns
+- [Code Formatting](Conventions/Code-Formatting.md) - Prettier, ESLint configuration
+- [Function Spacing](Conventions/Function-Spacing.md) - Blank line conventions
+- [Vendor Encapsulation Deep-Dive](Conventions/Vendor-Encapsulation-Deep-Dive.md) - AWS SDK wrapping patterns
+- [Logging Conventions](Conventions/Logging-Conventions.md) - Structured logging standards
+- [Deprecation Policy](Conventions/Deprecation-Policy.md) - How to deprecate code
+- [Database Migrations](Conventions/Database-Migrations.md) - Drizzle migration patterns
+- [Workaround Tracking](Conventions/Workaround-Tracking.md) - Documenting temporary fixes
+- [ESLint vs MCP Validation](Conventions/ESLint-vs-MCP-Validation.md) - When to use each
 
 ### 🎯 TypeScript
 TypeScript-specific patterns and best practices:
@@ -36,9 +45,58 @@ Comprehensive testing strategies and patterns:
 
 - [Vitest Mocking Strategy](Testing/Vitest-Mocking-Strategy.md) - Transitive dependencies solution
 - [Mock Type Annotations](Testing/Mock-Type-Annotations.md) - Specific vs generic types
+- [Mock Factory Patterns](Testing/Mock-Factory-Patterns.md) - Entity fixture factories
 - [Lazy Initialization Pattern](Testing/Lazy-Initialization-Pattern.md) - Defer SDK clients
 - [Coverage Philosophy](Testing/Coverage-Philosophy.md) - Test YOUR code principle
 - [Integration Testing](Testing/Integration-Testing.md) - LocalStack patterns
+- [Integration Test Coverage](Testing/Integration-Test-Coverage.md) - Coverage tracking
+- [LocalStack Testing](Testing/LocalStack-Testing.md) - Local AWS emulation
+- [Dependency Graph Analysis](Testing/Dependency-Graph-Analysis.md) - Test dependency mapping
+- [Fixture Extraction](Testing/Fixture-Extraction.md) - Extracting test data
+- [Failure Scenario Testing](Testing/Failure-Scenario-Testing.md) - Error path coverage
+- [Mocking Patterns Analysis](Testing/Mocking-Patterns-Analysis.md) - Mock pattern comparison
+- [Mutation Testing Guide](Testing/Mutation-Testing-Guide.md) - Mutation testing setup
+- [Test Scaffolding](Testing/Test-Scaffolding.md) - MCP test generation
+- [Test Suite Audit](Testing/Test-Suite-Audit.md) - Test quality assessment
+- [Integration Test Audit](Testing/Integration-Test-Audit.md) - Integration test review
+- [Local CI Testing](Testing/Local-CI-Testing.md) - Running CI locally
+
+### 🏛️ Architecture
+System design and code organization:
+
+- [Architecture Overview](Architecture/Architecture-Overview.md) - System architecture at 10,000ft view
+- [System Diagrams](Architecture/System-Diagrams.md) - Lambda interaction flows and ERD
+- [Code Organization](Architecture/Code-Organization.md) - Directory structure rules
+- [Domain Layer](Architecture/Domain-Layer.md) - Business logic separation patterns
+
+### 🔐 Security
+Security policies and assessments:
+
+- [Security Audit Report](Security/Security-Audit-Report.md) - Latest security assessment
+- [Secret Rotation Runbook](Security/Secret-Rotation-Runbook.md) - Operational procedures
+- [GitHub Secrets](Security/GitHub-Secrets.md) - CI/CD secret management
+- [Dependency Security](Security/Dependency-Security.md) - Supply chain security
+- [Authentication Security Assessment](Security/2026-01-Authentication-Security-Assessment.md) - Auth system review
+- [Better Auth Architecture](Security/Better-Auth-Architecture.md) - Session management and auth patterns
+
+### 👁️ Observability
+Monitoring, logging, and tracing:
+
+- [Error Handling Patterns](Observability/Error-Handling-Patterns.md) - Error strategy
+- [CloudWatch Alarms](Observability/CloudWatch-Alarms.md) - Alert configuration
+- [Tracing Architecture](Observability/Tracing-Architecture.md) - X-Ray patterns
+
+### 🔧 MCP Tools
+Model Context Protocol server and validation:
+
+- [MCP Setup Guide](MCP/MCP-Setup-Guide.md) - Installation and configuration
+- [Convention Tools](MCP/Convention-Tools.md) - Validation tool reference
+- [Tool Capability Matrix](MCP/Tool-Capability-Matrix.md) - Available MCP tools
+- [GraphRAG Usage Guide](MCP/GraphRAG-Usage-Guide.md) - Semantic search usage
+- [Auto-Fix](MCP/Auto-Fix.md) - Automated convention fixing
+- [Template Organization](MCP/Template-Organization.md) - MCP template structure
+- [Spec Compliance Assessment](MCP/Spec-Compliance-Assessment.md) - MCP protocol compliance
+- [Missing Tool Recommendations](MCP/Missing-Tool-Recommendations.md) - Tool gap analysis
 
 ### ☁️ AWS
 AWS-specific patterns and policies:
@@ -55,13 +113,28 @@ Shell scripting conventions:
 - [Directory Resolution](Bash/Directory-Resolution.md) - BASH_SOURCE patterns
 - [User Output Formatting](Bash/User-Output-Formatting.md) - Colors and feedback
 - [Error Handling](Bash/Bash-Error-Handling.md) - set -e, exit codes
+- [Script Patterns](Bash/Script-Patterns.md) - Common script patterns
+- [Script Index](Bash/Script-Index.md) - All project scripts
 
 ### 🏗️ Infrastructure
 Infrastructure as Code patterns:
 
+- [OpenTofu Patterns](Infrastructure/OpenTofu-Patterns.md) - IaC patterns and conventions
 - [Resource Naming](Infrastructure/Resource-Naming.md) - PascalCase for AWS
 - [File Organization](Infrastructure/File-Organization.md) - Service grouping
 - [Environment Variables](Infrastructure/Environment-Variables.md) - Cross-stack consistency
+- [CI Workflow Reference](Infrastructure/CI-Workflow-Reference.md) - GitHub Actions documentation
+- [CI Coverage Matrix](Infrastructure/CI-Coverage-Matrix.md) - CI job coverage
+- [Script Registry](Infrastructure/Script-Registry.md) - Infrastructure scripts
+- [Bundle Size Analysis](Infrastructure/Bundle-Size-Analysis.md) - Lambda bundle optimization
+- [Lambda Decorators](Infrastructure/Lambda-Decorators.md) - PowerTools decorators
+- [Lambda Layers](Infrastructure/Lambda-Layers.md) - Shared Lambda layer patterns
+- [Database Permissions](Infrastructure/Database-Permissions.md) - Aurora DSQL IAM
+- [Documentation Validation](Infrastructure/Documentation-Validation.md) - Doc linting CI
+- [Drift Prevention](Infrastructure/Drift-Prevention.md) - IaC drift detection
+- [GraphRAG Automation](Infrastructure/GraphRAG-Automation.md) - Knowledge graph CI
+- [OIDC AWS Authentication](Infrastructure/OIDC-AWS-Authentication.md) - GitHub Actions AWS auth
+- [Staging-Production Strategy](Infrastructure/Staging-Production-Strategy.md) - Environment strategy
 
 ### 💡 Methodologies
 Development methodologies and philosophies:
@@ -81,6 +154,27 @@ Meta-documentation about the documentation system itself:
 - [Documentation Patterns](Meta/Documentation-Patterns.md) - Passthrough files, organization
 - [Documentation Coverage Matrix](Meta/Documentation-Coverage-Matrix.md) - Audit results
 - [Documentation Gap Analysis](Meta/Documentation-Gap-Analysis.md) - Priority rankings
+- [Documentation Structure](Meta/Documentation-Structure.md) - Wiki organization
+- [GitHub Wiki Sync](Meta/GitHub-Wiki-Sync.md) - Wiki synchronization
+- [MCP CI Integration](Meta/MCP-CI-Integration.md) - MCP in CI pipelines
+- [Convention Workflow Recommendations](Meta/Convention-Workflow-Recommendations.md) - Process improvements
+- [pnpm Migration](Meta/pnpm-Migration.md) - Package manager migration
+- [Conventions Tracking](Meta/Conventions-Tracking.md) - Active project conventions
+- [Documentation Style Guide](Meta/Documentation-Style-Guide.md) - Vale linter and writing style
+- [Documentation Freshness](Meta/Documentation-Freshness.md) - Assessment document tracking
+
+### 📊 Evaluations & Audits
+Assessment documents and periodic reviews:
+
+- [Wiki Framework Evaluation Final](Meta/Wiki-Framework-Evaluation-Final-2026-01.md) - Final improvement report
+- [Wiki Structure Evaluation](Meta/Wiki-Structure-Evaluation-2026-01.md) - Wiki quality assessment
+- [Wiki Framework Benchmarking](Meta/Wiki-Framework-Benchmarking-2026-01.md) - Industry framework comparison
+- [Unit Test Architecture](Evaluation/Unit-Test-Architecture-2026-01.md) - Test architecture review
+- [2025 Tech Stack Audit](Meta/2025-Tech-Stack-Audit.md) - Technology assessment
+- [Logging Strategy Assessment](Meta/Logging-Strategy-Assessment-2026-01.md) - Logging review
+- [Semantic Search Evaluation](Meta/Semantic-Search-Evaluation.md) - Search capability review
+- [Serverless Architecture Assessment](Meta/Serverless-Architecture-Assessment.md) - Architecture review
+- [API Documentation Audit](Meta/API-Documentation-Audit-2026-01-02.md) - API docs review
 
 ## Key Principles
 
@@ -130,7 +224,7 @@ This wiki is stored in the main repository under `docs/wiki/`:
 
 To add or update conventions:
 1. Follow the [page template](Meta/Documentation-Patterns.md)
-2. Include clear examples (✅ Correct / ❌ Incorrect)
+2. Include clear examples (Correct / Incorrect)
 3. Explain rationale and benefits
 4. Add enforcement mechanisms where possible
 5. Update navigation in this Home.md

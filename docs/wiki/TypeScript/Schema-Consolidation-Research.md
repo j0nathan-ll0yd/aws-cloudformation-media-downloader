@@ -204,7 +204,7 @@ export const customFileInsertSchema = createInsertSchema(files, {
 
 2. **TypeSpec authority**: The project uses TypeSpec as the API specification source. Replacing it with derived schemas would lose the explicit contract definition.
 
-3. **Flexibility**: API responses may intentionally differ from database rows (e.g., computed fields, omitted internal fields, different nullability).
+3. **Flexibility**: API responses may intentionally differ from database rows (for example, computed fields, omitted internal fields, different nullability).
 
 4. **Risk mitigation**: Accidental database schema changes shouldn't automatically break the API contract.
 

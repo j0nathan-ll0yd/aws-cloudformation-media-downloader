@@ -201,7 +201,7 @@ m.addDimension('Category', classification.category)
 m.addMetric('RetryScheduled', MetricUnit.Count, 1)
 ```
 
-**Why Powertools?** EMF logs have zero latency vs CloudWatch API calls (~50-100ms).
+**Why Powertools?** EMF logs have zero latency vs CloudWatch API calls (~50-100 ms).
 Metrics are batched and flushed automatically by the middleware at request end.
 
 ## Response Format (REQUIRED)
@@ -236,7 +236,7 @@ return {
 
 **Rule**: Never use underscore-prefixed variables (`_event`, `_context`, `_metadata`) to suppress unused variable warnings.
 
-**Why**: Per AGENTS.md: "Avoid backwards-compatibility hacks like renaming unused `_vars`". This pattern hides poor API design and creates maintenance debt.
+**Why**: Per AGENTS.md: "Avoid backwards-compatibility hacks like renaming unused `_vars`." This pattern hides poor API design and creates maintenance debt.
 
 **Solution**: Use object destructuring to extract only the properties you need:
 
@@ -426,7 +426,7 @@ const batchSize = getOptionalEnvNumber('BATCH_SIZE', 5)
 ### Exceptions
 
 **Lambda@Edge (CloudfrontMiddleware)**: Cannot use Powertools or handler wrappers due to:
-- Bundle size constraints (~1MB limit for Lambda@Edge)
+- Bundle size constraints (~1 MB limit for Lambda@Edge)
 - No X-Ray SDK support at edge locations
 - Documented exception in `src/lambdas/CloudfrontMiddleware/src/index.ts:15-16`
 

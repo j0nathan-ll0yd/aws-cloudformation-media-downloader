@@ -68,7 +68,7 @@ Domain-specific classifiers determine retry behavior and alerting:
    - `permanent`: Constraint violations, create issue
 
 3. **External API Errors** (`classifyExternalApiError`):
-   - `rate_limited`: Retry with 60s delay
+   - `rate_limited`: Retry with 60 s delay
    - `transient`: 5xx errors, retry with backoff
    - `permanent`: 4xx errors, no retry
 

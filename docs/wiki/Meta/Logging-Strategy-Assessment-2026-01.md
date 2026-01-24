@@ -1,3 +1,9 @@
+---
+last_updated: 2026-01-20
+next_review: 2026-07-20
+status: current
+---
+
 # Logging Strategy Assessment - January 2026
 
 ## Executive Summary

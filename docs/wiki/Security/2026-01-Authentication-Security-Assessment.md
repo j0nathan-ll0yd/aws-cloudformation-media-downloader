@@ -1,3 +1,9 @@
+---
+last_updated: 2026-01-03
+next_review: 2026-04-03
+status: current
+---
+
 # Authentication Security Assessment
 
 **Date**: January 3, 2026
@@ -95,9 +101,9 @@ quota_settings {
 
 ### 3. Gateway Responses Lack Security Headers (MEDIUM)
 
-**Description**: API Gateway gateway responses (4xx, 5xx errors returned before Lambda execution) did not include security headers.
+**Description**: API Gateway default responses (4xx, 5xx errors returned before Lambda execution) did not include security headers.
 
-**Impact**: Error responses from API Gateway (e.g., 401 Unauthorized, 403 Forbidden) would be sent without protective security headers.
+**Impact**: Error responses from API Gateway (for example, 401 Unauthorized, 403 Forbidden) would be sent without protective security headers.
 
 **Location**: `terraform/api_gateway.tf` (lines 87-101)
 

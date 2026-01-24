@@ -1,3 +1,9 @@
+---
+last_updated: 2026-01-02
+next_review: 2026-07-02
+status: current
+---
+
 # API Documentation Audit - January 2, 2026
 
 ## Summary

@@ -8,7 +8,7 @@
 ## Auto-Merge Rules
 
 ### ✅ Auto-Merge When
-- Patch version (x.x.PATCH)
+- Patch version updates (such as 1.2.3 to 1.2.4)
 - All tests passing
 - Dev dependencies only
 - No breaking changes

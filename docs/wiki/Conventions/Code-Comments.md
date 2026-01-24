@@ -33,7 +33,7 @@ NEVER explain removed code in comments. Delete outdated comments about previous 
 ## Core Principles
 
 1. **Git Is Source of Truth** - Removed code -> Check git history
-2. **Comments Explain "Why", Not "What"** - Code shows WHAT, comments explain WHY
+2. **Comments Explain "Why," Not "What"** - Code shows WHAT, comments explain WHY
 3. **Delete, Don't Deprecate** - Remove dead code completely, trust version control
 
 ---
@@ -61,8 +61,8 @@ NEVER explain removed code in comments. Delete outdated comments about previous 
 ### NOT Required For (Self-Documenting)
 - **AWS vendor wrapper files** (`src/lib/vendor/AWS/*.ts`) - These are thin pass-through wrappers by design
 - **Thin wrapper functions** (5 lines or fewer body)
-- **Simple utility functions** with self-documenting signatures (e.g., `stringAttribute(value: string): MessageAttributeValue`)
-- **Functions with c8 ignore comments** that already explain purpose (e.g., `/* c8 ignore start - Pure AWS SDK wrapper */`)
+- **Simple utility functions** with self-documenting signatures (for example, `stringAttribute(value: string): MessageAttributeValue`)
+- **Functions with c8 ignore comments** that already explain purpose (for example, `/* c8 ignore start - Pure AWS SDK wrapper */`)
 - **Re-export barrel files** (index.ts with only exports)
 
 ### Format

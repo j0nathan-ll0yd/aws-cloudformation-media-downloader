@@ -12,7 +12,7 @@
 **ABSOLUTELY FORBIDDEN** in commits, PRs, and code:
 - ❌ "Generated with [Claude Code](https://claude.com/claude-code)"
 - ❌ "Co-Authored-By: Claude <noreply@anthropic.com>"
-- ❌ Any mention of "Claude", "AI", "assistant", "generated"
+- ❌ Any mention of "Claude," "AI," "assistant," or "generated"
 - ❌ Robot emojis (🤖) or any emojis in commit messages
 - ❌ ANY attribution to AI tools whatsoever
 

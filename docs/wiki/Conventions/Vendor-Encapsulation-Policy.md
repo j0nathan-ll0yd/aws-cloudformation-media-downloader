@@ -194,7 +194,7 @@ jest.unstable_mockModule('#lib/vendor/AWS/S3', () => ({
 ## Related Patterns
 
 - [X-Ray Integration](../AWS/X-Ray-Integration.md) - AWS service tracing
-- [LocalStack Testing](../Integration/LocalStack-Testing.md) - Local development
+- [LocalStack Testing](../Testing/LocalStack-Testing.md) - Local development
 - [Vitest Mocking Strategy](../Testing/Vitest-Mocking-Strategy.md) - Entity mocking patterns
 
 ---

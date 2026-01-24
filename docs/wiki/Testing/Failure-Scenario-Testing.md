@@ -178,6 +178,6 @@ test('should fail fast on missing required environment variables', async () => {
 
 ## Related Patterns
 
-- [LocalStack Testing](../Integration/LocalStack-Testing.md) - LocalStack setup and patterns
+- [LocalStack Testing](./LocalStack-Testing.md) - LocalStack setup and patterns
 - [Integration Testing](./Integration-Testing.md) - General integration test patterns
 - [Vitest Mocking Strategy](./Vitest-Mocking-Strategy.md) - When mocking is acceptable

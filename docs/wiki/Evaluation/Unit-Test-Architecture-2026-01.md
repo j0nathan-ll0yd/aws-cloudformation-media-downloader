@@ -1,3 +1,9 @@
+---
+last_updated: 2026-01-20
+next_review: 2026-07-20
+status: current
+---
+
 # Unit Test Architecture Evaluation
 
 **Date:** January 2026
@@ -36,7 +42,7 @@ This evaluation assesses the unit test architecture of an AWS Serverless media d
 |--------|-------|----------|--------|
 | StartFileUpload | 403 | S3 file recovery | Best-in-class |
 | PruneDevices | 272 | Multiple edge cases | Comprehensive |
-| WebhookFeedly | 234 | Feedly-specific tests | Complete |
+| WebhookFeedly | 234 | Feedly webhook tests | Complete |
 | RegisterUser | 217 | Authentication tests | Complete |
 | RegisterDevice | 216 | SNS integration tests | Complete |
 | SendPushNotification | 203 | APNS tests | Complete |

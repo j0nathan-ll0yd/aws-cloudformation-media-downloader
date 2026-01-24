@@ -1,3 +1,9 @@
+---
+last_updated: 2024-12-01
+next_review: 2025-06-01
+status: stale
+---
+
 # Integration Test Audit
 
 ## Quick Reference
@@ -133,7 +139,7 @@ Integration tests use vendor wrappers in `test/integration/lib/vendor/AWS/`:
 
 ## Related Documentation
 
-- [LocalStack Testing](../Integration/LocalStack-Testing.md) - Setup and patterns
+- [LocalStack Testing](./LocalStack-Testing.md) - Setup and patterns
 - [Coverage Philosophy](Coverage-Philosophy.md) - When to use integration vs unit tests
 - [Vitest Mocking Strategy](Vitest-Mocking-Strategy.md) - Mocking patterns
 

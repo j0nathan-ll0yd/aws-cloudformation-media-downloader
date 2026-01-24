@@ -20,8 +20,8 @@ Group related resources in dedicated files:
 Use PascalCase for resource names to match AWS conventions.
 
 **IAM roles use the same name as Lambda functions** - Terraform differentiates by resource type, so no suffix needed. This applies to both:
-- The Terraform resource identifier (e.g., `aws_iam_role.WebhookFeedly`)
-- The AWS resource name (e.g., `name = local.webhook_feedly_function_name`)
+- The Terraform resource identifier (for example, `aws_iam_role.WebhookFeedly`)
+- The AWS resource name (for example, `name = local.webhook_feedly_function_name`)
 
 ```hcl
 locals {

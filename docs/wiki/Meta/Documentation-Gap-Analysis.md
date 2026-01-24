@@ -177,7 +177,7 @@ grep -ri "electrodb" docs/wiki/
 | `Bash/Script-Patterns.md` | LOW | ✅ Expanded (+183 lines) |
 | `Architecture/Domain-Layer.md` | LOW | ✅ Expanded (+89 lines) |
 | `Home.md` | HIGH | ✅ Updated navigation |
-| `Authentication/Better-Auth-Architecture.md` | CRITICAL | ✅ Rewritten for Drizzle |
+| `Security/Better-Auth-Architecture.md` | CRITICAL | ✅ Rewritten for Drizzle |
 
 ### Already Complete (No Action Needed)
 | File | Finding |

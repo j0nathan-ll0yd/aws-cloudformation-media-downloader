@@ -2,7 +2,7 @@
 
 ## Overview
 
-As of November 2024, the backend API has migrated from Apple's authorization code flow to direct ID token authentication using Better Auth's OAuth capabilities. This eliminates the need for a server-side token exchange and reduces authentication latency by 200-500ms.
+As of November 2024, the backend API has migrated from Apple's authorization code flow to direct ID token authentication using Better Auth's OAuth capabilities. This eliminates the need for a server-side token exchange and reduces authentication latency by 200-500 ms.
 
 ## What Changed
 
@@ -233,7 +233,7 @@ request.setValue("Bearer \(sessionToken)", forHTTPHeaderField: "Authorization")
 
 ## Benefits
 
-1. **Reduced Latency**: Eliminates 200-500ms token exchange round trip to Apple
+1. **Reduced Latency**: Eliminates 200-500 ms token exchange round trip to Apple
 2. **Simpler Flow**: Direct token verification vs. two-step exchange
 3. **Better Auth Integration**: Leverages Better Auth's built-in OAuth capabilities
 4. **Same Security**: ID token verification is cryptographically equivalent to authorization code flow

@@ -1,3 +1,9 @@
+---
+last_updated: 2025-12-29
+next_review: 2026-03-29
+status: current
+---
+
 # Security Audit Report
 
 **Audit Date**: 2025-12-29

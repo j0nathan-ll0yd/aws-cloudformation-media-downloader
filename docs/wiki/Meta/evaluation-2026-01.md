@@ -20,8 +20,8 @@ This AWS Serverless Media Downloader demonstrates exceptional engineering practi
 | Test Files | 89 | Often <50% coverage |
 | MCP Validation Rules | 28 | Unique to project |
 | MCP Tools | 40+ | Industry-leading |
-| Bundle Size (avg) | ~10KB | 500KB-2MB typical |
-| Cold Start (avg) | ~220ms | 400-800ms typical |
+| Bundle Size (avg) | ~10KB | 500KB-2 MB typical |
+| Cold Start (avg) | ~220 ms | 400-800 ms typical |
 
 ### Top Strengths
 1. **Decorator-Based Permissions**: Build-time IAM extraction via ts-morph
@@ -61,8 +61,8 @@ This AWS Serverless Media Downloader demonstrates exceptional engineering practi
 #### Database: Aurora DSQL + Drizzle ORM
 
 **Choice Rationale:**
-- ~7KB bundle contribution (vs ~50KB+ for Prisma)
-- ~375ms cold start impact (vs 800ms+ for heavy ORMs)
+- ~7KB bundle contribution (vs ~50 KB+ for Prisma)
+- ~375 ms cold start impact (vs 800 ms+ for heavy ORMs)
 - 14x faster than ORMs with N+1 query problems
 - Native PostgreSQL compatibility without VPC requirements
 
@@ -247,9 +247,9 @@ Multi-layered enforcement prevents anti-patterns:
 
 | Metric | This Project | Industry Average | Improvement |
 |--------|--------------|------------------|-------------|
-| Average Bundle | ~10KB | 500KB-2MB | 87.5%+ smaller |
-| Cold Start | ~220ms | 400-800ms | 45%+ faster |
-| Memory Usage | 128-256MB | 512MB-1GB | 50%+ reduction |
+| Average Bundle | ~10KB | 500KB-2 MB | 87.5%+ smaller |
+| Cold Start | ~220 ms | 400-800 ms | 45%+ faster |
+| Memory Usage | 128-256 MB | 512 MB-1 GB | 50%+ reduction |
 
 **Techniques Used:**
 - AWS SDK externalized to Lambda runtime

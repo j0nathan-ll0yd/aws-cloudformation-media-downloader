@@ -156,7 +156,7 @@ vi.mock('#lib/domain/device/device-service', () => ({
 
 ### Overview
 
-[aws-sdk-client-mock](https://github.com/m-radzikowski/aws-sdk-client-mock) is a library that provides type-safe mocking of AWS SDK v3 clients using Sinon.JS stubs.
+[aws-sdk-client-mock](https://github.com/m-radzikowski/aws-sdk-client-mock) is a library that provides type-safe mocking of AWS SDK v3 clients using Sinon stubs.
 
 ### How It Works
 
