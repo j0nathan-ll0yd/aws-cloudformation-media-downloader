@@ -72,30 +72,45 @@ main() {
   echo -e "${GREEN}✓${NC} SOPS secrets file validated"
   echo ""
 
-  # Check if state file exists
-  if [[ ! -f "${TERRAFORM_DIR}/terraform.tfstate" ]] && [[ ! -L "${TERRAFORM_DIR}/terraform.tfstate" ]]; then
-    echo -e "${RED}ERROR: terraform.tfstate not found${NC}"
-    echo ""
-    echo "Expected location: ${TERRAFORM_DIR}/terraform.tfstate"
-    echo ""
-    echo "If this is a worktree, ensure state is symlinked from main repository."
-    echo "Run: ln -s /path/to/main/repo/terraform/terraform.tfstate ${TERRAFORM_DIR}/terraform.tfstate"
-    exit 1
-  fi
+  # =============================================================================
+  # Verify Terraform State Backend
+  # =============================================================================
+  echo -e "${BLUE}Checking Terraform state backend...${NC}"
 
-  # Verify state file is readable
-  if [[ -L "${TERRAFORM_DIR}/terraform.tfstate" ]]; then
-    STATE_TARGET=$(readlink "${TERRAFORM_DIR}/terraform.tfstate")
-    if [[ ! -f "${STATE_TARGET}" ]]; then
-      echo -e "${RED}ERROR: State file symlink target does not exist${NC}"
-      echo "Symlink points to: ${STATE_TARGET}"
-      exit 1
+  # Check if remote backend is configured
+  if [[ -f "${TERRAFORM_DIR}/backend.tf" ]]; then
+    echo -e "${GREEN}✓${NC} Remote backend configured (backend.tf)"
+
+    # Ensure terraform is initialized with the backend
+    cd "${TERRAFORM_DIR}"
+    if [[ ! -d ".terraform" ]]; then
+      echo "  Initializing backend..."
+      if ! tofu init -input=false > /dev/null 2>&1; then
+        echo -e "${RED}ERROR: Failed to initialize terraform backend${NC}"
+        exit 1
+      fi
     fi
-    RESOURCE_COUNT=$(grep -c '"type":' "${STATE_TARGET}" 2> /dev/null || echo "0")
-    echo "State file: symlinked (${RESOURCE_COUNT} resources)"
+    echo "  State backend: S3 (remote)"
+  # Fallback: check for local state file (legacy)
+  elif [[ -f "${TERRAFORM_DIR}/terraform.tfstate" ]] || [[ -L "${TERRAFORM_DIR}/terraform.tfstate" ]]; then
+    if [[ -L "${TERRAFORM_DIR}/terraform.tfstate" ]]; then
+      STATE_TARGET=$(readlink "${TERRAFORM_DIR}/terraform.tfstate")
+      if [[ ! -f "${STATE_TARGET}" ]]; then
+        echo -e "${RED}ERROR: State file symlink target does not exist${NC}"
+        echo "Symlink points to: ${STATE_TARGET}"
+        exit 1
+      fi
+      RESOURCE_COUNT=$(grep -c '"type":' "${STATE_TARGET}" 2> /dev/null || echo "0")
+      echo "  State file: symlinked (${RESOURCE_COUNT} resources)"
+    else
+      RESOURCE_COUNT=$(grep -c '"type":' "${TERRAFORM_DIR}/terraform.tfstate" 2> /dev/null || echo "0")
+      echo "  State file: local (${RESOURCE_COUNT} resources)"
+    fi
   else
-    RESOURCE_COUNT=$(grep -c '"type":' "${TERRAFORM_DIR}/terraform.tfstate" 2> /dev/null || echo "0")
-    echo "State file: local (${RESOURCE_COUNT} resources)"
+    echo -e "${RED}ERROR: No terraform state backend configured${NC}"
+    echo ""
+    echo "Either configure a remote backend in backend.tf or provide a local terraform.tfstate"
+    exit 1
   fi
 
   echo ""
