@@ -55,8 +55,8 @@ Create `src/lambdas/GetUserProfile/src/index.ts`:
 
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { getUser } from '#entities/queries';
-import { response } from '#util/response';
-import { getRequiredEnv } from '#util/env';
+import { buildValidatedResponse } from '#lib/lambda/responses';
+import { getRequiredEnv } from '#lib/system/env';
 import { Logger } from '@aws-lambda-powertools/logger';
 
 const logger = new Logger({ serviceName: 'GetUserProfile' });
@@ -69,7 +69,7 @@ export async function handler(
 
   if (!userId) {
     logger.warn('Missing userId in request context');
-    return response(401, { error: 'Unauthorized' });
+    return buildValidatedResponse(401, { error: 'Unauthorized' });
   }
 
   logger.info('Fetching user profile', { userId });
@@ -78,12 +78,12 @@ export async function handler(
 
   if (!user) {
     logger.warn('User not found', { userId });
-    return response(404, { error: 'User not found' });
+    return buildValidatedResponse(404, { error: 'User not found' });
   }
 
   logger.info('User profile retrieved successfully', { userId });
 
-  return response(200, {
+  return buildValidatedResponse(200, {
     userId: user.userId,
     email: user.email,
     status: user.status,
@@ -97,7 +97,7 @@ export async function handler(
 | Pattern | Implementation | Reference |
 |---------|----------------|-----------|
 | TypeDoc header | JSDoc with trigger, auth, database | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) |
-| Response helper | `response(statusCode, body)` | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) |
+| Response helper | `buildValidatedResponse(statusCode, body)` | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) |
 | Entity queries | `#entities/queries` import | [Entity Query Patterns](../TypeScript/Entity-Query-Patterns.md) |
 | Environment access | `getRequiredEnv()` inside handler | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) |
 | Structured logging | AWS Powertools Logger | [CloudWatch Logging](../AWS/CloudWatch-Logging.md) |
@@ -112,7 +112,7 @@ const REGION = getRequiredEnv('AWS_REGION');  // Breaks testing!
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';  // Use vendor wrapper!
 
 // WRONG: Raw response object
-return { statusCode: 200, body: JSON.stringify(data) };  // Use response()!
+return { statusCode: 200, body: JSON.stringify(data) };  // Use buildValidatedResponse()!
 
 // WRONG: Underscore-prefixed unused params
 handler(event, _context) { }  // Remove unused params entirely!
@@ -147,7 +147,7 @@ vi.mock('#entities/queries', () => ({
   getUser: vi.fn(),
 }));
 
-vi.mock('#util/env', () => ({
+vi.mock('#lib/system/env', () => ({
   getRequiredEnv: vi.fn().mockReturnValue('us-east-1'),
 }));
 
@@ -277,7 +277,7 @@ Expected output for a compliant Lambda:
 ```
 Validating: src/lambdas/GetUserProfile/src/index.ts
 ✓ No AWS SDK direct imports
-✓ Uses response() helper
+✓ Uses buildValidatedResponse() helper
 ✓ No module-level getRequiredEnv
 ✓ No underscore-prefixed variables
 ✓ All imports valid
@@ -306,7 +306,7 @@ Verify your Lambda implementation:
 
 - [ ] Directory structure matches pattern (`src/` and `test/` subdirectories)
 - [ ] Handler has TypeDoc header with @description, @trigger, @auth, @database
-- [ ] Uses `response()` helper for all return statements
+- [ ] Uses `buildValidatedResponse()` helper for all return statements
 - [ ] Uses `getRequiredEnv()` inside handler (not at module level)
 - [ ] Entity access via `#entities/queries` (not direct imports)
 - [ ] No direct AWS SDK imports (uses vendor wrappers if needed)
@@ -336,7 +336,7 @@ import { handler } from '../src/index';
 Mock the env utility:
 
 ```typescript
-vi.mock('#util/env', () => ({
+vi.mock('#lib/system/env', () => ({
   getRequiredEnv: vi.fn().mockReturnValue('test-value'),
 }));
 ```
