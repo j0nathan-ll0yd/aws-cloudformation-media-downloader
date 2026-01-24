@@ -116,6 +116,9 @@ main() {
   echo 'Extracting DynamoDB permissions (@RequiresDynamoDB)'
   node --import tsx "${PROJECT_ROOT}/scripts/extractDynamoDBPermissions.ts"
 
+  echo 'Extracting EventBridge event permissions (event-specific functions)'
+  node --import tsx "${PROJECT_ROOT}/scripts/extractEventPermissions.ts"
+
   success "All permissions extracted"
 
   # ============================================================

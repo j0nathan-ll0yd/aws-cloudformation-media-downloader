@@ -2,7 +2,6 @@ import {afterAll, afterEach, beforeEach, describe, expect, test, vi} from 'vites
 import {createMockContext} from '#util/vitest-setup'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
 import type {PutEventsResponse} from '@aws-sdk/client-eventbridge'
-import type {MediaDownloaderEventType} from '#types/events'
 import {createMockFile, createMockFileDownload, createMockUserFile, DEFAULT_USER_ID} from '#test/helpers/entity-fixtures'
 import {createAPIGatewayEvent, createFeedlyWebhookBody} from '#test/helpers/event-factories'
 import {SendMessageCommand} from '@aws-sdk/client-sqs'
@@ -31,10 +30,11 @@ vi.mock('#entities/queries', () => ({getFile: vi.fn(), createFile: vi.fn(), upse
 
 // Mock EventBridge vendor wrapper (has retry logic that can cause test timeouts)
 import type {PublishEventOptions} from '#lib/vendor/AWS/EventBridge'
-const publishEventWithRetryMock = vi.fn<
-  (eventType: MediaDownloaderEventType, detail: Record<string, unknown>, options?: PublishEventOptions) => Promise<PutEventsResponse>
+import type {DownloadRequestedDetail} from '#types/events'
+const publishEventDownloadRequestedWithRetryMock = vi.fn<
+  (detail: DownloadRequestedDetail, options?: PublishEventOptions) => Promise<PutEventsResponse>
 >()
-vi.mock('#lib/vendor/AWS/EventBridge', () => ({publishEventWithRetry: publishEventWithRetryMock}))
+vi.mock('#lib/vendor/AWS/EventBridge', () => ({publishEventDownloadRequestedWithRetry: publishEventDownloadRequestedWithRetryMock}))
 
 // Mock Powertools idempotency to bypass DynamoDB persistence
 vi.mock('#lib/vendor/Powertools/idempotency', () => ({
@@ -95,7 +95,7 @@ describe('#WebhookFeedly', () => {
 
     // Configure AWS mock responses using factories
     sqsMock.on(SendMessageCommand).resolves(createSQSSendMessageResponse())
-    publishEventWithRetryMock.mockResolvedValue(createEventBridgePutEventsResponse())
+    publishEventDownloadRequestedWithRetryMock.mockResolvedValue(createEventBridgePutEventsResponse())
 
     vi.mocked(createFileDownload).mockResolvedValue(mockFileDownloadRow())
     vi.mocked(createFile).mockResolvedValue(mockFileRow())
@@ -163,10 +163,11 @@ describe('#WebhookFeedly', () => {
     expect(output.statusCode).toEqual(202)
     const body = JSON.parse(output.body)
     expect(body.body.status).toEqual('Accepted')
-    // Verify EventBridge was called with DownloadRequested
-    expect(publishEventWithRetryMock).toHaveBeenCalledWith('DownloadRequested',
+    // Verify EventBridge was called with DownloadRequested detail
+    expect(publishEventDownloadRequestedWithRetryMock).toHaveBeenCalledWith(
       expect.objectContaining({fileId: expect.any(String), userId: fakeUserId, sourceUrl: TEST_YOUTUBE_URL, requestedAt: expect.any(String)}),
-      expect.any(Object))
+      expect.any(Object)
+    )
   })
 
   describe('#AlreadyDownloadedFile', () => {
@@ -187,7 +188,7 @@ describe('#WebhookFeedly', () => {
         QueueUrl: TEST_SQS_PUSH_NOTIFICATION_URL,
         MessageBody: expect.stringContaining('DownloadReadyNotification')
       })
-      expect(publishEventWithRetryMock).not.toHaveBeenCalled()
+      expect(publishEventDownloadRequestedWithRetryMock).not.toHaveBeenCalled()
     })
   })
 
@@ -203,7 +204,7 @@ describe('#WebhookFeedly', () => {
       // Should NOT create a new file record
       expect(vi.mocked(createFile)).not.toHaveBeenCalled()
       // Should still publish DownloadRequested event
-      expect(publishEventWithRetryMock).toHaveBeenCalledWith('DownloadRequested', expect.any(Object), expect.any(Object))
+      expect(publishEventDownloadRequestedWithRetryMock).toHaveBeenCalledWith(expect.any(Object), expect.any(Object))
     })
 
     test('should skip file creation for existing downloading file', async () => {
@@ -225,7 +226,7 @@ describe('#WebhookFeedly', () => {
       vi.mocked(getFile).mockResolvedValue(null)
       vi.mocked(createFile).mockResolvedValue(mockFileRow())
       vi.mocked(upsertUserFile).mockResolvedValue(mockUserFileRow())
-      publishEventWithRetryMock.mockRejectedValue(new Error('EventBridge failure'))
+      publishEventDownloadRequestedWithRetryMock.mockRejectedValue(new Error('EventBridge failure'))
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(500)
       const body = JSON.parse(output.body)
@@ -267,7 +268,7 @@ describe('#WebhookFeedly', () => {
       vi.mocked(upsertUserFile).mockResolvedValue(mockUserFileRow())
       const timeoutError = new Error('EventBridge timeout')
       Object.assign(timeoutError, {code: 'ETIMEDOUT'})
-      publishEventWithRetryMock.mockRejectedValue(timeoutError)
+      publishEventDownloadRequestedWithRetryMock.mockRejectedValue(timeoutError)
 
       const output = await handler(event, context)
 

@@ -19,7 +19,8 @@ import {EventBridgeOperation} from '#types/servicePermissions'
 import {getRequiredEnv} from '#lib/system/env'
 import {logDebug, logInfo} from '#lib/system/logging'
 import {calculateDelayWithJitter, sleep} from '#lib/system/retry'
-import type {MediaDownloaderEventType} from '#types/events'
+import {EventType} from '#types/events'
+import type {DownloadCompletedDetail, DownloadFailedDetail, DownloadRequestedDetail, MediaDownloaderEventType} from '#types/events'
 
 const eventBridge = createEventBridgeClient()
 
@@ -205,3 +206,112 @@ export const publishEventWithRetry = EventBridgeVendor.publishEventWithRetry.bin
 
 // Export class for extraction script access
 export { EventBridgeVendor }
+
+// ============================================================================
+// Event-Specific Publisher Functions
+// ============================================================================
+// These functions make event publishing explicit at the call site.
+// The function name signals both EventBridge usage AND the specific event type.
+// Use these instead of the generic publishEvent() for better static analysis.
+
+/**
+ * Publish a DownloadRequested event.
+ *
+ * Called by WebhookFeedly when a user requests a new video download.
+ * The event is routed by EventBridge to the DownloadQueue (SQS) for processing.
+ *
+ * @param detail - DownloadRequested event payload
+ * @param options - Optional correlation context for distributed tracing
+ * @returns PutEvents response
+ *
+ * @example
+ * ```typescript
+ * await publishEventDownloadRequested({
+ *   fileId: 'dQw4w9WgXcQ',
+ *   userId: 'user-123',
+ *   sourceUrl: 'https://youtube.com/watch?v=dQw4w9WgXcQ',
+ *   correlationId: context.awsRequestId,
+ *   requestedAt: new Date().toISOString(),
+ * }, { correlationId: context.awsRequestId })
+ * ```
+ */
+export async function publishEventDownloadRequested(detail: DownloadRequestedDetail, options?: PublishEventOptions): Promise<PutEventsResponse> {
+  return EventBridgeVendor.publishEvent(EventType.DownloadRequested, detail, options)
+}
+
+/**
+ * Publish a DownloadCompleted event.
+ *
+ * Called by StartFileUpload after successful download to S3.
+ * Can trigger downstream notifications or sync operations.
+ *
+ * @param detail - DownloadCompleted event payload
+ * @param options - Optional correlation context for distributed tracing
+ * @returns PutEvents response
+ *
+ * @example
+ * ```typescript
+ * await publishEventDownloadCompleted({
+ *   fileId: 'dQw4w9WgXcQ',
+ *   correlationId: context.awsRequestId,
+ *   s3Key: 'dQw4w9WgXcQ.mp4',
+ *   fileSize: 12345678,
+ *   completedAt: new Date().toISOString(),
+ * }, { correlationId: context.awsRequestId })
+ * ```
+ */
+export async function publishEventDownloadCompleted(detail: DownloadCompletedDetail, options?: PublishEventOptions): Promise<PutEventsResponse> {
+  return EventBridgeVendor.publishEvent(EventType.DownloadCompleted, detail, options)
+}
+
+/**
+ * Publish a DownloadFailed event.
+ *
+ * Called by StartFileUpload when download fails after all retries.
+ * Used for observability and user notification.
+ *
+ * @param detail - DownloadFailed event payload
+ * @param options - Optional correlation context for distributed tracing
+ * @returns PutEvents response
+ *
+ * @example
+ * ```typescript
+ * await publishEventDownloadFailed({
+ *   fileId: 'dQw4w9WgXcQ',
+ *   correlationId: context.awsRequestId,
+ *   errorCategory: 'cookie_expired',
+ *   errorMessage: 'YouTube cookies have expired',
+ *   retryable: true,
+ *   retryCount: 3,
+ *   failedAt: new Date().toISOString(),
+ * }, { correlationId: context.awsRequestId })
+ * ```
+ */
+export async function publishEventDownloadFailed(detail: DownloadFailedDetail, options?: PublishEventOptions): Promise<PutEventsResponse> {
+  return EventBridgeVendor.publishEvent(EventType.DownloadFailed, detail, options)
+}
+
+// ============================================================================
+// Event-Specific Publisher Functions with Retry
+// ============================================================================
+// Use these for critical events where delivery is important.
+
+/**
+ * Publish a DownloadRequested event with automatic retry.
+ *
+ * Use this for the critical WebhookFeedly → DownloadQueue path where
+ * we want retry logic on transient EventBridge failures.
+ *
+ * @param detail - DownloadRequested event payload
+ * @param options - Optional correlation context for distributed tracing
+ * @param retryConfig - Optional retry configuration
+ * @returns PutEvents response on success
+ * @throws EventBridgePublishError if all retry attempts fail
+ */
+export async function publishEventDownloadRequestedWithRetry(
+  detail: DownloadRequestedDetail,
+  options?: PublishEventOptions,
+  retryConfig?: PublishRetryConfig
+): Promise<PutEventsResponse> {
+  return EventBridgeVendor.publishEventWithRetry(EventType.DownloadRequested, detail, options, retryConfig)
+}

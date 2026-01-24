@@ -11,7 +11,7 @@
 import {createFileDownload, getFile, getFileDownload, getUserFilesByFileId, updateFile, updateFileDownload} from '#entities/queries'
 import {headObject} from '#lib/vendor/AWS/S3'
 import {sendMessage} from '#lib/vendor/AWS/SQS'
-import {publishEvent} from '#lib/vendor/AWS/EventBridge'
+import {publishEventDownloadCompleted, publishEventDownloadFailed} from '#lib/vendor/AWS/EventBridge'
 import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
 import {downloadVideoToS3, fetchVideoInfo} from '#lib/vendor/YouTube'
 import type {File} from '#types/domainModels'
@@ -25,7 +25,7 @@ import {validateSchema} from '#lib/validation/constraints'
 import {getRequiredEnv} from '#lib/system/env'
 import {UnexpectedError} from '#lib/system/errors'
 import {closeCookieExpirationIssueIfResolved, createCookieExpirationIssue, createVideoDownloadFailureIssue} from '#lib/integrations/github/issueService'
-import {metrics, MetricUnit, RequiresEventBridge, SqsHandler} from '#lib/lambda/handlers'
+import {metrics, MetricUnit, SqsHandler} from '#lib/lambda/handlers'
 import type {SqsRecordContext} from '#lib/lambda/handlers'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 import {createFailureNotification, createMetadataNotification} from '#lib/services/notification/transformers'
@@ -162,7 +162,7 @@ async function recoverFromS3(message: ValidatedDownloadQueueMessage, s3Size: num
 
   // Publish DownloadCompleted event for observability
   const completedDetail: DownloadCompletedDetail = {fileId, correlationId, s3Key: fileName, fileSize: s3Size, completedAt: new Date().toISOString()}
-  await publishEvent('DownloadCompleted', completedDetail, {correlationId})
+  await publishEventDownloadCompleted(completedDetail, {correlationId})
 
   metrics.addMetric('S3FileRecoverySuccess', MetricUnit.Count, 1)
   logInfo('File recovered from S3 successfully', {fileId, correlationId, s3Size, hasYouTubeMetadata: !!videoInfo})
@@ -327,7 +327,7 @@ async function handleDownloadFailure(
     retryCount: newRetryCount,
     failedAt: new Date().toISOString()
   }
-  await publishEvent('DownloadFailed', failedDetail, {correlationId})
+  await publishEventDownloadFailed(failedDetail, {correlationId})
 
   // Handle retryable errors - let SQS handle retry via visibility timeout
   if (classification.retryable && !isRetryExhausted(newRetryCount, maxRetries)) {
@@ -522,7 +522,7 @@ async function processDownloadRequest(message: ValidatedDownloadQueueMessage, re
     fileSize: uploadResult.fileSize,
     completedAt: new Date().toISOString()
   }
-  await publishEvent('DownloadCompleted', completedDetail, {correlationId})
+  await publishEventDownloadCompleted(completedDetail, {correlationId})
 
   metrics.addMetric('LambdaExecutionSuccess', MetricUnit.Count, 1)
 
@@ -540,7 +540,6 @@ async function processDownloadRequest(message: ValidatedDownloadQueueMessage, re
  * Consumes messages from DownloadQueue (routed via EventBridge from WebhookFeedly).
  * Uses ReportBatchItemFailures to enable partial batch success.
  */
-@RequiresEventBridge({publishes: ['DownloadCompleted', 'DownloadFailed']})
 class StartFileUploadHandler extends SqsHandler<unknown> {
   readonly operationName = 'StartFileUpload'
 

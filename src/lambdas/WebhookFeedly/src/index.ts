@@ -12,7 +12,7 @@ import type {APIGatewayProxyResult, Context} from 'aws-lambda'
 import {createFile, createFileDownload, getFile as getFileRecord} from '#entities/queries'
 import {sendMessage} from '#lib/vendor/AWS/SQS'
 import type {SendMessageRequest} from '#lib/vendor/AWS/SQS'
-import {publishEventWithRetry} from '#lib/vendor/AWS/EventBridge'
+import {publishEventDownloadRequestedWithRetry} from '#lib/vendor/AWS/EventBridge'
 import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
 import {createPersistenceStore, defaultIdempotencyConfig, makeIdempotent} from '#lib/vendor/Powertools/idempotency'
 import {getVideoID} from '#lib/vendor/YouTube'
@@ -26,7 +26,7 @@ import type {WebhookProcessingInput, WebhookProcessingResult} from '#types/lambd
 import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/apiGateway'
 import {getRequiredEnv} from '#lib/system/env'
 import {buildValidatedResponse} from '#lib/lambda/responses'
-import {AuthenticatedHandler, metrics, MetricUnit, RequiresEventBridge} from '#lib/lambda/handlers'
+import {AuthenticatedHandler, metrics, MetricUnit} from '#lib/lambda/handlers'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 import {createDownloadReadyNotification} from '#lib/services/notification/transformers'
 import {associateFileToUser} from '#lib/domain/user/userFileService'
@@ -121,7 +121,7 @@ async function processWebhookRequest(input: WebhookProcessingInput): Promise<Web
       // Publish DownloadRequested event to EventBridge with retry on transient failures
       // EventBridge routes to DownloadQueue -> StartFileUpload Lambda
       const eventDetail: DownloadRequestedDetail = {fileId, userId, sourceUrl: articleURL, correlationId, requestedAt: new Date().toISOString()}
-      await publishEventWithRetry('DownloadRequested', eventDetail, {correlationId})
+      await publishEventDownloadRequestedWithRetry(eventDetail, {correlationId})
       logInfo('Published DownloadRequested event', {fileId, correlationId})
       addMetadata(span, 'action', 'accepted')
       endSpan(span)
@@ -152,7 +152,6 @@ function getIdempotentProcessor() {
  * Handler for Feedly webhook requests.
  * Processes video download requests with idempotency protection.
  */
-@RequiresEventBridge({publishes: ['DownloadRequested']})
 class WebhookFeedlyHandler extends AuthenticatedHandler {
   readonly operationName = 'WebhookFeedly'
 
