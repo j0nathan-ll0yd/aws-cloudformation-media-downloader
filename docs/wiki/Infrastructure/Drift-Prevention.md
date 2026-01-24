@@ -17,9 +17,9 @@ State drift occurs when the actual AWS resources diverge from what Terraform exp
 |-------|------------|
 | Manual AWS Console changes | NEVER modify resources directly; always use Terraform |
 | Partial apply failures | Always run `pnpm run state:verify` after deployments |
-| Multiple concurrent deployments | Only one person should deploy at a time (no remote state locking) |
-| State file corruption | State is symlinked from main repo; never modify directly |
-| Worktree state desync | Use `pnpm run deploy`, not `tofu apply` directly |
+| Multiple concurrent deployments | DynamoDB locking prevents concurrent applies |
+| State file corruption | State is remote (S3) with versioning; use AWS console to recover |
+| Worktree state desync | Remote state ensures automatic sync; run `tofu init` if issues |
 
 ## Prevention Workflow
 
@@ -81,17 +81,18 @@ locals {
 
 ## Worktree Considerations
 
-This project uses git worktrees for isolated development. State files are **symlinked** from the main repository:
+This project uses git worktrees for isolated development. Terraform state is stored in a **remote S3 backend** with DynamoDB locking:
 
-```
-main-repo/terraform/terraform.tfstate  <-- Actual state file
-worktree/terraform/terraform.tfstate   <-- Symlink to main repo
-```
+| Component | Location |
+|-----------|----------|
+| State bucket | `s3://lifegames-media-downloader-tfstate` |
+| Lock table | `MediaDownloader-TerraformStateLock` (DynamoDB) |
+| Region | `us-west-2` |
 
 **Important:**
-- All worktrees share the same state file
-- Do NOT run deployments from multiple worktrees simultaneously
-- The post-checkout hook validates state file integrity
+- All worktrees share the same remote state (automatic via S3)
+- DynamoDB locking prevents concurrent deployments
+- Run `tofu init` in each worktree (done automatically by post-checkout hook)
 
 ## Drift Recovery Procedures
 

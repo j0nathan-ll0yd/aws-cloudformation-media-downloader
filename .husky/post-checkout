@@ -8,7 +8,6 @@
 #   - secrets.yaml           (Decrypted secrets - gitignored)
 #   - .sops.yaml             (SOPS configuration)
 #   - .env                   (Environment variables for SOPS)
-#   - terraform/terraform.tfstate*  (Terraform state files)
 #
 # Auto-setup for fresh worktrees:
 #   - pnpm install
@@ -42,34 +41,9 @@ for item in $SHARED_ITEMS; do
   fi
 done
 
-# Symlink terraform state files (nested paths)
-for state_file in "terraform/terraform.tfstate" "terraform/terraform.tfstate.backup"; do
-  if [ ! -e "$state_file" ] && [ ! -L "$state_file" ]; then
-    if [ -e "$MAIN_REPO/$state_file" ]; then
-      ln -s "$MAIN_REPO/$state_file" "$state_file"
-      if [ $? -eq 0 ]; then
-        LINKED="$LINKED $state_file"
-      fi
-    fi
-  fi
-done
-
 # Print summary if anything was linked
 if [ -n "$LINKED" ]; then
   echo "Linked from main repo:$LINKED"
-fi
-
-# Validate state file integrity
-if [ -L "terraform/terraform.tfstate" ]; then
-  STATE_TARGET=$(readlink "terraform/terraform.tfstate")
-  if [ ! -f "$STATE_TARGET" ]; then
-    echo ""
-    echo "WARNING: State file symlink target does not exist: $STATE_TARGET"
-    echo "Run 'tofu init' from main repository first, then re-run post-checkout."
-  else
-    RESOURCE_COUNT=$(grep -c '"type":' "$STATE_TARGET" 2>/dev/null || echo "0")
-    echo "State file linked: $RESOURCE_COUNT resources"
-  fi
 fi
 
 # --- Auto-setup: Only run for fresh worktrees (no node_modules) ---

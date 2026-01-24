@@ -73,46 +73,28 @@ main() {
   echo ""
 
   # =============================================================================
-  # Verify Terraform State Backend
+  # Verify Terraform Backend
   # =============================================================================
-  echo -e "${BLUE}Checking Terraform state backend...${NC}"
+  echo -e "${BLUE}Checking Terraform backend...${NC}"
 
-  # Check if remote backend is configured
-  if [[ -f "${TERRAFORM_DIR}/backend.tf" ]]; then
-    echo -e "${GREEN}✓${NC} Remote backend configured (backend.tf)"
-
-    # Ensure terraform is initialized with the backend
-    cd "${TERRAFORM_DIR}"
-    if [[ ! -d ".terraform" ]]; then
-      echo "  Initializing backend..."
-      if ! tofu init -input=false > /dev/null 2>&1; then
-        echo -e "${RED}ERROR: Failed to initialize terraform backend${NC}"
-        exit 1
-      fi
-    fi
-    echo "  State backend: S3 (remote)"
-  # Fallback: check for local state file (legacy)
-  elif [[ -f "${TERRAFORM_DIR}/terraform.tfstate" ]] || [[ -L "${TERRAFORM_DIR}/terraform.tfstate" ]]; then
-    if [[ -L "${TERRAFORM_DIR}/terraform.tfstate" ]]; then
-      STATE_TARGET=$(readlink "${TERRAFORM_DIR}/terraform.tfstate")
-      if [[ ! -f "${STATE_TARGET}" ]]; then
-        echo -e "${RED}ERROR: State file symlink target does not exist${NC}"
-        echo "Symlink points to: ${STATE_TARGET}"
-        exit 1
-      fi
-      RESOURCE_COUNT=$(grep -c '"type":' "${STATE_TARGET}" 2> /dev/null || echo "0")
-      echo "  State file: symlinked (${RESOURCE_COUNT} resources)"
-    else
-      RESOURCE_COUNT=$(grep -c '"type":' "${TERRAFORM_DIR}/terraform.tfstate" 2> /dev/null || echo "0")
-      echo "  State file: local (${RESOURCE_COUNT} resources)"
-    fi
-  else
-    echo -e "${RED}ERROR: No terraform state backend configured${NC}"
-    echo ""
-    echo "Either configure a remote backend in backend.tf or provide a local terraform.tfstate"
+  if [[ ! -f "${TERRAFORM_DIR}/backend.tf" ]]; then
+    echo -e "${RED}ERROR: backend.tf not found${NC}"
+    echo "Remote state backend configuration is required"
     exit 1
   fi
 
+  echo -e "${GREEN}✓${NC} Remote backend configured (backend.tf)"
+
+  # Ensure terraform is initialized with the backend
+  cd "${TERRAFORM_DIR}"
+  if [[ ! -d ".terraform" ]]; then
+    echo "  Initializing backend..."
+    if ! tofu init -input=false > /dev/null 2>&1; then
+      echo -e "${RED}ERROR: Failed to initialize terraform backend${NC}"
+      exit 1
+    fi
+  fi
+  echo "  State backend: S3 (remote)"
   echo ""
 
   # Run tofu plan with detailed exit code
