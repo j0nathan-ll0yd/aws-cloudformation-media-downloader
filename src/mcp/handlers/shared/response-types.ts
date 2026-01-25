@@ -19,6 +19,7 @@ export interface McpContentBlock {
  * Tool errors use content with isError flag, NOT protocol errors
  */
 export interface McpErrorResponse {
+  [x: string]: unknown
   content: McpContentBlock[]
   isError: true
 }
@@ -27,6 +28,7 @@ export interface McpErrorResponse {
  * Standardized MCP success response
  */
 export interface McpSuccessResponse {
+  [x: string]: unknown
   content: McpContentBlock[]
   isError?: false
 }
