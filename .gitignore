@@ -17,6 +17,7 @@ node_modules
 secrets.yaml
 secrets.staging.yaml
 secrets.prod.yaml
+secrets.enc.yaml
 youtube-cookies.txt
 cloudformation.json
 src/types/infrastructure.d.ts
