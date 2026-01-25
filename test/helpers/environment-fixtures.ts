@@ -65,7 +65,7 @@ export const STAGING_CONFIG: EnvironmentConfig = {
   dsqlDeletionProtection: false,
   enableCloudwatchDashboard: false,
   enableCloudwatchAlarms: false,
-  downloadReservedConcurrency: 0,
+  downloadReservedConcurrency: 0
 }
 
 // ============================================================================
@@ -86,7 +86,7 @@ export const PRODUCTION_CONFIG: EnvironmentConfig = {
   dsqlDeletionProtection: true,
   enableCloudwatchDashboard: false,
   enableCloudwatchAlarms: true,
-  downloadReservedConcurrency: 1,
+  downloadReservedConcurrency: 1
 }
 
 // ============================================================================
@@ -131,11 +131,7 @@ export function getPrefixedResourceName(baseName: string, environment: Environme
  */
 export function getTestEnvironmentVariables(environment: EnvironmentName): Record<string, string> {
   const config = getEnvironmentConfig(environment)
-  return {
-    ENVIRONMENT: config.environment,
-    LOG_LEVEL: config.logLevel,
-    RESOURCE_PREFIX: config.resourcePrefix,
-  }
+  return {ENVIRONMENT: config.environment, LOG_LEVEL: config.logLevel, RESOURCE_PREFIX: config.resourcePrefix}
 }
 
 // ============================================================================
@@ -165,7 +161,7 @@ export function getLambdaFunctionNames(environment: EnvironmentName): string[] {
     `${prefix}-StartFileUpload`,
     `${prefix}-UserDelete`,
     `${prefix}-UserSubscribe`,
-    `${prefix}-WebhookFeedly`,
+    `${prefix}-WebhookFeedly`
   ]
 }
 

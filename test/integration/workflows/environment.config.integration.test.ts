@@ -13,13 +13,7 @@
 import {readFileSync} from 'fs'
 import {join} from 'path'
 import {describe, expect, it} from 'vitest'
-import {
-  getEnvironmentConfig,
-  getLambdaFunctionNames,
-  getPrefixedResourceName,
-  PRODUCTION_CONFIG,
-  STAGING_CONFIG,
-} from '#test/helpers/environment-fixtures'
+import {getEnvironmentConfig, getLambdaFunctionNames, getPrefixedResourceName, PRODUCTION_CONFIG, STAGING_CONFIG} from '#test/helpers/environment-fixtures'
 
 describe('Environment Configuration', () => {
   describe('Staging Configuration', () => {
