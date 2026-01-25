@@ -14,7 +14,7 @@ import path from 'path'
 import {fileURLToPath} from 'url'
 import {handleValidationQuery} from '../validation.js'
 import {loadDependencyGraph} from '../data-loader.js'
-import {createErrorResponse} from '../shared/response-types.js'
+import {createErrorResponse, createSuccessResponse} from '../shared/response-types.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -329,10 +329,10 @@ export async function handleMigrationQuery(args: MigrationArgs) {
       const plan = await createMigrationPlan(convention, scope)
 
       if (plan.totalFiles === 0) {
-        return {convention, message: 'No violations found - codebase follows convention', scope}
+        return createSuccessResponse({convention, message: 'No violations found - codebase follows convention', scope})
       }
 
-      return {
+      return createSuccessResponse({
         plan,
         summary: {convention, totalFiles: plan.totalFiles, totalChanges: plan.totalChanges, estimatedDuration: plan.estimatedDuration},
         migrations: plan.migrations.map((m) => ({
@@ -342,14 +342,14 @@ export async function handleMigrationQuery(args: MigrationArgs) {
           priority: m.priority
         })),
         nextStep: `Use query: 'script' to generate executable migration script`
-      }
+      })
     }
 
     case 'script': {
       const plan = await createMigrationPlan(convention, scope)
 
       if (plan.totalFiles === 0) {
-        return {convention, message: 'No violations to migrate', scope}
+        return createSuccessResponse({convention, message: 'No violations to migrate', scope})
       }
 
       let script: string
@@ -368,23 +368,23 @@ export async function handleMigrationQuery(args: MigrationArgs) {
 
       if (execute) {
         const result = await executeMigration(plan)
-        return {executed: true, ...result, plan: {files: plan.totalFiles, changes: plan.totalChanges}}
+        return createSuccessResponse({executed: true, ...result, plan: {files: plan.totalFiles, changes: plan.totalChanges}})
       }
 
-      return {
+      return createSuccessResponse({
         convention,
         outputFormat,
         filename,
         script,
         usage: outputFormat === 'ts-morph' ? `npx tsx ${filename} --apply` : `bash ${filename}`,
         plan: {files: plan.totalFiles, changes: plan.totalChanges}
-      }
+      })
     }
 
     case 'verify': {
       const result = await verifyMigration(convention, scope)
 
-      return {
+      return createSuccessResponse({
         convention,
         scope,
         complete: result.complete,
@@ -393,7 +393,7 @@ export async function handleMigrationQuery(args: MigrationArgs) {
         message: result.complete
           ? 'Migration complete - all violations resolved'
           : `${result.remaining} violation(s) remaining in ${result.files.length} file(s)`
-      }
+      })
     }
 
     default:
