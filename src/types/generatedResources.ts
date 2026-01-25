@@ -4,7 +4,7 @@
  *
  * Regenerate with: pnpm run generate:resource-enums
  * Source: build/terraform-resources.json
- * Generated at: 2026-01-20T05:30:07.571Z
+ * Generated at: 2026-01-20T05:26:16.265Z
  */
 
 /** S3 bucket resources from Terraform */
