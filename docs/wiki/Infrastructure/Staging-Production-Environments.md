@@ -171,7 +171,7 @@ Both environments are designed to run under **$10/month combined**:
 | Log Retention | 3 days | 7 days | Reduced storage costs |
 | API Quotas | Reduced | Full | Staging uses less capacity |
 
-See [Phase 7 of the implementation plan](../../../thoughts/shared/plans/2026-01-23-staging-production-environments.md) for detailed cost analysis.
+See PR #370 for detailed cost analysis.
 
 ## Related Documentation
 
