@@ -4,14 +4,21 @@
 # Comprehensive AWS resource audit comparing Terraform state against live AWS resources
 #
 # Usage:
-#   ./bin/aws-audit.sh                 # Audit only, generate remediation commands
-#   ./bin/aws-audit.sh --prune         # Audit and delete orphaned resources (with confirmation)
-#   ./bin/aws-audit.sh --dry-run       # Show what --prune would delete without executing
-#   ./bin/aws-audit.sh --json          # Output results as JSON
+#   ./bin/aws-audit.sh --env staging              # Audit staging environment
+#   ./bin/aws-audit.sh --env production           # Audit production environment
+#   ./bin/aws-audit.sh --env staging --prune      # Audit and delete orphaned resources
+#   ./bin/aws-audit.sh --env production --dry-run # Show what --prune would delete
+#   ./bin/aws-audit.sh --env staging --json       # Output results as JSON
+#
+# Arguments:
+#   --env <environment>  Required. Either 'staging' or 'production'
+#   --prune              Optional. Delete orphaned resources (with confirmation)
+#   --dry-run            Optional. Show what --prune would delete without executing
+#   --json               Optional. Output results as JSON
 #
 # This script identifies:
 #   - Orphaned resources: In AWS but not in Terraform state
-#   - Duplicates: Multiple resources with similar names (e.g., ListFiles, ListFiles-1)
+#   - Duplicates: Multiple resources with similar names (e.g., stag-ListFiles, stag-ListFiles-1)
 #   - Untagged: Resources missing ManagedBy=terraform tag
 #
 # Resource types audited:
@@ -31,12 +38,17 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 TERRAFORM_DIR="${PROJECT_ROOT}/terraform"
 
 # Parse arguments
+ENVIRONMENT=""
 PRUNE_MODE=false
 DRY_RUN=false
 JSON_OUTPUT=false
 
 while [[ $# -gt 0 ]]; do
   case $1 in
+    --env)
+      ENVIRONMENT="$2"
+      shift 2
+      ;;
     --prune)
       PRUNE_MODE=true
       shift
@@ -51,11 +63,35 @@ while [[ $# -gt 0 ]]; do
       ;;
     *)
       echo "Unknown option: $1"
-      echo "Usage: ./bin/aws-audit.sh [--prune] [--dry-run] [--json]"
+      echo "Usage: ./bin/aws-audit.sh --env <staging|production> [--prune] [--dry-run] [--json]"
       exit 1
       ;;
   esac
 done
+
+# Validate environment
+if [[ -z "$ENVIRONMENT" ]]; then
+  echo "ERROR: --env parameter is required"
+  echo "Usage: ./bin/aws-audit.sh --env <staging|production> [--prune] [--dry-run] [--json]"
+  exit 1
+fi
+
+if [[ "$ENVIRONMENT" != "staging" && "$ENVIRONMENT" != "production" ]]; then
+  echo "ERROR: Environment must be 'staging' or 'production', got: ${ENVIRONMENT}"
+  exit 1
+fi
+
+# Map environment to workspace and resource prefix
+case $ENVIRONMENT in
+  staging)
+    WORKSPACE="staging"
+    RESOURCE_PREFIX="stag"
+    ;;
+  production)
+    WORKSPACE="production"
+    RESOURCE_PREFIX="prod"
+    ;;
+esac
 
 # Colors (disabled for JSON output)
 if [[ "$JSON_OUTPUT" == "true" ]]; then
@@ -91,11 +127,14 @@ find_orphans() {
 }
 
 main() {
-  # Project resource patterns (adjust based on your naming conventions)
-  LAMBDA_PATTERN="(ListFiles|LoginUser|RegisterUser|RegisterDevice|WebhookFeedly|S3ObjectCreated|SendPushNotification|StartFileUpload|PruneDevices|ApiGatewayAuthorizer|CloudfrontMiddleware|UserDelete|UserSubscribe|RefreshToken|LogClientEvent|FileCoordinator)"
-  IAM_PATTERN="(ListFiles|LoginUser|RegisterUser|RegisterDevice|WebhookFeedly|S3ObjectCreated|SendPushNotification|StartFileUpload|PruneDevices|ApiGatewayAuthorizer|CloudfrontMiddleware|UserDelete|UserSubscribe|RefreshToken|LogClientEvent|FileCoordinator|ApiGatewayCloudwatch|SNSLogging)"
-  DYNAMODB_PATTERN="(MediaDownloader|Idempotency)"
-  S3_PATTERN="(media-downloader|lifegames)"
+  # Project resource patterns with environment prefix
+  # These patterns match resources for the specific environment (stag-* or prod-*)
+  LAMBDA_PATTERN="^${RESOURCE_PREFIX}-(ListFiles|LoginUser|RegisterUser|RegisterDevice|WebhookFeedly|S3ObjectCreated|SendPushNotification|StartFileUpload|PruneDevices|ApiGatewayAuthorizer|CloudfrontMiddleware|UserDelete|UserSubscribe|RefreshToken|LogoutUser|CleanupExpiredRecords|DeviceEvent|MigrateDSQL)"
+  IAM_PATTERN="^${RESOURCE_PREFIX}-(ListFiles|LoginUser|RegisterUser|RegisterDevice|WebhookFeedly|S3ObjectCreated|SendPushNotification|StartFileUpload|PruneDevices|ApiGatewayAuthorizer|CloudfrontMiddleware|UserDelete|UserSubscribe|RefreshToken|LogoutUser|CleanupExpiredRecords|DeviceEvent|MigrateDSQL|ApiGatewayCloudwatch|SNSLoggingRole|CommonLambdaXRay|LambdaDSQLConnect|LambdaDSQLAdminConnect)"
+  DYNAMODB_PATTERN="^${RESOURCE_PREFIX}-(MediaDownloader|Idempotency)"
+  S3_PATTERN="lifegames-${RESOURCE_PREFIX}-media"
+  SQS_PATTERN="^${RESOURCE_PREFIX}-(SendPushNotification|DownloadQueue)"
+  APIGW_PATTERN="^${RESOURCE_PREFIX}-OfflineMediaDownloader"
 
   # Temporary files for comparison
   TMP_DIR=$(mktemp -d)
@@ -103,6 +142,7 @@ main() {
 
   echo -e "${BLUE}AWS Infrastructure Audit${NC}"
   echo "========================="
+  echo -e "Environment: ${YELLOW}${ENVIRONMENT}${NC} (prefix: ${RESOURCE_PREFIX}-)"
   echo ""
 
   # Load environment variables
@@ -114,7 +154,7 @@ main() {
   fi
 
   # Verify AWS credentials
-  echo -e "${YELLOW}[1/7] Verifying AWS credentials...${NC}"
+  echo -e "${YELLOW}[1/8] Verifying AWS credentials...${NC}"
   AWS_IDENTITY=$(aws sts get-caller-identity --output json 2> /dev/null) || {
     echo -e "${RED}ERROR: AWS credentials not configured or expired${NC}"
     exit 1
@@ -125,9 +165,23 @@ main() {
   echo "  Region:  ${AWS_REGION}"
   echo ""
 
-  # Collect Terraform state
-  echo -e "${YELLOW}[2/7] Collecting Terraform state...${NC}"
+  # Select workspace
+  echo -e "${YELLOW}[2/8] Selecting workspace: ${WORKSPACE}${NC}"
   cd "${TERRAFORM_DIR}"
+
+  CURRENT_WS=$(tofu workspace show 2>/dev/null || echo "")
+  if [[ "$CURRENT_WS" != "$WORKSPACE" ]]; then
+    if ! tofu workspace select "$WORKSPACE" > /dev/null 2>&1; then
+      echo -e "${RED}ERROR: Failed to select workspace '${WORKSPACE}'${NC}"
+      echo "  Run './bin/init-workspaces.sh' to create workspaces"
+      exit 1
+    fi
+  fi
+  echo -e "${GREEN}✓${NC} Workspace: ${WORKSPACE}"
+  echo ""
+
+  # Collect Terraform state
+  echo -e "${YELLOW}[3/8] Collecting Terraform state...${NC}"
 
   tofu state list 2> /dev/null | grep "aws_lambda_function\." | sed 's/aws_lambda_function\.//' > "$TMP_DIR/tf_lambdas.txt" || true
   tofu state list 2> /dev/null | grep "aws_iam_role\." | sed 's/aws_iam_role\.//' > "$TMP_DIR/tf_roles.txt" || true
@@ -148,48 +202,50 @@ main() {
   echo ""
 
   # Collect AWS resources
-  echo -e "${YELLOW}[3/7] Collecting AWS resources...${NC}"
+  echo -e "${YELLOW}[4/8] Collecting AWS resources (${RESOURCE_PREFIX}-* only)...${NC}"
 
-  # Lambda functions
+  # Lambda functions (filter by environment prefix)
   aws lambda list-functions --query 'Functions[*].FunctionName' --output text 2> /dev/null | tr '\t' '\n' | sort > "$TMP_DIR/aws_lambdas_all.txt"
   grep -E "$LAMBDA_PATTERN" "$TMP_DIR/aws_lambdas_all.txt" > "$TMP_DIR/aws_lambdas.txt" 2> /dev/null || true
 
-  # IAM roles (filter to project-related)
+  # IAM roles (filter by environment prefix)
   aws iam list-roles --query 'Roles[*].RoleName' --output text 2> /dev/null | tr '\t' '\n' | sort > "$TMP_DIR/aws_roles_all.txt"
   grep -E "$IAM_PATTERN" "$TMP_DIR/aws_roles_all.txt" > "$TMP_DIR/aws_roles.txt" 2> /dev/null || true
 
-  # IAM policies (filter to project-related)
+  # IAM policies (filter by environment prefix)
   aws iam list-policies --scope Local --query 'Policies[*].PolicyName' --output text 2> /dev/null | tr '\t' '\n' | sort > "$TMP_DIR/aws_policies_all.txt"
   grep -E "$IAM_PATTERN" "$TMP_DIR/aws_policies_all.txt" > "$TMP_DIR/aws_policies.txt" 2> /dev/null || true
 
-  # CloudFront distributions
-  aws cloudfront list-distributions --query 'DistributionList.Items[*].[Id,Comment]' --output text 2> /dev/null > "$TMP_DIR/aws_cloudfront.txt" || true
+  # CloudFront distributions (filter by environment comment/alias)
+  aws cloudfront list-distributions --query 'DistributionList.Items[*].[Id,Comment]' --output text 2> /dev/null | grep -i "${RESOURCE_PREFIX}" > "$TMP_DIR/aws_cloudfront.txt" 2> /dev/null || true
 
-  # API Gateway
-  aws apigateway get-rest-apis --query 'items[*].[id,name]' --output text 2> /dev/null > "$TMP_DIR/aws_apigw.txt" || true
+  # API Gateway (filter by environment prefix)
+  aws apigateway get-rest-apis --query 'items[*].[id,name]' --output text 2> /dev/null > "$TMP_DIR/aws_apigw_all.txt" || true
+  grep -E "$APIGW_PATTERN" "$TMP_DIR/aws_apigw_all.txt" > "$TMP_DIR/aws_apigw.txt" 2> /dev/null || true
 
-  # DynamoDB
+  # DynamoDB (filter by environment prefix)
   aws dynamodb list-tables --query 'TableNames' --output text 2> /dev/null | tr '\t' '\n' > "$TMP_DIR/aws_dynamodb_all.txt" || true
   grep -E "$DYNAMODB_PATTERN" "$TMP_DIR/aws_dynamodb_all.txt" > "$TMP_DIR/aws_dynamodb.txt" 2> /dev/null || true
 
-  # S3 buckets
+  # S3 buckets (filter by environment prefix)
   aws s3api list-buckets --query 'Buckets[*].Name' --output text 2> /dev/null | tr '\t' '\n' > "$TMP_DIR/aws_s3_all.txt" || true
   grep -E "$S3_PATTERN" "$TMP_DIR/aws_s3_all.txt" > "$TMP_DIR/aws_s3.txt" 2> /dev/null || true
 
-  # SQS queues
-  aws sqs list-queues --query 'QueueUrls' --output text 2> /dev/null | tr '\t' '\n' | xargs -I{} basename {} > "$TMP_DIR/aws_sqs.txt" 2> /dev/null || true
+  # SQS queues (filter by environment prefix)
+  aws sqs list-queues --query 'QueueUrls' --output text 2> /dev/null | tr '\t' '\n' | xargs -I{} basename {} > "$TMP_DIR/aws_sqs_all.txt" 2> /dev/null || true
+  grep -E "$SQS_PATTERN" "$TMP_DIR/aws_sqs_all.txt" > "$TMP_DIR/aws_sqs.txt" 2> /dev/null || true
 
   AWS_LAMBDA_COUNT=$(wc -l < "$TMP_DIR/aws_lambdas.txt" | tr -d ' ')
   AWS_ROLE_COUNT=$(wc -l < "$TMP_DIR/aws_roles.txt" | tr -d ' ')
   AWS_POLICY_COUNT=$(wc -l < "$TMP_DIR/aws_policies.txt" | tr -d ' ')
 
-  echo "  Lambdas in AWS:     ${AWS_LAMBDA_COUNT} (project-related)"
-  echo "  IAM Roles in AWS:   ${AWS_ROLE_COUNT} (project-related)"
-  echo "  IAM Policies:       ${AWS_POLICY_COUNT} (project-related)"
+  echo "  Lambdas in AWS:     ${AWS_LAMBDA_COUNT} (${ENVIRONMENT} only)"
+  echo "  IAM Roles in AWS:   ${AWS_ROLE_COUNT} (${ENVIRONMENT} only)"
+  echo "  IAM Policies:       ${AWS_POLICY_COUNT} (${ENVIRONMENT} only)"
   echo ""
 
   # Identify orphaned resources
-  echo -e "${YELLOW}[4/7] Identifying orphaned resources...${NC}"
+  echo -e "${YELLOW}[5/8] Identifying orphaned resources...${NC}"
 
   # Get function names from Terraform state (extract actual names, not resource identifiers)
   # For now, use the resource identifiers which should match function names in this project
@@ -197,9 +253,21 @@ main() {
   ORPHAN_ROLES=$(find_orphans "$TMP_DIR/aws_roles.txt" "$TMP_DIR/tf_roles.txt" | sort -u)
   ORPHAN_POLICIES=$(find_orphans "$TMP_DIR/aws_policies.txt" "$TMP_DIR/tf_policies.txt" | sort -u)
 
-  ORPHAN_LAMBDA_COUNT=$(echo "$ORPHAN_LAMBDAS" | grep -c . || echo 0)
-  ORPHAN_ROLE_COUNT=$(echo "$ORPHAN_ROLES" | grep -c . || echo 0)
-  ORPHAN_POLICY_COUNT=$(echo "$ORPHAN_POLICIES" | grep -c . || echo 0)
+  if [[ -n "$ORPHAN_LAMBDAS" ]]; then
+    ORPHAN_LAMBDA_COUNT=$(echo "$ORPHAN_LAMBDAS" | wc -l | tr -d ' ')
+  else
+    ORPHAN_LAMBDA_COUNT=0
+  fi
+  if [[ -n "$ORPHAN_ROLES" ]]; then
+    ORPHAN_ROLE_COUNT=$(echo "$ORPHAN_ROLES" | wc -l | tr -d ' ')
+  else
+    ORPHAN_ROLE_COUNT=0
+  fi
+  if [[ -n "$ORPHAN_POLICIES" ]]; then
+    ORPHAN_POLICY_COUNT=$(echo "$ORPHAN_POLICIES" | wc -l | tr -d ' ')
+  else
+    ORPHAN_POLICY_COUNT=0
+  fi
 
   if [[ -n "$ORPHAN_LAMBDAS" ]]; then
     echo -e "${RED}Orphaned Lambda functions:${NC}"
@@ -230,11 +298,12 @@ main() {
   echo ""
 
   # Check for duplicates
-  echo -e "${YELLOW}[5/7] Checking for duplicates...${NC}"
+  echo -e "${YELLOW}[6/8] Checking for duplicates...${NC}"
 
   # Find duplicates (names with numeric suffixes that shouldn't have them)
-  DUPLICATE_LAMBDAS=$(grep -E "${LAMBDA_PATTERN}[_-][0-9]+" "$TMP_DIR/aws_lambdas_all.txt" 2> /dev/null || true)
-  DUPLICATE_ROLES=$(grep -E "${IAM_PATTERN}[_-][0-9]+" "$TMP_DIR/aws_roles_all.txt" 2> /dev/null || true)
+  # Pattern: stag-ResourceName-1 or prod-ResourceName_2
+  DUPLICATE_LAMBDAS=$(grep -E "^${RESOURCE_PREFIX}-.*[_-][0-9]+$" "$TMP_DIR/aws_lambdas_all.txt" 2> /dev/null || true)
+  DUPLICATE_ROLES=$(grep -E "^${RESOURCE_PREFIX}-.*[_-][0-9]+$" "$TMP_DIR/aws_roles_all.txt" 2> /dev/null || true)
 
   if [[ -n "$DUPLICATE_LAMBDAS" ]]; then
     echo -e "${RED}Potential duplicate Lambdas:${NC}"
@@ -274,7 +343,7 @@ main() {
   echo ""
 
   # Check for untagged resources
-  echo -e "${YELLOW}[6/7] Checking for untagged resources...${NC}"
+  echo -e "${YELLOW}[7/8] Checking for untagged resources...${NC}"
 
   UNTAGGED_COUNT=0
   while IFS= read -r func; do
@@ -295,12 +364,15 @@ main() {
   echo ""
 
   # Summary and remediation
-  echo -e "${YELLOW}[7/7] Summary${NC}"
+  echo -e "${YELLOW}[8/8] Summary${NC}"
   echo "============="
   echo ""
 
   TOTAL_ORPHANS=$((ORPHAN_LAMBDA_COUNT + ORPHAN_ROLE_COUNT + ORPHAN_POLICY_COUNT))
 
+  echo "Environment:           ${ENVIRONMENT} (${RESOURCE_PREFIX}-*)"
+  echo "Workspace:             ${WORKSPACE}"
+  echo ""
   echo "Orphaned resources:    ${TOTAL_ORPHANS}"
   echo "  - Lambda functions:  ${ORPHAN_LAMBDA_COUNT}"
   echo "  - IAM Roles:         ${ORPHAN_ROLE_COUNT}"
@@ -446,7 +518,14 @@ main() {
   fi
 
   echo ""
-  echo "Audit complete."
+  echo "Audit complete for ${ENVIRONMENT} environment."
+  echo ""
+  echo "To audit the other environment:"
+  if [[ "$ENVIRONMENT" == "staging" ]]; then
+    echo "  ./bin/aws-audit.sh --env production"
+  else
+    echo "  ./bin/aws-audit.sh --env staging"
+  fi
 }
 
 main "$@"

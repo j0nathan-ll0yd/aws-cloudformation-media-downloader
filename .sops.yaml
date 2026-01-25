@@ -1,4 +1,20 @@
+# SOPS configuration for environment-specific secrets
+# Each environment can have different encryption keys if needed
+#
+# Files:
+#   secrets.staging.yaml -> secrets.staging.enc.yaml (staging credentials)
+#   secrets.prod.yaml    -> secrets.prod.enc.yaml (production credentials)
+#   secrets.yaml         -> secrets.enc.yaml (legacy, for migration)
+
 creation_rules:
-  # YAML and JSON files
-  - path_regex: secrets\.yaml
+  # Staging secrets
+  - path_regex: secrets\.staging\.yaml$
+    age: age18jlkflydzmmclcds8h5lrn8em6y8kldvuh4wf8zdsvdsyx6uaddsnavfhv
+
+  # Production secrets
+  - path_regex: secrets\.prod\.yaml$
+    age: age18jlkflydzmmclcds8h5lrn8em6y8kldvuh4wf8zdsvdsyx6uaddsnavfhv
+
+  # Legacy single file (for migration period)
+  - path_regex: secrets\.yaml$
     age: age18jlkflydzmmclcds8h5lrn8em6y8kldvuh4wf8zdsvdsyx6uaddsnavfhv

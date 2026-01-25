@@ -1,5 +1,5 @@
 locals {
-  user_delete_function_name = "UserDelete"
+  user_delete_function_name = "${var.resource_prefix}-UserDelete"
 }
 
 resource "aws_iam_role" "UserDelete" {
@@ -64,7 +64,7 @@ resource "aws_lambda_permission" "UserDelete" {
 
 resource "aws_cloudwatch_log_group" "UserDelete" {
   name              = "/aws/lambda/${aws_lambda_function.UserDelete.function_name}"
-  retention_in_days = 7
+  retention_in_days = var.log_retention_days
   tags              = local.common_tags
 }
 

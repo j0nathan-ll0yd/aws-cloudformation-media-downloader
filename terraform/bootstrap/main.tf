@@ -106,3 +106,231 @@ output "dynamodb_table_arn" {
   description = "DynamoDB table ARN for state locking"
   value       = aws_dynamodb_table.TerraformStateLock.arn
 }
+
+# =============================================================================
+# GitHub Actions OIDC Authentication
+# =============================================================================
+# Enables GitHub Actions to assume IAM roles without long-lived credentials
+# See: docs/wiki/Infrastructure/OIDC-AWS-Authentication.md
+
+resource "aws_iam_openid_connect_provider" "GitHubActionsOIDC" {
+  url             = "https://token.actions.githubusercontent.com"
+  client_id_list  = ["sts.amazonaws.com"]
+  thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aea1"]
+  tags            = local.common_tags
+}
+
+# Staging deployment role - can be assumed from any branch
+resource "aws_iam_role" "GitHubActionsStagingRole" {
+  name = "GitHubActions-MediaDownloader-Staging"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Principal = {
+        Federated = aws_iam_openid_connect_provider.GitHubActionsOIDC.arn
+      }
+      Action = "sts:AssumeRoleWithWebIdentity"
+      Condition = {
+        StringEquals = {
+          "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
+        }
+        StringLike = {
+          "token.actions.githubusercontent.com:sub" = "repo:j0nathan-ll0yd/aws-cloudformation-media-downloader:*"
+        }
+      }
+    }]
+  })
+
+  tags = local.common_tags
+}
+
+# Production deployment role - restricted to main/master branch
+resource "aws_iam_role" "GitHubActionsProductionRole" {
+  name = "GitHubActions-MediaDownloader-Production"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Principal = {
+        Federated = aws_iam_openid_connect_provider.GitHubActionsOIDC.arn
+      }
+      Action = "sts:AssumeRoleWithWebIdentity"
+      Condition = {
+        StringEquals = {
+          "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
+          "token.actions.githubusercontent.com:sub" = "repo:j0nathan-ll0yd/aws-cloudformation-media-downloader:ref:refs/heads/master"
+        }
+      }
+    }]
+  })
+
+  tags = local.common_tags
+}
+
+# IAM policy for Terraform operations
+resource "aws_iam_policy" "TerraformDeployPolicy" {
+  name        = "TerraformDeployPolicy"
+  description = "Permissions for Terraform/OpenTofu deployments"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "TerraformState"
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject",
+          "s3:ListBucket"
+        ]
+        Resource = [
+          aws_s3_bucket.TerraformState.arn,
+          "${aws_s3_bucket.TerraformState.arn}/*"
+        ]
+      },
+      {
+        Sid    = "TerraformLock"
+        Effect = "Allow"
+        Action = [
+          "dynamodb:GetItem",
+          "dynamodb:PutItem",
+          "dynamodb:DeleteItem"
+        ]
+        Resource = aws_dynamodb_table.TerraformStateLock.arn
+      },
+      {
+        Sid    = "LambdaManagement"
+        Effect = "Allow"
+        Action = [
+          "lambda:*"
+        ]
+        Resource = "arn:aws:lambda:us-west-2:${data.aws_caller_identity.current.account_id}:function:*"
+      },
+      {
+        Sid    = "APIGatewayManagement"
+        Effect = "Allow"
+        Action = [
+          "apigateway:*"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "DSQLManagement"
+        Effect = "Allow"
+        Action = [
+          "dsql:*"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "S3Management"
+        Effect = "Allow"
+        Action = [
+          "s3:*"
+        ]
+        Resource = [
+          "arn:aws:s3:::lifegames-*-media-files",
+          "arn:aws:s3:::lifegames-*-media-files/*"
+        ]
+      },
+      {
+        Sid    = "EventBridgeManagement"
+        Effect = "Allow"
+        Action = [
+          "events:*"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "SQSSNSManagement"
+        Effect = "Allow"
+        Action = [
+          "sqs:*",
+          "sns:*"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "CloudWatchManagement"
+        Effect = "Allow"
+        Action = [
+          "cloudwatch:*",
+          "logs:*"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "CloudFrontManagement"
+        Effect = "Allow"
+        Action = [
+          "cloudfront:*"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "IAMManagement"
+        Effect = "Allow"
+        Action = [
+          "iam:GetRole",
+          "iam:GetRolePolicy",
+          "iam:GetPolicy",
+          "iam:GetPolicyVersion",
+          "iam:ListRolePolicies",
+          "iam:ListAttachedRolePolicies",
+          "iam:CreateRole",
+          "iam:DeleteRole",
+          "iam:UpdateRole",
+          "iam:AttachRolePolicy",
+          "iam:DetachRolePolicy",
+          "iam:PutRolePolicy",
+          "iam:DeleteRolePolicy",
+          "iam:CreatePolicy",
+          "iam:DeletePolicy",
+          "iam:CreatePolicyVersion",
+          "iam:DeletePolicyVersion",
+          "iam:PassRole",
+          "iam:TagRole",
+          "iam:TagPolicy",
+          "iam:ListInstanceProfilesForRole"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "DynamoDBManagement"
+        Effect = "Allow"
+        Action = [
+          "dynamodb:*"
+        ]
+        Resource = [
+          "arn:aws:dynamodb:us-west-2:${data.aws_caller_identity.current.account_id}:table/*-MediaDownloader-*"
+        ]
+      }
+    ]
+  })
+
+  tags = local.common_tags
+}
+
+resource "aws_iam_role_policy_attachment" "staging_deploy" {
+  role       = aws_iam_role.GitHubActionsStagingRole.name
+  policy_arn = aws_iam_policy.TerraformDeployPolicy.arn
+}
+
+resource "aws_iam_role_policy_attachment" "production_deploy" {
+  role       = aws_iam_role.GitHubActionsProductionRole.name
+  policy_arn = aws_iam_policy.TerraformDeployPolicy.arn
+}
+
+output "GitHubActionsStagingRoleArn" {
+  description = "ARN of the GitHub Actions staging deployment role"
+  value       = aws_iam_role.GitHubActionsStagingRole.arn
+}
+
+output "GitHubActionsProductionRoleArn" {
+  description = "ARN of the GitHub Actions production deployment role"
+  value       = aws_iam_role.GitHubActionsProductionRole.arn
+}

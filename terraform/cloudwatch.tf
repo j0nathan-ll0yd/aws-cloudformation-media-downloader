@@ -1,57 +1,73 @@
-# CloudWatch Dashboard for Media Downloader
-# Provides visibility into Lambda performance, storage, and API metrics
-# See: https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/issues/147
+# CloudWatch Dashboard and Alarms for Media Downloader
+# =============================================================================
+# COST OPTIMIZATION: CloudWatch is the primary cost driver (~70% of total).
+#
+# Dashboard: $3/month per dashboard with >50 metrics
+#   - Controlled by var.enable_cloudwatch_dashboard (default: false)
+#   - Use AWS Console on-demand instead for cost savings
+#
+# Alarms: First 10 FREE, then $0.10/alarm
+#   - Controlled by var.enable_cloudwatch_alarms
+#   - Production: 3 critical alarms (within free tier)
+#   - Staging: 0 alarms
+#
+# See: thoughts/shared/plans/2026-01-23-staging-production-environments.md
+# =============================================================================
 
 locals {
+  # Lambda function names with environment prefix
   lambda_functions = [
-    "ApiGatewayAuthorizer",
-    "CleanupExpiredRecords",
-    "CloudfrontMiddleware",
-    "DeviceEvent",
-    "ListFiles",
-    "LoginUser",
-    "LogoutUser",
-    "MigrateDSQL",
-    "PruneDevices",
-    "RefreshToken",
-    "RegisterDevice",
-    "RegisterUser",
-    "S3ObjectCreated",
-    "SendPushNotification",
-    "StartFileUpload",
-    "UserDelete",
-    "UserSubscribe",
-    "WebhookFeedly"
+    "${var.resource_prefix}-ApiGatewayAuthorizer",
+    "${var.resource_prefix}-CleanupExpiredRecords",
+    "${var.resource_prefix}-CloudfrontMiddleware",
+    "${var.resource_prefix}-DeviceEvent",
+    "${var.resource_prefix}-ListFiles",
+    "${var.resource_prefix}-LoginUser",
+    "${var.resource_prefix}-LogoutUser",
+    "${var.resource_prefix}-MigrateDSQL",
+    "${var.resource_prefix}-PruneDevices",
+    "${var.resource_prefix}-RefreshToken",
+    "${var.resource_prefix}-RegisterDevice",
+    "${var.resource_prefix}-RegisterUser",
+    "${var.resource_prefix}-S3ObjectCreated",
+    "${var.resource_prefix}-SendPushNotification",
+    "${var.resource_prefix}-StartFileUpload",
+    "${var.resource_prefix}-UserDelete",
+    "${var.resource_prefix}-UserSubscribe",
+    "${var.resource_prefix}-WebhookFeedly"
   ]
 
   # Split lambdas into groups for CloudWatch alarms (max 10 metrics per alarm)
   lambda_functions_api = [
-    "ApiGatewayAuthorizer",
-    "DeviceEvent",
-    "ListFiles",
-    "LoginUser",
-    "LogoutUser",
-    "RefreshToken",
-    "RegisterDevice",
-    "RegisterUser",
-    "UserDelete",
-    "UserSubscribe"
+    "${var.resource_prefix}-ApiGatewayAuthorizer",
+    "${var.resource_prefix}-DeviceEvent",
+    "${var.resource_prefix}-ListFiles",
+    "${var.resource_prefix}-LoginUser",
+    "${var.resource_prefix}-LogoutUser",
+    "${var.resource_prefix}-RefreshToken",
+    "${var.resource_prefix}-RegisterDevice",
+    "${var.resource_prefix}-RegisterUser",
+    "${var.resource_prefix}-UserDelete",
+    "${var.resource_prefix}-UserSubscribe"
   ]
 
   lambda_functions_background = [
-    "CleanupExpiredRecords",
-    "CloudfrontMiddleware",
-    "MigrateDSQL",
-    "PruneDevices",
-    "S3ObjectCreated",
-    "SendPushNotification",
-    "StartFileUpload",
-    "WebhookFeedly"
+    "${var.resource_prefix}-CleanupExpiredRecords",
+    "${var.resource_prefix}-CloudfrontMiddleware",
+    "${var.resource_prefix}-MigrateDSQL",
+    "${var.resource_prefix}-PruneDevices",
+    "${var.resource_prefix}-S3ObjectCreated",
+    "${var.resource_prefix}-SendPushNotification",
+    "${var.resource_prefix}-StartFileUpload",
+    "${var.resource_prefix}-WebhookFeedly"
   ]
 }
 
+# Dashboard is disabled by default for cost savings ($3/month)
+# Enable with: enable_cloudwatch_dashboard = true in tfvars
 resource "aws_cloudwatch_dashboard" "Main" {
-  dashboard_name = "MediaDownloader"
+  count          = var.enable_cloudwatch_dashboard ? 1 : 0
+  dashboard_name = "${var.resource_prefix}-MediaDownloader"
 
   dashboard_body = jsonencode({
     widgets = [
@@ -315,11 +331,11 @@ resource "aws_cloudwatch_dashboard" "Main" {
           period = 300
           view   = "timeSeries"
           metrics = [
-            ["AWS/Lambda", "Invocations", "FunctionName", "WebhookFeedly", { label = "1. WebhookFeedly" }],
+            ["AWS/Lambda", "Invocations", "FunctionName", "${var.resource_prefix}-WebhookFeedly", { label = "1. WebhookFeedly" }],
             ["AWS/Events", "Invocations", "RuleName", aws_cloudwatch_event_rule.DownloadRequested.name, { label = "2. EventBridge" }],
-            ["AWS/Lambda", "Invocations", "FunctionName", "StartFileUpload", { label = "3. StartFileUpload" }],
-            ["AWS/Lambda", "Invocations", "FunctionName", "S3ObjectCreated", { label = "4. S3ObjectCreated" }],
-            ["AWS/Lambda", "Invocations", "FunctionName", "SendPushNotification", { label = "5. SendPushNotification" }]
+            ["AWS/Lambda", "Invocations", "FunctionName", "${var.resource_prefix}-StartFileUpload", { label = "3. StartFileUpload" }],
+            ["AWS/Lambda", "Invocations", "FunctionName", "${var.resource_prefix}-S3ObjectCreated", { label = "4. S3ObjectCreated" }],
+            ["AWS/Lambda", "Invocations", "FunctionName", "${var.resource_prefix}-SendPushNotification", { label = "5. SendPushNotification" }]
           ]
         }
       },
@@ -420,23 +436,25 @@ resource "aws_cloudwatch_dashboard" "Main" {
 }
 
 output "cloudwatch_dashboard_url" {
-  description = "URL to the CloudWatch dashboard"
-  value       = "https://${data.aws_region.current.id}.console.aws.amazon.com/cloudwatch/home?region=${data.aws_region.current.id}#dashboards:name=${aws_cloudwatch_dashboard.Main.dashboard_name}"
+  description = "URL to the CloudWatch dashboard (empty if dashboard disabled)"
+  value       = var.enable_cloudwatch_dashboard ? "https://${data.aws_region.current.id}.console.aws.amazon.com/cloudwatch/home?region=${data.aws_region.current.id}#dashboards:name=${aws_cloudwatch_dashboard.Main[0].dashboard_name}" : ""
 }
 
 # =============================================================================
 # SNS Topic for Operations Alerts
+# Only created when alarms are enabled
 # Subscribe your email/Slack/PagerDuty manually after deployment
 # =============================================================================
 
 resource "aws_sns_topic" "OperationsAlerts" {
-  name = "${local.project_name}-operations-alerts"
-  tags = local.common_tags
+  count = var.enable_cloudwatch_alarms ? 1 : 0
+  name  = "${var.resource_prefix}-${local.project_name}-operations-alerts"
+  tags  = local.common_tags
 }
 
 output "operations_alerts_sns_topic_arn" {
-  description = "SNS topic ARN for operations alerts - subscribe manually to receive notifications"
-  value       = aws_sns_topic.OperationsAlerts.arn
+  description = "SNS topic ARN for operations alerts (empty if alarms disabled)"
+  value       = var.enable_cloudwatch_alarms ? aws_sns_topic.OperationsAlerts[0].arn : ""
 }
 
 # =============================================================================
@@ -446,7 +464,8 @@ output "operations_alerts_sns_topic_arn" {
 
 # Lambda Errors Alarm (API) - triggers when total errors across API Lambdas exceed threshold
 resource "aws_cloudwatch_metric_alarm" "LambdaErrorsApi" {
-  alarm_name          = "MediaDownloader-Lambda-Errors-API"
+  count               = var.enable_cloudwatch_alarms ? 1 : 0
+  alarm_name          = "${var.resource_prefix}-MediaDownloader-Lambda-Errors-API"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
   threshold           = 5
@@ -476,15 +495,16 @@ resource "aws_cloudwatch_metric_alarm" "LambdaErrorsApi" {
     }
   }
 
-  alarm_actions = [aws_sns_topic.OperationsAlerts.arn]
-  ok_actions    = [aws_sns_topic.OperationsAlerts.arn]
+  alarm_actions = [aws_sns_topic.OperationsAlerts[0].arn]
+  ok_actions    = [aws_sns_topic.OperationsAlerts[0].arn]
 
   tags = local.common_tags
 }
 
 # Lambda Errors Alarm (Background) - triggers when total errors across background Lambdas exceed threshold
 resource "aws_cloudwatch_metric_alarm" "LambdaErrorsBackground" {
-  alarm_name          = "MediaDownloader-Lambda-Errors-Background"
+  count               = var.enable_cloudwatch_alarms ? 1 : 0
+  alarm_name          = "${var.resource_prefix}-MediaDownloader-Lambda-Errors-Background"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
   threshold           = 3
@@ -514,15 +534,16 @@ resource "aws_cloudwatch_metric_alarm" "LambdaErrorsBackground" {
     }
   }
 
-  alarm_actions = [aws_sns_topic.OperationsAlerts.arn]
-  ok_actions    = [aws_sns_topic.OperationsAlerts.arn]
+  alarm_actions = [aws_sns_topic.OperationsAlerts[0].arn]
+  ok_actions    = [aws_sns_topic.OperationsAlerts[0].arn]
 
   tags = local.common_tags
 }
 
 # Lambda Throttles Alarm (API) - any throttle is concerning
 resource "aws_cloudwatch_metric_alarm" "LambdaThrottlesApi" {
-  alarm_name          = "MediaDownloader-Lambda-Throttles-API"
+  count               = var.enable_cloudwatch_alarms ? 1 : 0
+  alarm_name          = "${var.resource_prefix}-MediaDownloader-Lambda-Throttles-API"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
   threshold           = 0
@@ -552,15 +573,16 @@ resource "aws_cloudwatch_metric_alarm" "LambdaThrottlesApi" {
     }
   }
 
-  alarm_actions = [aws_sns_topic.OperationsAlerts.arn]
-  ok_actions    = [aws_sns_topic.OperationsAlerts.arn]
+  alarm_actions = [aws_sns_topic.OperationsAlerts[0].arn]
+  ok_actions    = [aws_sns_topic.OperationsAlerts[0].arn]
 
   tags = local.common_tags
 }
 
 # Lambda Throttles Alarm (Background) - any throttle is concerning
 resource "aws_cloudwatch_metric_alarm" "LambdaThrottlesBackground" {
-  alarm_name          = "MediaDownloader-Lambda-Throttles-Background"
+  count               = var.enable_cloudwatch_alarms ? 1 : 0
+  alarm_name          = "${var.resource_prefix}-MediaDownloader-Lambda-Throttles-Background"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
   threshold           = 0
@@ -590,15 +612,16 @@ resource "aws_cloudwatch_metric_alarm" "LambdaThrottlesBackground" {
     }
   }
 
-  alarm_actions = [aws_sns_topic.OperationsAlerts.arn]
-  ok_actions    = [aws_sns_topic.OperationsAlerts.arn]
+  alarm_actions = [aws_sns_topic.OperationsAlerts[0].arn]
+  ok_actions    = [aws_sns_topic.OperationsAlerts[0].arn]
 
   tags = local.common_tags
 }
 
 # SQS DLQ Alarm - any message in DLQ requires investigation
 resource "aws_cloudwatch_metric_alarm" "SqsDlqMessages" {
-  alarm_name          = "MediaDownloader-SQS-DLQ-Messages"
+  count               = var.enable_cloudwatch_alarms ? 1 : 0
+  alarm_name          = "${var.resource_prefix}-MediaDownloader-SQS-DLQ-Messages"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
   metric_name         = "ApproximateNumberOfMessagesVisible"
@@ -613,15 +636,16 @@ resource "aws_cloudwatch_metric_alarm" "SqsDlqMessages" {
     QueueName = aws_sqs_queue.SendPushNotificationDLQ.name
   }
 
-  alarm_actions = [aws_sns_topic.OperationsAlerts.arn]
-  ok_actions    = [aws_sns_topic.OperationsAlerts.arn]
+  alarm_actions = [aws_sns_topic.OperationsAlerts[0].arn]
+  ok_actions    = [aws_sns_topic.OperationsAlerts[0].arn]
 
   tags = local.common_tags
 }
 
 # SQS Queue Age Alarm - messages shouldn't be stuck in queue
 resource "aws_cloudwatch_metric_alarm" "SqsQueueAge" {
-  alarm_name          = "MediaDownloader-SQS-Queue-Age"
+  count               = var.enable_cloudwatch_alarms ? 1 : 0
+  alarm_name          = "${var.resource_prefix}-MediaDownloader-SQS-Queue-Age"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 2
   metric_name         = "ApproximateAgeOfOldestMessage"
@@ -636,8 +660,8 @@ resource "aws_cloudwatch_metric_alarm" "SqsQueueAge" {
     QueueName = aws_sqs_queue.SendPushNotification.name
   }
 
-  alarm_actions = [aws_sns_topic.OperationsAlerts.arn]
-  ok_actions    = [aws_sns_topic.OperationsAlerts.arn]
+  alarm_actions = [aws_sns_topic.OperationsAlerts[0].arn]
+  ok_actions    = [aws_sns_topic.OperationsAlerts[0].arn]
 
   tags = local.common_tags
 }
@@ -650,7 +674,8 @@ resource "aws_cloudwatch_metric_alarm" "SqsQueueAge" {
 # EventBridge FailedInvocations Alarm
 # Triggers when events fail to be delivered to targets (DownloadRequested -> SQS)
 resource "aws_cloudwatch_metric_alarm" "EventBridgeFailedInvocations" {
-  alarm_name          = "MediaDownloader-EventBridge-FailedInvocations"
+  count               = var.enable_cloudwatch_alarms ? 1 : 0
+  alarm_name          = "${var.resource_prefix}-MediaDownloader-EventBridge-FailedInvocations"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
   metric_name         = "FailedInvocations"
@@ -665,8 +690,8 @@ resource "aws_cloudwatch_metric_alarm" "EventBridgeFailedInvocations" {
     RuleName = aws_cloudwatch_event_rule.DownloadRequested.name
   }
 
-  alarm_actions = [aws_sns_topic.OperationsAlerts.arn]
-  ok_actions    = [aws_sns_topic.OperationsAlerts.arn]
+  alarm_actions = [aws_sns_topic.OperationsAlerts[0].arn]
+  ok_actions    = [aws_sns_topic.OperationsAlerts[0].arn]
 
   tags = local.common_tags
 }
@@ -674,7 +699,8 @@ resource "aws_cloudwatch_metric_alarm" "EventBridgeFailedInvocations" {
 # EventBridge Throttled Alarm
 # Triggers when EventBridge rules are being throttled due to rate limits
 resource "aws_cloudwatch_metric_alarm" "EventBridgeThrottled" {
-  alarm_name          = "MediaDownloader-EventBridge-Throttled"
+  count               = var.enable_cloudwatch_alarms ? 1 : 0
+  alarm_name          = "${var.resource_prefix}-MediaDownloader-EventBridge-Throttled"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
   metric_name         = "ThrottledRules"
@@ -689,8 +715,8 @@ resource "aws_cloudwatch_metric_alarm" "EventBridgeThrottled" {
     RuleName = aws_cloudwatch_event_rule.DownloadRequested.name
   }
 
-  alarm_actions = [aws_sns_topic.OperationsAlerts.arn]
-  ok_actions    = [aws_sns_topic.OperationsAlerts.arn]
+  alarm_actions = [aws_sns_topic.OperationsAlerts[0].arn]
+  ok_actions    = [aws_sns_topic.OperationsAlerts[0].arn]
 
   tags = local.common_tags
 }
@@ -703,7 +729,8 @@ resource "aws_cloudwatch_metric_alarm" "EventBridgeThrottled" {
 # YouTube Auth Failure Alarm (Bot Detection)
 # Triggers when YouTube detects automated access, requires cookie refresh
 resource "aws_cloudwatch_metric_alarm" "YouTubeAuthFailureBotDetection" {
-  alarm_name          = "MediaDownloader-YouTube-Auth-BotDetection"
+  count               = var.enable_cloudwatch_alarms ? 1 : 0
+  alarm_name          = "${var.resource_prefix}-MediaDownloader-YouTube-Auth-BotDetection"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
   metric_name         = "YouTubeAuthFailure"
@@ -718,8 +745,8 @@ resource "aws_cloudwatch_metric_alarm" "YouTubeAuthFailureBotDetection" {
     ErrorType = "bot_detection"
   }
 
-  alarm_actions = [aws_sns_topic.OperationsAlerts.arn]
-  ok_actions    = [aws_sns_topic.OperationsAlerts.arn]
+  alarm_actions = [aws_sns_topic.OperationsAlerts[0].arn]
+  ok_actions    = [aws_sns_topic.OperationsAlerts[0].arn]
 
   tags = local.common_tags
 }
@@ -727,7 +754,8 @@ resource "aws_cloudwatch_metric_alarm" "YouTubeAuthFailureBotDetection" {
 # YouTube Auth Failure Alarm (Cookie Expired)
 # Triggers when cookies have expired and need refresh
 resource "aws_cloudwatch_metric_alarm" "YouTubeAuthFailureCookieExpired" {
-  alarm_name          = "MediaDownloader-YouTube-Auth-CookieExpired"
+  count               = var.enable_cloudwatch_alarms ? 1 : 0
+  alarm_name          = "${var.resource_prefix}-MediaDownloader-YouTube-Auth-CookieExpired"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
   metric_name         = "YouTubeAuthFailure"
@@ -742,8 +770,8 @@ resource "aws_cloudwatch_metric_alarm" "YouTubeAuthFailureCookieExpired" {
     ErrorType = "cookie_expired"
   }
 
-  alarm_actions = [aws_sns_topic.OperationsAlerts.arn]
-  ok_actions    = [aws_sns_topic.OperationsAlerts.arn]
+  alarm_actions = [aws_sns_topic.OperationsAlerts[0].arn]
+  ok_actions    = [aws_sns_topic.OperationsAlerts[0].arn]
 
   tags = local.common_tags
 }
@@ -751,7 +779,8 @@ resource "aws_cloudwatch_metric_alarm" "YouTubeAuthFailureCookieExpired" {
 # YouTube Auth Failure Alarm (Rate Limited)
 # Triggers when YouTube is rate limiting requests
 resource "aws_cloudwatch_metric_alarm" "YouTubeAuthFailureRateLimited" {
-  alarm_name          = "MediaDownloader-YouTube-Auth-RateLimited"
+  count               = var.enable_cloudwatch_alarms ? 1 : 0
+  alarm_name          = "${var.resource_prefix}-MediaDownloader-YouTube-Auth-RateLimited"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 2
   metric_name         = "YouTubeAuthFailure"
@@ -766,8 +795,8 @@ resource "aws_cloudwatch_metric_alarm" "YouTubeAuthFailureRateLimited" {
     ErrorType = "rate_limited"
   }
 
-  alarm_actions = [aws_sns_topic.OperationsAlerts.arn]
-  ok_actions    = [aws_sns_topic.OperationsAlerts.arn]
+  alarm_actions = [aws_sns_topic.OperationsAlerts[0].arn]
+  ok_actions    = [aws_sns_topic.OperationsAlerts[0].arn]
 
   tags = local.common_tags
 }
@@ -780,7 +809,8 @@ resource "aws_cloudwatch_metric_alarm" "YouTubeAuthFailureRateLimited" {
 # API Gateway 5xx Errors Alarm
 # Triggers when API Gateway returns 5xx errors (Lambda failures, integration errors)
 resource "aws_cloudwatch_metric_alarm" "ApiGateway5xxErrors" {
-  alarm_name          = "MediaDownloader-API-Gateway-5xx-Errors"
+  count               = var.enable_cloudwatch_alarms ? 1 : 0
+  alarm_name          = "${var.resource_prefix}-MediaDownloader-API-Gateway-5xx-Errors"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
   metric_name         = "5XXError"
@@ -795,8 +825,8 @@ resource "aws_cloudwatch_metric_alarm" "ApiGateway5xxErrors" {
     ApiName = aws_api_gateway_rest_api.Main.name
   }
 
-  alarm_actions = [aws_sns_topic.OperationsAlerts.arn]
-  ok_actions    = [aws_sns_topic.OperationsAlerts.arn]
+  alarm_actions = [aws_sns_topic.OperationsAlerts[0].arn]
+  ok_actions    = [aws_sns_topic.OperationsAlerts[0].arn]
 
   tags = local.common_tags
 }

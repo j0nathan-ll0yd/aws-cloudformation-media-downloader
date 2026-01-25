@@ -5,7 +5,7 @@
 # See: docs/wiki/Conventions/Database-Migrations.md
 
 locals {
-  migrate_dsql_function_name = "MigrateDSQL"
+  migrate_dsql_function_name = "${var.resource_prefix}-MigrateDSQL"
 }
 
 resource "aws_iam_role" "MigrateDSQL" {
@@ -43,7 +43,7 @@ resource "aws_iam_role_policy_attachment" "MigrateDSQLXRay" {
 
 resource "aws_cloudwatch_log_group" "MigrateDSQL" {
   name              = "/aws/lambda/${aws_lambda_function.MigrateDSQL.function_name}"
-  retention_in_days = 7
+  retention_in_days = var.log_retention_days
   tags              = local.common_tags
 }
 
@@ -97,7 +97,8 @@ data "aws_lambda_invocation" "run_migration" {
 
   depends_on = [
     aws_lambda_function.MigrateDSQL,
-    time_sleep.wait_for_dsql
+    time_sleep.wait_for_dsql,
+    aws_iam_role_policy_attachment.lambda_dsql_admin
   ]
 }
 

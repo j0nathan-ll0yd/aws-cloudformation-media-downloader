@@ -1,5 +1,5 @@
 locals {
-  user_subscribe_function_name = "UserSubscribe"
+  user_subscribe_function_name = "${var.resource_prefix}-UserSubscribe"
 }
 
 resource "aws_iam_role" "UserSubscribe" {
@@ -62,7 +62,7 @@ resource "aws_lambda_permission" "UserSubscribe" {
 
 resource "aws_cloudwatch_log_group" "UserSubscribe" {
   name              = "/aws/lambda/${aws_lambda_function.UserSubscribe.function_name}"
-  retention_in_days = 7
+  retention_in_days = var.log_retention_days
   tags              = local.common_tags
 }
 

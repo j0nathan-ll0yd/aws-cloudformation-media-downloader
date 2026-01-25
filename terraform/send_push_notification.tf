@@ -1,5 +1,5 @@
 locals {
-  send_push_notification_function_name = "SendPushNotification"
+  send_push_notification_function_name = "${var.resource_prefix}-SendPushNotification"
 }
 
 resource "aws_iam_role" "SendPushNotification" {
@@ -53,7 +53,7 @@ data "aws_iam_policy_document" "SendPushNotification_infrastructure" {
 }
 
 resource "aws_iam_policy" "SendPushNotification_infrastructure" {
-  name   = "SendPushNotification-infrastructure"
+  name   = "${var.resource_prefix}-SendPushNotification-infrastructure"
   policy = data.aws_iam_policy_document.SendPushNotification_infrastructure.json
   tags   = local.common_tags
 }
@@ -71,7 +71,7 @@ resource "aws_lambda_permission" "SendPushNotification" {
 
 resource "aws_cloudwatch_log_group" "SendPushNotification" {
   name              = "/aws/lambda/${aws_lambda_function.SendPushNotification.function_name}"
-  retention_in_days = 7
+  retention_in_days = var.log_retention_days
   tags              = local.common_tags
 }
 
@@ -112,7 +112,7 @@ resource "aws_lambda_function" "SendPushNotification" {
 
 # Dead Letter Queue for failed push notifications
 resource "aws_sqs_queue" "SendPushNotificationDLQ" {
-  name                      = "SendPushNotification-DLQ"
+  name                      = "${var.resource_prefix}-SendPushNotification-DLQ"
   message_retention_seconds = 1209600 # 14 days for investigation
   tags = merge(local.common_tags, {
     Purpose = "Dead letter queue for failed push notifications"
@@ -120,7 +120,7 @@ resource "aws_sqs_queue" "SendPushNotificationDLQ" {
 }
 
 resource "aws_sqs_queue" "SendPushNotification" {
-  name                       = "SendPushNotification"
+  name                       = "${var.resource_prefix}-SendPushNotification"
   delay_seconds              = 0
   max_message_size           = 262144
   message_retention_seconds  = 345600

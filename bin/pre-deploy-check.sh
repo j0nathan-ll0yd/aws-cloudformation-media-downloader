@@ -4,8 +4,13 @@
 # Runs tofu plan and validates state before deployment to detect drift
 #
 # Usage:
-#   ./bin/pre-deploy-check.sh          # Check for drift, block if detected
-#   ./bin/pre-deploy-check.sh --force  # Check for drift, proceed anyway
+#   ./bin/pre-deploy-check.sh --env staging       # Check staging for drift
+#   ./bin/pre-deploy-check.sh --env production    # Check production for drift
+#   ./bin/pre-deploy-check.sh --env staging --force  # Check drift, proceed anyway
+#
+# Arguments:
+#   --env <environment>  Required. Either 'staging' or 'production'
+#   --force              Optional. Proceed even if drift is detected
 #
 # Exit codes:
 #   0 - No changes detected, safe to deploy
@@ -25,6 +30,55 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
+# Default values
+ENVIRONMENT=""
+FORCE=false
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --env)
+      ENVIRONMENT="$2"
+      shift 2
+      ;;
+    --force)
+      FORCE=true
+      shift
+      ;;
+    *)
+      echo -e "${RED}Unknown argument: $1${NC}"
+      echo "Usage: $0 --env <staging|production> [--force]"
+      exit 1
+      ;;
+  esac
+done
+
+# Validate environment
+if [[ -z "$ENVIRONMENT" ]]; then
+  echo -e "${RED}ERROR: --env parameter is required${NC}"
+  echo "Usage: $0 --env <staging|production> [--force]"
+  exit 1
+fi
+
+if [[ "$ENVIRONMENT" != "staging" && "$ENVIRONMENT" != "production" ]]; then
+  echo -e "${RED}ERROR: Environment must be 'staging' or 'production', got: ${ENVIRONMENT}${NC}"
+  exit 1
+fi
+
+# Map environment to workspace and tfvars
+case $ENVIRONMENT in
+  staging)
+    WORKSPACE="staging"
+    TFVARS_FILE="environments/staging.tfvars"
+    SECRETS_FILE="${PROJECT_ROOT}/secrets.staging.enc.yaml"
+    ;;
+  production)
+    WORKSPACE="production"
+    TFVARS_FILE="environments/production.tfvars"
+    SECRETS_FILE="${PROJECT_ROOT}/secrets.prod.enc.yaml"
+    ;;
+esac
+
 # Error handler
 error() {
   echo -e "${RED}✗${NC} Error: $1" >&2
@@ -34,6 +88,7 @@ error() {
 main() {
   echo -e "${BLUE}Pre-Deploy Drift Check${NC}"
   echo "======================="
+  echo -e "Environment: ${YELLOW}${ENVIRONMENT}${NC}"
   echo ""
 
   # Check for required environment variables
@@ -54,22 +109,20 @@ main() {
   # =============================================================================
   echo -e "${BLUE}Validating SOPS secrets...${NC}"
 
-  SECRETS_FILE="${PROJECT_ROOT}/secrets.enc.yaml"
-
   if [[ ! -f "${SECRETS_FILE}" ]]; then
-    echo -e "${RED}✗${NC} secrets.enc.yaml not found"
+    echo -e "${RED}✗${NC} $(basename "${SECRETS_FILE}") not found"
     echo "  Encrypted secrets file is required for deployment"
     exit 1
   fi
 
   # Verify file has SOPS encryption markers
   if ! grep -q "sops:" "${SECRETS_FILE}" 2>/dev/null; then
-    echo -e "${RED}✗${NC} secrets.enc.yaml does not appear to be SOPS-encrypted"
+    echo -e "${RED}✗${NC} $(basename "${SECRETS_FILE}") does not appear to be SOPS-encrypted"
     echo "  File should contain 'sops:' metadata section"
     exit 1
   fi
 
-  echo -e "${GREEN}✓${NC} SOPS secrets file validated"
+  echo -e "${GREEN}✓${NC} SOPS secrets file validated ($(basename "${SECRETS_FILE}"))"
   echo ""
 
   # =============================================================================
@@ -97,13 +150,28 @@ main() {
   echo "  State backend: S3 (remote)"
   echo ""
 
+  # =============================================================================
+  # Select Workspace
+  # =============================================================================
+  echo -e "${BLUE}Selecting workspace: ${WORKSPACE}${NC}"
+
+  CURRENT_WS=$(tofu workspace show 2>/dev/null || echo "")
+  if [[ "$CURRENT_WS" != "$WORKSPACE" ]]; then
+    if ! tofu workspace select "$WORKSPACE" > /dev/null 2>&1; then
+      echo -e "${RED}ERROR: Failed to select workspace '${WORKSPACE}'${NC}"
+      echo "  Run './bin/init-workspaces.sh' to create workspaces"
+      exit 1
+    fi
+  fi
+  echo -e "${GREEN}✓${NC} Workspace: ${WORKSPACE}"
+  echo ""
+
   # Run tofu plan with detailed exit code
-  echo -e "${YELLOW}Running tofu plan...${NC}"
-  cd "${TERRAFORM_DIR}"
+  echo -e "${YELLOW}Running tofu plan with ${TFVARS_FILE}...${NC}"
 
   # Capture plan output and exit code
   set +e
-  PLAN_OUTPUT=$(tofu plan -detailed-exitcode -input=false -no-color 2>&1)
+  PLAN_OUTPUT=$(tofu plan -var-file="${TFVARS_FILE}" -detailed-exitcode -input=false -no-color 2>&1)
   PLAN_EXIT=$?
   set -e
 
@@ -138,17 +206,17 @@ main() {
       echo "Summary: +${ADD_COUNT} to add, ~${CHANGE_COUNT} to change, -${DESTROY_COUNT} to destroy"
       echo ""
 
-      if [[ "${1:-}" == "--force" ]]; then
+      if [[ "$FORCE" == "true" ]]; then
         echo -e "${YELLOW}--force flag set, proceeding with deployment...${NC}"
         exit 0
       else
         echo -e "${RED}Deployment blocked.${NC}"
         echo ""
         echo "Review the changes above. To proceed anyway, run:"
-        echo "  pnpm run deploy:force"
+        echo "  $0 --env ${ENVIRONMENT} --force"
         echo ""
         echo "Or to investigate the drift:"
-        echo "  cd terraform && tofu plan"
+        echo "  cd terraform && tofu workspace select ${WORKSPACE} && tofu plan -var-file=${TFVARS_FILE}"
         exit 2
       fi
       ;;

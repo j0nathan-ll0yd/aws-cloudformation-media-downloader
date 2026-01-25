@@ -229,16 +229,76 @@ Scripts documented in `AGENTS.md` and `README.md` are automatically validated ag
 ## Infrastructure Scripts
 
 ### `pnpm run plan`
-**Purpose**: Run OpenTofu plan
+**Purpose**: Run OpenTofu plan (requires workspace selection)
 **Dependencies**: OpenTofu, AWS credentials, `.env` file
 **CI Coverage**: No
-**Notes**: Preview infrastructure changes
+**Notes**: Preview infrastructure changes; use environment-specific variants instead
+
+### `pnpm run plan:staging`
+**Purpose**: Run OpenTofu plan for staging environment
+**Dependencies**: OpenTofu, AWS credentials, `.env` file
+**CI Coverage**: No
+**Notes**: Selects staging workspace and uses staging.tfvars
+
+### `pnpm run plan:production`
+**Purpose**: Run OpenTofu plan for production environment
+**Dependencies**: OpenTofu, AWS credentials, `.env` file
+**CI Coverage**: No
+**Notes**: Selects production workspace and uses production.tfvars
 
 ### `pnpm run deploy`
 **Purpose**: Deploy infrastructure with OpenTofu
 **Dependencies**: OpenTofu, AWS credentials, `.env` file
 **CI Coverage**: No
-**Notes**: Auto-approve enabled; use with caution
+**Notes**: Auto-approve enabled; use environment-specific variants instead
+
+### `pnpm run deploy:staging`
+**Purpose**: Deploy to staging environment
+**Dependencies**: OpenTofu, AWS credentials, `.env` file
+**CI Coverage**: No
+**Notes**: Runs pre-deploy checks before applying
+
+### `pnpm run deploy:production`
+**Purpose**: Deploy to production environment
+**Dependencies**: OpenTofu, AWS credentials, `.env` file
+**CI Coverage**: No
+**Notes**: Runs pre-deploy checks before applying
+
+### `pnpm run deploy:check:staging`
+**Purpose**: Check staging for drift without applying
+**Dependencies**: OpenTofu, AWS credentials, `.env` file
+**CI Coverage**: No
+**Notes**: Verifies state consistency
+
+### `pnpm run deploy:check:production`
+**Purpose**: Check production for drift without applying
+**Dependencies**: OpenTofu, AWS credentials, `.env` file
+**CI Coverage**: No
+**Notes**: Verifies state consistency
+
+### `pnpm run state:verify:staging`
+**Purpose**: Verify staging Terraform state
+**Dependencies**: OpenTofu, AWS credentials
+**CI Coverage**: No
+**Notes**: Runs refresh and plan to detect drift
+
+### `pnpm run state:verify:production`
+**Purpose**: Verify production Terraform state
+**Dependencies**: OpenTofu, AWS credentials
+**CI Coverage**: No
+**Notes**: Runs refresh and plan to detect drift
+
+### `pnpm run audit:aws:staging`
+**Purpose**: Audit staging AWS resources against Terraform state
+**Dependencies**: AWS CLI, OpenTofu
+**CI Coverage**: No
+**Notes**: Identifies orphaned, duplicate, and untagged resources
+
+### `pnpm run audit:aws:production`
+**Purpose**: Audit production AWS resources against Terraform state
+**Dependencies**: AWS CLI, OpenTofu
+**CI Coverage**: No
+**Notes**: Identifies orphaned, duplicate, and untagged resources
 
 ---
 

@@ -3,7 +3,7 @@
 # TTL automatically cleans up expired records
 
 resource "aws_dynamodb_table" "IdempotencyTable" {
-  name         = "MediaDownloader-Idempotency"
+  name         = "${var.resource_prefix}-MediaDownloader-Idempotency"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "id"
 
@@ -18,7 +18,7 @@ resource "aws_dynamodb_table" "IdempotencyTable" {
   }
 
   tags = merge(local.common_tags, {
-    Name    = "MediaDownloader-Idempotency"
+    Name    = "${var.resource_prefix}-MediaDownloader-Idempotency"
     Purpose = "Powertools idempotency storage"
   })
 }

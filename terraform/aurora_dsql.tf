@@ -3,9 +3,9 @@
 # See: https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/issues/196
 
 resource "aws_dsql_cluster" "media_downloader" {
-  deletion_protection_enabled = true
+  deletion_protection_enabled = var.dsql_deletion_protection
   tags = merge(local.common_tags, {
-    Name = "MediaDownloader-DSQL"
+    Name = "${var.resource_prefix}-MediaDownloader-DSQL"
   })
 
   lifecycle {
@@ -34,7 +34,7 @@ data "aws_iam_policy_document" "dsql_connect" {
 }
 
 resource "aws_iam_policy" "LambdaDSQLConnect" {
-  name        = "LambdaDSQLConnect"
+  name        = "${var.resource_prefix}-LambdaDSQLConnect"
   description = "Allows Lambda functions to connect to Aurora DSQL with per-Lambda PostgreSQL roles"
   policy      = data.aws_iam_policy_document.dsql_connect.json
   tags        = local.common_tags
@@ -50,7 +50,7 @@ data "aws_iam_policy_document" "dsql_admin_connect" {
 }
 
 resource "aws_iam_policy" "LambdaDSQLAdminConnect" {
-  name        = "LambdaDSQLAdminConnect"
+  name        = "${var.resource_prefix}-LambdaDSQLAdminConnect"
   description = "Allows Lambda functions admin access to Aurora DSQL (MigrateDSQL only)"
   policy      = data.aws_iam_policy_document.dsql_admin_connect.json
   tags        = local.common_tags

@@ -12,7 +12,7 @@
 # @see src/lambdas/StartFileUpload for consumer
 
 locals {
-  download_queue_name = "DownloadQueue"
+  download_queue_name = "${var.resource_prefix}-DownloadQueue"
   # StartFileUpload timeout is 900s (15 min)
   # Visibility timeout should be 6x Lambda timeout = 5400s (90 min)
   download_queue_visibility_timeout = 5400
@@ -61,7 +61,8 @@ resource "aws_lambda_event_source_mapping" "StartFileUploadSQS" {
 # CloudWatch Alarm: Alert when messages are in DLQ
 # DLQ messages indicate permanent failures requiring investigation
 resource "aws_cloudwatch_metric_alarm" "DownloadDLQMessages" {
-  alarm_name          = "MediaDownloader-Download-DLQ-Messages"
+  count               = var.enable_cloudwatch_alarms ? 1 : 0
+  alarm_name          = "${var.resource_prefix}-MediaDownloader-Download-DLQ-Messages"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
   metric_name         = "ApproximateNumberOfMessagesVisible"
@@ -76,8 +77,8 @@ resource "aws_cloudwatch_metric_alarm" "DownloadDLQMessages" {
     QueueName = aws_sqs_queue.DownloadDLQ.name
   }
 
-  alarm_actions = [aws_sns_topic.OperationsAlerts.arn]
-  ok_actions    = [aws_sns_topic.OperationsAlerts.arn]
+  alarm_actions = [aws_sns_topic.OperationsAlerts[0].arn]
+  ok_actions    = [aws_sns_topic.OperationsAlerts[0].arn]
 
   tags = local.common_tags
 }
