@@ -18,7 +18,7 @@ dsql_deletion_protection = true
 
 # Full monitoring (within free tier - 3 critical alarms)
 enable_cloudwatch_dashboard = false # Use AWS Console on-demand ($3/month savings)
-enable_cloudwatch_alarms    = true
+enable_cloudwatch_alarms = true
 
 # Production concurrency
 download_reserved_concurrency = 10
