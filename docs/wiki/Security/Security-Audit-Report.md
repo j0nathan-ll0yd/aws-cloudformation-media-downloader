@@ -35,7 +35,7 @@ This security audit evaluated six critical areas of the codebase:
 
 **Positive Observations:**
 - All secrets encrypted with SOPS using AGE encryption
-- Secrets file (`secrets.enc.yaml`) properly encrypted and versioned
+- Secrets files (`secrets.staging.enc.yaml`, `secrets.prod.enc.yaml`) properly encrypted and versioned
 - Plaintext secrets (`secrets.yaml`) git-ignored
 - Terraform SOPS provider decrypts secrets at deployment time
 - Secure directory (`secure/`) git-ignored for certificates and keys

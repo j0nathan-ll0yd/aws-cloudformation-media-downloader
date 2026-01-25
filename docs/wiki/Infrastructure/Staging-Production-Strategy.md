@@ -14,7 +14,7 @@ This document outlines the strategy for establishing distinct Staging and Produc
 
 *   **Infrastructure Tool:** OpenTofu (via `terraform` directory).
 *   **State Management:** Currently implies a single state or local state usage (based on `terraform/main.tf` not showing a remote backend block explicitly in the snippet read, though it might be in `backend.tf` or implied).
-*   **Secrets:** SOPS (`sops.yaml`, `secrets.enc.yaml`) is correctly integrated.
+*   **Secrets:** SOPS with environment-specific files (`secrets.staging.enc.yaml`, `secrets.prod.enc.yaml`).
 *   **Deployment:** Manual scripts (`npm run deploy`) using local `.env` files.
 *   **Environment Awareness:** The `terraform/main.tf` currently hardcodes `Environment = "production"`, which indicates a single-environment setup.
 
@@ -37,7 +37,7 @@ terraform/
 
 ### 3.2. Secrets Management (SOPS)
 
-The current `secrets.enc.yaml` should be split or augmented.
+The project uses environment-specific secret files (`secrets.staging.enc.yaml`, `secrets.prod.enc.yaml`).
 
 **Strategy:**
 1.  Create `secrets.staging.enc.yaml` and `secrets.prod.enc.yaml`.

@@ -6,11 +6,11 @@ This runbook documents all secrets used in the media downloader infrastructure, 
 
 | Secret | Location | Rotation Frequency | Expiration | Owner |
 |--------|----------|-------------------|------------|-------|
-| Sign In With Apple Key | secrets.enc.yaml | As needed | No expiry | Apple Developer Account |
-| Better Auth Secret | secrets.enc.yaml | On compromise | No expiry | Generated |
-| APNS Signing Key | secrets.enc.yaml | Certificate renewal | 2027-01-03 | Apple Developer Account |
-| APNS Certificate | secrets.enc.yaml | Certificate renewal | 2027-01-03 | Apple Developer Account |
-| GitHub PAT | secrets.enc.yaml | 90 days recommended | Check GitHub | GitHub Account |
+| Sign In With Apple Key | secrets.{env}.enc.yaml | As needed | No expiry | Apple Developer Account |
+| Better Auth Secret | secrets.{env}.enc.yaml | On compromise | No expiry | Generated |
+| APNS Signing Key | secrets.{env}.enc.yaml | Certificate renewal | 2027-01-03 | Apple Developer Account |
+| APNS Certificate | secrets.{env}.enc.yaml | Certificate renewal | 2027-01-03 | Apple Developer Account |
+| GitHub PAT | secrets.{env}.enc.yaml | 90 days recommended | Check GitHub | GitHub Account |
 | YouTube Cookies | layers/yt-dlp/cookies/ | 3-5 days | Auto-detected | Chrome Browser |
 
 ## Expiration Calendar
@@ -70,11 +70,14 @@ This runbook documents all secrets used in the media downloader infrastructure, 
    - Repository access: Only select the target repository
    - Permissions: Issues (Read and write)
    - Expiration: 90 days
-3. Decrypt the secrets file:
+3. Decrypt the secrets file for the target environment:
    ```bash
-   sops --decrypt secrets.enc.yaml > secrets.yaml
+   # For staging:
+   sops --decrypt secrets.staging.enc.yaml > secrets.staging.yaml
+   # For production:
+   sops --decrypt secrets.prod.enc.yaml > secrets.prod.yaml
    ```
-4. Update the token in `secrets.yaml`:
+4. Update the token in the decrypted secrets file:
    ```yaml
    github:
      issue:
