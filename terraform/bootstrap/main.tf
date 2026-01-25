@@ -120,6 +120,32 @@ resource "aws_iam_openid_connect_provider" "GitHubActionsOIDC" {
   tags            = local.common_tags
 }
 
+# Staging deployment role - can be assumed from any branch
+resource "aws_iam_role" "GitHubActionsStagingRole" {
+  name = "GitHubActions-MediaDownloader-Staging"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Principal = {
+        Federated = aws_iam_openid_connect_provider.GitHubActionsOIDC.arn
+      }
+      Action = "sts:AssumeRoleWithWebIdentity"
+      Condition = {
+        StringEquals = {
+          "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
+        }
+        StringLike = {
+          "token.actions.githubusercontent.com:sub" = "repo:j0nathan-ll0yd/aws-cloudformation-media-downloader:*"
+        }
+      }
+    }]
+  })
+
+  tags = local.common_tags
+}
+
 # Production deployment role - restricted to main/master branch
 resource "aws_iam_role" "GitHubActionsProductionRole" {
   name = "GitHubActions-MediaDownloader-Production"
@@ -289,9 +315,19 @@ resource "aws_iam_policy" "TerraformDeployPolicy" {
   tags = local.common_tags
 }
 
+resource "aws_iam_role_policy_attachment" "staging_deploy" {
+  role       = aws_iam_role.GitHubActionsStagingRole.name
+  policy_arn = aws_iam_policy.TerraformDeployPolicy.arn
+}
+
 resource "aws_iam_role_policy_attachment" "production_deploy" {
   role       = aws_iam_role.GitHubActionsProductionRole.name
   policy_arn = aws_iam_policy.TerraformDeployPolicy.arn
+}
+
+output "GitHubActionsStagingRoleArn" {
+  description = "ARN of the GitHub Actions staging deployment role"
+  value       = aws_iam_role.GitHubActionsStagingRole.arn
 }
 
 output "GitHubActionsProductionRoleArn" {
