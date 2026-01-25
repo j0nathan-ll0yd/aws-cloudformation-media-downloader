@@ -6,31 +6,37 @@
 import type {ToolDefinition} from './types.js'
 
 // Data query tools
-import {queryEntitiesTool, queryLambdaTool, queryInfrastructureTool, queryDependenciesTool, queryConventionsTool} from './data-queries/index.js'
+import {queryConventionsTool, queryDependenciesTool, queryEntitiesTool, queryInfrastructureTool, queryLambdaTool} from './data-queries/index.js'
 
 // Validation tools
 import {
-  validatePatternTool,
   checkCoverageTool,
-  lambdaImpactTool,
-  suggestTestsTool,
   checkTypeAlignmentTool,
-  validateNamingTool,
   indexCodebaseTool,
-  searchCodebaseSemanticsTool
+  lambdaImpactTool,
+  searchCodebaseSemanticsTool,
+  suggestTestsTool,
+  validateNamingTool,
+  validatePatternTool
 } from './validation/index.js'
 
 // Refactoring tools
-import {applyConventionTool, refactorRenameSymbolTool, generateMigrationTool, refactorExtractModuleTool, refactorInlineConstantTool} from './refactoring/index.js'
+import {
+  applyConventionTool,
+  generateMigrationTool,
+  refactorExtractModuleTool,
+  refactorInlineConstantTool,
+  refactorRenameSymbolTool
+} from './refactoring/index.js'
 
 // Git tools
-import {diffSemanticTool, queryGitHistoryTool, analyzePatternConsistencyTool} from './git/index.js'
+import {analyzePatternConsistencyTool, diffSemanticTool, queryGitHistoryTool} from './git/index.js'
 
 // Performance tools
 import {analyzeBundleSizeTool, analyzeColdStartTool} from './performance/index.js'
 
 // Cross-repo tools
-import {syncConventionsTool, checkSchemaDriftTool} from './cross-repo/index.js'
+import {checkSchemaDriftTool, syncConventionsTool} from './cross-repo/index.js'
 
 /**
  * Complete registry of all MCP tools
@@ -80,12 +86,8 @@ export function getToolByName(name: string): ToolDefinition | undefined {
  * Get all tool definitions for ListTools response
  */
 export function getAllToolDefinitions() {
-  return toolRegistry.map(({name, description, inputSchema}) => ({
-    name,
-    description,
-    inputSchema
-  }))
+  return toolRegistry.map(({name, description, inputSchema}) => ({name, description, inputSchema}))
 }
 
 // Re-export types
-export type {ToolDefinition, ToolInputSchema} from './types.js'
+export type { ToolDefinition, ToolInputSchema } from './types.js'

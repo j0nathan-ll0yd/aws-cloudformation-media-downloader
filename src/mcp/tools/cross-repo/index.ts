@@ -1,2 +1,2 @@
-export {syncConventionsTool} from './sync-conventions.js'
-export {checkSchemaDriftTool} from './check-schema-drift.js'
+export { syncConventionsTool } from './sync-conventions.js'
+export { checkSchemaDriftTool } from './check-schema-drift.js'

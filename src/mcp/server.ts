@@ -30,19 +30,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const tool = getToolByName(name)
 
   if (!tool) {
-    return {
-      content: [{type: 'text', text: `Error: Unknown tool: ${name}`}],
-      isError: true
-    }
+    return {content: [{type: 'text', text: `Error: Unknown tool: ${name}`}], isError: true}
   }
 
   try {
     return await tool.handler(args)
   } catch (error) {
-    return {
-      content: [{type: 'text', text: `Error: ${error instanceof Error ? error.message : String(error)}`}],
-      isError: true
-    }
+    return {content: [{type: 'text', text: `Error: ${error instanceof Error ? error.message : String(error)}`}], isError: true}
   }
 })
 

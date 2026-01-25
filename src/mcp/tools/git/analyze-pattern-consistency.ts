@@ -17,11 +17,7 @@ Examples:
         description: 'Query type: scan (find patterns), compare (against reference), drift (detect deviations)',
         enum: ['scan', 'compare', 'drift']
       },
-      pattern: {
-        type: 'string',
-        description: 'Pattern to analyze',
-        enum: ['error-handling', 'entity-access', 'aws-vendor', 'env-access', 'handler-export']
-      },
+      pattern: {type: 'string', description: 'Pattern to analyze', enum: ['error-handling', 'entity-access', 'aws-vendor', 'env-access', 'handler-export']},
       paths: {type: 'array', items: {type: 'string'}, description: 'File/directory paths to analyze'},
       referenceImpl: {type: 'string', description: 'Reference implementation file path for comparison'}
     },

@@ -12,11 +12,7 @@ Examples:
     type: 'object',
     properties: {
       lambda: {type: 'string', description: 'Lambda function name'},
-      query: {
-        type: 'string',
-        description: 'Query type (config, dependencies, triggers, env)',
-        enum: ['config', 'dependencies', 'triggers', 'env', 'list']
-      }
+      query: {type: 'string', description: 'Query type (config, dependencies, triggers, env)', enum: ['config', 'dependencies', 'triggers', 'env', 'list']}
     },
     required: ['query']
   },
