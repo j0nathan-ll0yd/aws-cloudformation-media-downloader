@@ -261,6 +261,18 @@ pnpm run deploy:production     # Deploy to production (manual, or auto via GitHu
 
 **Note**: Production deployments auto-trigger on merge to master via GitHub Actions.
 
+### Infrastructure Verification
+```bash
+pnpm run deploy:check:staging    # Check staging for drift
+pnpm run deploy:check:production # Check production for drift
+pnpm run state:verify:staging    # Verify staging state
+pnpm run state:verify:production # Verify production state
+pnpm run audit:aws:staging       # Audit staging resources
+pnpm run audit:aws:production    # Audit production resources
+pnpm run plan:staging            # Preview staging changes
+pnpm run plan:production         # Preview production changes
+```
+
 ### Pre-Commit Checklist
 1. `pnpm run validate:conventions` - No rule violations
 2. `pnpm run precheck` - TypeScript + ESLint clean

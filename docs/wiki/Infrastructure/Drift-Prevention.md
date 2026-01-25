@@ -28,22 +28,29 @@ State drift occurs when the actual AWS resources diverge from what Terraform exp
 **NEVER run `tofu apply` directly.** Always use the pnpm scripts which include drift detection:
 
 ```bash
-# Recommended: Checks for drift before applying
-pnpm run deploy
+# Environment-specific commands (recommended)
+pnpm run deploy:staging              # Deploy to staging
+pnpm run deploy:production           # Deploy to production
+pnpm run deploy:check:staging        # Check staging for drift
+pnpm run deploy:check:production     # Check production for drift
+pnpm run plan:staging                # Preview staging changes
+pnpm run plan:production             # Preview production changes
 
-# Force apply (bypasses drift check - use sparingly)
-pnpm run deploy:force
-
-# Just check for drift without applying
-pnpm run deploy:check
-
-# View planned changes
-pnpm run plan
+# Legacy commands (both environments)
+pnpm run deploy                      # Deploy with drift detection
+pnpm run deploy:force                # Deploy without drift detection
+pnpm run deploy:check                # Check for drift only
+pnpm run plan                        # Preview changes
 ```
 
 ### 2. Verify State After Deployment
 
 ```bash
+# Environment-specific verification
+pnpm run state:verify:staging        # Verify staging state
+pnpm run state:verify:production     # Verify production state
+
+# Or verify both
 pnpm run state:verify
 ```
 
@@ -54,7 +61,12 @@ This runs `tofu refresh` and `tofu plan` to ensure no unexpected changes.
 Run the AWS audit periodically to catch drift early:
 
 ```bash
-pnpm run audit:aws
+# Environment-specific audits (recommended)
+pnpm run audit:aws:staging           # Audit staging resources
+pnpm run audit:aws:production        # Audit production resources
+
+# Legacy audit (requires --env parameter)
+pnpm run audit:aws                   # Will prompt for environment
 ```
 
 Or use the Claude command `/aws-audit` for an interactive workflow.
@@ -174,12 +186,16 @@ The project includes several automated checks:
 
 | Command | Description |
 |---------|-------------|
-| `pnpm run plan` | Preview infrastructure changes |
-| `pnpm run deploy` | Deploy with drift detection |
-| `pnpm run deploy:force` | Deploy without drift detection |
-| `pnpm run deploy:check` | Check for drift only |
-| `pnpm run state:verify` | Verify state after deployment |
-| `pnpm run audit:aws` | Full AWS resource audit |
+| `pnpm run plan:staging` | Preview staging changes |
+| `pnpm run plan:production` | Preview production changes |
+| `pnpm run deploy:staging` | Deploy to staging |
+| `pnpm run deploy:production` | Deploy to production |
+| `pnpm run deploy:check:staging` | Check staging for drift |
+| `pnpm run deploy:check:production` | Check production for drift |
+| `pnpm run state:verify:staging` | Verify staging state |
+| `pnpm run state:verify:production` | Verify production state |
+| `pnpm run audit:aws:staging` | Audit staging resources |
+| `pnpm run audit:aws:production` | Audit production resources |
 | `/aws-audit` | Claude command for interactive audit |
 
 ## See Also
