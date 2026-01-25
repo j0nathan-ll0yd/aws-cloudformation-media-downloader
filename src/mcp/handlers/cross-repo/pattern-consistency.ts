@@ -13,7 +13,7 @@ import path from 'path'
 import {fileURLToPath} from 'url'
 import {handleValidationQuery} from '../validation.js'
 import {discoverLambdas} from '../data-loader.js'
-import {createErrorResponse, createSuccessResponse} from '../shared/response-types.js'
+import {createErrorResponse} from '../shared/response-types.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -377,12 +377,7 @@ export async function handlePatternConsistencyQuery(args: PatternConsistencyArgs
         summary[patternName] = {total: matches.length, implementations: implCounts}
       }
 
-      return createSuccessResponse({
-        patterns: Object.keys(results),
-        totalMatches: Object.values(results).reduce((sum, m) => sum + m.length, 0),
-        summary,
-        details: results
-      })
+      return {patterns: Object.keys(results), totalMatches: Object.values(results).reduce((sum, m) => sum + m.length, 0), summary, details: results}
     }
 
     case 'compare': {
@@ -392,7 +387,7 @@ export async function handlePatternConsistencyQuery(args: PatternConsistencyArgs
 
       const comparison = await comparePatterns(pattern, referenceImpl)
 
-      return createSuccessResponse({
+      return {
         pattern,
         reference: comparison.reference,
         totalImplementations: comparison.implementations.length,
@@ -404,7 +399,7 @@ export async function handlePatternConsistencyQuery(args: PatternConsistencyArgs
             : 100
         },
         implementations: comparison.implementations
-      })
+      }
     }
 
     case 'drift': {
@@ -426,7 +421,7 @@ export async function handlePatternConsistencyQuery(args: PatternConsistencyArgs
         low: drifts.filter((d) => d.severity === 'low').length
       }
 
-      return createSuccessResponse({
+      return {
         hasDrift: drifts.length > 0,
         totalDrifts: drifts.length,
         bySeverity,
@@ -439,7 +434,7 @@ export async function handlePatternConsistencyQuery(args: PatternConsistencyArgs
           : drifts.length > 0
           ? `INFO: ${drifts.length} minor pattern variations detected.`
           : 'All patterns are consistent.'
-      })
+      }
     }
 
     default:

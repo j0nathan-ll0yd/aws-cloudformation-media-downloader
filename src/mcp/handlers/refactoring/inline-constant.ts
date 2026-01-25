@@ -12,7 +12,7 @@ import {Project, SyntaxKind, VariableDeclaration} from 'ts-morph'
 import path from 'path'
 import {fileURLToPath} from 'url'
 import {loadDependencyGraph} from '../data-loader.js'
-import {createErrorResponse, createSuccessResponse} from '../shared/response-types.js'
+import {createErrorResponse} from '../shared/response-types.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -316,7 +316,7 @@ export async function handleInlineConstantQuery(args: InlineConstantArgs) {
       const lowUse = constants.filter((c) => c.usageCount <= maxUses && c.usageCount > 0)
       const noUse = constants.filter((c) => c.usageCount === 0)
 
-      return createSuccessResponse({
+      return {
         summary: {totalConstants: constants.length, lowUseConstants: lowUse.length, unusedConstants: noUse.length},
         lowUseConstants: lowUse.map((c) => ({
           name: c.name,
@@ -329,7 +329,7 @@ export async function handleInlineConstantQuery(args: InlineConstantArgs) {
         })),
         unusedConstants: noUse.map((c) => ({name: c.name, file: c.file, line: c.line, note: 'Consider removing - no external usages'})),
         nextStep: lowUse.length > 0 ? "Use query: 'preview' with constant name and file to see inlining plan" : 'No low-use constants found'
-      })
+      }
     }
 
     case 'preview': {
@@ -344,7 +344,7 @@ export async function handleInlineConstantQuery(args: InlineConstantArgs) {
         return createErrorResponse(`Constant '${constant}' not found in ${file}`)
       }
 
-      return createSuccessResponse({
+      return {
         constant: preview.constant,
         sourceFile: preview.sourceFile,
         value: preview.value,
@@ -354,12 +354,12 @@ export async function handleInlineConstantQuery(args: InlineConstantArgs) {
         note: preview.usages.length > 0
           ? "Review changes above. Use query: 'execute' to apply (not yet implemented - manual refactoring recommended)"
           : 'No usages found to inline'
-      })
+      }
     }
 
     case 'execute': {
       // For safety, execution is deferred - provide guidance instead
-      return createSuccessResponse({
+      return {
         message: 'Automatic execution not yet implemented for safety reasons',
         recommendation: 'Use the preview output to manually inline the constant',
         steps: [
@@ -369,7 +369,7 @@ export async function handleInlineConstantQuery(args: InlineConstantArgs) {
           '4. Optionally remove the constant from the source file if no longer used'
         ],
         note: 'Consider using refactor_rename_symbol for type-safe bulk operations'
-      })
+      }
     }
 
     default:

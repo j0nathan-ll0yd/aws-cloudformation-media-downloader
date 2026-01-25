@@ -8,7 +8,7 @@
 import path from 'path'
 import {fileURLToPath} from 'url'
 import {allRules, rulesByName, validateFile} from '../validation/index.js'
-import {createErrorResponse, createSuccessResponse} from './shared/response-types.js'
+import {createErrorResponse} from './shared/response-types.js'
 import {getCicdValidationSummary, validateCicdConventions} from '../validation/rules/cicd-conventions.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -28,7 +28,7 @@ export async function handleValidationQuery(args: ValidationQueryArgs) {
   switch (query) {
     case 'rules': {
       // List all available validation rules
-      return createSuccessResponse({
+      return {
         rules: allRules.map((rule) => ({
           name: rule.name,
           description: rule.description,
@@ -37,7 +37,7 @@ export async function handleValidationQuery(args: ValidationQueryArgs) {
           excludes: rule.excludes
         })),
         aliases: Object.entries(rulesByName).filter(([alias, rule]) => alias !== rule.name).map(([alias, rule]) => ({alias, rule: rule.name}))
-      })
+      }
     }
 
     case 'all': {
@@ -48,14 +48,14 @@ export async function handleValidationQuery(args: ValidationQueryArgs) {
       const filePath = path.isAbsolute(file) ? file : path.join(projectRoot, file)
       const result = await validateFile(filePath, {projectRoot})
 
-      return createSuccessResponse({
+      return {
         file: result.file,
         valid: result.valid,
         violations: result.violations,
         passed: result.passed,
         skipped: result.skipped,
         summary: result.valid ? 'All applicable rules passed' : `${result.violations.length} violation(s) found`
-      })
+      }
     }
 
     case 'aws-sdk': {
@@ -66,7 +66,7 @@ export async function handleValidationQuery(args: ValidationQueryArgs) {
       const filePath = path.isAbsolute(file) ? file : path.join(projectRoot, file)
       const result = await validateFile(filePath, {projectRoot, rules: ['aws-sdk-encapsulation']})
 
-      return createSuccessResponse({
+      return {
         file: result.file,
         rule: 'aws-sdk-encapsulation',
         severity: 'CRITICAL',
@@ -75,7 +75,7 @@ export async function handleValidationQuery(args: ValidationQueryArgs) {
         message: result.valid
           ? 'No direct AWS SDK imports found. File follows encapsulation policy.'
           : 'CRITICAL: Direct AWS SDK imports detected. Use lib/vendor/AWS/ wrappers.'
-      })
+      }
     }
 
     case 'cicd': {
@@ -83,7 +83,7 @@ export async function handleValidationQuery(args: ValidationQueryArgs) {
       const violations = validateCicdConventions(projectRoot)
       const summary = getCicdValidationSummary(violations)
 
-      return createSuccessResponse({
+      return {
         rules: ['CICD-001', 'CICD-002', 'CICD-003', 'CICD-004', 'CICD-005'],
         valid: summary.valid,
         violations,
@@ -91,7 +91,7 @@ export async function handleValidationQuery(args: ValidationQueryArgs) {
         message: summary.valid
           ? 'All CI/CD workflows follow project conventions.'
           : `Found ${summary.total} CI/CD convention violation(s).`
-      })
+      }
     }
 
     case 'entity': {
@@ -102,7 +102,7 @@ export async function handleValidationQuery(args: ValidationQueryArgs) {
       const filePath = path.isAbsolute(file) ? file : path.join(projectRoot, file)
       const result = await validateFile(filePath, {projectRoot, rules: ['entity-mocking']})
 
-      return createSuccessResponse({
+      return {
         file: result.file,
         rule: 'entity-mocking',
         severity: 'CRITICAL',
@@ -112,7 +112,7 @@ export async function handleValidationQuery(args: ValidationQueryArgs) {
         message: result.valid
           ? 'Entities are mocked correctly using vi.fn() with #entities/queries.'
           : 'CRITICAL: Legacy entity mocks detected. Use vi.fn() with #entities/queries.'
-      })
+      }
     }
 
     case 'imports': {
@@ -123,7 +123,7 @@ export async function handleValidationQuery(args: ValidationQueryArgs) {
       const filePath = path.isAbsolute(file) ? file : path.join(projectRoot, file)
       const result = await validateFile(filePath, {projectRoot, rules: ['import-order']})
 
-      return createSuccessResponse({
+      return {
         file: result.file,
         rule: 'import-order',
         severity: 'MEDIUM',
@@ -131,7 +131,7 @@ export async function handleValidationQuery(args: ValidationQueryArgs) {
         violations: result.violations,
         skipped: result.skipped.includes('import-order') ? 'Rule skipped: Not a Lambda handler file' : undefined,
         expectedOrder: ['node-builtins', 'aws-lambda-types', 'external-packages', 'entities', 'vendor', 'types', 'utilities', 'relative']
-      })
+      }
     }
 
     case 'response': {
@@ -142,7 +142,7 @@ export async function handleValidationQuery(args: ValidationQueryArgs) {
       const filePath = path.isAbsolute(file) ? file : path.join(projectRoot, file)
       const result = await validateFile(filePath, {projectRoot, rules: ['response-helpers']})
 
-      return createSuccessResponse({
+      return {
         file: result.file,
         rule: 'response-helpers',
         severity: 'HIGH',
@@ -152,7 +152,7 @@ export async function handleValidationQuery(args: ValidationQueryArgs) {
         message: result.valid
           ? 'Lambda uses buildApiResponse() helper correctly.'
           : 'Raw response objects detected. Use buildApiResponse() for consistent formatting.'
-      })
+      }
     }
 
     case 'summary': {
@@ -168,7 +168,7 @@ export async function handleValidationQuery(args: ValidationQueryArgs) {
       const highViolations = result.violations.filter((v) => v.severity === 'HIGH')
       const mediumViolations = result.violations.filter((v) => v.severity === 'MEDIUM')
 
-      return createSuccessResponse({
+      return {
         file: result.file,
         valid: result.valid,
         summary: {
@@ -186,7 +186,7 @@ export async function handleValidationQuery(args: ValidationQueryArgs) {
           : result.valid
           ? 'File passes all convention checks'
           : 'Minor issues detected'
-      })
+      }
     }
 
     default:

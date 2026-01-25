@@ -7,7 +7,6 @@ import * as fs from 'fs/promises'
 import * as path from 'path'
 import {fileURLToPath} from 'url'
 import {Project, SourceFile} from 'ts-morph'
-import {createSuccessResponse, type McpSuccessResponse} from './shared/response-types.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -163,7 +162,9 @@ async function parseTypeScriptTypes(filePath: string): Promise<TypeDefinition[]>
 /**
  * Check alignment between TypeScript types and TypeSpec models
  */
-export async function handleTypeAlignmentQuery(args: {typeName?: string; query: 'check' | 'list' | 'all'}): Promise<McpSuccessResponse> {
+export async function handleTypeAlignmentQuery(
+  args: {typeName?: string; query: 'check' | 'list' | 'all'}
+): Promise<{aligned: boolean; issues: AlignmentIssue[]; typeSpecModels: string[]; typeScriptTypes: string[]}> {
   const {typeName, query} = args
   const tspPath = path.join(projectRoot, 'tsp/models/models.tsp')
   const typesDirs = [
@@ -190,12 +191,7 @@ export async function handleTypeAlignmentQuery(args: {typeName?: string; query: 
   const issues: AlignmentIssue[] = []
 
   if (query === 'list') {
-    return createSuccessResponse({
-      aligned: true,
-      issues: [],
-      typeSpecModels: typeSpecModels.map((m) => m.name),
-      typeScriptTypes: allTypeScriptTypes.map((t) => t.name)
-    })
+    return {aligned: true, issues: [], typeSpecModels: typeSpecModels.map((m) => m.name), typeScriptTypes: allTypeScriptTypes.map((t) => t.name)}
   }
 
   // Check specific type or all types
@@ -273,18 +269,15 @@ export async function handleTypeAlignmentQuery(args: {typeName?: string; query: 
     }
   }
 
-  return createSuccessResponse({
-    aligned: issues.length === 0,
-    issues,
-    typeSpecModels: typeSpecModels.map((m) => m.name),
-    typeScriptTypes: allTypeScriptTypes.map((t) => t.name)
-  })
+  return {aligned: issues.length === 0, issues, typeSpecModels: typeSpecModels.map((m) => m.name), typeScriptTypes: allTypeScriptTypes.map((t) => t.name)}
 }
 
 /**
  * Validate naming conventions across files
  */
-export async function handleNamingValidationQuery(args: {file?: string; query: 'validate' | 'suggest' | 'all'}): Promise<McpSuccessResponse> {
+export async function handleNamingValidationQuery(
+  args: {file?: string; query: 'validate' | 'suggest' | 'all'}
+): Promise<{valid: boolean; violations: NamingViolation[]; suggestions: {file: string; fixes: {current: string; suggested: string; reason: string}[]}[]}> {
   const {file, query} = args
   const violations: NamingViolation[] = []
   const suggestions: {file: string; fixes: {current: string; suggested: string; reason: string}[]}[] = []
@@ -419,5 +412,5 @@ export async function handleNamingValidationQuery(args: {file?: string; query: '
     }
   }
 
-  return createSuccessResponse({valid: violations.length === 0, violations, suggestions: query === 'suggest' || query === 'all' ? suggestions : []})
+  return {valid: violations.length === 0, violations, suggestions: query === 'suggest' || query === 'all' ? suggestions : []}
 }

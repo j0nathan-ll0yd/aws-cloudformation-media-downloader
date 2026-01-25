@@ -11,7 +11,7 @@
 import {Project, SourceFile} from 'ts-morph'
 import {fileExistsAtRef, getChangedFiles, getFileAtRef} from '../shared/git-utils.js'
 import {loadDependencyGraph} from '../data-loader.js'
-import {createErrorResponse, createSuccessResponse} from '../shared/response-types.js'
+import {createErrorResponse} from '../shared/response-types.js'
 
 export type SemanticDiffQueryType = 'changes' | 'breaking' | 'impact'
 
@@ -365,7 +365,7 @@ export async function handleSemanticDiffQuery(args: SemanticDiffArgs) {
   changedFiles = filterByScope(changedFiles, scope)
 
   if (changedFiles.length === 0) {
-    return createSuccessResponse({baseRef, headRef, scope, message: 'No TypeScript files changed between refs', changedFiles: []})
+    return {baseRef, headRef, scope, message: 'No TypeScript files changed between refs', changedFiles: []}
   }
 
   // Analyze each changed file
@@ -429,7 +429,7 @@ export async function handleSemanticDiffQuery(args: SemanticDiffArgs) {
   switch (query) {
     case 'changes': {
       // Return all structural changes
-      return createSuccessResponse({
+      return {
         baseRef,
         headRef,
         scope,
@@ -444,14 +444,14 @@ export async function handleSemanticDiffQuery(args: SemanticDiffArgs) {
             return acc
           }, {} as Record<string, number>)
         }
-      })
+      }
     }
 
     case 'breaking': {
       // Return only breaking changes
       const breakingChanges = allChanges.filter((c) => c.breaking)
 
-      return createSuccessResponse({
+      return {
         baseRef,
         headRef,
         scope,
@@ -461,7 +461,7 @@ export async function handleSemanticDiffQuery(args: SemanticDiffArgs) {
         recommendation: breakingChanges.length > 0
           ? 'BREAKING CHANGES DETECTED: Review affected consumers before merging'
           : 'No breaking changes detected'
-      })
+      }
     }
 
     case 'impact': {
@@ -496,7 +496,7 @@ export async function handleSemanticDiffQuery(args: SemanticDiffArgs) {
       // Deduce test files for affected Lambdas
       const testsToRun = Array.from(affectedLambdas).map((name) => `src/lambdas/${name}/test/`)
 
-      return createSuccessResponse({
+      return {
         baseRef,
         headRef,
         scope,
@@ -512,7 +512,7 @@ export async function handleSemanticDiffQuery(args: SemanticDiffArgs) {
         recommendation: allChanges.some((c) => c.breaking)
           ? `BREAKING: Run full test suite for ${affectedLambdas.size} affected Lambda(s)`
           : `Run targeted tests for ${affectedLambdas.size} affected Lambda(s)`
-      })
+      }
     }
 
     default:

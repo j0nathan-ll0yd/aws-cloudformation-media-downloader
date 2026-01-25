@@ -10,7 +10,7 @@
 
 import {discoverLambdas, getTransitiveDependencies, loadDependencyGraph} from '../data-loader.js'
 import {handleBundleSizeQuery} from './bundle-size.js'
-import {createErrorResponse, createSuccessResponse} from '../shared/response-types.js'
+import {createErrorResponse} from '../shared/response-types.js'
 
 export type ColdStartQueryType = 'estimate' | 'compare' | 'optimize'
 
@@ -256,7 +256,7 @@ export async function handleColdStartQuery(args: ColdStartArgs) {
       const moderate = estimates.filter((e) => e.estimatedMs >= 300 && e.estimatedMs < 800)
       const slow = estimates.filter((e) => e.estimatedMs >= 800)
 
-      return createSuccessResponse({
+      return {
         memory: `${memory}MB`,
         totalLambdas: estimates.length,
         summary: {
@@ -285,7 +285,7 @@ export async function handleColdStartQuery(args: ColdStartArgs) {
         })),
         slowest: slow.slice(0, 5).map((e) => e.lambda),
         note: 'Estimates are heuristic-based. Actual cold starts may vary based on AWS conditions.'
-      })
+      }
     }
 
     case 'compare': {
@@ -314,7 +314,7 @@ export async function handleColdStartQuery(args: ColdStartArgs) {
 
       const optimal = costWeighted.reduce((best, current) => (current.efficiency > best.efficiency ? current : best))
 
-      return createSuccessResponse({
+      return {
         lambda,
         comparison: comparisons.map((c) => ({
           memory: `${c.memory}MB`,
@@ -333,7 +333,7 @@ export async function handleColdStartQuery(args: ColdStartArgs) {
             } savings) vs cost`,
           estimatedColdStart: formatMs(comparisons.find((c) => c.memory === optimal.memory)!.estimate.estimatedMs)
         }
-      })
+      }
     }
 
     case 'optimize': {
@@ -356,7 +356,7 @@ export async function handleColdStartQuery(args: ColdStartArgs) {
         potentialImprovement += estimate.estimatedMs * 0.3
       }
 
-      return createSuccessResponse({
+      return {
         lambda,
         currentEstimate: formatMs(estimate.estimatedMs),
         memory: `${memory}MB`,
@@ -366,7 +366,7 @@ export async function handleColdStartQuery(args: ColdStartArgs) {
         actionPlan: recommendations.length > 0
           ? recommendations.slice(0, 3).map((r, i) => `${i + 1}. [${r.impact.toUpperCase()}] ${r.recommendation}`)
           : ['No significant optimizations identified - cold start is already optimized']
-      })
+      }
     }
 
     default:

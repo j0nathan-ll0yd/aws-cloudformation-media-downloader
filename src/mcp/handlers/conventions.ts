@@ -46,11 +46,11 @@ export async function handleConventionsQuery(args: ConventionQueryArgs) {
         LOW: summary.filter((c) => c.severity === 'LOW')
       }
 
-      return createSuccessResponse({
+      return {
         conventions: bySeverity,
         count: conventions.length,
         summary: {critical: bySeverity.CRITICAL.length, high: bySeverity.HIGH.length, medium: bySeverity.MEDIUM.length, low: bySeverity.LOW.length}
-      })
+      }
     }
 
     case 'search': {
@@ -64,13 +64,13 @@ export async function handleConventionsQuery(args: ConventionQueryArgs) {
       // Also search wiki pages
       const wikiMatches = await searchWikiPages(term)
 
-      return createSuccessResponse({
+      return {
         term,
         conventionMatches: conventionMatches.map((c) => ({name: c.name, severity: c.severity, what: c.what, wikiPath: c.wikiPath})),
         wikiMatches: wikiMatches.slice(0, 10), // Limit wiki results
         totalConventions: conventionMatches.length,
         totalWikiPages: wikiMatches.length
-      })
+      }
     }
 
     case 'category': {
@@ -80,39 +80,35 @@ export async function handleConventionsQuery(args: ConventionQueryArgs) {
         for (const c of conventions) {
           categories[c.category] = (categories[c.category] || 0) + 1
         }
-        return createSuccessResponse({
-          availableCategories: Object.keys(categories).sort(),
-          counts: categories,
-          example: {query: 'category', category: 'testing'}
-        })
+        return {availableCategories: Object.keys(categories).sort(), counts: categories, example: {query: 'category', category: 'testing'}}
       }
 
       const filtered = filterByCategory(conventions, category)
-      return createSuccessResponse({
+      return {
         category,
         conventions: filtered.map((c) => ({name: c.name, severity: c.severity, what: c.what, enforcement: c.enforcement})),
         count: filtered.length
-      })
+      }
     }
 
     case 'enforcement': {
       if (!severity) {
         // Return conventions grouped by severity
-        return createSuccessResponse({
+        return {
           CRITICAL: filterBySeverity(conventions, 'CRITICAL').map((c) => ({name: c.name, what: c.what, enforcement: c.enforcement})),
           HIGH: filterBySeverity(conventions, 'HIGH').map((c) => ({name: c.name, what: c.what, enforcement: c.enforcement})),
           MEDIUM: filterBySeverity(conventions, 'MEDIUM').map((c) => ({name: c.name, what: c.what})),
           availableSeverities: ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'],
           example: {query: 'enforcement', severity: 'CRITICAL'}
-        })
+        }
       }
 
       const filtered = filterBySeverity(conventions, severity)
-      return createSuccessResponse({
+      return {
         severity,
         conventions: filtered.map((c) => ({name: c.name, what: c.what, why: c.why, enforcement: c.enforcement, wikiPath: c.wikiPath})),
         count: filtered.length
-      })
+      }
     }
 
     case 'detail': {
@@ -138,7 +134,7 @@ export async function handleConventionsQuery(args: ConventionQueryArgs) {
         }
       }
 
-      return createSuccessResponse({
+      return {
         convention: {
           name: match.name,
           type: match.type,
@@ -152,7 +148,7 @@ export async function handleConventionsQuery(args: ConventionQueryArgs) {
           wikiPath: match.wikiPath
         },
         wikiContent: wikiContent ? wikiContent.substring(0, 3000) : undefined // Limit content size
-      })
+      }
     }
 
     case 'wiki': {
@@ -171,11 +167,7 @@ export async function handleConventionsQuery(args: ConventionQueryArgs) {
           byDirectory[dir].push(page)
         }
 
-        return createSuccessResponse({
-          totalPages: pages.length,
-          byDirectory,
-          example: {query: 'wiki', term: 'docs/wiki/Testing/Jest-ESM-Mocking-Strategy.md'}
-        })
+        return {totalPages: pages.length, byDirectory, example: {query: 'wiki', term: 'docs/wiki/Testing/Jest-ESM-Mocking-Strategy.md'}}
       }
 
       // Load specific page
