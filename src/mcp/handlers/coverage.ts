@@ -8,7 +8,7 @@
 import fs from 'fs/promises'
 import path from 'path'
 import {discoverEntities, loadDependencyGraph} from './data-loader.js'
-import {createErrorResponse} from './shared/response-types.js'
+import {createErrorResponse, createSuccessResponse} from './shared/response-types.js'
 
 export type CoverageQueryType = 'required' | 'missing' | 'all' | 'summary'
 
@@ -146,13 +146,13 @@ export async function handleCoverageQuery(args: CoverageQueryArgs) {
   switch (query) {
     case 'required': {
       // Return what needs to be mocked
-      return {
+      return createSuccessResponse({
         file,
         transitiveDependencyCount: transitiveDeps.length,
         mockingRequired: {entities: mockAnalysis.entities, vendors: mockAnalysis.vendors, utilities: mockAnalysis.utilities.filter((u) => u.needsMock)},
         mockingOptional: {utilities: mockAnalysis.utilities.filter((u) => !u.needsMock)},
         recommendation: `Mock ${mockAnalysis.entities.length} entities and ${mockAnalysis.vendors.length} vendors before importing the handler`
-      }
+      })
     }
 
     case 'missing': {
@@ -168,13 +168,13 @@ export async function handleCoverageQuery(args: CoverageQueryArgs) {
         return !existingMocks.some((mock) => reqPath.includes(mock.replace('#', 'src/').replace(/\//g, '/')) || mock.includes(reqPath.split('/').pop()!))
       })
 
-      return {
+      return createSuccessResponse({
         file,
         testFile,
         existingMocks,
         missingMocks,
         coverage: existingMocks.length > 0 ? `${Math.round((1 - missingMocks.length / requiredPaths.length) * 100)}%` : 'No test file found'
-      }
+      })
     }
 
     case 'all': {
@@ -182,7 +182,7 @@ export async function handleCoverageQuery(args: CoverageQueryArgs) {
       const testFile = getTestFilePath(file)
       const existingMocks = await analyzeExistingTestMocks(path.join(process.cwd(), testFile))
 
-      return {
+      return createSuccessResponse({
         file,
         testFile,
         transitiveDependencies: transitiveDeps,
@@ -194,11 +194,11 @@ export async function handleCoverageQuery(args: CoverageQueryArgs) {
           vendors: mockAnalysis.vendors.length,
           utilitiesNeedingMocks: mockAnalysis.utilities.filter((u) => u.needsMock).length
         }
-      }
+      })
     }
 
     case 'summary': {
-      return {
+      return createSuccessResponse({
         file,
         dependencies: transitiveDeps.length,
         entities: mockAnalysis.entities.map((e) => e.name),
@@ -206,7 +206,7 @@ export async function handleCoverageQuery(args: CoverageQueryArgs) {
         recommendation: mockAnalysis.entities.length > 0
           ? "Use vi.mock('#entities/queries', () => ({...})) for entity mocking"
           : 'Standard vi.unstable_mockModule() for vendor mocks'
-      }
+      })
     }
 
     default:
