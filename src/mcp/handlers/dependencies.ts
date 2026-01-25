@@ -38,7 +38,8 @@ export async function handleDependencyQuery(args: {file?: string; query: string}
 
     case 'transitive': {
       if (!file) {
-        return createErrorResponse('File path required for transitive dependencies query', 'Example: {file: "src/lambdas/ListFiles/src/index.ts", query: "transitive"}')
+        return createErrorResponse('File path required for transitive dependencies query',
+          'Example: {file: "src/lambdas/ListFiles/src/index.ts", query: "transitive"}')
       }
       const transitive = graphData.transitiveDependencies[file] || []
       return createSuccessResponse({file, transitiveDependencies: transitive})

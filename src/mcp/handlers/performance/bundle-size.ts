@@ -463,7 +463,11 @@ export async function handleBundleSizeQuery(args: BundleSizeArgs) {
       const suggestions = await getOptimizationSuggestions(lambda)
 
       if (suggestions.length === 0) {
-        return createSuccessResponse({lambda, message: 'No optimization suggestions found', note: 'Bundle appears well-optimized or detailed analysis requires esbuild metafile'})
+        return createSuccessResponse({
+          lambda,
+          message: 'No optimization suggestions found',
+          note: 'Bundle appears well-optimized or detailed analysis requires esbuild metafile'
+        })
       }
 
       const totalSavings = suggestions.reduce((sum, s) => sum + s.estimatedSavings, 0)

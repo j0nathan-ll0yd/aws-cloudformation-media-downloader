@@ -424,9 +424,7 @@ export async function handleApplyConvention(args: ApplyConventionArgs) {
       return createSuccessResponse(await applyClassHandlers(filePath, dryRun))
 
     default:
-      return createErrorResponse(
-        `Unknown convention: ${convention}`,
-        'Available: aws-sdk-wrapper, entity-mock, response-helper, env-validation, class-handlers'
-      )
+      return createErrorResponse(`Unknown convention: ${convention}`,
+        'Available: aws-sdk-wrapper, entity-mock, response-helper, env-validation, class-handlers')
   }
 }

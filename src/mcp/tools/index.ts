@@ -8,25 +8,25 @@
 import type {ToolDefinition} from './types.js'
 
 // Data queries
-import {queryEntitiesTool, queryLambdaTool, queryInfrastructureTool, queryDependenciesTool, queryConventionsTool} from './data-queries/index.js'
+import {queryConventionsTool, queryDependenciesTool, queryEntitiesTool, queryInfrastructureTool, queryLambdaTool} from './data-queries/index.js'
 
 // Validation
 import {
-  validatePatternTool,
   checkCoverageTool,
-  lambdaImpactTool,
-  suggestTestsTool,
   checkTypeAlignmentTool,
-  validateNamingTool,
   indexCodebaseTool,
-  searchCodebaseSemanticsTool
+  lambdaImpactTool,
+  searchCodebaseSemanticsTool,
+  suggestTestsTool,
+  validateNamingTool,
+  validatePatternTool
 } from './validation/index.js'
 
 // Refactoring
-import {applyConventionTool, renameSymbolTool, extractModuleTool, inlineConstantTool, generateMigrationTool} from './refactoring/index.js'
+import {applyConventionTool, extractModuleTool, generateMigrationTool, inlineConstantTool, renameSymbolTool} from './refactoring/index.js'
 
 // Git
-import {semanticDiffTool, queryGitHistoryTool, analyzePatternConsistencyTool, syncConventionsTool} from './git/index.js'
+import {analyzePatternConsistencyTool, queryGitHistoryTool, semanticDiffTool, syncConventionsTool} from './git/index.js'
 
 // Performance
 import {analyzeBundleSizeTool, analyzeColdStartTool} from './performance/index.js'
@@ -87,11 +87,7 @@ export function getToolByName(name: string): ToolDefinition | undefined {
  * Get tool definitions for MCP ListTools response
  */
 export function getToolDefinitions() {
-  return tools.map(({name, description, inputSchema}) => ({
-    name,
-    description,
-    inputSchema
-  }))
+  return tools.map(({name, description, inputSchema}) => ({name, description, inputSchema}))
 }
 
-export type {ToolDefinition}
+export type { ToolDefinition }

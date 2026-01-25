@@ -395,7 +395,12 @@ export async function handleRenameSymbolQuery(args: RenameSymbolArgs) {
       // Validate first
       const validation = await validateNewName(project, newName, locations)
       if (!validation.valid) {
-        return createSuccessResponse({success: false, error: 'Conflicts detected', conflicts: validation.conflicts, hint: 'Resolve conflicts or use a different name'})
+        return createSuccessResponse({
+          success: false,
+          error: 'Conflicts detected',
+          conflicts: validation.conflicts,
+          hint: 'Resolve conflicts or use a different name'
+        })
       }
 
       // Apply rename

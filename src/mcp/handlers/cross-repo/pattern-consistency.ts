@@ -377,7 +377,12 @@ export async function handlePatternConsistencyQuery(args: PatternConsistencyArgs
         summary[patternName] = {total: matches.length, implementations: implCounts}
       }
 
-      return createSuccessResponse({patterns: Object.keys(results), totalMatches: Object.values(results).reduce((sum, m) => sum + m.length, 0), summary, details: results})
+      return createSuccessResponse({
+        patterns: Object.keys(results),
+        totalMatches: Object.values(results).reduce((sum, m) => sum + m.length, 0),
+        summary,
+        details: results
+      })
     }
 
     case 'compare': {

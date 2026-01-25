@@ -1,1 +1,1 @@
-export {checkSchemaDriftTool} from './check-schema-drift.js'
+export { checkSchemaDriftTool } from './check-schema-drift.js'

@@ -80,7 +80,11 @@ export async function handleConventionsQuery(args: ConventionQueryArgs) {
         for (const c of conventions) {
           categories[c.category] = (categories[c.category] || 0) + 1
         }
-        return createSuccessResponse({availableCategories: Object.keys(categories).sort(), counts: categories, example: {query: 'category', category: 'testing'}})
+        return createSuccessResponse({
+          availableCategories: Object.keys(categories).sort(),
+          counts: categories,
+          example: {query: 'category', category: 'testing'}
+        })
       }
 
       const filtered = filterByCategory(conventions, category)
@@ -167,7 +171,11 @@ export async function handleConventionsQuery(args: ConventionQueryArgs) {
           byDirectory[dir].push(page)
         }
 
-        return createSuccessResponse({totalPages: pages.length, byDirectory, example: {query: 'wiki', term: 'docs/wiki/Testing/Jest-ESM-Mocking-Strategy.md'}})
+        return createSuccessResponse({
+          totalPages: pages.length,
+          byDirectory,
+          example: {query: 'wiki', term: 'docs/wiki/Testing/Jest-ESM-Mocking-Strategy.md'}
+        })
       }
 
       // Load specific page

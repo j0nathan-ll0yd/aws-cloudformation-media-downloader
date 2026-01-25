@@ -163,9 +163,7 @@ async function parseTypeScriptTypes(filePath: string): Promise<TypeDefinition[]>
 /**
  * Check alignment between TypeScript types and TypeSpec models
  */
-export async function handleTypeAlignmentQuery(
-  args: {typeName?: string; query: 'check' | 'list' | 'all'}
-) {
+export async function handleTypeAlignmentQuery(args: {typeName?: string; query: 'check' | 'list' | 'all'}) {
   const {typeName, query} = args
   const tspPath = path.join(projectRoot, 'tsp/models/models.tsp')
   const typesDirs = [
@@ -192,7 +190,12 @@ export async function handleTypeAlignmentQuery(
   const issues: AlignmentIssue[] = []
 
   if (query === 'list') {
-    return createSuccessResponse({aligned: true, issues: [], typeSpecModels: typeSpecModels.map((m) => m.name), typeScriptTypes: allTypeScriptTypes.map((t) => t.name)})
+    return createSuccessResponse({
+      aligned: true,
+      issues: [],
+      typeSpecModels: typeSpecModels.map((m) => m.name),
+      typeScriptTypes: allTypeScriptTypes.map((t) => t.name)
+    })
   }
 
   // Check specific type or all types
@@ -270,15 +273,18 @@ export async function handleTypeAlignmentQuery(
     }
   }
 
-  return createSuccessResponse({aligned: issues.length === 0, issues, typeSpecModels: typeSpecModels.map((m) => m.name), typeScriptTypes: allTypeScriptTypes.map((t) => t.name)})
+  return createSuccessResponse({
+    aligned: issues.length === 0,
+    issues,
+    typeSpecModels: typeSpecModels.map((m) => m.name),
+    typeScriptTypes: allTypeScriptTypes.map((t) => t.name)
+  })
 }
 
 /**
  * Validate naming conventions across files
  */
-export async function handleNamingValidationQuery(
-  args: {file?: string; query: 'validate' | 'suggest' | 'all'}
-) {
+export async function handleNamingValidationQuery(args: {file?: string; query: 'validate' | 'suggest' | 'all'}) {
   const {file, query} = args
   const violations: NamingViolation[] = []
   const suggestions: {file: string; fixes: {current: string; suggested: string; reason: string}[]}[] = []
