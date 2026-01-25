@@ -54,16 +54,10 @@ import {handleBundleSizeQuery} from './handlers/performance/bundle-size.js'
 import type {BundleSizeArgs} from './handlers/performance/bundle-size.js'
 import {handleColdStartQuery} from './handlers/performance/cold-start.js'
 import type {ColdStartArgs} from './handlers/performance/cold-start.js'
+import {createErrorResponse, createSuccessResponse} from './handlers/shared/response-types.js'
 
 // Create server instance
 const server = new Server({name: 'media-downloader-mcp', version: '1.0.0'}, {capabilities: {tools: {}}})
-
-/**
- * Wrap handler result in MCP content format
- */
-function wrapResult(result: unknown) {
-  return {content: [{type: 'text', text: JSON.stringify(result, null, 2)}]}
-}
 
 // Define available tools
 server.setRequestHandler(ListToolsRequestSchema, async () => {
@@ -71,7 +65,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     tools: [
       { // fmt: multiline
         name: 'query_entities',
-        description: 'Query entity schemas and relationships (uses Drizzle ORM with Aurora DSQL)',
+        description: `Query entity schemas and relationships (uses Drizzle ORM with Aurora DSQL).
+
+Examples:
+- Get Users schema: {entity: "Users", query: "schema"}
+- List all entities: {query: "collections"}
+- Get Files relationships: {entity: "Files", query: "relationships"}`,
         inputSchema: {
           type: 'object',
           properties: {
@@ -87,7 +86,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: 'query_lambda',
-        description: 'Query Lambda function configurations and dependencies',
+        description: `Query Lambda function configurations and dependencies.
+
+Examples:
+- List all Lambdas: {query: "list"}
+- Get ListFiles config: {lambda: "ListFiles", query: "config"}
+- Get dependencies: {lambda: "CreateFile", query: "dependencies"}
+- Get env vars: {lambda: "ListFiles", query: "env"}`,
         inputSchema: {
           type: 'object',
           properties: {
@@ -103,7 +108,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: 'query_infrastructure',
-        description: 'Query AWS infrastructure configuration',
+        description: `Query AWS infrastructure configuration.
+
+Examples:
+- Get all resources: {resource: "all", query: "config"}
+- S3 bucket config: {resource: "s3", query: "config"}
+- API Gateway usage: {resource: "apigateway", query: "usage"}`,
         inputSchema: {
           type: 'object',
           properties: {
@@ -115,7 +125,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: 'query_dependencies',
-        description: 'Query code dependencies from graph.json',
+        description: `Query code dependencies from graph.json.
+
+Examples:
+- Check circular deps: {query: "circular"}
+- Get file imports: {file: "src/lambdas/ListFiles/src/index.ts", query: "imports"}
+- Find dependents: {file: "src/entities/Users.ts", query: "dependents"}
+- Transitive deps: {file: "src/lambdas/ListFiles/src/index.ts", query: "transitive"}`,
         inputSchema: {
           type: 'object',
           properties: {
@@ -131,7 +147,14 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: 'query_conventions',
-        description: 'Search project conventions from conventions-tracking.md and wiki documentation',
+        description: `Search project conventions from conventions-tracking.md and wiki documentation.
+
+Examples:
+- List all conventions: {query: "list"}
+- Search by term: {query: "search", term: "mock"}
+- By category: {query: "category", category: "testing"}
+- CRITICAL severity: {query: "list", severity: "CRITICAL"}
+- Convention detail: {query: "detail", convention: "aws-sdk-vendor-encapsulation"}`,
         inputSchema: {
           type: 'object',
           properties: {
@@ -150,7 +173,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: 'validate_pattern',
-        description: 'Validate code against project conventions using AST analysis (22 rules: 7 CRITICAL, 11 HIGH, 4 MEDIUM)',
+        description: `Validate code against project conventions using AST analysis (22 rules: 7 CRITICAL, 11 HIGH, 4 MEDIUM).
+
+Examples:
+- List rules: {query: "rules"}
+- Validate file: {file: "src/lambdas/ListFiles/src/index.ts", query: "all"}
+- Check AWS SDK: {file: "src/lambdas/ListFiles/src/index.ts", query: "aws-sdk"}
+- Summary: {query: "summary"}`,
         inputSchema: {
           type: 'object',
           properties: {
@@ -167,7 +196,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: 'check_coverage',
-        description: 'Analyze which dependencies need mocking for Vitest tests',
+        description: `Analyze which dependencies need mocking for Vitest tests.
+
+Examples:
+- All deps: {file: "src/lambdas/ListFiles/src/index.ts", query: "all"}
+- Required mocks: {file: "src/lambdas/ListFiles/src/index.ts", query: "required"}
+- Missing mocks: {file: "src/lambdas/ListFiles/src/index.ts", query: "missing"}
+- Summary: {file: "src/lambdas/ListFiles/src/index.ts", query: "summary"}`,
         inputSchema: {
           type: 'object',
           properties: {
@@ -183,7 +218,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: 'lambda_impact',
-        description: 'Show what is affected by changing a file (dependents, tests, infrastructure)',
+        description: `Show what is affected by changing a file (dependents, tests, infrastructure).
+
+Examples:
+- Full impact: {file: "src/entities/Users.ts", query: "all"}
+- Cascade: {file: "src/lib/vendor/AWS/DynamoDB.ts", query: "cascade"}
+- Affected tests: {file: "src/entities/Users.ts", query: "tests"}
+- Infrastructure: {file: "src/lambdas/ListFiles/src/index.ts", query: "infrastructure"}`,
         inputSchema: {
           type: 'object',
           properties: {
@@ -199,7 +240,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: 'suggest_tests',
-        description: 'Generate test file scaffolding with all required mocks',
+        description: `Generate test file scaffolding with all required mocks.
+
+Examples:
+- Full scaffold: {file: "src/lambdas/ListFiles/src/index.ts", query: "scaffold"}
+- Mock setup: {file: "src/lambdas/ListFiles/src/index.ts", query: "mocks"}
+- Test fixtures: {file: "src/lambdas/ListFiles/src/index.ts", query: "fixtures"}
+- Structure only: {file: "src/lambdas/ListFiles/src/index.ts", query: "structure"}`,
         inputSchema: {
           type: 'object',
           properties: {
@@ -211,7 +258,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: 'check_type_alignment',
-        description: 'Check alignment between TypeScript types and TypeSpec API definitions',
+        description: `Check alignment between TypeScript types and TypeSpec API definitions.
+
+Examples:
+- Check all: {query: "all"}
+- List types: {query: "list"}
+- Check specific: {typeName: "User", query: "check"}`,
         inputSchema: {
           type: 'object',
           properties: {
@@ -223,7 +275,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: 'validate_naming',
-        description: 'Validate type naming conventions (no DynamoDB* prefix, PascalCase enums, proper suffixes)',
+        description: `Validate type naming conventions (no DynamoDB* prefix, PascalCase enums, proper suffixes).
+
+Examples:
+- Validate all: {query: "validate"}
+- Get suggestions: {query: "suggest"}
+- Full report: {query: "all"}
+- Specific file: {file: "src/types/domain-models.d.ts", query: "validate"}`,
         inputSchema: {
           type: 'object',
           properties: {
@@ -235,12 +293,21 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: 'index_codebase',
-        description: 'Re-index the codebase into the semantic vector database (LanceDB)',
+        description: `Re-index the codebase into the semantic vector database (LanceDB).
+
+Examples:
+- Index all: {}
+Note: This operation may take several minutes for large codebases.`,
         inputSchema: {type: 'object', properties: {}}
       },
       {
         name: 'search_codebase_semantics',
-        description: 'Search the codebase using semantic natural language queries',
+        description: `Search the codebase using semantic natural language queries.
+
+Examples:
+- Find handlers: {query: "Lambda handlers that process user files"}
+- Find patterns: {query: "error handling with response helpers", limit: 10}
+- Find entities: {query: "user authentication logic"}`,
         inputSchema: {
           type: 'object',
           properties: {
@@ -252,7 +319,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: 'apply_convention',
-        description: 'Automatically apply architectural conventions to code (AWS SDK wrappers, entity mocks, response helpers, etc.)',
+        description: `Automatically apply architectural conventions to code (AWS SDK wrappers, entity mocks, response helpers, etc.).
+
+Examples:
+- AWS wrapper: {file: "src/lambdas/NewLambda/src/index.ts", convention: "aws-sdk-wrapper"}
+- Entity mock: {file: "src/lambdas/NewLambda/src/index.ts", convention: "entity-mock"}
+- Dry run: {file: "src/lambdas/NewLambda/src/index.ts", convention: "all", dryRun: true}`,
         inputSchema: {
           type: 'object',
           properties: {
@@ -270,7 +342,14 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: 'diff_semantic',
-        description: 'Analyze structural code changes between git refs (breaking changes, impact analysis)',
+        description: `Analyze structural code changes between git refs (breaking changes, impact analysis).
+
+Examples:
+- All changes: {query: "changes"}
+- Breaking only: {query: "breaking"}
+- Impact analysis: {query: "impact"}
+- Compare refs: {query: "changes", baseRef: "main", headRef: "feature-branch"}
+- Scope to entities: {query: "breaking", scope: "entities"}`,
         inputSchema: {
           type: 'object',
           properties: {
@@ -288,7 +367,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: 'refactor_rename_symbol',
-        description: 'Type-aware symbol renaming across the codebase with preview, validation, and atomic execution',
+        description: `Type-aware symbol renaming across the codebase with preview, validation, and atomic execution.
+
+Examples:
+- Preview: {query: "preview", symbol: "getUserById"}
+- Validate: {query: "validate", symbol: "getUserById", newName: "fetchUserById"}
+- Execute: {query: "execute", symbol: "getUserById", newName: "fetchUserById"}
+- Scoped: {query: "preview", symbol: "helper", scope: "file", file: "src/utils.ts"}`,
         inputSchema: {
           type: 'object',
           properties: {
@@ -309,7 +394,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: 'generate_migration',
-        description: 'Generate multi-file migration scripts from convention violations',
+        description: `Generate multi-file migration scripts from convention violations.
+
+Examples:
+- Plan all: {query: "plan"}
+- AWS SDK migration: {query: "plan", convention: "aws-sdk"}
+- Generate script: {query: "script", convention: "entity", outputFormat: "ts-morph"}
+- Verify: {query: "verify", convention: "response"}`,
         inputSchema: {
           type: 'object',
           properties: {
@@ -328,7 +419,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: 'query_git_history',
-        description: 'Semantic git history queries for tracking symbol evolution and blame',
+        description: `Semantic git history queries for tracking symbol evolution and blame.
+
+Examples:
+- File history: {query: "file", target: "src/entities/Users.ts"}
+- Symbol evolution: {query: "symbol", target: "src/entities/Users.ts:getUserById"}
+- Pattern search: {query: "pattern", target: "fix:.*authentication"}
+- Blame: {query: "blame_semantic", target: "src/entities/Users.ts"}`,
         inputSchema: {
           type: 'object',
           properties: {
@@ -346,7 +443,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: 'analyze_pattern_consistency',
-        description: 'Detect pattern drift and consistency issues across the codebase',
+        description: `Detect pattern drift and consistency issues across the codebase.
+
+Examples:
+- Scan patterns: {query: "scan", pattern: "error-handling"}
+- Compare to ref: {query: "compare", pattern: "entity-access", referenceImpl: "src/lambdas/ListFiles/src/index.ts"}
+- Detect drift: {query: "drift", pattern: "aws-vendor"}`,
         inputSchema: {
           type: 'object',
           properties: {
@@ -368,7 +470,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: 'sync_conventions',
-        description: 'Import/export conventions for multi-repo consistency',
+        description: `Import/export conventions for multi-repo consistency.
+
+Examples:
+- Export JSON: {query: "export", format: "json"}
+- Export markdown: {query: "export", format: "markdown"}
+- Import: {query: "import", source: "https://example.com/conventions.json"}
+- Diff: {query: "diff", source: "./other-project/conventions.json"}`,
         inputSchema: {
           type: 'object',
           properties: {
@@ -386,7 +494,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: 'refactor_extract_module',
-        description: 'Extract symbols to a new module with import updates',
+        description: `Extract symbols to a new module with import updates.
+
+Examples:
+- Analyze: {query: "analyze", sourceFile: "src/utils.ts", targetModule: "src/helpers.ts"}
+- Preview: {query: "preview", sourceFile: "src/utils.ts", symbols: ["formatDate", "parseDate"], targetModule: "src/date-utils.ts"}
+- Execute: {query: "execute", sourceFile: "src/utils.ts", symbols: ["formatDate"], targetModule: "src/date-utils.ts", createBarrel: true}`,
         inputSchema: {
           type: 'object',
           properties: {
@@ -405,7 +518,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: 'refactor_inline_constant',
-        description: 'Find and inline single-use exported constants',
+        description: `Find and inline single-use exported constants.
+
+Examples:
+- Find candidates: {query: "find"}
+- In specific file: {query: "find", file: "src/constants.ts", maxUses: 2}
+- Preview inline: {query: "preview", constant: "DEFAULT_TIMEOUT"}
+- Execute: {query: "execute", constant: "DEFAULT_TIMEOUT"}`,
         inputSchema: {
           type: 'object',
           properties: {
@@ -423,7 +542,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: 'analyze_bundle_size',
-        description: 'Analyze Lambda bundle sizes and provide optimization suggestions',
+        description: `Analyze Lambda bundle sizes and provide optimization suggestions.
+
+Examples:
+- Summary: {query: "summary"}
+- Breakdown: {query: "breakdown", lambda: "ListFiles"}
+- Compare: {query: "compare", lambda: "ListFiles", compareRef: "main"}
+- Optimize: {query: "optimize", lambda: "ListFiles", threshold: 50000}`,
         inputSchema: {
           type: 'object',
           properties: {
@@ -441,7 +566,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: 'analyze_cold_start',
-        description: 'Estimate cold start impact from bundle and import analysis',
+        description: `Estimate cold start impact from bundle and import analysis.
+
+Examples:
+- Estimate all: {query: "estimate"}
+- Single Lambda: {query: "estimate", lambda: "ListFiles", memory: 512}
+- Compare memory: {query: "compare", lambda: "ListFiles"}
+- Optimize: {query: "optimize", lambda: "ListFiles"}`,
         inputSchema: {
           type: 'object',
           properties: {
@@ -458,7 +589,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: 'check_schema_drift',
-        description: 'Detect discrepancies between Drizzle ORM schema and SQL migrations',
+        description: `Detect discrepancies between Drizzle ORM schema and SQL migrations.
+
+Examples:
+- Check all: {query: "check"}
+- List tables: {query: "tables"}
+- Check columns: {query: "columns", table: "users"}
+- Check indexes: {query: "indexes", table: "users"}`,
         inputSchema: {
           type: 'object',
           properties: {
@@ -494,25 +631,25 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return await handleDependencyQuery(args as {file?: string; query: string})
 
       case 'query_conventions':
-        return wrapResult(await handleConventionsQuery(args as unknown as ConventionQueryArgs))
+        return await handleConventionsQuery(args as unknown as ConventionQueryArgs)
 
       case 'validate_pattern':
-        return wrapResult(await handleValidationQuery(args as unknown as ValidationQueryArgs))
+        return await handleValidationQuery(args as unknown as ValidationQueryArgs)
 
       case 'check_coverage':
-        return wrapResult(await handleCoverageQuery(args as unknown as CoverageQueryArgs))
+        return await handleCoverageQuery(args as unknown as CoverageQueryArgs)
 
       case 'lambda_impact':
-        return wrapResult(await handleImpactQuery(args as unknown as ImpactQueryArgs))
+        return await handleImpactQuery(args as unknown as ImpactQueryArgs)
 
       case 'suggest_tests':
-        return wrapResult(await handleTestScaffoldQuery(args as unknown as TestScaffoldQueryArgs))
+        return await handleTestScaffoldQuery(args as unknown as TestScaffoldQueryArgs)
 
       case 'check_type_alignment':
-        return wrapResult(await handleTypeAlignmentQuery(args as {typeName?: string; query: 'check' | 'list' | 'all'}))
+        return await handleTypeAlignmentQuery(args as {typeName?: string; query: 'check' | 'list' | 'all'})
 
       case 'validate_naming':
-        return wrapResult(await handleNamingValidationQuery(args as {file?: string; query: 'validate' | 'suggest' | 'all'}))
+        return await handleNamingValidationQuery(args as {file?: string; query: 'validate' | 'suggest' | 'all'})
 
       case 'index_codebase':
         return await handleIndexCodebase()
@@ -521,37 +658,37 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return await handleSemanticSearch(args as unknown as SemanticSearchArgs)
 
       case 'apply_convention':
-        return wrapResult(await handleApplyConvention(args as unknown as ApplyConventionArgs))
+        return await handleApplyConvention(args as unknown as ApplyConventionArgs)
 
       case 'diff_semantic':
-        return wrapResult(await handleSemanticDiffQuery(args as unknown as SemanticDiffArgs))
+        return await handleSemanticDiffQuery(args as unknown as SemanticDiffArgs)
 
       case 'refactor_rename_symbol':
-        return wrapResult(await handleRenameSymbolQuery(args as unknown as RenameSymbolArgs))
+        return await handleRenameSymbolQuery(args as unknown as RenameSymbolArgs)
 
       case 'generate_migration':
-        return wrapResult(await handleMigrationQuery(args as unknown as MigrationArgs))
+        return await handleMigrationQuery(args as unknown as MigrationArgs)
 
       case 'query_git_history':
-        return wrapResult(await handleGitHistoryQuery(args as unknown as GitHistoryArgs))
+        return await handleGitHistoryQuery(args as unknown as GitHistoryArgs)
 
       case 'analyze_pattern_consistency':
-        return wrapResult(await handlePatternConsistencyQuery(args as unknown as PatternConsistencyArgs))
+        return await handlePatternConsistencyQuery(args as unknown as PatternConsistencyArgs)
 
       case 'sync_conventions':
-        return wrapResult(await handleConventionSyncQuery(args as unknown as SyncConventionsArgs))
+        return await handleConventionSyncQuery(args as unknown as SyncConventionsArgs)
 
       case 'refactor_extract_module':
-        return wrapResult(await handleExtractModuleQuery(args as unknown as ExtractModuleArgs))
+        return await handleExtractModuleQuery(args as unknown as ExtractModuleArgs)
 
       case 'refactor_inline_constant':
-        return wrapResult(await handleInlineConstantQuery(args as unknown as InlineConstantArgs))
+        return await handleInlineConstantQuery(args as unknown as InlineConstantArgs)
 
       case 'analyze_bundle_size':
-        return wrapResult(await handleBundleSizeQuery(args as unknown as BundleSizeArgs))
+        return await handleBundleSizeQuery(args as unknown as BundleSizeArgs)
 
       case 'analyze_cold_start':
-        return wrapResult(await handleColdStartQuery(args as unknown as ColdStartArgs))
+        return await handleColdStartQuery(args as unknown as ColdStartArgs)
 
       case 'check_schema_drift':
         return await handleSchemaDriftQuery(args as unknown as SchemaDriftArgs)
@@ -589,22 +726,22 @@ async function handleDependencyQuery(args: {file?: string; query: string}) {
   switch (query) {
     case 'imports': {
       if (!file) {
-        return {content: [{type: 'text', text: 'File path required for imports query'}]}
+        return createErrorResponse('File path required for imports query', 'Example: {file: "src/lambdas/ListFiles/src/index.ts", query: "imports"}')
       }
       const imports = graphData.graph[file]?.imports || []
-      return {content: [{type: 'text', text: JSON.stringify({file, imports}, null, 2)}]}
+      return createSuccessResponse({file, imports})
     }
 
     case 'transitive': {
       if (!file) {
-        return {content: [{type: 'text', text: 'File path required for transitive dependencies query'}]}
+        return createErrorResponse('File path required for transitive dependencies query', 'Example: {file: "src/lambdas/ListFiles/src/index.ts", query: "transitive"}')
       }
       const transitive = graphData.transitiveDependencies[file] || []
-      return {content: [{type: 'text', text: JSON.stringify({file, transitiveDependencies: transitive}, null, 2)}]}
+      return createSuccessResponse({file, transitiveDependencies: transitive})
     }
 
     case 'circular':
-      return {content: [{type: 'text', text: JSON.stringify({circularDependencies: graphData.circularDependencies || []}, null, 2)}]}
+      return createSuccessResponse({circularDependencies: graphData.circularDependencies || []})
 
     case 'dependents': {
       if (!file) {
@@ -618,7 +755,7 @@ async function handleDependencyQuery(args: {file?: string; query: string}) {
             dependents[importedFile].push(sourceFile)
           }
         }
-        return {content: [{type: 'text', text: JSON.stringify(dependents, null, 2)}]}
+        return createSuccessResponse(dependents)
       } else {
         // Find who imports this specific file
         const dependents: string[] = []
@@ -627,12 +764,12 @@ async function handleDependencyQuery(args: {file?: string; query: string}) {
             dependents.push(sourceFile)
           }
         }
-        return {content: [{type: 'text', text: JSON.stringify({file, dependents}, null, 2)}]}
+        return createSuccessResponse({file, dependents})
       }
     }
 
     default:
-      return {content: [{type: 'text', text: `Unknown query type: ${query}`}]}
+      return createErrorResponse(`Unknown query type: ${query}`, 'Available queries: imports, dependents, transitive, circular')
   }
 }
 

@@ -17,16 +17,20 @@ export interface McpContentBlock {
 /**
  * Standardized MCP error response
  * Tool errors use content with isError flag, NOT protocol errors
+ * Index signature allows compatibility with MCP SDK's ServerResult type
  */
 export interface McpErrorResponse {
+  [key: string]: unknown
   content: McpContentBlock[]
   isError: true
 }
 
 /**
  * Standardized MCP success response
+ * Index signature allows compatibility with MCP SDK's ServerResult type
  */
 export interface McpSuccessResponse {
+  [key: string]: unknown
   content: McpContentBlock[]
   isError?: false
 }
