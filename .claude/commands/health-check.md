@@ -87,20 +87,37 @@ For each section, output one of:
 
 **Files to Read (ALL):**
 - ALL `.tf` files in `terraform/`
+- `terraform/environments/staging.tfvars`
+- `terraform/environments/production.tfvars`
 - `bin/pre-deploy-check.sh`
 - `bin/verify-state.sh`
 - `bin/aws-audit.sh`
+- `bin/check-costs.sh`
+
+**Environment-Aware Commands:**
+```bash
+# Check specific environment
+pnpm run deploy:check:staging     # Verify staging before deploy
+pnpm run deploy:check:production  # Verify production before deploy
+pnpm run state:verify:staging     # Check staging state consistency
+pnpm run state:verify:production  # Check production state consistency
+pnpm run audit:aws:staging        # Audit staging AWS resources
+pnpm run audit:aws:production     # Audit production AWS resources
+pnpm run plan:staging             # Plan staging changes
+pnpm run plan:production          # Plan production changes
+```
 
 **Verify:**
 - Are ALL Lambda IAM roles following least-privilege?
-- Is state management acceptable (local state noted as known issue)?
+- Is state management acceptable (remote state with workspaces)?
 - Are common_tags applied consistently to ALL resources?
-- Do pre-deploy-check.sh and verify-state.sh cover critical validations?
-- Are there repeated patterns that should be modularized?
+- Do pre-deploy-check.sh and verify-state.sh support --env parameter?
+- Are staging/production tfvars properly separated?
 - Is SOPS integration properly configured?
+- Do resources use environment-appropriate prefixes (stag-/prod-)?
 
 **Red Flags:** Overly permissive IAM policies, missing security groups, resource drift,
-              hardcoded values that should be variables.
+              hardcoded values that should be variables, cross-environment resource access.
 
 **Sub-agent suggestion:** Use `humanlayer:codebase-analyzer` focused on terraform/ directory.
 
