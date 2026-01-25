@@ -9,7 +9,7 @@
 
 import {discoverEntities, loadDependencyGraph} from './data-loader.js'
 import {loadAndInterpolate, loadTemplate} from '../templates/loader.js'
-import {createErrorResponse} from './shared/response-types.js'
+import {createErrorResponse, createSuccessResponse} from './shared/response-types.js'
 
 export type TestScaffoldQueryType = 'scaffold' | 'mocks' | 'fixtures' | 'structure'
 
@@ -169,7 +169,7 @@ export async function handleTestScaffoldQuery(args: TestScaffoldQueryArgs) {
 
       const scaffoldCode = generateTestScaffold(lambdaName, mocks)
 
-      return {
+      return createSuccessResponse({
         file: normalizedFile,
         testPath: testFilePath,
         lambdaName,
@@ -181,7 +181,7 @@ export async function handleTestScaffoldQuery(args: TestScaffoldQueryArgs) {
           '3. Add specific test cases for your Lambda logic',
           '4. Run: pnpm test -- --testPathPattern=' + lambdaName
         ]
-      }
+      })
     }
 
     case 'mocks': {
@@ -189,7 +189,7 @@ export async function handleTestScaffoldQuery(args: TestScaffoldQueryArgs) {
       const entityMocks = mocks.filter((m) => m.type === 'entity')
       const vendorMocks = mocks.filter((m) => m.type === 'vendor')
 
-      return {
+      return createSuccessResponse({
         file: normalizedFile,
         mocks: {
           entities: entityMocks.map((m) => ({name: m.name, importAlias: m.importAlias, code: m.mockCode})),
@@ -203,7 +203,7 @@ export async function handleTestScaffoldQuery(args: TestScaffoldQueryArgs) {
         recommendation: entityMocks.length > 0
           ? 'Remember: Entity mocks MUST be defined before vi.unstable_mockModule calls'
           : 'Standard mock setup - define mocks before importing handler'
-      }
+      })
     }
 
     case 'fixtures': {
@@ -227,17 +227,17 @@ export async function handleTestScaffoldQuery(args: TestScaffoldQueryArgs) {
 
       fixtures.push({name: 'error-response.json', purpose: 'Expected error response format', suggested: true})
 
-      return {
+      return createSuccessResponse({
         file: normalizedFile,
         suggestedFixtures: fixtures.filter((f) => f.suggested),
         fixtureDirectory: testFilePath.replace('index.test.ts', 'fixtures/'),
         recommendation: 'Create fixtures based on production data using logIncomingFixture/logOutgoingFixture'
-      }
+      })
     }
 
     case 'structure': {
       // Return test file structure without full code
-      return {
+      return createSuccessResponse({
         file: normalizedFile,
         testPath: testFilePath,
         structure: {
@@ -254,7 +254,7 @@ export async function handleTestScaffoldQuery(args: TestScaffoldQueryArgs) {
           entities: mocks.filter((m) => m.type === 'entity').map((m) => m.name),
           vendors: mocks.filter((m) => m.type === 'vendor').map((m) => m.name)
         }
-      }
+      })
     }
 
     default:

@@ -58,13 +58,6 @@ import type {ColdStartArgs} from './handlers/performance/cold-start.js'
 // Create server instance
 const server = new Server({name: 'media-downloader-mcp', version: '1.0.0'}, {capabilities: {tools: {}}})
 
-/**
- * Wrap handler result in MCP content format
- */
-function wrapResult(result: unknown) {
-  return {content: [{type: 'text', text: JSON.stringify(result, null, 2)}]}
-}
-
 // Define available tools
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
@@ -494,25 +487,25 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return await handleDependencyQuery(args as {file?: string; query: string})
 
       case 'query_conventions':
-        return wrapResult(await handleConventionsQuery(args as unknown as ConventionQueryArgs))
+        return await handleConventionsQuery(args as unknown as ConventionQueryArgs)
 
       case 'validate_pattern':
-        return wrapResult(await handleValidationQuery(args as unknown as ValidationQueryArgs))
+        return await handleValidationQuery(args as unknown as ValidationQueryArgs)
 
       case 'check_coverage':
-        return wrapResult(await handleCoverageQuery(args as unknown as CoverageQueryArgs))
+        return await handleCoverageQuery(args as unknown as CoverageQueryArgs)
 
       case 'lambda_impact':
-        return wrapResult(await handleImpactQuery(args as unknown as ImpactQueryArgs))
+        return await handleImpactQuery(args as unknown as ImpactQueryArgs)
 
       case 'suggest_tests':
-        return wrapResult(await handleTestScaffoldQuery(args as unknown as TestScaffoldQueryArgs))
+        return await handleTestScaffoldQuery(args as unknown as TestScaffoldQueryArgs)
 
       case 'check_type_alignment':
-        return wrapResult(await handleTypeAlignmentQuery(args as {typeName?: string; query: 'check' | 'list' | 'all'}))
+        return await handleTypeAlignmentQuery(args as {typeName?: string; query: 'check' | 'list' | 'all'})
 
       case 'validate_naming':
-        return wrapResult(await handleNamingValidationQuery(args as {file?: string; query: 'validate' | 'suggest' | 'all'}))
+        return await handleNamingValidationQuery(args as {file?: string; query: 'validate' | 'suggest' | 'all'})
 
       case 'index_codebase':
         return await handleIndexCodebase()
@@ -521,37 +514,37 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return await handleSemanticSearch(args as unknown as SemanticSearchArgs)
 
       case 'apply_convention':
-        return wrapResult(await handleApplyConvention(args as unknown as ApplyConventionArgs))
+        return await handleApplyConvention(args as unknown as ApplyConventionArgs)
 
       case 'diff_semantic':
-        return wrapResult(await handleSemanticDiffQuery(args as unknown as SemanticDiffArgs))
+        return await handleSemanticDiffQuery(args as unknown as SemanticDiffArgs)
 
       case 'refactor_rename_symbol':
-        return wrapResult(await handleRenameSymbolQuery(args as unknown as RenameSymbolArgs))
+        return await handleRenameSymbolQuery(args as unknown as RenameSymbolArgs)
 
       case 'generate_migration':
-        return wrapResult(await handleMigrationQuery(args as unknown as MigrationArgs))
+        return await handleMigrationQuery(args as unknown as MigrationArgs)
 
       case 'query_git_history':
-        return wrapResult(await handleGitHistoryQuery(args as unknown as GitHistoryArgs))
+        return await handleGitHistoryQuery(args as unknown as GitHistoryArgs)
 
       case 'analyze_pattern_consistency':
-        return wrapResult(await handlePatternConsistencyQuery(args as unknown as PatternConsistencyArgs))
+        return await handlePatternConsistencyQuery(args as unknown as PatternConsistencyArgs)
 
       case 'sync_conventions':
-        return wrapResult(await handleConventionSyncQuery(args as unknown as SyncConventionsArgs))
+        return await handleConventionSyncQuery(args as unknown as SyncConventionsArgs)
 
       case 'refactor_extract_module':
-        return wrapResult(await handleExtractModuleQuery(args as unknown as ExtractModuleArgs))
+        return await handleExtractModuleQuery(args as unknown as ExtractModuleArgs)
 
       case 'refactor_inline_constant':
-        return wrapResult(await handleInlineConstantQuery(args as unknown as InlineConstantArgs))
+        return await handleInlineConstantQuery(args as unknown as InlineConstantArgs)
 
       case 'analyze_bundle_size':
-        return wrapResult(await handleBundleSizeQuery(args as unknown as BundleSizeArgs))
+        return await handleBundleSizeQuery(args as unknown as BundleSizeArgs)
 
       case 'analyze_cold_start':
-        return wrapResult(await handleColdStartQuery(args as unknown as ColdStartArgs))
+        return await handleColdStartQuery(args as unknown as ColdStartArgs)
 
       case 'check_schema_drift':
         return await handleSchemaDriftQuery(args as unknown as SchemaDriftArgs)

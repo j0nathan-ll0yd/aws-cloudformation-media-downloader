@@ -1,6 +1,6 @@
 # Auto-generated from @RequiresDatabase decorators
 # Do not edit manually - run: pnpm run generate:dsql-permissions
-# Generated at: 2026-01-20T05:26:18.499Z
+# Generated at: 2026-01-25T04:33:10.734Z
 
 locals {
   # Per-Lambda PostgreSQL role configuration
