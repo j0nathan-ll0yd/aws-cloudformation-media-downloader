@@ -547,18 +547,18 @@ PERFORMANCE
 
 | Handler | Lines | Complexity | Test Coverage |
 |---------|-------|------------|---------------|
-| apply-convention.ts | 485 | High | Yes |
-| naming.ts | 421 | Medium | Yes |
-| impact.ts | 326 | Medium | No |
-| test-scaffold.ts | 297 | Medium | No |
-| data-loader.ts | 304 | Medium | Yes |
-| coverage.ts | 230 | Low | No |
-| conventions.ts | 203 | Low | No |
-| validation.ts | 199 | Low | No |
-| semantics.ts | 123 | Low | No |
-| entities.ts | 93 | Low | No |
-| infrastructure.ts | 117 | Low | No |
-| lambda.ts | 83 | Low | No |
+| `apply-convention.ts` | 485 | High | Yes |
+| `naming.ts` | 421 | Medium | Yes |
+| `impact.ts` | 326 | Medium | No |
+| `test-scaffold.ts` | 297 | Medium | No |
+| `data-loader.ts` | 304 | Medium | Yes |
+| `coverage.ts` | 230 | Low | No |
+| `conventions.ts` | 203 | Low | No |
+| `validation.ts` | 199 | Low | No |
+| `semantics.ts` | 123 | Low | No |
+| `entities.ts` | 93 | Low | No |
+| `infrastructure.ts` | 117 | Low | No |
+| `lambda.ts` | 83 | Low | No |
 
 ---
 
