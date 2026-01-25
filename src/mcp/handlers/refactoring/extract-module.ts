@@ -13,7 +13,7 @@ import fs from 'fs/promises'
 import path from 'path'
 import {fileURLToPath} from 'url'
 import {loadDependencyGraph} from '../data-loader.js'
-import {createErrorResponse} from '../shared/response-types.js'
+import {createErrorResponse, createSuccessResponse} from '../shared/response-types.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -353,10 +353,10 @@ export async function handleExtractModuleQuery(args: ExtractModuleArgs) {
       const extractable = await analyzeExtractableSymbols(sourceFile)
 
       if (extractable.length === 0) {
-        return {sourceFile, message: 'No extractable symbols found', symbols: []}
+        return createSuccessResponse({sourceFile, message: 'No extractable symbols found', symbols: []})
       }
 
-      return {
+      return createSuccessResponse({
         sourceFile,
         totalSymbols: extractable.length,
         symbols: extractable.map((s) => ({
@@ -369,7 +369,7 @@ export async function handleExtractModuleQuery(args: ExtractModuleArgs) {
           note: s.reason
         })),
         nextStep: "Use query: 'preview' with symbols array and targetModule to see extraction plan"
-      }
+      })
     }
 
     case 'preview': {
@@ -384,7 +384,7 @@ export async function handleExtractModuleQuery(args: ExtractModuleArgs) {
       try {
         const preview = await previewExtraction(sourceFile, symbols, targetModule)
 
-        return {
+        return createSuccessResponse({
           extraction: {from: preview.sourceFile, to: preview.targetModule, symbols: preview.symbolsToExtract},
           newFileContent: preview.newFileContent,
           importChanges: preview.importChanges,
@@ -392,7 +392,7 @@ export async function handleExtractModuleQuery(args: ExtractModuleArgs) {
           nextStep: preview.affectedFiles > 0
             ? `WARNING: ${preview.affectedFiles} file(s) have imports that need updating. Review importChanges and update manually, or use query: 'execute'`
             : "Use query: 'execute' to create the new module"
-        }
+        })
       } catch (error) {
         return createErrorResponse(error instanceof Error ? error.message : String(error))
       }
@@ -409,14 +409,14 @@ export async function handleExtractModuleQuery(args: ExtractModuleArgs) {
 
       const result = await executeExtraction(sourceFile, symbols, targetModule, createBarrel)
 
-      return {
+      return createSuccessResponse({
         ...result,
         extraction: {from: sourceFile, to: targetModule, symbols},
         createBarrel,
         note: result.success
           ? 'Module extracted. You may need to manually update imports in files that used the extracted symbols.'
           : 'Extraction failed'
-      }
+      })
     }
 
     default:

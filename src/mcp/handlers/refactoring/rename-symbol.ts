@@ -13,7 +13,7 @@ import {Node, Project, SourceFile} from 'ts-morph'
 import fs from 'fs/promises'
 import path from 'path'
 import {fileURLToPath} from 'url'
-import {createErrorResponse} from '../shared/response-types.js'
+import {createErrorResponse, createSuccessResponse} from '../shared/response-types.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -339,7 +339,7 @@ export async function handleRenameSymbolQuery(args: RenameSymbolArgs) {
       const locations = await findOccurrences(project, symbol, {scope, file, type})
 
       if (locations.length === 0) {
-        return {symbol, found: false, message: `No occurrences of '${symbol}' found`, searchScope: {scope, file, type}}
+        return createSuccessResponse({symbol, found: false, message: `No occurrences of '${symbol}' found`, searchScope: {scope, file, type}})
       }
 
       // Group by file for summary
@@ -350,14 +350,14 @@ export async function handleRenameSymbolQuery(args: RenameSymbolArgs) {
         byKind[loc.kind] = (byKind[loc.kind] || 0) + 1
       }
 
-      return {
+      return createSuccessResponse({
         symbol,
         found: true,
         totalOccurrences: locations.length,
         locations,
         summary: {byFile, byKind},
         nextStep: newName ? `Use query: 'validate' to check for conflicts with '${newName}'` : "Provide 'newName' and use query: 'validate'"
-      }
+      })
     }
 
     case 'validate': {
@@ -365,12 +365,12 @@ export async function handleRenameSymbolQuery(args: RenameSymbolArgs) {
       const locations = await findOccurrences(project, symbol, {scope, file, type})
 
       if (locations.length === 0) {
-        return {symbol, newName, valid: false, reason: `No occurrences of '${symbol}' found`}
+        return createSuccessResponse({symbol, newName, valid: false, reason: `No occurrences of '${symbol}' found`})
       }
 
       const validation = await validateNewName(project, newName, locations)
 
-      return {
+      return createSuccessResponse({
         symbol,
         newName,
         occurrences: locations.length,
@@ -381,7 +381,7 @@ export async function handleRenameSymbolQuery(args: RenameSymbolArgs) {
             ? "Use query: 'execute' with dryRun: false to apply the rename"
             : "Ready to rename. Use query: 'execute' to apply."
           : 'Resolve conflicts before renaming'
-      }
+      })
     }
 
     case 'execute': {
@@ -389,13 +389,13 @@ export async function handleRenameSymbolQuery(args: RenameSymbolArgs) {
       const locations = await findOccurrences(project, symbol, {scope, file, type})
 
       if (locations.length === 0) {
-        return {success: false, error: `No occurrences of '${symbol}' found`}
+        return createSuccessResponse({success: false, error: `No occurrences of '${symbol}' found`})
       }
 
       // Validate first
       const validation = await validateNewName(project, newName, locations)
       if (!validation.valid) {
-        return {success: false, error: 'Conflicts detected', conflicts: validation.conflicts, hint: 'Resolve conflicts or use a different name'}
+        return createSuccessResponse({success: false, error: 'Conflicts detected', conflicts: validation.conflicts, hint: 'Resolve conflicts or use a different name'})
       }
 
       // Apply rename
@@ -407,7 +407,7 @@ export async function handleRenameSymbolQuery(args: RenameSymbolArgs) {
         projectCacheTime = 0
       }
 
-      return {
+      return createSuccessResponse({
         ...result,
         symbol,
         newName,
@@ -415,7 +415,7 @@ export async function handleRenameSymbolQuery(args: RenameSymbolArgs) {
         message: dryRun
           ? `Dry run complete. ${result.locationsUpdated} locations would be updated.`
           : `Renamed '${symbol}' to '${newName}' in ${result.filesModified.length} file(s).`
-      }
+      })
     }
 
     default:

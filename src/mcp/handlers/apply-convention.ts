@@ -16,6 +16,7 @@ import {existsSync, readFileSync} from 'node:fs'
 import {dirname, join, resolve} from 'node:path'
 import {fileURLToPath} from 'node:url'
 import {Project, SyntaxKind} from 'ts-morph'
+import {createErrorResponse, createSuccessResponse} from './shared/response-types.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const projectRoot = resolve(__dirname, '../../..')
@@ -393,43 +394,39 @@ async function applyClassHandlers(filePath: string, dryRun: boolean): Promise<Ap
 /**
  * Main handler for apply_convention MCP tool
  */
-export async function handleApplyConvention(args: ApplyConventionArgs): Promise<ApplyResult> {
+export async function handleApplyConvention(args: ApplyConventionArgs) {
   const {file, convention, dryRun = true} = args
 
   if (!file) {
-    return {file: '', convention, applied: false, changes: [], dryRun, error: 'File path required'}
+    return createErrorResponse('File path required', 'Example: {file: "src/lambdas/ListFiles/src/index.ts", convention: "aws-sdk-wrapper"}')
   }
 
   const filePath = file.startsWith('/') ? file : join(projectRoot, file)
 
   if (!existsSync(filePath)) {
-    return {file: filePath, convention, applied: false, changes: [], dryRun, error: `File not found: ${filePath}`}
+    return createErrorResponse(`File not found: ${filePath}`, 'Path must be relative to project root or absolute')
   }
 
   switch (convention) {
     case 'aws-sdk-wrapper':
-      return applyAwsSdkWrapper(filePath, dryRun)
+      return createSuccessResponse(await applyAwsSdkWrapper(filePath, dryRun))
 
     case 'entity-mock':
-      return applyEntityMock(filePath, dryRun)
+      return createSuccessResponse(await applyEntityMock(filePath, dryRun))
 
     case 'response-helper':
-      return applyResponseHelper(filePath, dryRun)
+      return createSuccessResponse(await applyResponseHelper(filePath, dryRun))
 
     case 'env-validation':
-      return applyEnvValidation(filePath, dryRun)
+      return createSuccessResponse(await applyEnvValidation(filePath, dryRun))
 
     case 'class-handlers':
-      return applyClassHandlers(filePath, dryRun)
+      return createSuccessResponse(await applyClassHandlers(filePath, dryRun))
 
     default:
-      return {
-        file: filePath,
-        convention,
-        applied: false,
-        changes: [],
-        dryRun,
-        error: `Unknown convention: ${convention}. Available: aws-sdk-wrapper, entity-mock, response-helper, env-validation, class-handlers`
-      }
+      return createErrorResponse(
+        `Unknown convention: ${convention}`,
+        'Available: aws-sdk-wrapper, entity-mock, response-helper, env-validation, class-handlers'
+      )
   }
 }

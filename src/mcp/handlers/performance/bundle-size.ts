@@ -14,7 +14,7 @@ import path from 'path'
 import {fileURLToPath} from 'url'
 import {discoverLambdas} from '../data-loader.js'
 import {execGit} from '../shared/git-utils.js'
-import {createErrorResponse} from '../shared/response-types.js'
+import {createErrorResponse, createSuccessResponse} from '../shared/response-types.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -367,7 +367,7 @@ export async function handleBundleSizeQuery(args: BundleSizeArgs) {
       // Check for threshold violations
       const violations = filtered.filter((s) => s.totalSize > threshold)
 
-      return {
+      return createSuccessResponse({
         totalLambdas: filtered.length,
         totalSize: filtered.reduce((sum, s) => sum + s.totalSize, 0),
         averageSize: Math.round(filtered.reduce((sum, s) => sum + s.totalSize, 0) / filtered.length),
@@ -385,7 +385,7 @@ export async function handleBundleSizeQuery(args: BundleSizeArgs) {
           size: formatBytes(s.totalSize),
           topModules: s.largestModules.map((m) => ({module: m.module, size: formatBytes(m.size)}))
         }))
-      }
+      })
     }
 
     case 'breakdown': {
@@ -399,7 +399,7 @@ export async function handleBundleSizeQuery(args: BundleSizeArgs) {
         return createErrorResponse(`Lambda not found: ${lambda}`)
       }
 
-      return {
+      return createSuccessResponse({
         lambda: breakdown.lambda,
         totalSize: formatBytes(breakdown.totalSize),
         totalSizeBytes: breakdown.totalSize,
@@ -419,7 +419,7 @@ export async function handleBundleSizeQuery(args: BundleSizeArgs) {
         note: breakdown.nodeModules.modules.length === 0
           ? 'Detailed breakdown requires esbuild metafile (build/reports/*-meta.json)'
           : undefined
-      }
+      })
     }
 
     case 'compare': {
@@ -430,7 +430,7 @@ export async function handleBundleSizeQuery(args: BundleSizeArgs) {
 
         const significantChanges = comparison.changes.filter((c) => Math.abs(c.deltaPercent) > 5)
 
-        return {
+        return createSuccessResponse({
           baseRef: ref,
           headRef: 'HEAD',
           lambdasCompared: comparison.changes.length,
@@ -448,7 +448,7 @@ export async function handleBundleSizeQuery(args: BundleSizeArgs) {
           })),
           allChanges: comparison.changes.map((c) => ({lambda: c.lambda, delta: c.delta, deltaPercent: c.deltaPercent})),
           note: 'Comparison is estimated from source file sizes. For accurate comparison, build both refs.'
-        }
+        })
       } catch (error) {
         return createErrorResponse(`Comparison failed: ${error instanceof Error ? error.message : String(error)}`,
           `Ensure ref '${ref}' exists and contains Lambda source files`)
@@ -463,12 +463,12 @@ export async function handleBundleSizeQuery(args: BundleSizeArgs) {
       const suggestions = await getOptimizationSuggestions(lambda)
 
       if (suggestions.length === 0) {
-        return {lambda, message: 'No optimization suggestions found', note: 'Bundle appears well-optimized or detailed analysis requires esbuild metafile'}
+        return createSuccessResponse({lambda, message: 'No optimization suggestions found', note: 'Bundle appears well-optimized or detailed analysis requires esbuild metafile'})
       }
 
       const totalSavings = suggestions.reduce((sum, s) => sum + s.estimatedSavings, 0)
 
-      return {
+      return createSuccessResponse({
         lambda,
         totalPotentialSavings: formatBytes(totalSavings),
         suggestions: suggestions.map((s) => ({
@@ -480,7 +480,7 @@ export async function handleBundleSizeQuery(args: BundleSizeArgs) {
           description: s.description
         })),
         priority: suggestions.slice(0, 3).map((s) => `${s.type}: ${s.target} (save ${formatBytes(s.estimatedSavings)})`)
-      }
+      })
     }
 
     default:
