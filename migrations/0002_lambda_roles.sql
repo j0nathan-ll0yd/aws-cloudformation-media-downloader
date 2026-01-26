@@ -1,7 +1,7 @@
 -- Migration: 0002_lambda_roles
 -- Description: Per-Lambda PostgreSQL roles with fine-grained table permissions
 -- Auto-generated from @RequiresTable decorators
--- Generated at: 2026-01-22T17:14:23.681Z
+-- Generated at: 2026-01-26T05:20:41.980Z
 --
 -- This migration creates per-Lambda PostgreSQL roles and grants them
 -- exactly the table permissions declared in their @RequiresTable decorators.
@@ -25,13 +25,14 @@ CREATE ROLE lambda_s3_object_created WITH LOGIN;
 CREATE ROLE lambda_send_push_notification WITH LOGIN;
 CREATE ROLE lambda_start_file_upload WITH LOGIN;
 CREATE ROLE lambda_user_delete WITH LOGIN;
+CREATE ROLE lambda_user_subscribe WITH LOGIN;
 CREATE ROLE lambda_webhook_feedly WITH LOGIN;
 
 -- =============================================================================
 -- GRANT TABLE PERMISSIONS (per-Lambda least-privilege)
 -- =============================================================================
 
--- ApiGatewayAuthorizer: sessions (needs UPDATE for validateSessionToken to update updated_at)
+-- ApiGatewayAuthorizer: sessions
 GRANT SELECT, UPDATE ON sessions TO lambda_api_gateway_authorizer;
 
 -- CleanupExpiredRecords: sessions, verification, file_downloads
@@ -39,142 +40,79 @@ GRANT SELECT, DELETE ON sessions TO lambda_cleanup_expired_records;
 GRANT SELECT, DELETE ON verification TO lambda_cleanup_expired_records;
 GRANT SELECT, DELETE ON file_downloads TO lambda_cleanup_expired_records;
 
--- ListFiles: accounts, devices, file_downloads, files, sessions, user_devices, user_files, users, verification_tokens
-GRANT DELETE, INSERT, SELECT ON accounts TO lambda_list_files;
-GRANT DELETE, INSERT, SELECT, UPDATE ON devices TO lambda_list_files;
-GRANT DELETE, INSERT, SELECT, UPDATE ON file_downloads TO lambda_list_files;
-GRANT DELETE, INSERT, SELECT, UPDATE ON files TO lambda_list_files;
-GRANT DELETE, INSERT, SELECT, UPDATE ON sessions TO lambda_list_files;
-GRANT DELETE, INSERT, SELECT ON user_devices TO lambda_list_files;
-GRANT DELETE, INSERT, SELECT ON user_files TO lambda_list_files;
-GRANT DELETE, INSERT, SELECT, UPDATE ON users TO lambda_list_files;
-GRANT DELETE, INSERT, SELECT ON verification_tokens TO lambda_list_files;
+-- ListFiles: files, user_files
+GRANT SELECT ON files TO lambda_list_files;
+GRANT SELECT ON user_files TO lambda_list_files;
 
 -- LoginUser: users, sessions, accounts
 GRANT SELECT, INSERT, UPDATE ON users TO lambda_login_user;
 GRANT SELECT, INSERT, UPDATE, DELETE ON sessions TO lambda_login_user;
 GRANT SELECT, INSERT ON accounts TO lambda_login_user;
 
--- LogoutUser: accounts, devices, file_downloads, files, sessions, user_devices, user_files, users, verification_tokens
-GRANT DELETE, INSERT, SELECT ON accounts TO lambda_logout_user;
-GRANT DELETE, INSERT, SELECT, UPDATE ON devices TO lambda_logout_user;
-GRANT DELETE, INSERT, SELECT, UPDATE ON file_downloads TO lambda_logout_user;
-GRANT DELETE, INSERT, SELECT, UPDATE ON files TO lambda_logout_user;
-GRANT DELETE, INSERT, SELECT, UPDATE ON sessions TO lambda_logout_user;
-GRANT DELETE, INSERT, SELECT ON user_devices TO lambda_logout_user;
-GRANT DELETE, INSERT, SELECT ON user_files TO lambda_logout_user;
-GRANT DELETE, INSERT, SELECT, UPDATE ON users TO lambda_logout_user;
-GRANT DELETE, INSERT, SELECT ON verification_tokens TO lambda_logout_user;
+-- LogoutUser: sessions
+GRANT SELECT, UPDATE ON sessions TO lambda_logout_user;
 
--- PruneDevices: accounts, devices, file_downloads, files, sessions, user_devices, user_files, users, verification_tokens
-GRANT DELETE, INSERT, SELECT ON accounts TO lambda_prune_devices;
-GRANT DELETE, INSERT, SELECT, UPDATE ON devices TO lambda_prune_devices;
-GRANT DELETE, INSERT, SELECT, UPDATE ON file_downloads TO lambda_prune_devices;
-GRANT DELETE, INSERT, SELECT, UPDATE ON files TO lambda_prune_devices;
-GRANT DELETE, INSERT, SELECT, UPDATE ON sessions TO lambda_prune_devices;
-GRANT DELETE, INSERT, SELECT ON user_devices TO lambda_prune_devices;
-GRANT DELETE, INSERT, SELECT ON user_files TO lambda_prune_devices;
-GRANT DELETE, INSERT, SELECT, UPDATE ON users TO lambda_prune_devices;
-GRANT DELETE, INSERT, SELECT ON verification_tokens TO lambda_prune_devices;
+-- PruneDevices: devices, user_devices
+GRANT DELETE, SELECT ON devices TO lambda_prune_devices;
+GRANT DELETE, SELECT ON user_devices TO lambda_prune_devices;
 
 -- RefreshToken: sessions
 GRANT SELECT, UPDATE ON sessions TO lambda_refresh_token;
 
--- RegisterDevice: accounts, devices, file_downloads, files, sessions, user_devices, user_files, users, verification_tokens
-GRANT DELETE, INSERT, SELECT ON accounts TO lambda_register_device;
-GRANT DELETE, INSERT, SELECT, UPDATE ON devices TO lambda_register_device;
-GRANT DELETE, INSERT, SELECT, UPDATE ON file_downloads TO lambda_register_device;
-GRANT DELETE, INSERT, SELECT, UPDATE ON files TO lambda_register_device;
-GRANT DELETE, INSERT, SELECT, UPDATE ON sessions TO lambda_register_device;
+-- RegisterDevice: devices, user_devices
+GRANT DELETE, INSERT, UPDATE ON devices TO lambda_register_device;
 GRANT DELETE, INSERT, SELECT ON user_devices TO lambda_register_device;
-GRANT DELETE, INSERT, SELECT ON user_files TO lambda_register_device;
-GRANT DELETE, INSERT, SELECT, UPDATE ON users TO lambda_register_device;
-GRANT DELETE, INSERT, SELECT ON verification_tokens TO lambda_register_device;
 
--- RegisterUser: accounts, devices, file_downloads, files, sessions, user_devices, user_files, users, verification_tokens
-GRANT DELETE, INSERT, SELECT ON accounts TO lambda_register_user;
-GRANT DELETE, INSERT, SELECT, UPDATE ON devices TO lambda_register_user;
-GRANT DELETE, INSERT, SELECT, UPDATE ON file_downloads TO lambda_register_user;
-GRANT DELETE, INSERT, SELECT, UPDATE ON files TO lambda_register_user;
-GRANT DELETE, INSERT, SELECT, UPDATE ON sessions TO lambda_register_user;
-GRANT DELETE, INSERT, SELECT ON user_devices TO lambda_register_user;
-GRANT DELETE, INSERT, SELECT ON user_files TO lambda_register_user;
-GRANT DELETE, INSERT, SELECT, UPDATE ON users TO lambda_register_user;
-GRANT DELETE, INSERT, SELECT ON verification_tokens TO lambda_register_user;
+-- RegisterUser: users
+GRANT UPDATE ON users TO lambda_register_user;
 
--- S3ObjectCreated: accounts, devices, file_downloads, files, sessions, user_devices, user_files, users, verification_tokens
-GRANT DELETE, INSERT, SELECT ON accounts TO lambda_s3_object_created;
-GRANT DELETE, INSERT, SELECT, UPDATE ON devices TO lambda_s3_object_created;
-GRANT DELETE, INSERT, SELECT, UPDATE ON file_downloads TO lambda_s3_object_created;
-GRANT DELETE, INSERT, SELECT, UPDATE ON files TO lambda_s3_object_created;
-GRANT DELETE, INSERT, SELECT, UPDATE ON sessions TO lambda_s3_object_created;
-GRANT DELETE, INSERT, SELECT ON user_devices TO lambda_s3_object_created;
-GRANT DELETE, INSERT, SELECT ON user_files TO lambda_s3_object_created;
-GRANT DELETE, INSERT, SELECT, UPDATE ON users TO lambda_s3_object_created;
-GRANT DELETE, INSERT, SELECT ON verification_tokens TO lambda_s3_object_created;
+-- S3ObjectCreated: files, user_files
+GRANT SELECT ON files TO lambda_s3_object_created;
+GRANT SELECT ON user_files TO lambda_s3_object_created;
 
--- SendPushNotification: accounts, devices, file_downloads, files, sessions, user_devices, user_files, users, verification_tokens
-GRANT DELETE, INSERT, SELECT ON accounts TO lambda_send_push_notification;
-GRANT DELETE, INSERT, SELECT, UPDATE ON devices TO lambda_send_push_notification;
-GRANT DELETE, INSERT, SELECT, UPDATE ON file_downloads TO lambda_send_push_notification;
-GRANT DELETE, INSERT, SELECT, UPDATE ON files TO lambda_send_push_notification;
-GRANT DELETE, INSERT, SELECT, UPDATE ON sessions TO lambda_send_push_notification;
-GRANT DELETE, INSERT, SELECT ON user_devices TO lambda_send_push_notification;
-GRANT DELETE, INSERT, SELECT ON user_files TO lambda_send_push_notification;
-GRANT DELETE, INSERT, SELECT, UPDATE ON users TO lambda_send_push_notification;
-GRANT DELETE, INSERT, SELECT ON verification_tokens TO lambda_send_push_notification;
+-- SendPushNotification: devices, user_devices
+GRANT DELETE, SELECT ON devices TO lambda_send_push_notification;
+GRANT DELETE, SELECT ON user_devices TO lambda_send_push_notification;
 
--- StartFileUpload: accounts, devices, file_downloads, files, sessions, user_devices, user_files, users, verification_tokens
-GRANT DELETE, INSERT, SELECT ON accounts TO lambda_start_file_upload;
-GRANT DELETE, INSERT, SELECT, UPDATE ON devices TO lambda_start_file_upload;
-GRANT DELETE, INSERT, SELECT, UPDATE ON file_downloads TO lambda_start_file_upload;
-GRANT DELETE, INSERT, SELECT, UPDATE ON files TO lambda_start_file_upload;
-GRANT DELETE, INSERT, SELECT, UPDATE ON sessions TO lambda_start_file_upload;
-GRANT DELETE, INSERT, SELECT ON user_devices TO lambda_start_file_upload;
-GRANT DELETE, INSERT, SELECT ON user_files TO lambda_start_file_upload;
-GRANT DELETE, INSERT, SELECT, UPDATE ON users TO lambda_start_file_upload;
-GRANT DELETE, INSERT, SELECT ON verification_tokens TO lambda_start_file_upload;
+-- StartFileUpload: file_downloads, files, user_files
+GRANT INSERT, SELECT, UPDATE ON file_downloads TO lambda_start_file_upload;
+GRANT INSERT, SELECT, UPDATE ON files TO lambda_start_file_upload;
+GRANT SELECT ON user_files TO lambda_start_file_upload;
 
--- UserDelete: accounts, devices, file_downloads, files, sessions, user_devices, user_files, users, verification_tokens
-GRANT DELETE, INSERT, SELECT ON accounts TO lambda_user_delete;
-GRANT DELETE, INSERT, SELECT, UPDATE ON devices TO lambda_user_delete;
-GRANT DELETE, INSERT, SELECT, UPDATE ON file_downloads TO lambda_user_delete;
-GRANT DELETE, INSERT, SELECT, UPDATE ON files TO lambda_user_delete;
-GRANT DELETE, INSERT, SELECT, UPDATE ON sessions TO lambda_user_delete;
-GRANT DELETE, INSERT, SELECT ON user_devices TO lambda_user_delete;
-GRANT DELETE, INSERT, SELECT ON user_files TO lambda_user_delete;
-GRANT DELETE, INSERT, SELECT, UPDATE ON users TO lambda_user_delete;
-GRANT DELETE, INSERT, SELECT ON verification_tokens TO lambda_user_delete;
+-- UserDelete: devices, user_devices, user_files, users
+GRANT DELETE, SELECT ON devices TO lambda_user_delete;
+GRANT DELETE, SELECT ON user_devices TO lambda_user_delete;
+GRANT DELETE ON user_files TO lambda_user_delete;
+GRANT DELETE ON users TO lambda_user_delete;
 
--- WebhookFeedly: accounts, devices, file_downloads, files, sessions, user_devices, user_files, users, verification_tokens
-GRANT DELETE, INSERT, SELECT ON accounts TO lambda_webhook_feedly;
-GRANT DELETE, INSERT, SELECT, UPDATE ON devices TO lambda_webhook_feedly;
-GRANT DELETE, INSERT, SELECT, UPDATE ON file_downloads TO lambda_webhook_feedly;
-GRANT DELETE, INSERT, SELECT, UPDATE ON files TO lambda_webhook_feedly;
-GRANT DELETE, INSERT, SELECT, UPDATE ON sessions TO lambda_webhook_feedly;
-GRANT DELETE, INSERT, SELECT ON user_devices TO lambda_webhook_feedly;
-GRANT DELETE, INSERT, SELECT ON user_files TO lambda_webhook_feedly;
-GRANT DELETE, INSERT, SELECT, UPDATE ON users TO lambda_webhook_feedly;
-GRANT DELETE, INSERT, SELECT ON verification_tokens TO lambda_webhook_feedly;
+-- UserSubscribe: devices, user_devices
+GRANT DELETE ON devices TO lambda_user_subscribe;
+GRANT DELETE, SELECT ON user_devices TO lambda_user_subscribe;
+
+-- WebhookFeedly: file_downloads, files, user_files
+GRANT INSERT ON file_downloads TO lambda_webhook_feedly;
+GRANT INSERT, SELECT ON files TO lambda_webhook_feedly;
+GRANT INSERT, SELECT ON user_files TO lambda_webhook_feedly;
 
 -- =============================================================================
 -- AWS IAM GRANT (associate Lambda IAM roles with PostgreSQL roles)
 -- =============================================================================
 -- These statements link AWS IAM roles to PostgreSQL roles for authentication.
--- ${AWS_ACCOUNT_ID} and ${RESOURCE_PREFIX} are replaced at runtime by MigrateDSQL handler.
+-- ${AWS_ACCOUNT_ID} is replaced at runtime by MigrateDSQL handler.
 
-AWS IAM GRANT lambda_api_gateway_authorizer TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-ApiGatewayAuthorizer';
-AWS IAM GRANT lambda_cleanup_expired_records TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-CleanupExpiredRecords';
-AWS IAM GRANT lambda_list_files TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-ListFiles';
-AWS IAM GRANT lambda_login_user TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-LoginUser';
-AWS IAM GRANT lambda_logout_user TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-LogoutUser';
+AWS IAM GRANT lambda_api_gateway_authorizer TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/ApiGatewayAuthorizer';
+AWS IAM GRANT lambda_cleanup_expired_records TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/CleanupExpiredRecords';
+AWS IAM GRANT lambda_list_files TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/ListFiles';
+AWS IAM GRANT lambda_login_user TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/LoginUser';
+AWS IAM GRANT lambda_logout_user TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/LogoutUser';
 -- MigrateDSQL: Uses admin (no IAM GRANT needed, uses DbConnectAdmin)
-AWS IAM GRANT lambda_prune_devices TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-PruneDevices';
-AWS IAM GRANT lambda_refresh_token TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-RefreshToken';
-AWS IAM GRANT lambda_register_device TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-RegisterDevice';
-AWS IAM GRANT lambda_register_user TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-RegisterUser';
-AWS IAM GRANT lambda_s3_object_created TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-S3ObjectCreated';
-AWS IAM GRANT lambda_send_push_notification TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-SendPushNotification';
-AWS IAM GRANT lambda_start_file_upload TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-StartFileUpload';
-AWS IAM GRANT lambda_user_delete TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-UserDelete';
-AWS IAM GRANT lambda_webhook_feedly TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-WebhookFeedly';
+AWS IAM GRANT lambda_prune_devices TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/PruneDevices';
+AWS IAM GRANT lambda_refresh_token TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/RefreshToken';
+AWS IAM GRANT lambda_register_device TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/RegisterDevice';
+AWS IAM GRANT lambda_register_user TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/RegisterUser';
+AWS IAM GRANT lambda_s3_object_created TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/S3ObjectCreated';
+AWS IAM GRANT lambda_send_push_notification TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/SendPushNotification';
+AWS IAM GRANT lambda_start_file_upload TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/StartFileUpload';
+AWS IAM GRANT lambda_user_delete TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/UserDelete';
+AWS IAM GRANT lambda_user_subscribe TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/UserSubscribe';
+AWS IAM GRANT lambda_webhook_feedly TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/WebhookFeedly';
