@@ -76,7 +76,7 @@ resource "aws_lambda_function" "ListFiles" {
     variables = merge(local.common_lambda_env, {
       DEFAULT_FILE_SIZE         = 436743
       DEFAULT_FILE_NAME         = aws_s3_object.DefaultFile.key
-      DEFAULT_FILE_URL          = "https://${aws_s3_object.DefaultFile.bucket}.s3.amazonaws.com/${aws_s3_object.DefaultFile.key}"
+      DEFAULT_FILE_URL          = "https://${aws_cloudfront_distribution.MediaFiles.domain_name}/${aws_s3_object.DefaultFile.key}"
       DEFAULT_FILE_CONTENT_TYPE = aws_s3_object.DefaultFile.content_type
       OTEL_SERVICE_NAME         = local.list_files_function_name
       DSQL_ROLE_NAME            = local.lambda_dsql_roles["ListFiles"].role_name
