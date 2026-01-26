@@ -1,5 +1,5 @@
 # Auto-generated Lambda IAM policies from @RequiresServices and @RequiresDynamoDB decorators
-# Generated at: 2026-01-25T00:55:22.747Z
+# Generated at: 2026-01-26T02:47:43.258Z
 # Source: build/service-permissions.json, build/dynamodb-permissions.json
 #
 # DO NOT EDIT - regenerate with: pnpm run generate:service-iam-policies
@@ -23,7 +23,7 @@ data "aws_iam_policy_document" "ApiGatewayAuthorizer_services" {
 }
 
 resource "aws_iam_policy" "ApiGatewayAuthorizer_services" {
-  name   = "${var.resource_prefix}-ApiGatewayAuthorizer-services"
+  name   = "ApiGatewayAuthorizer-services"
   policy = data.aws_iam_policy_document.ApiGatewayAuthorizer_services.json
   tags   = local.common_tags
 }
@@ -48,7 +48,7 @@ data "aws_iam_policy_document" "RegisterDevice_services" {
 }
 
 resource "aws_iam_policy" "RegisterDevice_services" {
-  name   = "${var.resource_prefix}-RegisterDevice-services"
+  name   = "RegisterDevice-services"
   policy = data.aws_iam_policy_document.RegisterDevice_services.json
   tags   = local.common_tags
 }
@@ -68,7 +68,7 @@ data "aws_iam_policy_document" "S3ObjectCreated_services" {
 }
 
 resource "aws_iam_policy" "S3ObjectCreated_services" {
-  name   = "${var.resource_prefix}-S3ObjectCreated-services"
+  name   = "S3ObjectCreated-services"
   policy = data.aws_iam_policy_document.S3ObjectCreated_services.json
   tags   = local.common_tags
 }
@@ -93,7 +93,7 @@ data "aws_iam_policy_document" "SendPushNotification_services" {
 }
 
 resource "aws_iam_policy" "SendPushNotification_services" {
-  name   = "${var.resource_prefix}-SendPushNotification-services"
+  name   = "SendPushNotification-services"
   policy = data.aws_iam_policy_document.SendPushNotification_services.json
   tags   = local.common_tags
 }
@@ -123,7 +123,7 @@ data "aws_iam_policy_document" "StartFileUpload_services" {
 }
 
 resource "aws_iam_policy" "StartFileUpload_services" {
-  name   = "${var.resource_prefix}-StartFileUpload-services"
+  name   = "StartFileUpload-services"
   policy = data.aws_iam_policy_document.StartFileUpload_services.json
   tags   = local.common_tags
 }
@@ -153,7 +153,7 @@ data "aws_iam_policy_document" "WebhookFeedly_services" {
 }
 
 resource "aws_iam_policy" "WebhookFeedly_services" {
-  name   = "${var.resource_prefix}-WebhookFeedly-services"
+  name   = "WebhookFeedly-services"
   policy = data.aws_iam_policy_document.WebhookFeedly_services.json
   tags   = local.common_tags
 }
