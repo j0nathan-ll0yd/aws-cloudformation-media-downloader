@@ -158,7 +158,7 @@ function generateLambdaPolicies(
   lines.push('}')
   lines.push('')
   lines.push(`resource "aws_iam_policy" "${lambdaName}_services" {`)
-  lines.push(`  name   = "${lambdaName}-services"`)
+  lines.push(`  name   = "\${var.resource_prefix}-${lambdaName}-services"`)
   lines.push(`  policy = data.aws_iam_policy_document.${lambdaName}_services.json`)
   lines.push('  tags   = local.common_tags')
   lines.push('}')

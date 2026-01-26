@@ -1,5 +1,5 @@
 # Auto-generated Lambda IAM policies from @RequiresServices and @RequiresDynamoDB decorators
-# Generated at: 2026-01-26T03:03:06.057Z
+# Generated at: 2026-01-26T03:32:36.920Z
 # Source: build/service-permissions.json, build/dynamodb-permissions.json
 #
 # DO NOT EDIT - regenerate with: pnpm run generate:service-iam-policies
@@ -12,7 +12,7 @@
 data "aws_iam_policy_document" "ApiGatewayAuthorizer_services" {
   # API Gateway: *
   statement {
-    actions = ["apigateway:GET"]
+    actions   = ["apigateway:GET"]
     resources = [
       "arn:aws:apigateway:${data.aws_region.current.name}::/apikeys",
       "arn:aws:apigateway:${data.aws_region.current.name}::/apikeys/*",
@@ -23,7 +23,7 @@ data "aws_iam_policy_document" "ApiGatewayAuthorizer_services" {
 }
 
 resource "aws_iam_policy" "ApiGatewayAuthorizer_services" {
-  name   = "ApiGatewayAuthorizer-services"
+  name   = "${var.resource_prefix}-ApiGatewayAuthorizer-services"
   policy = data.aws_iam_policy_document.ApiGatewayAuthorizer_services.json
   tags   = local.common_tags
 }
@@ -48,7 +48,7 @@ data "aws_iam_policy_document" "RegisterDevice_services" {
 }
 
 resource "aws_iam_policy" "RegisterDevice_services" {
-  name   = "RegisterDevice-services"
+  name   = "${var.resource_prefix}-RegisterDevice-services"
   policy = data.aws_iam_policy_document.RegisterDevice_services.json
   tags   = local.common_tags
 }
@@ -68,7 +68,7 @@ data "aws_iam_policy_document" "S3ObjectCreated_services" {
 }
 
 resource "aws_iam_policy" "S3ObjectCreated_services" {
-  name   = "S3ObjectCreated-services"
+  name   = "${var.resource_prefix}-S3ObjectCreated-services"
   policy = data.aws_iam_policy_document.S3ObjectCreated_services.json
   tags   = local.common_tags
 }
@@ -93,7 +93,7 @@ data "aws_iam_policy_document" "SendPushNotification_services" {
 }
 
 resource "aws_iam_policy" "SendPushNotification_services" {
-  name   = "SendPushNotification-services"
+  name   = "${var.resource_prefix}-SendPushNotification-services"
   policy = data.aws_iam_policy_document.SendPushNotification_services.json
   tags   = local.common_tags
 }
@@ -123,7 +123,7 @@ data "aws_iam_policy_document" "StartFileUpload_services" {
 }
 
 resource "aws_iam_policy" "StartFileUpload_services" {
-  name   = "StartFileUpload-services"
+  name   = "${var.resource_prefix}-StartFileUpload-services"
   policy = data.aws_iam_policy_document.StartFileUpload_services.json
   tags   = local.common_tags
 }
@@ -153,7 +153,7 @@ data "aws_iam_policy_document" "WebhookFeedly_services" {
 }
 
 resource "aws_iam_policy" "WebhookFeedly_services" {
-  name   = "WebhookFeedly-services"
+  name   = "${var.resource_prefix}-WebhookFeedly-services"
   policy = data.aws_iam_policy_document.WebhookFeedly_services.json
   tags   = local.common_tags
 }
