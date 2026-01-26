@@ -1,12 +1,12 @@
 # Auto-generated from @RequiresTable decorators
 # Do not edit manually - run: pnpm run generate:dsql-permissions
-# Generated at: 2026-01-26T05:40:17.309Z
+# Generated at: 2026-01-26T05:47:53.974Z
 
 locals {
   # Per-Lambda PostgreSQL role configuration
   # Maps Lambda function names to their PostgreSQL role and admin status
   lambda_dsql_roles = {
-    "ApiGatewayAuthorizer"  = {
+    "ApiGatewayAuthorizer" = {
       role_name      = "lambda_api_gateway_authorizer"
       requires_admin = false
     }
@@ -14,59 +14,59 @@ locals {
       role_name      = "lambda_cleanup_expired_records"
       requires_admin = false
     }
-    "ListFiles"             = {
+    "ListFiles" = {
       role_name      = "lambda_list_files"
       requires_admin = false
     }
-    "LoginUser"             = {
+    "LoginUser" = {
       role_name      = "lambda_login_user"
       requires_admin = false
     }
-    "LogoutUser"            = {
+    "LogoutUser" = {
       role_name      = "lambda_logout_user"
       requires_admin = false
     }
-    "MigrateDSQL"           = {
+    "MigrateDSQL" = {
       role_name      = "admin"
       requires_admin = true
     }
-    "PruneDevices"          = {
+    "PruneDevices" = {
       role_name      = "lambda_prune_devices"
       requires_admin = false
     }
-    "RefreshToken"          = {
+    "RefreshToken" = {
       role_name      = "lambda_refresh_token"
       requires_admin = false
     }
-    "RegisterDevice"        = {
+    "RegisterDevice" = {
       role_name      = "lambda_register_device"
       requires_admin = false
     }
-    "RegisterUser"          = {
+    "RegisterUser" = {
       role_name      = "lambda_register_user"
       requires_admin = false
     }
-    "S3ObjectCreated"       = {
+    "S3ObjectCreated" = {
       role_name      = "lambda_s3_object_created"
       requires_admin = false
     }
-    "SendPushNotification"  = {
+    "SendPushNotification" = {
       role_name      = "lambda_send_push_notification"
       requires_admin = false
     }
-    "StartFileUpload"       = {
+    "StartFileUpload" = {
       role_name      = "lambda_start_file_upload"
       requires_admin = false
     }
-    "UserDelete"            = {
+    "UserDelete" = {
       role_name      = "lambda_user_delete"
       requires_admin = false
     }
-    "UserSubscribe"         = {
+    "UserSubscribe" = {
       role_name      = "lambda_user_subscribe"
       requires_admin = false
     }
-    "WebhookFeedly"         = {
+    "WebhookFeedly" = {
       role_name      = "lambda_webhook_feedly"
       requires_admin = false
     }
