@@ -232,13 +232,21 @@ async function main(): Promise<void> {
 
   const content = header + policies.join('\n\n') + '\n'
 
-  // Write to temp file, format with tofu fmt, then compare
+  // Write to temp file, format with tofu fmt if available, then compare
   const outputPath = join(projectRoot, 'terraform/generated_service_permissions.tf')
-  const tempPath = join(projectRoot, 'terraform/generated_service_permissions_tmp.tf')
-  writeFileSync(tempPath, content)
-  execSync(`tofu fmt ${tempPath}`, {stdio: 'pipe'})
-  const formattedContent = readFileSync(tempPath, 'utf-8')
-  unlinkSync(tempPath)
+  let formattedContent = content
+
+  // Try to format with tofu if available (optional - may not be installed in CI)
+  try {
+    execSync('which tofu', {stdio: 'pipe'})
+    const tempPath = join(projectRoot, 'terraform/generated_service_permissions_tmp.tf')
+    writeFileSync(tempPath, content)
+    execSync(`tofu fmt ${tempPath}`, {stdio: 'pipe'})
+    formattedContent = readFileSync(tempPath, 'utf-8')
+    unlinkSync(tempPath)
+  } catch {
+    console.log('Note: tofu not installed, skipping Terraform formatting')
+  }
 
   const result = writeIfChanged(outputPath, formattedContent)
 

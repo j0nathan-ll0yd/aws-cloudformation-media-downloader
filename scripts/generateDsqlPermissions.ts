@@ -328,14 +328,23 @@ async function main(): Promise<void> {
     mkdirSync(buildDir, {recursive: true})
   }
 
-  // Generate Terraform HCL - format with tofu fmt before comparing
+  // Generate Terraform HCL - format with tofu fmt if available
   const terraformHcl = generateTerraformHcl(manifest)
   const terraformPath = join(terraformDir, 'dsql_permissions.tf')
-  const tempPath = join(terraformDir, 'dsql_permissions_tmp.tf')
-  writeFileSync(tempPath, terraformHcl)
-  execSync(`tofu fmt ${tempPath}`, {stdio: 'pipe'})
-  const formattedTerraform = readFileSync(tempPath, 'utf-8')
-  unlinkSync(tempPath)
+  let formattedTerraform = terraformHcl
+
+  // Try to format with tofu if available (optional - may not be installed in CI)
+  try {
+    execSync('which tofu', {stdio: 'pipe'})
+    const tempPath = join(terraformDir, 'dsql_permissions_tmp.tf')
+    writeFileSync(tempPath, terraformHcl)
+    execSync(`tofu fmt ${tempPath}`, {stdio: 'pipe'})
+    formattedTerraform = readFileSync(tempPath, 'utf-8')
+    unlinkSync(tempPath)
+  } catch {
+    console.log('Note: tofu not installed, skipping Terraform formatting')
+  }
+
   const terraformResult = writeIfChanged(terraformPath, formattedTerraform)
 
   // Generate SQL migration
