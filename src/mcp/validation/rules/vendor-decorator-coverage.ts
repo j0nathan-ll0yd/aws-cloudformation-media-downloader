@@ -1,6 +1,6 @@
 /**
  * Vendor Decorator Coverage Rule
- * HIGH: All public static methods in vendor wrapper classes must have @RequiresXxx decorators
+ * HIGH: All public static methods in vendor wrapper classes must have \@RequiresXxx decorators
  *
  * This rule ensures that AWS service permissions are explicitly declared on all vendor wrapper methods.
  * Permission decorators are extracted at build time to generate Lambda IAM policies automatically.

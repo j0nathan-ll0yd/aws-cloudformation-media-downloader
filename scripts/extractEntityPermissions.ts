@@ -3,12 +3,12 @@
  *
  * Phase 8.3: Function-Level Database Permission Extraction
  *
- * Uses ts-morph to extract @RequiresTable decorator metadata from entity query classes
+ * Uses ts-morph to extract \@RequiresTable decorator metadata from entity query classes
  * and traces Lambda dependencies to determine database access requirements.
  *
  * The script:
- * 1. Parses entity query classes for @RequiresTable method decorators
- * 2. Builds method → permission map (e.g., UserQueries.getUser → {users, SELECT})
+ * 1. Parses entity query classes for \@RequiresTable method decorators
+ * 2. Builds method -\> permission map (e.g., UserQueries.getUser -\> \{users, SELECT\})
  * 3. Uses build/graph.json to trace Lambda dependencies
  * 4. Handles barrel import expansion (src/entities/queries → all query files)
  * 5. Aggregates permissions from all entity query methods each Lambda transitively imports
@@ -83,7 +83,7 @@ function loadDependencyGraph(): DependencyGraph | null {
 
 /**
  * Build a map from exported function name to source file path.
- * Parses barrel re-exports like: export { getUser } from './userQueries'
+ * Parses barrel re-exports like: export \{ getUser \} from './userQueries'
  */
 function buildBarrelExportMap(project: Project, barrelPath: string): Record<string, string> {
   const absolutePath = join(projectRoot, barrelPath)
@@ -128,7 +128,6 @@ function buildBarrelExportMap(project: Project, barrelPath: string): Record<stri
  */
 function buildFunctionToMethodMap(project: Project, entityFilePaths: string[]): Record<string, string> {
   const functionToMethod: Record<string, string> = {}
-
   for (const filePath of entityFilePaths) {
     const absolutePath = join(projectRoot, filePath)
     const sourceFile = project.getSourceFile(absolutePath)
@@ -153,7 +152,6 @@ function buildFunctionToMethodMap(project: Project, entityFilePaths: string[]): 
       }
     }
   }
-
   return functionToMethod
 }
 
@@ -209,7 +207,7 @@ function extractLambdaName(filePath: string): string {
  * Compute access level from declared operations.
  * - readonly: Only SELECT operations
  * - readwrite: Any INSERT, UPDATE, or DELETE operations
- * - admin: All operations on all tables (detected by having all ops on >=5 tables)
+ * - admin: All operations on all tables (detected by having all ops on \>=5 tables)
  */
 function computeAccessLevel(tables: TablePermission[]): 'readonly' | 'readwrite' | 'admin' {
   const hasAllOps = tables.every((t) =>
@@ -223,7 +221,7 @@ function computeAccessLevel(tables: TablePermission[]): 'readonly' | 'readwrite'
 }
 
 /**
- * Extract @RequiresTable decorators from entity query class methods
+ * Extract \@RequiresTable decorators from entity query class methods
  */
 function extractEntityPermissions(project: Project): Record<string, EntityMethodPermission> {
   const entityPermissions: Record<string, EntityMethodPermission> = {}
@@ -417,7 +415,6 @@ function traceLambdaDependencies(
  */
 function deduplicatePermissions(permissions: TablePermission[]): TablePermission[] {
   const merged = new Map<string, TablePermission>()
-
   for (const perm of permissions) {
     const key = perm.table
     const existing = merged.get(key)
@@ -429,7 +426,6 @@ function deduplicatePermissions(permissions: TablePermission[]): TablePermission
       merged.set(key, {...perm, operations: [...perm.operations].sort()})
     }
   }
-
   return Array.from(merged.values()).sort((a, b) => a.table.localeCompare(b.table))
 }
 
