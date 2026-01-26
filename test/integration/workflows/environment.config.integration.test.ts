@@ -123,7 +123,7 @@ describe('Environment Configuration', () => {
       expect(content).toContain('resource_prefix    = "stag"')
       expect(content).toContain('log_level          = "DEBUG"')
       expect(content).toContain('log_retention_days = 3')
-      expect(content).toContain('enable_cloudwatch_alarms = false')
+      expect(content).toContain('enable_cloudwatch_alarms    = false')
     })
 
     it('should have production.tfvars that matches fixture', () => {
@@ -135,7 +135,7 @@ describe('Environment Configuration', () => {
       expect(content).toContain('resource_prefix    = "prod"')
       expect(content).toContain('log_level          = "INFO"')
       expect(content).toContain('log_retention_days = 7')
-      expect(content).toContain('enable_cloudwatch_alarms = true')
+      expect(content).toContain('enable_cloudwatch_alarms    = true')
     })
   })
 
