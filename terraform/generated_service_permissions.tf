@@ -1,5 +1,5 @@
 # Auto-generated Lambda IAM policies from @RequiresServices and @RequiresDynamoDB decorators
-# Generated at: 2026-01-26T03:32:36.920Z
+# Generated at: 2026-01-26T04:47:23.300Z
 # Source: build/service-permissions.json, build/dynamodb-permissions.json
 #
 # DO NOT EDIT - regenerate with: pnpm run generate:service-iam-policies
@@ -12,7 +12,7 @@
 data "aws_iam_policy_document" "ApiGatewayAuthorizer_services" {
   # API Gateway: *
   statement {
-    actions   = ["apigateway:GET"]
+    actions = ["apigateway:GET"]
     resources = [
       "arn:aws:apigateway:${data.aws_region.current.name}::/apikeys",
       "arn:aws:apigateway:${data.aws_region.current.name}::/apikeys/*",
