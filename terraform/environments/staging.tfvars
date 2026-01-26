@@ -21,7 +21,7 @@ dsql_deletion_protection = false
 
 # Disable monitoring to reduce costs
 enable_cloudwatch_dashboard = false
-enable_cloudwatch_alarms = false
+enable_cloudwatch_alarms    = false
 
 # Lower concurrency in staging
 download_reserved_concurrency = 2

@@ -2,7 +2,7 @@
  * Tests for database-permissions validation rule
  *
  * DEPRECATED: This rule is no longer active.
- * Database permissions are now derived automatically from @RequiresTable decorators
+ * Database permissions are now derived automatically from \@RequiresTable decorators
  * on entity query methods via build-time call-graph analysis.
  * See: scripts/extractEntityPermissions.ts
  */

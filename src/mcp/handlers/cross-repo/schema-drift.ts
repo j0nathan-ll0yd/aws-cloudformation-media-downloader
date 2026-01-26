@@ -179,13 +179,11 @@ function extractColumnType(def: string): string {
     [/^integer\(/, 'INTEGER'],
     [/^timestamp\(/, 'TIMESTAMP WITH TIME ZONE']
   ]
-
   for (const [pattern, sqlType] of typeMatches) {
     if (pattern.test(def)) {
       return sqlType
     }
   }
-
   return 'UNKNOWN'
 }
 
@@ -497,7 +495,6 @@ function detectDrift(drizzleTables: DrizzleTable[], migrationTables: MigrationTa
  */
 export async function handleSchemaDriftQuery(args: SchemaDriftArgs) {
   const {query, table} = args
-
   try {
     switch (query) {
       case 'check': {

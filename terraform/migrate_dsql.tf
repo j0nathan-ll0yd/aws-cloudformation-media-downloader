@@ -76,6 +76,7 @@ resource "aws_lambda_function" "MigrateDSQL" {
       OTEL_SERVICE_NAME = local.migrate_dsql_function_name
       DSQL_ROLE_NAME    = local.lambda_dsql_roles["MigrateDSQL"].role_name
       AWS_ACCOUNT_ID    = data.aws_caller_identity.current.account_id
+      RESOURCE_PREFIX   = var.resource_prefix
     })
   }
 

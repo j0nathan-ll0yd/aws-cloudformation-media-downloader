@@ -1,5 +1,5 @@
 # Auto-generated Lambda IAM policies from @RequiresServices and @RequiresDynamoDB decorators
-# Generated at: 2026-01-25T00:55:22.747Z
+# Generated at: 2026-01-26T05:48:29.720Z
 # Source: build/service-permissions.json, build/dynamodb-permissions.json
 #
 # DO NOT EDIT - regenerate with: pnpm run generate:service-iam-policies
@@ -14,10 +14,10 @@ data "aws_iam_policy_document" "ApiGatewayAuthorizer_services" {
   statement {
     actions = ["apigateway:GET"]
     resources = [
-      "arn:aws:apigateway:${data.aws_region.current.name}::/apikeys",
-      "arn:aws:apigateway:${data.aws_region.current.name}::/apikeys/*",
-      "arn:aws:apigateway:${data.aws_region.current.name}::/usageplans",
-      "arn:aws:apigateway:${data.aws_region.current.name}::/usageplans/*"
+      "arn:aws:apigateway:${data.aws_region.current.id}::/apikeys",
+      "arn:aws:apigateway:${data.aws_region.current.id}::/apikeys/*",
+      "arn:aws:apigateway:${data.aws_region.current.id}::/usageplans",
+      "arn:aws:apigateway:${data.aws_region.current.id}::/usageplans/*"
     ]
   }
 }
@@ -31,6 +31,31 @@ resource "aws_iam_policy" "ApiGatewayAuthorizer_services" {
 resource "aws_iam_role_policy_attachment" "ApiGatewayAuthorizer_services" {
   role       = aws_iam_role.ApiGatewayAuthorizer.name
   policy_arn = aws_iam_policy.ApiGatewayAuthorizer_services.arn
+}
+
+# PruneDevices: SNS permissions
+data "aws_iam_policy_document" "PruneDevices_services" {
+  # SNS: OfflineMediaDownloader
+  statement {
+    actions   = ["sns:CreatePlatformEndpoint", "sns:DeleteEndpoint", "sns:Publish"]
+    resources = [aws_sns_platform_application.OfflineMediaDownloader[0].arn]
+  }
+  # SNS: PushNotifications
+  statement {
+    actions   = ["sns:ListSubscriptionsByTopic", "sns:Subscribe", "sns:Unsubscribe"]
+    resources = [aws_sns_topic.PushNotifications.arn]
+  }
+}
+
+resource "aws_iam_policy" "PruneDevices_services" {
+  name   = "${var.resource_prefix}-PruneDevices-services"
+  policy = data.aws_iam_policy_document.PruneDevices_services.json
+  tags   = local.common_tags
+}
+
+resource "aws_iam_role_policy_attachment" "PruneDevices_services" {
+  role       = aws_iam_role.PruneDevices.name
+  policy_arn = aws_iam_policy.PruneDevices_services.arn
 }
 
 # RegisterDevice: SNS permissions
@@ -58,8 +83,18 @@ resource "aws_iam_role_policy_attachment" "RegisterDevice_services" {
   policy_arn = aws_iam_policy.RegisterDevice_services.arn
 }
 
-# S3ObjectCreated: SQS permissions
+# S3ObjectCreated: SNS + SQS permissions
 data "aws_iam_policy_document" "S3ObjectCreated_services" {
+  # SNS: OfflineMediaDownloader
+  statement {
+    actions   = ["sns:CreatePlatformEndpoint", "sns:DeleteEndpoint", "sns:Publish"]
+    resources = [aws_sns_platform_application.OfflineMediaDownloader[0].arn]
+  }
+  # SNS: PushNotifications
+  statement {
+    actions   = ["sns:ListSubscriptionsByTopic", "sns:Subscribe", "sns:Unsubscribe"]
+    resources = [aws_sns_topic.PushNotifications.arn]
+  }
   # SQS: SendPushNotification
   statement {
     actions   = ["sqs:SendMessage"]
@@ -78,7 +113,7 @@ resource "aws_iam_role_policy_attachment" "S3ObjectCreated_services" {
   policy_arn = aws_iam_policy.S3ObjectCreated_services.arn
 }
 
-# SendPushNotification: SNS permissions
+# SendPushNotification: SNS + SQS permissions
 data "aws_iam_policy_document" "SendPushNotification_services" {
   # SNS: OfflineMediaDownloader
   statement {
@@ -89,6 +124,11 @@ data "aws_iam_policy_document" "SendPushNotification_services" {
   statement {
     actions   = ["sns:ListSubscriptionsByTopic", "sns:Subscribe", "sns:Unsubscribe"]
     resources = [aws_sns_topic.PushNotifications.arn]
+  }
+  # SQS: SendPushNotification
+  statement {
+    actions   = ["sqs:SendMessage"]
+    resources = [aws_sqs_queue.SendPushNotification.arn]
   }
 }
 
@@ -103,7 +143,7 @@ resource "aws_iam_role_policy_attachment" "SendPushNotification_services" {
   policy_arn = aws_iam_policy.SendPushNotification_services.arn
 }
 
-# StartFileUpload: EventBridge + S3 + SQS permissions
+# StartFileUpload: EventBridge + S3 + SNS + SQS permissions
 data "aws_iam_policy_document" "StartFileUpload_services" {
   # EventBridge: MediaDownloader
   statement {
@@ -114,6 +154,16 @@ data "aws_iam_policy_document" "StartFileUpload_services" {
   statement {
     actions   = ["s3:AbortMultipartUpload", "s3:HeadObject", "s3:ListMultipartUploadParts", "s3:PutObject"]
     resources = ["${aws_s3_bucket.Files.arn}/*"]
+  }
+  # SNS: OfflineMediaDownloader
+  statement {
+    actions   = ["sns:CreatePlatformEndpoint", "sns:DeleteEndpoint", "sns:Publish"]
+    resources = [aws_sns_platform_application.OfflineMediaDownloader[0].arn]
+  }
+  # SNS: PushNotifications
+  statement {
+    actions   = ["sns:ListSubscriptionsByTopic", "sns:Subscribe", "sns:Unsubscribe"]
+    resources = [aws_sns_topic.PushNotifications.arn]
   }
   # SQS: SendPushNotification
   statement {
@@ -133,12 +183,77 @@ resource "aws_iam_role_policy_attachment" "StartFileUpload_services" {
   policy_arn = aws_iam_policy.StartFileUpload_services.arn
 }
 
-# WebhookFeedly: EventBridge + SQS + DynamoDB permissions
+# UserDelete: SNS permissions
+data "aws_iam_policy_document" "UserDelete_services" {
+  # SNS: OfflineMediaDownloader
+  statement {
+    actions   = ["sns:CreatePlatformEndpoint", "sns:DeleteEndpoint", "sns:Publish"]
+    resources = [aws_sns_platform_application.OfflineMediaDownloader[0].arn]
+  }
+  # SNS: PushNotifications
+  statement {
+    actions   = ["sns:ListSubscriptionsByTopic", "sns:Subscribe", "sns:Unsubscribe"]
+    resources = [aws_sns_topic.PushNotifications.arn]
+  }
+}
+
+resource "aws_iam_policy" "UserDelete_services" {
+  name   = "${var.resource_prefix}-UserDelete-services"
+  policy = data.aws_iam_policy_document.UserDelete_services.json
+  tags   = local.common_tags
+}
+
+resource "aws_iam_role_policy_attachment" "UserDelete_services" {
+  role       = aws_iam_role.UserDelete.name
+  policy_arn = aws_iam_policy.UserDelete_services.arn
+}
+
+# UserSubscribe: SNS permissions
+data "aws_iam_policy_document" "UserSubscribe_services" {
+  # SNS: OfflineMediaDownloader
+  statement {
+    actions   = ["sns:CreatePlatformEndpoint", "sns:DeleteEndpoint", "sns:Publish"]
+    resources = [aws_sns_platform_application.OfflineMediaDownloader[0].arn]
+  }
+  # SNS: PushNotifications
+  statement {
+    actions   = ["sns:ListSubscriptionsByTopic", "sns:Subscribe", "sns:Unsubscribe"]
+    resources = [aws_sns_topic.PushNotifications.arn]
+  }
+}
+
+resource "aws_iam_policy" "UserSubscribe_services" {
+  name   = "${var.resource_prefix}-UserSubscribe-services"
+  policy = data.aws_iam_policy_document.UserSubscribe_services.json
+  tags   = local.common_tags
+}
+
+resource "aws_iam_role_policy_attachment" "UserSubscribe_services" {
+  role       = aws_iam_role.UserSubscribe.name
+  policy_arn = aws_iam_policy.UserSubscribe_services.arn
+}
+
+# WebhookFeedly: EventBridge + S3 + SNS + SQS + DynamoDB permissions
 data "aws_iam_policy_document" "WebhookFeedly_services" {
   # EventBridge: MediaDownloader
   statement {
     actions   = ["events:PutEvents"]
     resources = [aws_cloudwatch_event_bus.MediaDownloader.arn]
+  }
+  # S3: Files/*
+  statement {
+    actions   = ["s3:AbortMultipartUpload", "s3:HeadObject", "s3:ListMultipartUploadParts", "s3:PutObject"]
+    resources = ["${aws_s3_bucket.Files.arn}/*"]
+  }
+  # SNS: OfflineMediaDownloader
+  statement {
+    actions   = ["sns:CreatePlatformEndpoint", "sns:DeleteEndpoint", "sns:Publish"]
+    resources = [aws_sns_platform_application.OfflineMediaDownloader[0].arn]
+  }
+  # SNS: PushNotifications
+  statement {
+    actions   = ["sns:ListSubscriptionsByTopic", "sns:Subscribe", "sns:Unsubscribe"]
+    resources = [aws_sns_topic.PushNotifications.arn]
   }
   # SQS: SendPushNotification
   statement {

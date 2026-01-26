@@ -6,7 +6,7 @@
  * to determine Lambda database access requirements automatically.
  *
  * The extraction script traces Lambda → entity query dependencies to:
- * 1. Build method → permission map (e.g., UserQueries.getUser → {Users, Select})
+ * 1. Build method -\> permission map (e.g., UserQueries.getUser -\> \{Users, Select\})
  * 2. Use build/graph.json to trace Lambda dependencies
  * 3. Aggregate permissions from all entity query methods each Lambda transitively imports
  * 4. Generate database role permissions for each Lambda

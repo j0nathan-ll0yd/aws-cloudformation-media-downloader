@@ -14,7 +14,8 @@
  *
  * @see docs/wiki/Infrastructure/Database-Permissions.md
  */
-import {existsSync, mkdirSync, readFileSync} from 'fs'
+import {execSync} from 'child_process'
+import {existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync} from 'fs'
 import {dirname, join} from 'path'
 import {fileURLToPath} from 'url'
 import {writeIfChanged, WriteResult} from './lib/writeIfChanged.js'
@@ -82,13 +83,11 @@ function generateTerraformHcl(manifest: PermissionsManifest): string {
   ]
 
   const entries = Object.entries(manifest.lambdas).sort((a, b) => a[0].localeCompare(b[0]))
-  const maxLen = Math.max(...entries.map(([name]) => name.length))
 
   for (const [lambdaName, perms] of entries) {
     const roleName = lambdaNameToRoleName(lambdaName)
     const requiresAdmin = perms.computedAccessLevel === 'admin'
-    const padding = ' '.repeat(maxLen - lambdaName.length)
-    lines.push(`    "${lambdaName}"${padding} = {`)
+    lines.push(`    "${lambdaName}" = {`)
     lines.push(`      role_name      = "${roleName}"`)
     lines.push(`      requires_admin = ${requiresAdmin}`)
     lines.push('    }')
@@ -185,7 +184,7 @@ function generateSqlMigration(manifest: PermissionsManifest): string {
   lines.push('-- AWS IAM GRANT (associate Lambda IAM roles with PostgreSQL roles)')
   lines.push('-- =============================================================================')
   lines.push('-- These statements link AWS IAM roles to PostgreSQL roles for authentication.')
-  lines.push('-- ${AWS_ACCOUNT_ID} is replaced at runtime by MigrateDSQL handler.')
+  lines.push('-- ${AWS_ACCOUNT_ID} and ${RESOURCE_PREFIX} are replaced at runtime by MigrateDSQL handler.')
   lines.push('')
 
   // AWS IAM GRANT statements
@@ -195,7 +194,7 @@ function generateSqlMigration(manifest: PermissionsManifest): string {
       continue
     }
     const roleName = lambdaNameToRoleName(lambdaName)
-    lines.push(`AWS IAM GRANT ${roleName} TO 'arn:aws:iam::\${AWS_ACCOUNT_ID}:role/${lambdaName}';`)
+    lines.push(`AWS IAM GRANT ${roleName} TO 'arn:aws:iam::\${AWS_ACCOUNT_ID}:role/\${RESOURCE_PREFIX}-${lambdaName}';`)
   }
 
   lines.push('')
@@ -329,10 +328,24 @@ async function main(): Promise<void> {
     mkdirSync(buildDir, {recursive: true})
   }
 
-  // Generate Terraform HCL
+  // Generate Terraform HCL - format with tofu fmt if available
   const terraformHcl = generateTerraformHcl(manifest)
   const terraformPath = join(terraformDir, 'dsql_permissions.tf')
-  const terraformResult = writeIfChanged(terraformPath, terraformHcl)
+  let formattedTerraform = terraformHcl
+
+  // Try to format with tofu if available (optional - may not be installed in CI)
+  try {
+    execSync('which tofu', {stdio: 'pipe'})
+    const tempPath = join(terraformDir, 'dsql_permissions_tmp.tf')
+    writeFileSync(tempPath, terraformHcl)
+    execSync(`tofu fmt ${tempPath}`, {stdio: 'pipe'})
+    formattedTerraform = readFileSync(tempPath, 'utf-8')
+    unlinkSync(tempPath)
+  } catch {
+    console.log('Note: tofu not installed, skipping Terraform formatting')
+  }
+
+  const terraformResult = writeIfChanged(terraformPath, formattedTerraform)
 
   // Generate SQL migration
   const sqlMigration = generateSqlMigration(manifest)

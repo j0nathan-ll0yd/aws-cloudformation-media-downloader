@@ -3,8 +3,8 @@
  * MEDIUM: Validates consistent logging message patterns
  *
  * This rule enforces the conventions documented in docs/wiki/Conventions/Logging-Conventions.md:
- * - Function entry/exit should use arrow notation (<=, =>)
- * - Response logging should use => not ==
+ * - Function entry/exit should use arrow notation (\<=, =\>)
+ * - Response logging should use =\> not ==
  * - No dotted message patterns like func.nested.path
  *
  * @see docs/wiki/Conventions/Logging-Conventions.md
@@ -18,7 +18,7 @@ import type {ValidationRule, Violation} from '../types'
 const RULE_NAME = 'logging-conventions'
 const SEVERITY = 'MEDIUM' as const
 
-/** Pattern to detect response == (should be response =>) */
+/** Pattern to detect response == (should be response =\>) */
 const RESPONSE_DOUBLE_EQUALS_PATTERN = /['"]response\s*==['"]|['"]response\s*==$/
 
 /** Pattern to detect dotted message patterns like func.nested.path */

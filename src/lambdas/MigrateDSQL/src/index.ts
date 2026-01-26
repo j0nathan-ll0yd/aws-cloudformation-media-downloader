@@ -21,6 +21,7 @@ import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
 import {addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
 import type {MigrationFile, MigrationResult} from '#types/lambda'
 import {InvokeHandler, metrics, MetricUnit} from '#lib/lambda/handlers'
+import {getRequiredEnv} from '#lib/system/env'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -204,6 +205,9 @@ class MigrateDSQLHandler extends InvokeHandler<MigrateDSQLInput, MigrationResult
   readonly operationName = 'MigrateDSQL'
 
   protected async executeInvoke(input: MigrateDSQLInput): Promise<MigrationResult> {
+    // Validate required env vars for migration substitution
+    getRequiredEnv('RESOURCE_PREFIX')
+
     // Track migration run
     metrics.addMetric('MigrationRun', MetricUnit.Count, 1)
 

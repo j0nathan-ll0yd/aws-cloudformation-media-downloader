@@ -3,7 +3,7 @@
  *
  * DEPRECATED: This rule is no longer active.
  *
- * As of PR #353, database permissions are now derived automatically from @RequiresTable
+ * As of PR #353, database permissions are now derived automatically from \@RequiresTable
  * decorators on entity query methods via build-time call-graph analysis. The @RequiresDatabase
  * decorator on Lambda handlers is no longer used.
  *

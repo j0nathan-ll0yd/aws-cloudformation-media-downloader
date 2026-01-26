@@ -177,7 +177,6 @@ export function recordConnectionLatency(latencyMs: number, isTokenRefresh: boole
 export function recordActiveConnections(count: number): void {
   const metric = metrics.singleMetric()
   metric.addMetric('DSQLActiveConnections', MetricUnit.Count, count)
-
   if (count > 1) {
     logDebug('multiple active connections detected', {count})
   }

@@ -7,7 +7,7 @@
  * 2. Extract Terraform resources
  * 3. Extract database permissions (Lambda handler @RequiresDatabase decorators)
  * 4. Extract service permissions (vendor wrappers)
- * 5. Extract entity permissions (entity query @RequiresTable decorators)
+ * 5. Extract entity permissions (entity query \@RequiresTable decorators)
  * 6. Extract DynamoDB permissions (Powertools idempotency)
  * 7. Generate unified manifest
  *
@@ -92,7 +92,6 @@ const EXTRACTORS: ExtractorConfig[] = [
  */
 function runExtractor(extractor: ExtractorConfig): 'success' | 'skipped' | 'error' {
   console.log(`\n=== Running ${extractor.name} extractor ===`)
-
   try {
     execSync(`pnpm run ${extractor.script}`, {
       cwd: projectRoot,

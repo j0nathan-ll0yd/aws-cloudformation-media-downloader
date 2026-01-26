@@ -11,7 +11,8 @@
  *
  * @see docs/wiki/Infrastructure/Lambda-Decorators.md
  */
-import {existsSync, readFileSync} from 'fs'
+import {execSync} from 'child_process'
+import {existsSync, readFileSync, unlinkSync, writeFileSync} from 'fs'
 import {dirname, join} from 'path'
 import {fileURLToPath} from 'url'
 import {writeIfChanged} from './lib/writeIfChanged.js'
@@ -67,10 +68,10 @@ function generateStatement(permission: ServicePermission, comment: string): stri
     // API Gateway requires specific ARN paths for resources
     // Format: arn:aws:apigateway:{region}::/{path}
     resourceArns = [
-      '"arn:aws:apigateway:${data.aws_region.current.name}::/apikeys"',
-      '"arn:aws:apigateway:${data.aws_region.current.name}::/apikeys/*"',
-      '"arn:aws:apigateway:${data.aws_region.current.name}::/usageplans"',
-      '"arn:aws:apigateway:${data.aws_region.current.name}::/usageplans/*"'
+      '"arn:aws:apigateway:${data.aws_region.current.id}::/apikeys"',
+      '"arn:aws:apigateway:${data.aws_region.current.id}::/apikeys/*"',
+      '"arn:aws:apigateway:${data.aws_region.current.id}::/usageplans"',
+      '"arn:aws:apigateway:${data.aws_region.current.id}::/usageplans/*"'
     ]
   } else if (permission.hasWildcard) {
     // For wildcard permissions (like S3 objects), append /* to the ARN
@@ -85,7 +86,7 @@ function generateStatement(permission: ServicePermission, comment: string): stri
 
   return `  # ${comment}
   statement {
-    actions   = [${actions}]
+    actions = [${actions}]
     resources = ${resourceArns.length === 1 ? `[${resourcesStr}]` : resourcesStr}
   }`
 }
@@ -113,7 +114,7 @@ function generateDynamoDBStatement(permission: DynamoDBPermission): string {
   const comment = `DynamoDB: ${permission.table}`
   return `  # ${comment}
   statement {
-    actions   = [${actions}]
+    actions = [${actions}]
     resources = [${permission.arnRef}]
   }`
 }
@@ -158,7 +159,7 @@ function generateLambdaPolicies(
   lines.push('}')
   lines.push('')
   lines.push(`resource "aws_iam_policy" "${lambdaName}_services" {`)
-  lines.push(`  name   = "${lambdaName}-services"`)
+  lines.push(`  name   = "\${var.resource_prefix}-${lambdaName}-services"`)
   lines.push(`  policy = data.aws_iam_policy_document.${lambdaName}_services.json`)
   lines.push('  tags   = local.common_tags')
   lines.push('}')
@@ -231,9 +232,23 @@ async function main(): Promise<void> {
 
   const content = header + policies.join('\n\n') + '\n'
 
-  // Write to terraform directory (only if content changed)
+  // Write to temp file, format with tofu fmt if available, then compare
   const outputPath = join(projectRoot, 'terraform/generated_service_permissions.tf')
-  const result = writeIfChanged(outputPath, content)
+  let formattedContent = content
+
+  // Try to format with tofu if available (optional - may not be installed in CI)
+  try {
+    execSync('which tofu', {stdio: 'pipe'})
+    const tempPath = join(projectRoot, 'terraform/generated_service_permissions_tmp.tf')
+    writeFileSync(tempPath, content)
+    execSync(`tofu fmt ${tempPath}`, {stdio: 'pipe'})
+    formattedContent = readFileSync(tempPath, 'utf-8')
+    unlinkSync(tempPath)
+  } catch {
+    console.log('Note: tofu not installed, skipping Terraform formatting')
+  }
+
+  const result = writeIfChanged(outputPath, formattedContent)
 
   if (result.written) {
     console.log(`\n${result.reason === 'new' ? 'Created' : 'Updated'}: ${outputPath}`)
