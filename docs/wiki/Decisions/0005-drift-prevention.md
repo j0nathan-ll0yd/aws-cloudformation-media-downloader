@@ -11,7 +11,7 @@ Accepted
 Terraform/OpenTofu state drift has caused significant issues:
 
 1. **EntityAlreadyExists Errors**: Resources exist in AWS but not in state, causing deployment failures
-2. **Duplicate Resources**: Multiple resources with similar names (e.g., `ListFiles`, `ListFiles-1`)
+2. **Duplicate Resources**: Multiple resources with similar names (for example, `ListFiles`, `ListFiles-1`)
 3. **Orphaned Resources**: Resources in AWS that are no longer managed, incurring unnecessary costs
 4. **Configuration Inconsistencies**: Manual AWS Console changes not reflected in IaC
 

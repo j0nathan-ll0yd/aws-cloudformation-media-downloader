@@ -53,7 +53,7 @@ Coverage should be a side effect of testing business logic, not a goal itself.
 
 ### Positive
 - Tests describe business requirements, not implementation
-- Fast unit test suites (< 1s total)
+- Fast unit test suites (under 1 second total)
 - Tests fail when logic breaks, not when SDKs change
 - Focus on workflows catches real integration bugs
 - Less test maintenance burden

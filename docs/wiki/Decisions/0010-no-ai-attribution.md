@@ -26,7 +26,7 @@ Issues with AI attribution:
 ### Forbidden Patterns
 - ❌ "Generated with [Claude Code]"
 - ❌ "Co-Authored-By: Claude <noreply@anthropic.com>"
-- ❌ Any mention of "Claude", "AI", "assistant", "generated"
+- ❌ Any mention of AI tool names or terms like "generated"
 - ❌ Robot emojis (🤖) or any emojis in commits
 - ❌ ANY attribution to AI tools
 

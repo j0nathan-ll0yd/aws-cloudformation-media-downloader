@@ -85,6 +85,6 @@ pnpm run test-remote-registerDevice
 
 ## Related
 
-- [LocalStack Testing](../Integration/LocalStack-Testing.md) - Local integration tests
+- [LocalStack Testing](../Testing/LocalStack-Testing.md) - Local integration tests
 - [ADR-0003: Testing Philosophy](0003-testing-philosophy.md) - Overall testing approach
 - [Coverage Philosophy](../Testing/Coverage-Philosophy.md) - What to test

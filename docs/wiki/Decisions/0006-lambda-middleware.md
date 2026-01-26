@@ -28,15 +28,14 @@ All Lambda handlers must use the `withPowertools` wrapper and an appropriate han
 
 ### Handler Structure
 ```typescript
-import {withPowertools} from '#lib/lambda/middleware/powertools'
-import {wrapApiHandler} from '#lib/lambda/middleware/api'
-import {response} from '#util/lambda-helpers'
+import {OptionalAuthHandler} from '#lib/lambda/handlers'
+import {buildValidatedResponse} from '#lib/lambda/responses'
 
-export const handler = withPowertools(wrapApiHandler(async ({event, context}: ApiHandlerParams) => {
+export const handler: OptionalAuthHandler = async ({event, context, metadata}) => {
   // Business logic only - no try-catch, no logging boilerplate
-  return response(context, 200, {data: result})
+  return buildValidatedResponse(context, 200, {data: result})
   // Errors automatically converted to 500 responses
-}))
+}
 ```
 
 ### Available Wrappers
@@ -79,7 +78,7 @@ export const handler = withPowertools(wrapApiHandler(...), {enableCustomMetrics:
 ### Negative
 - Learning curve for wrapper patterns
 - Must choose correct wrapper type
-- Wrappers add slight overhead (~5ms)
+- Wrappers add slight overhead (around 5 ms)
 
 ## Enforcement
 

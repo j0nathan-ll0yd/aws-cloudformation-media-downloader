@@ -87,4 +87,4 @@ export async function uploadToS3(bucket: string, key: string, body: Buffer): Pro
 
 - [Vendor Encapsulation Policy](../Conventions/Vendor-Encapsulation-Policy.md) - Implementation guide
 - [ADR-0004: Lazy Initialization](0004-lazy-initialization.md) - Related pattern
-- [LocalStack Testing](../Integration/LocalStack-Testing.md) - Local development
+- [LocalStack Testing](../Testing/LocalStack-Testing.md) - Local development

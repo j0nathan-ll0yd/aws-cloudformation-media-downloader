@@ -31,7 +31,7 @@ Project-specific terminology and acronyms used throughout the Media Downloader d
 | **Drizzle ORM** | TypeScript ORM providing type-safe database queries. Used with Aurora DSQL. |
 | **Entity Queries** | Functions in `src/entities/queries/` that encapsulate database operations via Drizzle ORM. |
 | **Prepared Statements** | Pre-compiled SQL statements in `preparedQueries.ts` for performance-critical operations. |
-| **Row Types** | TypeScript types suffixed with `Row` (e.g., `UserRow`) representing database table rows. |
+| **Row Types** | TypeScript types suffixed with `Row` (for example, `UserRow`) representing database table rows. |
 
 ## Development Patterns
 
@@ -39,7 +39,7 @@ Project-specific terminology and acronyms used throughout the Media Downloader d
 |------|------------|
 | **Convention Capture** | The system for detecting, documenting, and enforcing emergent coding patterns. See [Convention-Capture-System.md](Convention-Capture-System.md). |
 | **MCP** | Model Context Protocol. A standardized interface for AI tools to interact with codebases. The project's MCP server provides convention validation tools. |
-| **Passthrough File** | A file that references another canonical file (e.g., `CLAUDE.md` → `AGENTS.md`), enabling multiple tools to use the same content. |
+| **Passthrough File** | A file that references another canonical file (for example, `CLAUDE.md` → `AGENTS.md`), enabling multiple tools to use the same content. |
 | **Remocal Testing** | Testing pattern combining local and remote environments. Uses LocalStack locally while still being able to test against real AWS services. |
 | **Vendor Encapsulation** | The pattern of wrapping third-party SDKs (especially AWS SDK) behind internal interfaces in `src/lib/vendor/`. Zero-tolerance enforcement. |
 

@@ -4,7 +4,7 @@ This directory contains Architecture Decision Records (ADRs) documenting signifi
 
 ## What is an ADR?
 
-An Architecture Decision Record captures an important architectural decision along with its context and consequences. ADRs focus on the "why" behind decisions, while convention documentation focuses on the "how".
+An Architecture Decision Record captures an important architectural decision along with its context and consequences. ADRs focus on the reasoning behind decisions, while convention documentation focuses on implementation.
 
 ## ADR Index
 
