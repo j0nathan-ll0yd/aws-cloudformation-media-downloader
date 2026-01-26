@@ -11,7 +11,7 @@
 
 import {Project} from 'ts-morph'
 import {type CommitInfo, getBlame, getCommitFiles, getFileAtRef, getFileHistory, searchCommits} from '../shared/git-utils.js'
-import {createErrorResponse} from '../shared/response-types.js'
+import {createErrorResponse, createSuccessResponse} from '../shared/response-types.js'
 
 export type GitHistoryQueryType = 'file' | 'symbol' | 'pattern' | 'blame_semantic'
 
@@ -248,10 +248,10 @@ export async function handleGitHistoryQuery(args: GitHistoryArgs) {
       const history = await getAnnotatedFileHistory(target, limit)
 
       if (history.length === 0) {
-        return {file: target, message: 'No history found', commits: []}
+        return createSuccessResponse({file: target, message: 'No history found', commits: []})
       }
 
-      return {
+      return createSuccessResponse({
         file: target,
         totalCommits: history.length,
         commits: history.map((c) => ({hash: c.hash.substring(0, 8), author: c.author, date: c.date, message: c.message, symbolChanges: c.symbols})),
@@ -260,7 +260,7 @@ export async function handleGitHistoryQuery(args: GitHistoryArgs) {
           totalModified: history.reduce((sum, c) => sum + c.symbols.modified.length, 0),
           totalRemoved: history.reduce((sum, c) => sum + c.symbols.removed.length, 0)
         }
-      }
+      })
     }
 
     case 'symbol': {
@@ -275,20 +275,20 @@ export async function handleGitHistoryQuery(args: GitHistoryArgs) {
         }
 
         const symbols = extractSymbols(content, filePath)
-        return {
+        return createSuccessResponse({
           file: filePath,
           symbols: Array.from(symbols.entries()).map(([name, info]) => ({name, kind: info.kind, lines: `${info.startLine}-${info.endLine}`})),
           usage: `Use target: '${filePath}:symbolName' to track a specific symbol`
-        }
+        })
       }
 
       const symbolHistory = await trackSymbolHistory(filePath, symbolName, limit)
 
       if (!symbolHistory) {
-        return {file: filePath, symbol: symbolName, message: 'Symbol not found or no history available'}
+        return createSuccessResponse({file: filePath, symbol: symbolName, message: 'Symbol not found or no history available'})
       }
 
-      return {
+      return createSuccessResponse({
         file: filePath,
         symbol: symbolHistory.symbol,
         kind: symbolHistory.kind,
@@ -299,7 +299,7 @@ export async function handleGitHistoryQuery(args: GitHistoryArgs) {
           change: c.changeType,
           message: c.message
         }))
-      }
+      })
     }
 
     case 'pattern': {
@@ -307,7 +307,7 @@ export async function handleGitHistoryQuery(args: GitHistoryArgs) {
       const commits = searchCommits(target, limit)
 
       if (commits.length === 0) {
-        return {pattern: target, message: 'No commits found containing this pattern', commits: []}
+        return createSuccessResponse({pattern: target, message: 'No commits found containing this pattern', commits: []})
       }
 
       // Get files changed in each commit
@@ -316,7 +316,7 @@ export async function handleGitHistoryQuery(args: GitHistoryArgs) {
         return {hash: c.hash.substring(0, 8), author: c.author, date: c.date, message: c.message, filesChanged: files.slice(0, 5), totalFiles: files.length}
       })
 
-      return {pattern: target, totalCommits: commits.length, commits: enrichedCommits}
+      return createSuccessResponse({pattern: target, totalCommits: commits.length, commits: enrichedCommits})
     }
 
     case 'blame_semantic': {
@@ -324,10 +324,10 @@ export async function handleGitHistoryQuery(args: GitHistoryArgs) {
       const blameResults = getSemanticBlame(target)
 
       if (blameResults.length === 0) {
-        return {file: target, message: 'No exported symbols found or file not found', symbols: []}
+        return createSuccessResponse({file: target, message: 'No exported symbols found or file not found', symbols: []})
       }
 
-      return {
+      return createSuccessResponse({
         file: target,
         totalSymbols: blameResults.length,
         symbols: blameResults.map((b) => ({
@@ -338,7 +338,7 @@ export async function handleGitHistoryQuery(args: GitHistoryArgs) {
           commit: b.lastModifiedCommit.substring(0, 8),
           lines: `${b.lineRange.start}-${b.lineRange.end}`
         }))
-      }
+      })
     }
 
     default:

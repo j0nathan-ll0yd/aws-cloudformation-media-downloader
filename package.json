@@ -8,6 +8,7 @@
   "packageManager": "pnpm@10.27.0",
   "type": "module",
   "scripts": {
+    "adr:new": "./bin/adr-new.sh",
     "analyze": "ANALYZE=true pnpm run build && node --import tsx scripts/visualize-bundles.ts && open build/reports/bundle-analysis.html",
     "audit": "pnpm audit --audit-level=high",
     "audit:aws": "./bin/aws-audit.sh",

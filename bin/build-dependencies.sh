@@ -210,13 +210,6 @@ main() {
       fi
     done
 
-    # Also check legacy secrets.yaml for migration period
-    local legacy_secrets="${PROJECT_ROOT}/secrets.yaml"
-    local legacy_encrypted="${PROJECT_ROOT}/secrets.enc.yaml"
-    if [ -f "$legacy_secrets" ] && [ ! -f "$legacy_encrypted" ]; then
-      echo "Encrypting legacy secrets.yaml..."
-      sops --config "${sops_config_path}" --encrypt --output "${legacy_encrypted}" "${legacy_secrets}"
-    fi
   fi
 
   success "Secrets check completed"

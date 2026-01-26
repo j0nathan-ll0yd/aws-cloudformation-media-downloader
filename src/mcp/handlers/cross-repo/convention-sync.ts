@@ -12,7 +12,7 @@ import fs from 'fs/promises'
 import path from 'path'
 import {fileURLToPath} from 'url'
 import {type Convention, loadConventions} from '../data-loader.js'
-import {createErrorResponse} from '../shared/response-types.js'
+import {createErrorResponse, createSuccessResponse} from '../shared/response-types.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -290,7 +290,7 @@ export async function handleConventionSyncQuery(args: SyncConventionsArgs) {
           mimeType = 'application/json'
       }
 
-      return {
+      return createSuccessResponse({
         format,
         filename,
         mimeType,
@@ -302,7 +302,7 @@ export async function handleConventionSyncQuery(args: SyncConventionsArgs) {
           LOW: conventions.filter((c) => c.severity === 'LOW').length
         },
         output
-      }
+      })
     }
 
     case 'import': {
@@ -314,12 +314,12 @@ export async function handleConventionSyncQuery(args: SyncConventionsArgs) {
         const imported = await loadFromSource(source)
 
         if (imported.length === 0) {
-          return {source, message: 'No conventions found in source', imported: 0}
+          return createSuccessResponse({source, message: 'No conventions found in source', imported: 0})
         }
 
         // For now, just return what would be imported
         // Actual merge would require writing to Conventions-Tracking.md
-        return {
+        return createSuccessResponse({
           source,
           imported: imported.length,
           conventions: imported.map((c) => ({name: c.name, severity: c.severity, category: c.category, description: c.description?.substring(0, 100)})),
@@ -328,7 +328,7 @@ export async function handleConventionSyncQuery(args: SyncConventionsArgs) {
             ? 'Merge mode: Would add new conventions and update existing ones'
             : 'Replace mode: Would replace all conventions (use merge: true to preserve local)',
           nextStep: 'Review imported conventions and manually update docs/wiki/Meta/Conventions-Tracking.md'
-        }
+        })
       } catch (error) {
         return createErrorResponse(`Failed to load from source: ${error instanceof Error ? error.message : String(error)}`)
       }
@@ -344,7 +344,7 @@ export async function handleConventionSyncQuery(args: SyncConventionsArgs) {
 
         const hasChanges = diff.onlyLocal.length > 0 || diff.onlyRemote.length > 0 || diff.different.length > 0
 
-        return {
+        return createSuccessResponse({
           source,
           hasChanges,
           summary: {
@@ -361,7 +361,7 @@ export async function handleConventionSyncQuery(args: SyncConventionsArgs) {
             : diff.different.length > 0
             ? `Review ${diff.different.length} convention(s) with different severities`
             : 'Local has additional conventions not in remote'
-        }
+        })
       } catch (error) {
         return createErrorResponse(`Failed to diff with source: ${error instanceof Error ? error.message : String(error)}`)
       }

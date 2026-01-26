@@ -15,10 +15,11 @@
 3. Mark as documented in tracking file
 
 ### Reference:
-- **Active Conventions**: `docs/wiki/Meta/Conventions-Tracking.md`
+- **Architecture Decisions**: `docs/wiki/Decisions/` - ADRs capturing "why" behind decisions
+- **Active Conventions**: `docs/wiki/Meta/Conventions-Tracking.md` - "how" to follow conventions
 - **Documentation Guide**: `docs/wiki/Meta/Convention-Capture-System.md`
 
-**Philosophy**: Current state documented in wiki. History lives in git/PRs. No duplicate documentation.
+**Philosophy**: ADRs capture decisions (immutable), conventions capture current practices (living). No duplicate documentation.
 
 ---
 
@@ -71,7 +72,8 @@ AWS Serverless media downloader service built with OpenTofu and TypeScript. Down
 ├── util/                  # Shared utility functions
 ├── docs/
 │   └── wiki/              # All documentation and style guides
-│       └── Meta/Conventions-Tracking.md  # Project-specific conventions
+│       ├── Decisions/     # Architecture Decision Records (ADRs)
+│       └── Meta/          # Conventions tracking and capture system
 └── build/graph.json       # Code graph (ts-morph) - READ THIS
 ```
 

@@ -114,28 +114,35 @@ describe('Environment Configuration', () => {
     const projectRoot = join(__dirname, '../../..')
     const terraformDir = join(projectRoot, 'terraform/environments')
 
+    // Helper to match tfvars key-value pairs with flexible whitespace
+    // terraform fmt may align '=' signs differently
+    const matchesTfvar = (content: string, key: string, value: string): boolean => {
+      const pattern = new RegExp(`${key}\\s*=\\s*${value}`)
+      return pattern.test(content)
+    }
+
     it('should have staging.tfvars that matches fixture', () => {
       const tfvarsPath = join(terraformDir, 'staging.tfvars')
       const content = readFileSync(tfvarsPath, 'utf-8')
 
-      // Verify key values match
-      expect(content).toContain('environment        = "staging"')
-      expect(content).toContain('resource_prefix    = "stag"')
-      expect(content).toContain('log_level          = "DEBUG"')
-      expect(content).toContain('log_retention_days = 3')
-      expect(content).toContain('enable_cloudwatch_alarms    = false')
+      // Verify key values match (flexible whitespace for terraform fmt compatibility)
+      expect(matchesTfvar(content, 'environment', '"staging"')).toBe(true)
+      expect(matchesTfvar(content, 'resource_prefix', '"stag"')).toBe(true)
+      expect(matchesTfvar(content, 'log_level', '"DEBUG"')).toBe(true)
+      expect(matchesTfvar(content, 'log_retention_days', '3')).toBe(true)
+      expect(matchesTfvar(content, 'enable_cloudwatch_alarms', 'false')).toBe(true)
     })
 
     it('should have production.tfvars that matches fixture', () => {
       const tfvarsPath = join(terraformDir, 'production.tfvars')
       const content = readFileSync(tfvarsPath, 'utf-8')
 
-      // Verify key values match
-      expect(content).toContain('environment        = "production"')
-      expect(content).toContain('resource_prefix    = "prod"')
-      expect(content).toContain('log_level          = "INFO"')
-      expect(content).toContain('log_retention_days = 7')
-      expect(content).toContain('enable_cloudwatch_alarms    = true')
+      // Verify key values match (flexible whitespace for terraform fmt compatibility)
+      expect(matchesTfvar(content, 'environment', '"production"')).toBe(true)
+      expect(matchesTfvar(content, 'resource_prefix', '"prod"')).toBe(true)
+      expect(matchesTfvar(content, 'log_level', '"INFO"')).toBe(true)
+      expect(matchesTfvar(content, 'log_retention_days', '7')).toBe(true)
+      expect(matchesTfvar(content, 'enable_cloudwatch_alarms', 'true')).toBe(true)
     })
   })
 

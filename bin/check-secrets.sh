@@ -51,7 +51,7 @@ check_staged_files() {
     error "secrets.yaml is staged for commit!"
     echo ""
     echo "This file contains unencrypted secrets and should never be committed."
-    echo "The encrypted version (secrets.enc.yaml) is safe to commit."
+    echo "Use environment-specific encrypted files (secrets.staging.enc.yaml, secrets.prod.enc.yaml) instead."
     echo ""
     echo "To unstage: git reset HEAD secrets.yaml"
     echo ""

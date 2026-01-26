@@ -7,6 +7,7 @@ import * as fs from 'fs/promises'
 import * as path from 'path'
 import {fileURLToPath} from 'url'
 import {Project, SourceFile} from 'ts-morph'
+import {createSuccessResponse} from './shared/response-types.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -162,9 +163,7 @@ async function parseTypeScriptTypes(filePath: string): Promise<TypeDefinition[]>
 /**
  * Check alignment between TypeScript types and TypeSpec models
  */
-export async function handleTypeAlignmentQuery(
-  args: {typeName?: string; query: 'check' | 'list' | 'all'}
-): Promise<{aligned: boolean; issues: AlignmentIssue[]; typeSpecModels: string[]; typeScriptTypes: string[]}> {
+export async function handleTypeAlignmentQuery(args: {typeName?: string; query: 'check' | 'list' | 'all'}) {
   const {typeName, query} = args
   const tspPath = path.join(projectRoot, 'tsp/models/models.tsp')
   const typesDirs = [
@@ -191,7 +190,12 @@ export async function handleTypeAlignmentQuery(
   const issues: AlignmentIssue[] = []
 
   if (query === 'list') {
-    return {aligned: true, issues: [], typeSpecModels: typeSpecModels.map((m) => m.name), typeScriptTypes: allTypeScriptTypes.map((t) => t.name)}
+    return createSuccessResponse({
+      aligned: true,
+      issues: [],
+      typeSpecModels: typeSpecModels.map((m) => m.name),
+      typeScriptTypes: allTypeScriptTypes.map((t) => t.name)
+    })
   }
 
   // Check specific type or all types
@@ -269,15 +273,18 @@ export async function handleTypeAlignmentQuery(
     }
   }
 
-  return {aligned: issues.length === 0, issues, typeSpecModels: typeSpecModels.map((m) => m.name), typeScriptTypes: allTypeScriptTypes.map((t) => t.name)}
+  return createSuccessResponse({
+    aligned: issues.length === 0,
+    issues,
+    typeSpecModels: typeSpecModels.map((m) => m.name),
+    typeScriptTypes: allTypeScriptTypes.map((t) => t.name)
+  })
 }
 
 /**
  * Validate naming conventions across files
  */
-export async function handleNamingValidationQuery(
-  args: {file?: string; query: 'validate' | 'suggest' | 'all'}
-): Promise<{valid: boolean; violations: NamingViolation[]; suggestions: {file: string; fixes: {current: string; suggested: string; reason: string}[]}[]}> {
+export async function handleNamingValidationQuery(args: {file?: string; query: 'validate' | 'suggest' | 'all'}) {
   const {file, query} = args
   const violations: NamingViolation[] = []
   const suggestions: {file: string; fixes: {current: string; suggested: string; reason: string}[]}[] = []
@@ -412,5 +419,5 @@ export async function handleNamingValidationQuery(
     }
   }
 
-  return {valid: violations.length === 0, violations, suggestions: query === 'suggest' || query === 'all' ? suggestions : []}
+  return createSuccessResponse({valid: violations.length === 0, violations, suggestions: query === 'suggest' || query === 'all' ? suggestions : []})
 }

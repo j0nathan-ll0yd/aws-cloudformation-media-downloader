@@ -6,7 +6,7 @@
  */
 
 import {getLambdaInvocations, loadDependencyGraph, loadMetadata} from './data-loader.js'
-import {createErrorResponse} from './shared/response-types.js'
+import {createErrorResponse, createSuccessResponse} from './shared/response-types.js'
 
 export type ImpactQueryType = 'dependents' | 'cascade' | 'tests' | 'infrastructure' | 'all'
 
@@ -115,7 +115,7 @@ export async function handleImpactQuery(args: ImpactQueryArgs) {
       const utilDependents = dependents.filter((d) => d.includes('/util/'))
       const otherDependents = dependents.filter((d) => !lambdaDependents.includes(d) && !entityDependents.includes(d) && !utilDependents.includes(d))
 
-      return {
+      return createSuccessResponse({
         file: normalizedFile,
         directDependents: {
           lambdas: lambdaDependents.map((d) => ({file: d, name: extractLambdaName(d)})),
@@ -124,7 +124,7 @@ export async function handleImpactQuery(args: ImpactQueryArgs) {
           other: otherDependents
         },
         totalCount: dependents.length
-      }
+      })
     }
 
     case 'cascade': {
@@ -149,13 +149,13 @@ export async function handleImpactQuery(args: ImpactQueryArgs) {
         }
       }
 
-      return {
+      return createSuccessResponse({
         file: normalizedFile,
         cascade: {totalFiles: cascade.length, lambdas: Array.from(affectedLambdas).sort(), tests: affectedTests, other: affectedOther},
         recommendation: affectedLambdas.size > 0
           ? `Run tests for affected Lambdas: ${Array.from(affectedLambdas).join(', ')}`
           : 'No Lambda functions directly affected'
-      }
+      })
     }
 
     case 'tests': {
@@ -199,12 +199,12 @@ export async function handleImpactQuery(args: ImpactQueryArgs) {
         }
       }
 
-      return {
+      return createSuccessResponse({
         file: normalizedFile,
         testsToUpdate: testFiles.map((t) => t.testFile),
         byLambda: testsByLambda,
         testCommand: Object.keys(testsByLambda).length > 0 ? `pnpm test -- --testPathPattern="${Object.keys(testsByLambda).join('|')}"` : 'pnpm test'
-      }
+      })
     }
 
     case 'infrastructure': {
@@ -235,7 +235,7 @@ export async function handleImpactQuery(args: ImpactQueryArgs) {
       // Check for Lambda invocations
       const affectedInvocations = invocations.filter((inv) => affectedLambdas.has(inv.from) || affectedLambdas.has(inv.to))
 
-      return {
+      return createSuccessResponse({
         file: normalizedFile,
         affectedLambdas: Array.from(affectedLambdas),
         terraformFiles,
@@ -243,7 +243,7 @@ export async function handleImpactQuery(args: ImpactQueryArgs) {
         recommendation: terraformFiles.length > 0
           ? `Review Terraform files: ${terraformFiles.map((t) => t.terraformFile).join(', ')}`
           : 'No infrastructure changes expected'
-      }
+      })
     }
 
     case 'all': {
@@ -279,7 +279,7 @@ export async function handleImpactQuery(args: ImpactQueryArgs) {
         severity = 'LOW'
       }
 
-      return {
+      return createSuccessResponse({
         file: normalizedFile,
         severity,
         impact: {
@@ -303,7 +303,7 @@ export async function handleImpactQuery(args: ImpactQueryArgs) {
           : severity === 'MEDIUM'
           ? 'MEDIUM impact: Run targeted tests for affected Lambdas'
           : 'LOW impact: Standard testing should suffice'
-      }
+      })
     }
 
     default:
