@@ -67,10 +67,10 @@ function generateStatement(permission: ServicePermission, comment: string): stri
     // API Gateway requires specific ARN paths for resources
     // Format: arn:aws:apigateway:{region}::/{path}
     resourceArns = [
-      '"arn:aws:apigateway:${data.aws_region.current.name}::/apikeys"',
-      '"arn:aws:apigateway:${data.aws_region.current.name}::/apikeys/*"',
-      '"arn:aws:apigateway:${data.aws_region.current.name}::/usageplans"',
-      '"arn:aws:apigateway:${data.aws_region.current.name}::/usageplans/*"'
+      '"arn:aws:apigateway:${data.aws_region.current.id}::/apikeys"',
+      '"arn:aws:apigateway:${data.aws_region.current.id}::/apikeys/*"',
+      '"arn:aws:apigateway:${data.aws_region.current.id}::/usageplans"',
+      '"arn:aws:apigateway:${data.aws_region.current.id}::/usageplans/*"'
     ]
   } else if (permission.hasWildcard) {
     // For wildcard permissions (like S3 objects), append /* to the ARN
