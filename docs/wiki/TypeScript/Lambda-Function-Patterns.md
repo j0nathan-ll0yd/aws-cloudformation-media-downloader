@@ -492,8 +492,14 @@ isValidBearerFormat('Bearer abc.xyz.123')  // true
 
 ---
 
-## Related Patterns
+## Related
 
+### ADRs
+- [ADR-0006: Lambda Middleware Pattern](../Decisions/0006-lambda-middleware.md) - Decision rationale
+- [ADR-0004: Lazy Initialization](../Decisions/0004-lazy-initialization.md) - Environment variable pattern
+- [ADR-0007: Error Handling](../Decisions/0007-error-handling-types.md) - Error patterns by type
+
+### Patterns
 - [X-Ray Integration](../AWS/X-Ray-Integration.md) - Tracing via ADOT layer
 - [CloudWatch Logging](../AWS/CloudWatch-Logging.md) - Structured logging
 - [Error Handling](TypeScript-Error-Handling.md)

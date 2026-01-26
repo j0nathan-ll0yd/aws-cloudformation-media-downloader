@@ -1,8 +1,42 @@
 # System Architecture Diagrams
 
-Visual representations of the Media Downloader architecture. For quick reference, see [AGENTS.md](../../../AGENTS.md).
+Visual representations of the Media Downloader architecture using [C4 model](https://c4model.com/) terminology. For quick reference, see [AGENTS.md](../../../AGENTS.md).
 
-## Lambda Data Flow
+## System Context (C4 Level 1)
+
+*Shows the system's relationship with users and external services.*
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        API Gateway                          │
+│                    (Custom Authorizer)                      │
+└────────────┬────────────────────────────────────┬───────────┘
+             │                                    │
+             ▼                                    ▼
+┌─────────────────────┐              ┌─────────────────────┐
+│   Lambda Functions  │              │   External Services │
+├─────────────────────┤              ├─────────────────────┤
+│ • ListFiles         │              │ • Feedly API        │
+│ • LoginUser         │              │ • YouTube (yt-dlp)  │
+│ • RegisterDevice    │              │ • APNS              │
+│ • StartFileUpload   │              │ • Sign In w/ Apple  │
+│ • WebhookFeedly     │              │ • GitHub API        │
+└──────────┬──────────┘              └─────────────────────┘
+           │
+           ▼
+┌─────────────────────────────────────────────────────────────┐
+│                     AWS Services Layer                      │
+├─────────────────────┬───────────────┬──────────────────────┤
+│   Aurora DSQL       │      S3       │    CloudWatch        │
+│   (Drizzle ORM)     │  (Media Files)│   (Logs/Metrics)     │
+└─────────────────────┴───────────────┴──────────────────────┘
+```
+
+## Container Diagram (C4 Level 2)
+
+*Shows the high-level technology choices and how containers communicate.*
+
+### Lambda Data Flow
 
 ```mermaid
 graph TD
@@ -48,7 +82,11 @@ graph TD
     SendPushNotification --> APNS[Apple Push Service]
 ```
 
-## Entity Relationship Model
+## Component Diagram (C4 Level 3)
+
+*Shows the internal structure of a container - entity relationships within Aurora DSQL.*
+
+### Entity Relationship Model
 
 ```mermaid
 erDiagram
@@ -124,35 +162,9 @@ erDiagram
     }
 ```
 
-## Service Interaction Map
+## Reference Tables
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        API Gateway                          │
-│                    (Custom Authorizer)                      │
-└────────────┬────────────────────────────────────┬───────────┘
-             │                                    │
-             ▼                                    ▼
-┌─────────────────────┐              ┌─────────────────────┐
-│   Lambda Functions  │              │   External Services │
-├─────────────────────┤              ├─────────────────────┤
-│ • ListFiles         │              │ • Feedly API        │
-│ • LoginUser         │              │ • YouTube (yt-dlp)  │
-│ • RegisterDevice    │              │ • APNS              │
-│ • StartFileUpload   │              │ • Sign In w/ Apple  │
-│ • WebhookFeedly     │              │ • GitHub API        │
-└──────────┬──────────┘              └─────────────────────┘
-           │
-           ▼
-┌─────────────────────────────────────────────────────────────┐
-│                     AWS Services Layer                      │
-├─────────────────────┬───────────────┬──────────────────────┤
-│   Aurora DSQL       │      S3       │    CloudWatch        │
-│   (Drizzle ORM)     │  (Media Files)│   (Logs/Metrics)     │
-└─────────────────────┴───────────────┴──────────────────────┘
-```
-
-## Data Access Patterns
+### Data Access Patterns
 
 | Pattern | Entity | Access Method | Query Strategy |
 |---------|--------|--------------|----------------|
@@ -162,7 +174,7 @@ erDiagram
 | Device lookup | Devices | Get by deviceId | Primary key |
 | User resources | getUserResources() | Transaction query | Multi-table JOIN |
 
-## Lambda Trigger Patterns
+### Lambda Trigger Patterns
 
 | Lambda | Trigger Type | Source | Purpose |
 |--------|-------------|--------|---------|

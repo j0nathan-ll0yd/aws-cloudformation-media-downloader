@@ -198,7 +198,11 @@ The project includes several automated checks:
 | `pnpm run audit:aws:production` | Audit production resources |
 | `/aws-audit` | Claude command for interactive audit |
 
-## See Also
+## Related
 
+### ADRs
+- [ADR-0005: Infrastructure Drift Prevention](../Decisions/0005-drift-prevention.md) - Decision rationale
+
+### See Also
 - [OpenTofu Patterns](./OpenTofu-Patterns.md) - Infrastructure coding standards
 - [Git Workflow](../Conventions/Git-Workflow.md) - Worktree workflow documentation

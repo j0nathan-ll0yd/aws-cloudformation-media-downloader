@@ -189,6 +189,50 @@ See [Conventional Commits](https://www.conventionalcommits.org/)
 See [Issue Tracker](https://github.com/user/repo/issues)
 ```
 
+## Diagram Conventions
+
+### C4 Model Organization
+
+Architecture diagrams follow the [C4 model](https://c4model.com/) hierarchy:
+
+| Level | Name | Purpose | Example in This Project |
+|-------|------|---------|------------------------|
+| 1 | System Context | System's relationship with users/external services | Service Interaction Map |
+| 2 | Container | High-level technology choices, how containers communicate | Lambda Data Flow |
+| 3 | Component | Internal structure of a container | Entity Relationship Model |
+| 4 | Code | Implementation details | Not used (serverless) |
+
+### Diagram Format Guidelines
+
+**Preferred formats:**
+- **Mermaid**: For version-controlled diagrams (flowcharts, ER diagrams, sequence diagrams)
+- **ASCII art**: For simple context diagrams that render in any environment
+
+**When to use each:**
+```
+Mermaid:
+  ✅ Entity relationships (erDiagram)
+  ✅ Data flows (graph TD/LR)
+  ✅ Sequences (sequenceDiagram)
+  ✅ Anything needing GitHub rendering
+
+ASCII:
+  ✅ Simple box diagrams
+  ✅ Terminal/CLI documentation
+  ✅ Maximum compatibility
+```
+
+### Diagram Maintenance
+
+1. **Link diagrams to ADRs** - When a diagram illustrates an architectural decision, reference the relevant ADR
+2. **Keep in sync** - Update diagrams when architecture changes
+3. **Use descriptive labels** - Nodes should be self-explanatory without surrounding text
+4. **Centralize in System-Diagrams.md** - Architecture diagrams live in one place, linked from other docs
+
+### Related Documentation
+- [System Diagrams](../Architecture/System-Diagrams.md) - All architecture diagrams with C4 levels
+- [ADRs](../Decisions/) - Decisions that diagrams illustrate
+
 ## Best Practices
 
 ### Do's
@@ -211,6 +255,7 @@ See [Issue Tracker](https://github.com/user/repo/issues)
 ## Related Documentation
 - [AI Tool Context Files](AI-Tool-Context-Files.md) - AGENTS.md and passthroughs
 - [Convention Capture System](Convention-Capture-System.md) - How patterns are captured
+- [Glossary](Glossary.md) - Project-specific terminology
 - [Working with AI Assistants](Working-with-AI-Assistants.md) - Effective collaboration
 
 ---

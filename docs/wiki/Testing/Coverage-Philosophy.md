@@ -218,7 +218,13 @@ test/integration/workflows/
 ❌ Slow unit tests (> 5 s)
 ❌ Many integration tests for CRUD
 
-## Related Patterns
+## Related
+
+### ADRs
+- [ADR-0003: Testing Philosophy](../Decisions/0003-testing-philosophy.md) - Decision rationale
+- [ADR-0012: Remocal Testing](../Decisions/0012-remocal-testing.md) - Integration testing strategy
+
+### Patterns
 - [Vitest Mocking Strategy](Vitest-Mocking-Strategy.md) - Mocking dependencies
 - [Mock Type Annotations](Mock-Type-Annotations.md) - Type-safe mocking
 - [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) - What to test
