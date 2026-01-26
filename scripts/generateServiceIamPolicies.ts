@@ -11,7 +11,8 @@
  *
  * @see docs/wiki/Infrastructure/Lambda-Decorators.md
  */
-import {existsSync, readFileSync} from 'fs'
+import {execSync} from 'child_process'
+import {existsSync, readFileSync, unlinkSync, writeFileSync} from 'fs'
 import {dirname, join} from 'path'
 import {fileURLToPath} from 'url'
 import {writeIfChanged} from './lib/writeIfChanged.js'
@@ -85,7 +86,7 @@ function generateStatement(permission: ServicePermission, comment: string): stri
 
   return `  # ${comment}
   statement {
-    actions   = [${actions}]
+    actions = [${actions}]
     resources = ${resourceArns.length === 1 ? `[${resourcesStr}]` : resourcesStr}
   }`
 }
@@ -113,7 +114,7 @@ function generateDynamoDBStatement(permission: DynamoDBPermission): string {
   const comment = `DynamoDB: ${permission.table}`
   return `  # ${comment}
   statement {
-    actions   = [${actions}]
+    actions = [${actions}]
     resources = [${permission.arnRef}]
   }`
 }
@@ -231,9 +232,15 @@ async function main(): Promise<void> {
 
   const content = header + policies.join('\n\n') + '\n'
 
-  // Write to terraform directory (only if content changed)
+  // Write to temp file, format with tofu fmt, then compare
   const outputPath = join(projectRoot, 'terraform/generated_service_permissions.tf')
-  const result = writeIfChanged(outputPath, content)
+  const tempPath = join(projectRoot, 'terraform/generated_service_permissions_tmp.tf')
+  writeFileSync(tempPath, content)
+  execSync(`tofu fmt ${tempPath}`, {stdio: 'pipe'})
+  const formattedContent = readFileSync(tempPath, 'utf-8')
+  unlinkSync(tempPath)
+
+  const result = writeIfChanged(outputPath, formattedContent)
 
   if (result.written) {
     console.log(`\n${result.reason === 'new' ? 'Created' : 'Updated'}: ${outputPath}`)

@@ -90,22 +90,22 @@ Scripts documented in `AGENTS.md` and `README.md` are automatically validated ag
 
 ## Remote Testing Scripts
 
-### `pnpm run test:remote:list`
-**Purpose**: Test ListFiles Lambda against production API
+### `pnpm run test:remote:list:{staging|production}`
+**Purpose**: Test ListFiles Lambda against staging or production API
 **Dependencies**: AWS credentials, jq
-**CI Coverage**: No (requires production)
+**CI Coverage**: No (requires deployed environment)
 **Notes**: Validates API Gateway → Lambda → Aurora DSQL flow
 
-### `pnpm run test:remote:hook`
-**Purpose**: Test Feedly webhook against production API
+### `pnpm run test:remote:hook:{staging|production}`
+**Purpose**: Test Feedly webhook against staging or production API
 **Dependencies**: AWS credentials, jq
-**CI Coverage**: No (requires production)
+**CI Coverage**: No (requires deployed environment)
 **Notes**: Tests webhook authentication and processing
 
-### `pnpm run test:remote:register:device`
-**Purpose**: Test RegisterDevice Lambda against production API
+### `pnpm run test:remote:register:device:{staging|production}`
+**Purpose**: Test RegisterDevice Lambda against staging or production API
 **Dependencies**: AWS credentials, jq
-**CI Coverage**: No (requires production)
+**CI Coverage**: No (requires deployed environment)
 **Notes**: Uses idempotent synthetic device; creates SNS Platform Endpoint
 
 ---

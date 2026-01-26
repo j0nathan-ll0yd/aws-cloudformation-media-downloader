@@ -102,8 +102,8 @@ tofu init
 tofu apply
 
 # Once complete, verify the application works remotely
-ppnpm run test:remote:list
-ppnpm run test:remote:hook
+pnpm run test:remote:list:staging
+pnpm run test:remote:hook:staging
 ```
 
 ## Quick Start
@@ -124,7 +124,7 @@ ppnpm run test
 ppnpm run deploy
 
 # Confirm everything is working as expected
-ppnpm run test:remote:list
+pnpm run test:remote:list:staging
 ```
 
 
@@ -334,19 +334,19 @@ In order to test your endpoint in production, you can use the pnpm commands belo
 Remotely test the listing of files
 
 ```bash
-ppnpm run test:remote:list
+pnpm run test:remote:list:production
 ```
 
 Remotely test the feedly webhook
 
 ```bash
-ppnpm run test:remote:hook
+pnpm run test:remote:hook:production
 ```
 
 Remotely test the register device method for registering for push notifications on iOS
 
 ```bash
-ppnpm run test:remote:register:device
+pnpm run test:remote:register:device:production
 ```
 
 ### Integration Testing with LocalStack

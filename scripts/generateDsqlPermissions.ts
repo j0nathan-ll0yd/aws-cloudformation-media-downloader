@@ -14,7 +14,8 @@
  *
  * @see docs/wiki/Infrastructure/Database-Permissions.md
  */
-import {existsSync, mkdirSync, readFileSync} from 'fs'
+import {execSync} from 'child_process'
+import {existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync} from 'fs'
 import {dirname, join} from 'path'
 import {fileURLToPath} from 'url'
 import {writeIfChanged, WriteResult} from './lib/writeIfChanged.js'
@@ -82,13 +83,11 @@ function generateTerraformHcl(manifest: PermissionsManifest): string {
   ]
 
   const entries = Object.entries(manifest.lambdas).sort((a, b) => a[0].localeCompare(b[0]))
-  const maxLen = Math.max(...entries.map(([name]) => name.length))
 
   for (const [lambdaName, perms] of entries) {
     const roleName = lambdaNameToRoleName(lambdaName)
     const requiresAdmin = perms.computedAccessLevel === 'admin'
-    const padding = ' '.repeat(maxLen - lambdaName.length)
-    lines.push(`    "${lambdaName}"${padding} = {`)
+    lines.push(`    "${lambdaName}" = {`)
     lines.push(`      role_name      = "${roleName}"`)
     lines.push(`      requires_admin = ${requiresAdmin}`)
     lines.push('    }')
@@ -329,10 +328,15 @@ async function main(): Promise<void> {
     mkdirSync(buildDir, {recursive: true})
   }
 
-  // Generate Terraform HCL
+  // Generate Terraform HCL - format with tofu fmt before comparing
   const terraformHcl = generateTerraformHcl(manifest)
   const terraformPath = join(terraformDir, 'dsql_permissions.tf')
-  const terraformResult = writeIfChanged(terraformPath, terraformHcl)
+  const tempPath = join(terraformDir, 'dsql_permissions_tmp.tf')
+  writeFileSync(tempPath, terraformHcl)
+  execSync(`tofu fmt ${tempPath}`, {stdio: 'pipe'})
+  const formattedTerraform = readFileSync(tempPath, 'utf-8')
+  unlinkSync(tempPath)
+  const terraformResult = writeIfChanged(terraformPath, formattedTerraform)
 
   // Generate SQL migration
   const sqlMigration = generateSqlMigration(manifest)
