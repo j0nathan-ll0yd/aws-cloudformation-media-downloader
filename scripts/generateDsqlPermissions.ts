@@ -185,7 +185,7 @@ function generateSqlMigration(manifest: PermissionsManifest): string {
   lines.push('-- AWS IAM GRANT (associate Lambda IAM roles with PostgreSQL roles)')
   lines.push('-- =============================================================================')
   lines.push('-- These statements link AWS IAM roles to PostgreSQL roles for authentication.')
-  lines.push('-- ${AWS_ACCOUNT_ID} is replaced at runtime by MigrateDSQL handler.')
+  lines.push('-- ${AWS_ACCOUNT_ID} and ${RESOURCE_PREFIX} are replaced at runtime by MigrateDSQL handler.')
   lines.push('')
 
   // AWS IAM GRANT statements
@@ -195,7 +195,7 @@ function generateSqlMigration(manifest: PermissionsManifest): string {
       continue
     }
     const roleName = lambdaNameToRoleName(lambdaName)
-    lines.push(`AWS IAM GRANT ${roleName} TO 'arn:aws:iam::\${AWS_ACCOUNT_ID}:role/${lambdaName}';`)
+    lines.push(`AWS IAM GRANT ${roleName} TO 'arn:aws:iam::\${AWS_ACCOUNT_ID}:role/\${RESOURCE_PREFIX}-${lambdaName}';`)
   }
 
   lines.push('')

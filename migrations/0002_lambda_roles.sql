@@ -1,7 +1,7 @@
 -- Migration: 0002_lambda_roles
 -- Description: Per-Lambda PostgreSQL roles with fine-grained table permissions
 -- Auto-generated from @RequiresTable decorators
--- Generated at: 2026-01-26T05:20:41.980Z
+-- Generated at: 2026-01-26T05:40:17.317Z
 --
 -- This migration creates per-Lambda PostgreSQL roles and grants them
 -- exactly the table permissions declared in their @RequiresTable decorators.
@@ -98,21 +98,21 @@ GRANT INSERT, SELECT ON user_files TO lambda_webhook_feedly;
 -- AWS IAM GRANT (associate Lambda IAM roles with PostgreSQL roles)
 -- =============================================================================
 -- These statements link AWS IAM roles to PostgreSQL roles for authentication.
--- ${AWS_ACCOUNT_ID} is replaced at runtime by MigrateDSQL handler.
+-- ${AWS_ACCOUNT_ID} and ${RESOURCE_PREFIX} are replaced at runtime by MigrateDSQL handler.
 
-AWS IAM GRANT lambda_api_gateway_authorizer TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/ApiGatewayAuthorizer';
-AWS IAM GRANT lambda_cleanup_expired_records TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/CleanupExpiredRecords';
-AWS IAM GRANT lambda_list_files TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/ListFiles';
-AWS IAM GRANT lambda_login_user TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/LoginUser';
-AWS IAM GRANT lambda_logout_user TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/LogoutUser';
+AWS IAM GRANT lambda_api_gateway_authorizer TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-ApiGatewayAuthorizer';
+AWS IAM GRANT lambda_cleanup_expired_records TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-CleanupExpiredRecords';
+AWS IAM GRANT lambda_list_files TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-ListFiles';
+AWS IAM GRANT lambda_login_user TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-LoginUser';
+AWS IAM GRANT lambda_logout_user TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-LogoutUser';
 -- MigrateDSQL: Uses admin (no IAM GRANT needed, uses DbConnectAdmin)
-AWS IAM GRANT lambda_prune_devices TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/PruneDevices';
-AWS IAM GRANT lambda_refresh_token TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/RefreshToken';
-AWS IAM GRANT lambda_register_device TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/RegisterDevice';
-AWS IAM GRANT lambda_register_user TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/RegisterUser';
-AWS IAM GRANT lambda_s3_object_created TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/S3ObjectCreated';
-AWS IAM GRANT lambda_send_push_notification TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/SendPushNotification';
-AWS IAM GRANT lambda_start_file_upload TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/StartFileUpload';
-AWS IAM GRANT lambda_user_delete TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/UserDelete';
-AWS IAM GRANT lambda_user_subscribe TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/UserSubscribe';
-AWS IAM GRANT lambda_webhook_feedly TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/WebhookFeedly';
+AWS IAM GRANT lambda_prune_devices TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-PruneDevices';
+AWS IAM GRANT lambda_refresh_token TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-RefreshToken';
+AWS IAM GRANT lambda_register_device TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-RegisterDevice';
+AWS IAM GRANT lambda_register_user TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-RegisterUser';
+AWS IAM GRANT lambda_s3_object_created TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-S3ObjectCreated';
+AWS IAM GRANT lambda_send_push_notification TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-SendPushNotification';
+AWS IAM GRANT lambda_start_file_upload TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-StartFileUpload';
+AWS IAM GRANT lambda_user_delete TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-UserDelete';
+AWS IAM GRANT lambda_user_subscribe TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-UserSubscribe';
+AWS IAM GRANT lambda_webhook_feedly TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-WebhookFeedly';
