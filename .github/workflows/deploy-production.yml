@@ -88,7 +88,7 @@ jobs:
           tofu_version: ${{ env.TOFU_VERSION }}
 
       - name: Configure AWS credentials (Production)
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_PRODUCTION }}
           aws-region: ${{ env.AWS_REGION }}
