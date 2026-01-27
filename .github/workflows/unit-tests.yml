@@ -18,7 +18,7 @@ jobs:
       - uses: ./.github/actions/setup-node-pnpm
 
       - name: Cache TypeSpec output
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: tsp-output/
           key: typespec-${{ runner.os }}-${{ hashFiles('tsp/**') }}
