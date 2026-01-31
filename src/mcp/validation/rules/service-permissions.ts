@@ -6,9 +6,9 @@
  * This rule ensures that AWS service access requirements are explicitly declared.
  *
  * Note: With the function-level decorator architecture, permissions can be declared on
- * vendor wrapper methods via @RequiresXxx decorators. The extraction scripts trace
- * Lambda → vendor imports to automatically derive permissions. Therefore, Lambda handlers
- * that import from vendor wrappers with decorated methods don't need @RequiresServices.
+ * vendor wrapper methods via \@RequiresXxx decorators. The extraction scripts trace
+ * Lambda -\> vendor imports to automatically derive permissions. Therefore, Lambda handlers
+ * that import from vendor wrappers with decorated methods don't need \@RequiresServices.
  *
  * @see docs/wiki/Infrastructure/Lambda-Decorators.md#function-level-permission-decorators
  */
@@ -21,7 +21,7 @@ const SEVERITY = 'HIGH' as const
 
 /**
  * AWS vendor wrapper import patterns and their service mappings.
- * These vendor wrappers have function-level permission decorators (@RequiresXxx)
+ * These vendor wrappers have function-level permission decorators (\@RequiresXxx)
  * that are extracted at build time to generate IAM policies.
  */
 const SERVICE_IMPORT_MAP: Record<string, string> = {

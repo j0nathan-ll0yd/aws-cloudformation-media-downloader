@@ -787,6 +787,26 @@
       "relationship": "validates_with"
     },
     {
+      "source": "lambda:ApiGatewayAuthorizer",
+      "target": "entity:Users",
+      "relationship": "accesses"
+    },
+    {
+      "source": "lambda:ApiGatewayAuthorizer",
+      "target": "entity:Files",
+      "relationship": "accesses"
+    },
+    {
+      "source": "lambda:ApiGatewayAuthorizer",
+      "target": "entity:Devices",
+      "relationship": "accesses"
+    },
+    {
+      "source": "lambda:ApiGatewayAuthorizer",
+      "target": "entity:Sessions",
+      "relationship": "accesses"
+    },
+    {
       "source": "service:API Gateway",
       "target": "lambda:ApiGatewayAuthorizer",
       "relationship": "triggers"
@@ -868,6 +888,11 @@
     },
     {
       "source": "lambda:PruneDevices",
+      "target": "service:SNS",
+      "relationship": "uses"
+    },
+    {
+      "source": "lambda:PruneDevices",
       "target": "entity:Users",
       "relationship": "accesses"
     },
@@ -890,6 +915,26 @@
       "source": "service:CloudWatch",
       "target": "lambda:PruneDevices",
       "relationship": "triggers"
+    },
+    {
+      "source": "lambda:RefreshToken",
+      "target": "entity:Users",
+      "relationship": "accesses"
+    },
+    {
+      "source": "lambda:RefreshToken",
+      "target": "entity:Files",
+      "relationship": "accesses"
+    },
+    {
+      "source": "lambda:RefreshToken",
+      "target": "entity:Devices",
+      "relationship": "accesses"
+    },
+    {
+      "source": "lambda:RefreshToken",
+      "target": "entity:Sessions",
+      "relationship": "accesses"
     },
     {
       "source": "service:API Gateway",
@@ -958,6 +1003,11 @@
     },
     {
       "source": "lambda:S3ObjectCreated",
+      "target": "service:SNS",
+      "relationship": "uses"
+    },
+    {
+      "source": "lambda:S3ObjectCreated",
       "target": "service:SQS",
       "relationship": "uses"
     },
@@ -993,6 +1043,11 @@
     },
     {
       "source": "lambda:SendPushNotification",
+      "target": "service:SQS",
+      "relationship": "uses"
+    },
+    {
+      "source": "lambda:SendPushNotification",
       "target": "entity:Users",
       "relationship": "accesses"
     },
@@ -1024,6 +1079,11 @@
     {
       "source": "lambda:StartFileUpload",
       "target": "service:S3",
+      "relationship": "uses"
+    },
+    {
+      "source": "lambda:StartFileUpload",
+      "target": "service:SNS",
       "relationship": "uses"
     },
     {
@@ -1068,6 +1128,11 @@
     },
     {
       "source": "lambda:UserDelete",
+      "target": "service:SNS",
+      "relationship": "uses"
+    },
+    {
+      "source": "lambda:UserDelete",
       "target": "external:GitHub",
       "relationship": "uses"
     },
@@ -1097,6 +1162,31 @@
       "relationship": "triggers"
     },
     {
+      "source": "lambda:UserSubscribe",
+      "target": "service:SNS",
+      "relationship": "uses"
+    },
+    {
+      "source": "lambda:UserSubscribe",
+      "target": "entity:Users",
+      "relationship": "accesses"
+    },
+    {
+      "source": "lambda:UserSubscribe",
+      "target": "entity:Files",
+      "relationship": "accesses"
+    },
+    {
+      "source": "lambda:UserSubscribe",
+      "target": "entity:Devices",
+      "relationship": "accesses"
+    },
+    {
+      "source": "lambda:UserSubscribe",
+      "target": "entity:Sessions",
+      "relationship": "accesses"
+    },
+    {
       "source": "service:API Gateway",
       "target": "lambda:UserSubscribe",
       "relationship": "triggers"
@@ -1104,6 +1194,16 @@
     {
       "source": "lambda:WebhookFeedly",
       "target": "service:EventBridge",
+      "relationship": "uses"
+    },
+    {
+      "source": "lambda:WebhookFeedly",
+      "target": "service:S3",
+      "relationship": "uses"
+    },
+    {
+      "source": "lambda:WebhookFeedly",
+      "target": "service:SNS",
       "relationship": "uses"
     },
     {

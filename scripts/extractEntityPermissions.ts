@@ -3,12 +3,12 @@
  *
  * Phase 8.3: Function-Level Database Permission Extraction
  *
- * Uses ts-morph to extract @RequiresTable decorator metadata from entity query classes
+ * Uses ts-morph to extract \@RequiresTable decorator metadata from entity query classes
  * and traces Lambda dependencies to determine database access requirements.
  *
  * The script:
- * 1. Parses entity query classes for @RequiresTable method decorators
- * 2. Builds method → permission map (e.g., UserQueries.getUser → {users, SELECT})
+ * 1. Parses entity query classes for \@RequiresTable method decorators
+ * 2. Builds method -\> permission map (e.g., UserQueries.getUser -\> \{users, SELECT\})
  * 3. Uses build/graph.json to trace Lambda dependencies
  * 4. Handles barrel import expansion (src/entities/queries → all query files)
  * 5. Aggregates permissions from all entity query methods each Lambda transitively imports
@@ -21,7 +21,7 @@
  * @see docs/wiki/Infrastructure/Lambda-Decorators.md
  */
 import {existsSync, mkdirSync, readFileSync, writeFileSync} from 'fs'
-import {dirname, join, relative} from 'path'
+import {dirname, join, relative, resolve} from 'path'
 import {fileURLToPath} from 'url'
 import {Project, SyntaxKind} from 'ts-morph'
 
@@ -53,8 +53,18 @@ interface EntityPermissionsManifest {
   generatedAt: string
 }
 
+interface NamedImport {
+  name: string
+  isTypeOnly: boolean
+}
+
+interface ImportEntry {
+  path: string
+  namedImports?: NamedImport[]
+}
+
 interface DependencyGraph {
-  files: Record<string, {imports: string[]}>
+  files: Record<string, {imports: ImportEntry[]}>
   transitiveDependencies: Record<string, string[]>
 }
 
@@ -69,6 +79,80 @@ function loadDependencyGraph(): DependencyGraph | null {
     return null
   }
   return JSON.parse(readFileSync(graphPath, 'utf-8'))
+}
+
+/**
+ * Build a map from exported function name to source file path.
+ * Parses barrel re-exports like: export \{ getUser \} from './userQueries'
+ */
+function buildBarrelExportMap(project: Project, barrelPath: string): Record<string, string> {
+  const absolutePath = join(projectRoot, barrelPath)
+  const barrelFile = project.getSourceFile(absolutePath)
+  if (!barrelFile) {
+    console.warn(`Warning: Could not find barrel file at ${barrelPath}`)
+    return {}
+  }
+
+  const exportMap: Record<string, string> = {}
+  const exportDecls = barrelFile.getExportDeclarations()
+
+  for (const exportDecl of exportDecls) {
+    const moduleSpecifier = exportDecl.getModuleSpecifierValue()
+    if (!moduleSpecifier) continue
+
+    // Resolve relative path to absolute
+    const sourceDir = dirname(barrelFile.getFilePath())
+    let resolvedPath = resolve(sourceDir, moduleSpecifier)
+    if (!resolvedPath.endsWith('.ts')) {
+      resolvedPath += '.ts'
+    }
+    const relativePath = relative(projectRoot, resolvedPath)
+
+    // Map each named export to its source file
+    const namedExports = exportDecl.getNamedExports()
+    for (const namedExport of namedExports) {
+      const exportName = namedExport.getName()
+      // Skip type exports
+      if (!namedExport.isTypeOnly()) {
+        exportMap[exportName] = relativePath
+      }
+    }
+  }
+
+  return exportMap
+}
+
+/**
+ * Build a map from exported function name to ClassName.methodName
+ * Parses patterns like: export const getUser = UserQueries.getUser.bind(UserQueries)
+ */
+function buildFunctionToMethodMap(project: Project, entityFilePaths: string[]): Record<string, string> {
+  const functionToMethod: Record<string, string> = {}
+  for (const filePath of entityFilePaths) {
+    const absolutePath = join(projectRoot, filePath)
+    const sourceFile = project.getSourceFile(absolutePath)
+    if (!sourceFile) continue
+
+    // Find exported variable declarations
+    const exportedVars = sourceFile.getVariableStatements().filter((vs) => vs.isExported())
+
+    for (const varStmt of exportedVars) {
+      for (const decl of varStmt.getDeclarations()) {
+        const funcName = decl.getName()
+        const initializer = decl.getInitializer()
+        if (!initializer) continue
+
+        // Match pattern: ClassName.methodName.bind(ClassName)
+        const initText = initializer.getText()
+        const match = initText.match(/^(\w+)\.(\w+)\.bind\(/)
+        if (match) {
+          const [, className, methodName] = match
+          functionToMethod[funcName] = `${className}.${methodName}`
+        }
+      }
+    }
+  }
+  return functionToMethod
 }
 
 /**
@@ -123,7 +207,7 @@ function extractLambdaName(filePath: string): string {
  * Compute access level from declared operations.
  * - readonly: Only SELECT operations
  * - readwrite: Any INSERT, UPDATE, or DELETE operations
- * - admin: All operations on all tables (detected by having all ops on >=5 tables)
+ * - admin: All operations on all tables (detected by having all ops on \>=5 tables)
  */
 function computeAccessLevel(tables: TablePermission[]): 'readonly' | 'readwrite' | 'admin' {
   const hasAllOps = tables.every((t) =>
@@ -137,7 +221,7 @@ function computeAccessLevel(tables: TablePermission[]): 'readonly' | 'readwrite'
 }
 
 /**
- * Extract @RequiresTable decorators from entity query class methods
+ * Extract \@RequiresTable decorators from entity query class methods
  */
 function extractEntityPermissions(project: Project): Record<string, EntityMethodPermission> {
   const entityPermissions: Record<string, EntityMethodPermission> = {}
@@ -224,30 +308,64 @@ function extractEntityPermissions(project: Project): Record<string, EntityMethod
 }
 
 /**
- * Expand barrel import to individual query files.
- * graph.json uses paths without .ts extension.
+ * Trace named imports through the dependency chain to find which entity methods are used.
+ * Returns Set of ClassName.methodName strings that the Lambda transitively imports.
  */
-function expandBarrelImport(importPath: string, graph: DependencyGraph): string[] {
-  // Check if this is a barrel import to entities/queries
-  const barrelPaths = ['src/entities/queries/index', 'src/entities/queries']
+function traceEntityMethodsUsed(
+  lambdaPath: string,
+  graph: DependencyGraph,
+  functionToMethodMap: Record<string, string>
+): Set<string> {
+  const usedMethods = new Set<string>()
+  const visited = new Set<string>()
 
-  if (barrelPaths.some((bp) => importPath === bp || importPath.endsWith(bp))) {
-    // Return all query files (not the barrel itself)
-    return Object.keys(graph.files).filter(
-      (f) =>
-        f.startsWith('src/entities/queries/') && !f.endsWith('index.ts') && !f.endsWith('index') && f.endsWith('.ts')
-    )
+  // Recursive function to trace named imports
+  function traceFile(filePath: string) {
+    if (visited.has(filePath)) return
+    visited.add(filePath)
+
+    const fileData = graph.files[filePath]
+    if (!fileData) return
+
+    for (const imp of fileData.imports) {
+      const importPath = imp.path
+      const namedImports = imp.namedImports
+
+      // Check if this is the entities/queries barrel
+      const normalizedPath = importPath.replace(/\.ts$/, '')
+      const isBarrel =
+        normalizedPath.endsWith('src/entities/queries/index') || normalizedPath === 'src/entities/queries'
+      const isDirectQueryFile =
+        importPath.includes('src/entities/queries/') && !importPath.endsWith('index.ts') && !isBarrel
+
+      if (isBarrel || isDirectQueryFile) {
+        // For barrel or direct query file imports, map named imports to methods
+        if (namedImports) {
+          for (const {name} of namedImports) {
+            const methodKey = functionToMethodMap[name]
+            if (methodKey) {
+              usedMethods.add(methodKey)
+            }
+          }
+        }
+      } else {
+        // Intermediate file - recursively trace its imports
+        traceFile(importPath)
+      }
+    }
   }
 
-  return [importPath]
+  traceFile(lambdaPath)
+  return usedMethods
 }
 
 /**
- * Trace Lambda dependencies and aggregate permissions from entity query files
+ * Trace Lambda dependencies and aggregate permissions from entity query methods
  */
 function traceLambdaDependencies(
   graph: DependencyGraph,
-  entityPermissions: Record<string, EntityMethodPermission>
+  entityPermissions: Record<string, EntityMethodPermission>,
+  functionToMethodMap: Record<string, string>
 ): Record<string, LambdaEntityPermissions> {
   const lambdaPermissions: Record<string, LambdaEntityPermissions> = {}
 
@@ -260,44 +378,32 @@ function traceLambdaDependencies(
 
   for (const lambdaPath of lambdaEntryPoints) {
     const lambdaName = extractLambdaName(lambdaPath)
-    const transitiveImports = graph.transitiveDependencies[lambdaPath] || []
 
-    // Expand any barrel imports and find entity query files
-    const expandedImports: string[] = []
-    for (const imp of transitiveImports) {
-      expandedImports.push(...expandBarrelImport(imp, graph))
-    }
+    // Trace which entity methods are actually used
+    const usedMethods = traceEntityMethodsUsed(lambdaPath, graph, functionToMethodMap)
 
-    // Find all entity query files in transitive imports
-    const entityImports = expandedImports.filter((p) => p.includes('src/entities/queries/') && !p.endsWith('index.ts'))
+    if (usedMethods.size === 0) continue
 
-    if (entityImports.length === 0) continue
-
-    // Aggregate permissions from all entity methods in imported files
+    // Collect permissions only for used methods
     const allPermissions: TablePermission[] = []
     const sourceFiles = new Set<string>()
 
-    for (const entityFile of entityImports) {
-      // Normalize paths for comparison (with/without .ts extension)
-      const entityWithExt = entityFile.endsWith('.ts') ? entityFile : `${entityFile}.ts`
-
-      for (const methodPerm of Object.values(entityPermissions)) {
-        if (methodPerm.filePath === entityWithExt || methodPerm.filePath === entityFile) {
-          allPermissions.push(...methodPerm.permissions)
-          sourceFiles.add(methodPerm.filePath)
-        }
+    for (const methodKey of usedMethods) {
+      const methodPerm = entityPermissions[methodKey]
+      if (methodPerm) {
+        allPermissions.push(...methodPerm.permissions)
+        sourceFiles.add(methodPerm.filePath)
       }
     }
 
     if (allPermissions.length > 0) {
-      // Deduplicate and merge permissions by table
       const deduped = deduplicatePermissions(allPermissions)
       lambdaPermissions[lambdaName] = {
         tables: deduped,
         computedAccessLevel: computeAccessLevel(deduped),
         sourceFiles: Array.from(sourceFiles).sort()
       }
-      console.log(`  ${lambdaName}: ${deduped.length} table(s) from ${sourceFiles.size} entity file(s)`)
+      console.log(`  ${lambdaName}: ${deduped.length} table(s) via ${usedMethods.size} methods`)
     }
   }
 
@@ -309,7 +415,6 @@ function traceLambdaDependencies(
  */
 function deduplicatePermissions(permissions: TablePermission[]): TablePermission[] {
   const merged = new Map<string, TablePermission>()
-
   for (const perm of permissions) {
     const key = perm.table
     const existing = merged.get(key)
@@ -321,7 +426,6 @@ function deduplicatePermissions(permissions: TablePermission[]): TablePermission
       merged.set(key, {...perm, operations: [...perm.operations].sort()})
     }
   }
-
   return Array.from(merged.values()).sort((a, b) => a.table.localeCompare(b.table))
 }
 
@@ -343,11 +447,29 @@ async function extractPermissions(): Promise<EntityPermissionsManifest> {
   const entityPermissions = extractEntityPermissions(project)
   console.log(`Found ${Object.keys(entityPermissions).length} decorated entity methods`)
 
-  // Step 2: Trace Lambda dependencies and aggregate entity permissions
+  // Step 2: Build export maps and trace Lambda dependencies
   let lambdaPermissions: Record<string, LambdaEntityPermissions> = {}
   if (graph) {
+    console.log('\n=== Building Export Maps ===')
+
+    // Add barrel file to project
+    project.addSourceFilesAtPaths(join(projectRoot, 'src/entities/queries/index.ts'))
+
+    const barrelExportMap = buildBarrelExportMap(project, 'src/entities/queries/index.ts')
+    console.log(`Barrel export map: ${Object.keys(barrelExportMap).length} exports`)
+
+    // Get unique source files and add them to project for parsing
+    const entityFilePaths = Object.values(barrelExportMap).filter((v, i, a) => a.indexOf(v) === i)
+    for (const filePath of entityFilePaths) {
+      project.addSourceFilesAtPaths(join(projectRoot, filePath))
+    }
+
+    const functionToMethodMap = buildFunctionToMethodMap(project, entityFilePaths)
+    console.log(`Function-to-method map: ${Object.keys(functionToMethodMap).length} mappings`)
+
+    // Step 3: Trace Lambda dependencies with method-level filtering
     console.log('\n=== Tracing Lambda Dependencies ===')
-    lambdaPermissions = traceLambdaDependencies(graph, entityPermissions)
+    lambdaPermissions = traceLambdaDependencies(graph, entityPermissions, functionToMethodMap)
   } else {
     console.warn('\nSkipping dependency tracing (no graph.json)')
   }

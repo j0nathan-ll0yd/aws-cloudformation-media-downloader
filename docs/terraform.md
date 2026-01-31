@@ -118,6 +118,7 @@ No modules.
 | [aws_iam_policy.LambdaDSQLAdminConnect](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
 | [aws_iam_policy.LambdaDSQLConnect](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
 | [aws_iam_policy.PruneDevices](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
+| [aws_iam_policy.PruneDevices_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
 | [aws_iam_policy.RegisterDevice_infrastructure](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
 | [aws_iam_policy.RegisterDevice_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
 | [aws_iam_policy.S3ObjectCreated_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
@@ -126,7 +127,9 @@ No modules.
 | [aws_iam_policy.StartFileUpload_infrastructure](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
 | [aws_iam_policy.StartFileUpload_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
 | [aws_iam_policy.UserDelete](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
+| [aws_iam_policy.UserDelete_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
 | [aws_iam_policy.UserSubscribe](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
+| [aws_iam_policy.UserSubscribe_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
 | [aws_iam_policy.WebhookFeedly_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
 | [aws_iam_role.ApiGatewayAuthorizer](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
 | [aws_iam_role.ApiGatewayCloudwatch](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
@@ -180,6 +183,7 @@ No modules.
 | [aws_iam_role_policy_attachment.MigrateDSQLXRay](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.PruneDevices](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.PruneDevicesXRay](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
+| [aws_iam_role_policy_attachment.PruneDevices_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.RefreshTokenXRay](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.RegisterDeviceXRay](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.RegisterDevice_infrastructure](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
@@ -195,8 +199,10 @@ No modules.
 | [aws_iam_role_policy_attachment.StartFileUpload_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.UserDelete](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.UserDeleteXRay](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
+| [aws_iam_role_policy_attachment.UserDelete_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.UserSubscribe](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.UserSubscribeXRay](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
+| [aws_iam_role_policy_attachment.UserSubscribe_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.WebhookFeedlyXRay](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.WebhookFeedly_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.lambda_dsql_admin](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
@@ -289,6 +295,7 @@ No modules.
 | [aws_iam_policy_document.LambdaGatewayAssumeRole](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_iam_policy_document.LamdbaEdgeAssumeRole](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_iam_policy_document.PruneDevices](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
+| [aws_iam_policy_document.PruneDevices_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_iam_policy_document.RegisterDevice_infrastructure](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_iam_policy_document.RegisterDevice_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_iam_policy_document.S3ObjectCreated_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
@@ -299,7 +306,9 @@ No modules.
 | [aws_iam_policy_document.StartFileUpload_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_iam_policy_document.StatesAssumeRole](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_iam_policy_document.UserDelete](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
+| [aws_iam_policy_document.UserDelete_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_iam_policy_document.UserSubscribe](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
+| [aws_iam_policy_document.UserSubscribe_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_iam_policy_document.WebhookFeedly_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_iam_policy_document.dsql_admin_connect](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_iam_policy_document.dsql_connect](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
@@ -311,7 +320,19 @@ No modules.
 
 ## Inputs
 
-No inputs.
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| <a name="input_api_quota_limit"></a> [api\_quota\_limit](#input\_api\_quota\_limit) | API Gateway daily quota limit | `number` | `10000` | no |
+| <a name="input_api_throttle_burst_limit"></a> [api\_throttle\_burst\_limit](#input\_api\_throttle\_burst\_limit) | API Gateway throttle burst limit | `number` | `100` | no |
+| <a name="input_api_throttle_rate_limit"></a> [api\_throttle\_rate\_limit](#input\_api\_throttle\_rate\_limit) | API Gateway throttle rate limit | `number` | `50` | no |
+| <a name="input_download_reserved_concurrency"></a> [download\_reserved\_concurrency](#input\_download\_reserved\_concurrency) | Reserved concurrency for StartFileUpload Lambda | `number` | `10` | no |
+| <a name="input_dsql_deletion_protection"></a> [dsql\_deletion\_protection](#input\_dsql\_deletion\_protection) | Enable deletion protection for DSQL cluster | `bool` | `true` | no |
+| <a name="input_enable_cloudwatch_alarms"></a> [enable\_cloudwatch\_alarms](#input\_enable\_cloudwatch\_alarms) | Enable CloudWatch alarms (first 10 free, then $0.10/alarm) | `bool` | `false` | no |
+| <a name="input_enable_cloudwatch_dashboard"></a> [enable\_cloudwatch\_dashboard](#input\_enable\_cloudwatch\_dashboard) | Enable CloudWatch dashboard (costs $3/month per environment) | `bool` | `false` | no |
+| <a name="input_environment"></a> [environment](#input\_environment) | Environment name (staging, production) | `string` | n/a | yes |
+| <a name="input_log_level"></a> [log\_level](#input\_log\_level) | Lambda log level | `string` | `"INFO"` | no |
+| <a name="input_log_retention_days"></a> [log\_retention\_days](#input\_log\_retention\_days) | CloudWatch log retention in days | `number` | `7` | no |
+| <a name="input_resource_prefix"></a> [resource\_prefix](#input\_resource\_prefix) | Prefix for all resource names (stag, prod) | `string` | n/a | yes |
 
 ## Outputs
 
@@ -322,7 +343,7 @@ No inputs.
 | <a name="output_api_gateway_subdomain"></a> [api\_gateway\_subdomain](#output\_api\_gateway\_subdomain) | The subdomain of the API Gateway (e.g. ow9mzeewuf) |
 | <a name="output_cloudfront_distribution_domain"></a> [cloudfront\_distribution\_domain](#output\_cloudfront\_distribution\_domain) | The CloudFront distribution domain. The URL to make requests (e.g. d3q75k9ayjjukw.cloudfront.net) |
 | <a name="output_cloudfront_media_files_domain"></a> [cloudfront\_media\_files\_domain](#output\_cloudfront\_media\_files\_domain) | CloudFront domain for media files (use this in iOS app) |
-| <a name="output_cloudwatch_dashboard_url"></a> [cloudwatch\_dashboard\_url](#output\_cloudwatch\_dashboard\_url) | URL to the CloudWatch dashboard |
+| <a name="output_cloudwatch_dashboard_url"></a> [cloudwatch\_dashboard\_url](#output\_cloudwatch\_dashboard\_url) | URL to the CloudWatch dashboard (empty if dashboard disabled) |
 | <a name="output_download_queue_arn"></a> [download\_queue\_arn](#output\_download\_queue\_arn) | Download Queue ARN |
 | <a name="output_download_queue_url"></a> [download\_queue\_url](#output\_download\_queue\_url) | Download Queue URL |
 | <a name="output_dsql_cluster_arn"></a> [dsql\_cluster\_arn](#output\_dsql\_cluster\_arn) | Aurora DSQL cluster ARN |
@@ -332,5 +353,5 @@ No inputs.
 | <a name="output_idempotency_table_arn"></a> [idempotency\_table\_arn](#output\_idempotency\_table\_arn) | ARN of the Idempotency DynamoDB table |
 | <a name="output_idempotency_table_name"></a> [idempotency\_table\_name](#output\_idempotency\_table\_name) | Name of the Idempotency DynamoDB table |
 | <a name="output_migration_result"></a> [migration\_result](#output\_migration\_result) | Result of database migration |
-| <a name="output_operations_alerts_sns_topic_arn"></a> [operations\_alerts\_sns\_topic\_arn](#output\_operations\_alerts\_sns\_topic\_arn) | SNS topic ARN for operations alerts - subscribe manually to receive notifications |
+| <a name="output_operations_alerts_sns_topic_arn"></a> [operations\_alerts\_sns\_topic\_arn](#output\_operations\_alerts\_sns\_topic\_arn) | SNS topic ARN for operations alerts (empty if alarms disabled) |
 | <a name="output_public_ip"></a> [public\_ip](#output\_public\_ip) | Your public IP address (used for local development/testing) |

@@ -36,6 +36,8 @@ const context = createMockContext({functionName: 'MigrateDSQL'})
 describe('MigrateDSQL Lambda', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    // Set required environment variables
+    process.env.RESOURCE_PREFIX = 'test'
     // Default: migrations directory exists with two files
     mockReaddirSync.mockReturnValue(['0001_schema.sql', '0002_lambda_roles.sql'])
     mockReadFileSync.mockImplementation((path: string) => {
