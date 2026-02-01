@@ -28,6 +28,18 @@ jobs:
       id-token: write
       contents: read
     steps:
+      - name: Check AWS credentials configuration
+        id: check-creds
+        run: |
+          ROLE_SECRET="${{ inputs.environment == 'production' && secrets.AWS_ROLE_PRODUCTION || secrets.AWS_ROLE_STAGING }}"
+          if [ -z "$ROLE_SECRET" ]; then
+            echo "::error::AWS role secret for ${{ inputs.environment }} is not configured."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            exit 1
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Determine rollback target
         id: target
         run: |

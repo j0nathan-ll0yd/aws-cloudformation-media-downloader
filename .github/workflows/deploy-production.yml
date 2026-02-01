@@ -67,10 +67,22 @@ jobs:
       id-token: write
       contents: read
     steps:
+      - name: Check AWS credentials configuration
+        id: check-creds
+        run: |
+          if [ -z "${{ secrets.AWS_ROLE_PRODUCTION }}" ]; then
+            echo "::warning::AWS_ROLE_PRODUCTION secret is not configured. Skipping production deployment."
+            echo "::notice::To enable production deployments, configure the AWS_ROLE_PRODUCTION secret with your IAM role ARN."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/checkout@v6
+        if: steps.check-creds.outputs.configured == 'true'
 
       - name: Validate manual trigger
-        if: github.event_name == 'workflow_dispatch'
+        if: steps.check-creds.outputs.configured == 'true' && github.event_name == 'workflow_dispatch'
         run: |
           if [ "${{ inputs.confirm }}" != "deploy" ]; then
             echo "::error::You must type 'deploy' to confirm production deployment"
@@ -78,28 +90,33 @@ jobs:
           fi
 
       - name: Download build artifacts
+        if: steps.check-creds.outputs.configured == 'true'
         uses: actions/download-artifact@v7
         with:
           name: build-artifacts
 
       - name: Setup OpenTofu
+        if: steps.check-creds.outputs.configured == 'true'
         uses: opentofu/setup-opentofu@v1
         with:
           tofu_version: ${{ env.TOFU_VERSION }}
 
       - name: Configure AWS credentials (Production)
+        if: steps.check-creds.outputs.configured == 'true'
         uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_PRODUCTION }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Decrypt production secrets
+        if: steps.check-creds.outputs.configured == 'true'
         run: |
           echo "${{ secrets.SOPS_AGE_KEY }}" > /tmp/age-key.txt
           export SOPS_AGE_KEY_FILE=/tmp/age-key.txt
           sops --decrypt secrets.prod.enc.yaml > secrets.prod.yaml
 
       - name: Deploy to Production
+        if: steps.check-creds.outputs.configured == 'true'
         working-directory: terraform
         run: |
           tofu init
@@ -107,6 +124,11 @@ jobs:
           tofu apply -var-file=environments/production.tfvars -auto-approve
 
       - name: Post deployment notification
-        if: success()
+        if: steps.check-creds.outputs.configured == 'true' && success()
         run: |
           echo "::notice::Production deployment successful! Commit: ${{ github.sha }}"
+
+      - name: Skip notification
+        if: steps.check-creds.outputs.configured != 'true'
+        run: |
+          echo "::notice::Production deployment skipped - AWS_ROLE_PRODUCTION not configured"
