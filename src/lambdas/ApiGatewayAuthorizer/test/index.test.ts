@@ -116,6 +116,27 @@ describe('#APIGatewayAuthorizer', () => {
       getUsageMock.mockReturnValue(getUsageResponse)
       await expect(handler(event, createMockContext())).rejects.toThrow(unauthorizedError)
     })
+    test('should handle a test request if structured correctly (non-production)', async () => {
+      getApiKeysMock.mockReturnValue(getApiKeysDefaultResponse)
+      event.headers!['User-Agent'] = 'localhost@lifegames'
+      process.env.RESERVED_CLIENT_IP = event.requestContext.identity.sourceIp = '127.0.0.1'
+      process.env.NODE_ENV = 'development'
+      const output = await handler(event, createMockContext())
+      expect(output.principalId).toEqual('123e4567-e89b-12d3-a456-426614174000')
+      expect(output.policyDocument.Statement[0].Effect).toEqual('Allow')
+      expect(output.usageIdentifierKey).toEqual(fakeUsageIdentifierKey)
+    })
+    test('should NOT allow test bypass in production environment', async () => {
+      getApiKeysMock.mockReturnValue(getApiKeysDefaultResponse)
+      getUsagePlansMock.mockReturnValue(getUsagePlansResponse)
+      getUsageMock.mockReturnValue(getUsageResponse)
+      event.headers!['User-Agent'] = 'localhost@lifegames'
+      process.env.RESERVED_CLIENT_IP = event.requestContext.identity.sourceIp = '127.0.0.1'
+      process.env.NODE_ENV = 'production'
+      // In production, test bypass is disabled, so missing auth header should throw
+      delete event.headers!['Authorization']
+      await expect(handler(event, createMockContext())).rejects.toThrow(unauthorizedError)
+    })
   })
   describe('#AWSFailure', () => {
     let event: APIGatewayRequestAuthorizerEvent

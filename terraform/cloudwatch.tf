@@ -618,7 +618,7 @@ resource "aws_cloudwatch_metric_alarm" "LambdaThrottlesBackground" {
   tags = local.common_tags
 }
 
-# SQS DLQ Alarm (SendPushNotification) - any message in DLQ requires investigation
+# SQS DLQ Alarm - any message in DLQ requires investigation
 resource "aws_cloudwatch_metric_alarm" "SqsDlqMessages" {
   count               = var.enable_cloudwatch_alarms ? 1 : 0
   alarm_name          = "${var.resource_prefix}-MediaDownloader-SQS-DLQ-Messages"
@@ -634,30 +634,6 @@ resource "aws_cloudwatch_metric_alarm" "SqsDlqMessages" {
 
   dimensions = {
     QueueName = aws_sqs_queue.SendPushNotificationDLQ.name
-  }
-
-  alarm_actions = [aws_sns_topic.OperationsAlerts[0].arn]
-  ok_actions    = [aws_sns_topic.OperationsAlerts[0].arn]
-
-  tags = local.common_tags
-}
-
-# SQS DLQ Alarm (Download) - any message in DLQ requires investigation
-resource "aws_cloudwatch_metric_alarm" "DownloadDlqMessages" {
-  count               = var.enable_cloudwatch_alarms ? 1 : 0
-  alarm_name          = "${var.resource_prefix}-MediaDownloader-Download-DLQ-Messages"
-  comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = 1
-  metric_name         = "ApproximateNumberOfMessagesVisible"
-  namespace           = "AWS/SQS"
-  period              = 300
-  statistic           = "Sum"
-  threshold           = 0
-  alarm_description   = "Messages in Download DLQ require investigation - video downloads failed after retries"
-  treat_missing_data  = "notBreaching"
-
-  dimensions = {
-    QueueName = aws_sqs_queue.DownloadDLQ.name
   }
 
   alarm_actions = [aws_sns_topic.OperationsAlerts[0].arn]
