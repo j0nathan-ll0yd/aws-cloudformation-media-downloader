@@ -100,8 +100,14 @@ main() {
   echo -e "${GREEN}  Dependencies installed${NC}"
 
   # Security audit (part of dependency check)
+  # Ignore tar CVEs (fastembed dev dependency requires tar 6.x for ESM default exports)
+  # Ignore fast-xml-parser CVE (dev dependencies only: @redocly/cli, repomix, @aws-sdk/xml-builder)
   echo "  Running security audit..."
-  if ! pnpm audit --audit-level=high; then
+  if ! pnpm audit --audit-level=high \
+    --ignore GHSA-8qq5-rm4j-mr97 \
+    --ignore GHSA-r6q2-hw4h-h46w \
+    --ignore GHSA-34x7-hfp2-rc4v \
+    --ignore GHSA-37qj-frw5-hhjh; then
     echo -e "${RED}  Security audit found high severity vulnerabilities${NC}"
     echo "  Run 'pnpm audit' for details"
     exit 1
