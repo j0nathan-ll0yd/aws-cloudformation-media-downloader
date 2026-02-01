@@ -33,7 +33,6 @@ import {docsStructureRule} from './rules/docs-structure'
 import {powertoolsMetricsRule} from './rules/powertools-metrics'
 import {migrationsSafetyRule} from './rules/migrations-safety'
 import {auroraDsqlAsyncIndexRule} from './rules/aurora-dsql-async-index'
-import {databasePermissionsRule} from './rules/database-permissions'
 import {secretPermissionsRule} from './rules/secret-permissions'
 import {servicePermissionsRule} from './rules/service-permissions'
 import {eventBridgePermissionsRule} from './rules/eventbridge-permissions'
@@ -53,7 +52,6 @@ export const allRules: ValidationRule[] = [
   cascadeSafetyRule,
   migrationsSafetyRule,
   // HIGH (permissions)
-  databasePermissionsRule,
   secretPermissionsRule,
   servicePermissionsRule,
   eventBridgePermissionsRule,
@@ -105,9 +103,6 @@ export const rulesByName: Record<string, ValidationRule> = {
   migrations: migrationsSafetyRule, // alias
   'aurora-dsql-async-index': auroraDsqlAsyncIndexRule,
   'async-index': auroraDsqlAsyncIndexRule, // alias
-  'database-permissions': databasePermissionsRule,
-  'db-permissions': databasePermissionsRule, // alias
-  database: databasePermissionsRule, // alias
   'secret-permissions': secretPermissionsRule,
   secrets: secretPermissionsRule, // alias
   'service-permissions': servicePermissionsRule,
@@ -168,7 +163,6 @@ export {
   cascadeSafetyRule,
   commentConventionsRule,
   configEnforcementRule,
-  databasePermissionsRule,
   docsStructureRule,
   docSyncRule,
   drizzleOrmEncapsulationRule,

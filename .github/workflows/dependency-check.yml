@@ -18,7 +18,15 @@ jobs:
       - uses: ./.github/actions/setup-node-pnpm
 
       - name: Security audit
-        run: pnpm audit --audit-level=high
+        # tar 6.2.1 CVEs ignored for fastembed (devDep only, not in production bundle)
+        # fastembed uses `import tar from 'tar'` requiring default export removed in tar 7.x
+        # Risk assessment: fastembed only extracts ML model files locally during dev indexing
+        # Tracking: https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/issues/382
+        run: |
+          pnpm audit --audit-level=high \
+            --ignore GHSA-8qq5-rm4j-mr97 \
+            --ignore GHSA-r6q2-hw4h-h46w \
+            --ignore GHSA-34x7-hfp2-rc4v
 
       - name: Generate dependency graph
         run: pnpm run generate:graph

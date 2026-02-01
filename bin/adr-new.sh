@@ -4,7 +4,7 @@
 # Creates a new Architecture Decision Record from template
 # Usage: pnpm run adr:new "Title of your decision"
 
-set -e # Exit on error
+set -euo pipefail # Exit on error, undefined vars, pipe failures
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"

@@ -39,19 +39,23 @@ main() {
   echo "  2. Dependency installation"
   echo "  3. TypeSpec compilation"
   echo "  4. Build dependencies (Terraform types)"
-  echo "  5. esbuild build"
-  echo "  6. Type checking"
-  echo "  7. Linting"
-  echo "  8. Formatting (dprint)"
-  echo "  9. ShellCheck (bash linting)"
-  echo "  10. ESLint local rules tests"
-  echo "  11. Documentation validation"
-  echo "  12. Documentation freshness validation"
-  echo "  13. Dependency rules check"
-  echo "  14. GraphRAG validation"
-  echo "  15. Documentation sync validation"
-  echo "  16. Unit tests"
-  echo "  17. Test output validation"
+  echo "  5. Dependency graph generation"
+  echo "  6. esbuild build"
+  echo "  7. Type checking"
+  echo "  8. Linting"
+  echo "  9. Formatting (dprint)"
+  echo "  10. ShellCheck (bash linting)"
+  echo "  11. ESLint local rules tests"
+  echo "  12. MCP conventions validation"
+  echo "  13. Config validation"
+  echo "  14. API paths validation"
+  echo "  15. Documentation validation"
+  echo "  16. Documentation freshness validation"
+  echo "  17. Dependency rules check"
+  echo "  18. GraphRAG validation"
+  echo "  19. Documentation sync validation"
+  echo "  20. Unit tests"
+  echo "  21. Test output validation"
   echo ""
   echo -e "${BLUE}Note: Integration tests skipped. Use 'pnpm run ci:local:full' for complete CI.${NC}"
   echo ""
@@ -59,7 +63,7 @@ main() {
   cd "$PROJECT_ROOT"
 
   # Step 1: Environment checks
-  echo -e "${YELLOW}[1/17] Checking prerequisites...${NC}"
+  echo -e "${YELLOW}[1/21] Checking prerequisites...${NC}"
 
   # Check Node.js version
   REQUIRED_NODE_MAJOR=24
@@ -90,14 +94,21 @@ main() {
   echo ""
 
   # Step 2: Create build directory and install dependencies
-  echo -e "${YELLOW}[2/17] Installing dependencies...${NC}"
+  echo -e "${YELLOW}[2/21] Installing dependencies...${NC}"
   mkdir -p build
   pnpm install --frozen-lockfile
   echo -e "${GREEN}  Dependencies installed${NC}"
 
   # Security audit (part of dependency check)
+  # tar 6.2.1 CVEs ignored for fastembed (devDep only, not in production bundle)
+  # fastembed uses `import tar from 'tar'` requiring default export removed in tar 7.x
+  # Risk: fastembed only extracts ML model files locally during dev indexing
+  # Tracking: https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/issues/382
   echo "  Running security audit..."
-  if ! pnpm audit --audit-level=high; then
+  if ! pnpm audit --audit-level=high \
+    --ignore GHSA-8qq5-rm4j-mr97 \
+    --ignore GHSA-r6q2-hw4h-h46w \
+    --ignore GHSA-34x7-hfp2-rc4v; then
     echo -e "${RED}  Security audit found high severity vulnerabilities${NC}"
     echo "  Run 'pnpm audit' for details"
     exit 1
@@ -106,32 +117,38 @@ main() {
   echo ""
 
   # Step 3: TypeSpec compilation
-  echo -e "${YELLOW}[3/17] Compiling TypeSpec...${NC}"
+  echo -e "${YELLOW}[3/21] Compiling TypeSpec...${NC}"
   pnpm run typespec:check
   echo -e "${GREEN}  TypeSpec compilation passed${NC}"
   echo ""
 
   # Step 4: Build dependencies (Terraform types)
-  echo -e "${YELLOW}[4/17] Building dependencies (Terraform types)...${NC}"
+  echo -e "${YELLOW}[4/21] Building dependencies (Terraform types)...${NC}"
   pnpm run build:dependencies
   echo -e "${GREEN}  Build dependencies complete${NC}"
   echo ""
 
-  # Step 5: esbuild build
-  echo -e "${YELLOW}[5/17] Running esbuild build...${NC}"
+  # Step 5: Dependency graph generation
+  echo -e "${YELLOW}[5/21] Generating dependency graph...${NC}"
+  pnpm run generate:graph
+  echo -e "${GREEN}  Dependency graph generated${NC}"
+  echo ""
+
+  # Step 6: esbuild build
+  echo -e "${YELLOW}[6/21] Running esbuild build...${NC}"
   pnpm run build
   echo -e "${GREEN}  Build complete${NC}"
   echo ""
 
-  # Step 6: Type checking
-  echo -e "${YELLOW}[6/17] Running type checks...${NC}"
+  # Step 7: Type checking
+  echo -e "${YELLOW}[7/21] Running type checks...${NC}"
   pnpm run check:types
   pnpm run check:test:types
   echo -e "${GREEN}  Type checks passed${NC}"
   echo ""
 
-  # Step 7: Linting
-  echo -e "${YELLOW}[7/17] Running linter...${NC}"
+  # Step 8: Linting
+  echo -e "${YELLOW}[8/21] Running linter...${NC}"
   pnpm run lint
 
   # Check Terraform formatting
@@ -149,8 +166,8 @@ main() {
   echo -e "${GREEN}  Linting passed${NC}"
   echo ""
 
-  # Step 8: Formatting check (dprint)
-  echo -e "${YELLOW}[8/17] Checking code formatting (dprint)...${NC}"
+  # Step 9: Formatting check (dprint)
+  echo -e "${YELLOW}[9/21] Checking code formatting (dprint)...${NC}"
   if ! pnpm run format:check; then
     echo -e "${RED}Error: Code formatting check failed.${NC}"
     echo "Run 'pnpm run format' to fix."
@@ -159,8 +176,8 @@ main() {
   echo -e "${GREEN}  Code formatting passed${NC}"
   echo ""
 
-  # Step 9: ShellCheck
-  echo -e "${YELLOW}[9/17] Running ShellCheck...${NC}"
+  # Step 10: ShellCheck
+  echo -e "${YELLOW}[10/21] Running ShellCheck...${NC}"
   if command -v shellcheck &> /dev/null; then
     # Use severity filter to only fail on errors, not warnings/style
     if shellcheck --severity=error bin/*.sh .github/scripts/*.sh; then
@@ -178,40 +195,58 @@ main() {
   fi
   echo ""
 
-  # Step 10: ESLint local rules tests
-  echo -e "${YELLOW}[10/17] Testing ESLint local rules...${NC}"
+  # Step 11: ESLint local rules tests
+  echo -e "${YELLOW}[11/21] Testing ESLint local rules...${NC}"
   pnpm run test:eslint:rules
   echo -e "${GREEN}  ESLint local rules tests passed${NC}"
   echo ""
 
-  # Step 11: Documentation validation
-  echo -e "${YELLOW}[11/17] Validating documented scripts...${NC}"
+  # Step 12: MCP conventions validation
+  echo -e "${YELLOW}[12/21] Validating MCP conventions...${NC}"
+  pnpm run validate:conventions
+  echo -e "${GREEN}  MCP conventions passed${NC}"
+  echo ""
+
+  # Step 13: Config validation
+  echo -e "${YELLOW}[13/21] Validating config...${NC}"
+  pnpm run validate:config
+  echo -e "${GREEN}  Config validation passed${NC}"
+  echo ""
+
+  # Step 14: API paths validation
+  echo -e "${YELLOW}[14/21] Validating API paths...${NC}"
+  pnpm run validate:api:paths
+  echo -e "${GREEN}  API paths validation passed${NC}"
+  echo ""
+
+  # Step 15: Documentation validation
+  echo -e "${YELLOW}[15/21] Validating documented scripts...${NC}"
   ./bin/validate-docs.sh
   echo ""
 
-  # Step 12: Documentation freshness validation
-  echo -e "${YELLOW}[12/17] Validating documentation freshness...${NC}"
+  # Step 16: Documentation freshness validation
+  echo -e "${YELLOW}[16/21] Validating documentation freshness...${NC}"
   ./bin/validate-docs-freshness.sh
   echo ""
 
-  # Step 13: Dependency rules check
-  echo -e "${YELLOW}[13/17] Checking dependency rules...${NC}"
+  # Step 17: Dependency rules check
+  echo -e "${YELLOW}[17/21] Checking dependency rules...${NC}"
   pnpm run deps:check
   echo -e "${GREEN}  Dependency rules passed${NC}"
   echo ""
 
-  # Step 14: GraphRAG validation
-  echo -e "${YELLOW}[14/17] Validating GraphRAG...${NC}"
+  # Step 18: GraphRAG validation
+  echo -e "${YELLOW}[18/21] Validating GraphRAG...${NC}"
   ./bin/validate-graphrag.sh
   echo ""
 
-  # Step 15: Documentation sync validation
-  echo -e "${YELLOW}[15/17] Validating documentation sync...${NC}"
+  # Step 19: Documentation sync validation
+  echo -e "${YELLOW}[19/21] Validating documentation sync...${NC}"
   ./bin/validate-doc-sync.sh
   echo ""
 
-  # Step 16: Unit tests
-  echo -e "${YELLOW}[16/17] Running unit tests...${NC}"
+  # Step 20: Unit tests
+  echo -e "${YELLOW}[20/21] Running unit tests...${NC}"
   TEST_OUTPUT=$(pnpm test 2>&1)
   TEST_EXIT_CODE=$?
   echo "$TEST_OUTPUT"
@@ -223,8 +258,8 @@ main() {
   echo -e "${GREEN}  Unit tests passed${NC}"
   echo ""
 
-  # Step 17: Validate test output is clean
-  echo -e "${YELLOW}[17/17] Validating test output...${NC}"
+  # Step 21: Validate test output is clean
+  echo -e "${YELLOW}[21/21] Validating test output...${NC}"
   TEST_ISSUES=0
 
   # Check for Vitest deprecation warnings
@@ -269,9 +304,10 @@ main() {
   echo "All checks passed in ${MINUTES}m ${SECONDS}s"
   echo ""
   echo "What was checked:"
-  echo "  Environment, dependencies, security audit, TypeSpec, build, types, lint,"
-  echo "  formatting (dprint), ShellCheck, ESLint local rules, documentation, docs freshness,"
-  echo "  dependency rules, GraphRAG, documentation sync, unit tests, test output validation"
+  echo "  Environment, dependencies, security audit, TypeSpec, build dependencies, graph generation,"
+  echo "  build, types, lint, formatting (dprint), ShellCheck, ESLint local rules, MCP conventions,"
+  echo "  config, API paths, documentation, docs freshness, dependency rules, GraphRAG,"
+  echo "  documentation sync, unit tests, test output validation"
   echo ""
   echo "What was NOT checked (run ci:local:full for these):"
   echo "  Integration tests (LocalStack)"

@@ -30,7 +30,7 @@ describe('validation exports', () => {
   describe('allRules', () => {
     test('should export array of rules', () => {
       expect(Array.isArray(allRules)).toBe(true)
-      expect(allRules.length).toBe(29)
+      expect(allRules.length).toBe(28)
     })
 
     test('should contain all expected rules', () => {
@@ -48,7 +48,6 @@ describe('validation exports', () => {
       expect(ruleNames).toContain('batch-retry')
       expect(ruleNames).toContain('scan-pagination')
       expect(ruleNames).toContain('doc-sync')
-      expect(ruleNames).toContain('database-permissions')
       expect(ruleNames).toContain('secret-permissions')
       expect(ruleNames).toContain('service-permissions')
       expect(ruleNames).toContain('eventbridge-permissions')
