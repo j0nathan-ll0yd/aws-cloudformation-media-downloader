@@ -13,7 +13,7 @@ import {getApiKeys, getUsage, getUsagePlans} from '#lib/vendor/AWS/ApiGateway'
 import type {ApiKey, UsagePlan} from '#lib/vendor/AWS/ApiGateway'
 import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
 import {validateSessionToken} from '#lib/domain/auth/sessionService'
-import {getOptionalEnv, getRequiredEnv} from '#lib/system/env'
+import {getRequiredEnv} from '#lib/system/env'
 import {providerFailureErrorMessage, UnexpectedError} from '#lib/system/errors'
 import {AuthorizerHandler, metrics, MetricUnit} from '#lib/lambda/handlers'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
@@ -131,34 +131,6 @@ async function getUserIdFromAuthenticationHeader(authorizationHeader: string): P
 }
 
 /**
- * Checks if the request is coming from a reserved IP for remote testing.
- * SECURITY: This bypass is disabled in production environments.
- *
- * @param event - The API Gateway request authorizer event
- * @returns True if the request is from the reserved test IP and user agent
- * @notExported
- */
-function isRemoteTestRequest(event: APIGatewayRequestAuthorizerEvent): boolean {
-  // Security: Never allow test bypass in production
-  const nodeEnv = getOptionalEnv('NODE_ENV', '')
-  if (nodeEnv === 'production') {
-    return false
-  }
-
-  if (!event.headers) {
-    return false
-  }
-  const reservedIp = getOptionalEnv('RESERVED_CLIENT_IP', '')
-  if (!reservedIp) {
-    return false
-  }
-  const userAgent = event.headers['User-Agent']
-  const clientIp = event.requestContext.identity.sourceIp
-  logDebug('isRemoteTestRequest <=', {reservedIp, userAgent, clientIp})
-  return clientIp === reservedIp && userAgent === 'localhost@lifegames'
-}
-
-/**
  * Handler for API Gateway custom authorization.
  * Validates API keys and session tokens, returns IAM policies.
  */
@@ -197,15 +169,6 @@ class ApiGatewayAuthorizerHandler extends AuthorizerHandler {
       addMetadata(span, 'reason', 'api_key_disabled')
       endSpan(span)
       throw new Error('Unauthorized')
-    }
-
-    if (isRemoteTestRequest(event)) {
-      const fakeUserId = '123e4567-e89b-12d3-a456-426614174000'
-      metrics.addMetric('AuthorizationSuccess', MetricUnit.Count, 1)
-      addAnnotation(span, 'principalId', fakeUserId)
-      addMetadata(span, 'testRequest', true)
-      endSpan(span)
-      return generateAllow(fakeUserId, event.methodArn, apiKeyValue)
     }
 
     const apiKeyId = apiKey.id as string

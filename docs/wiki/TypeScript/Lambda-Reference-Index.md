@@ -12,6 +12,7 @@ Complete reference for all 18 Lambda functions in the project.
 | [DeviceEvent](#deviceevent) | API Gateway | Log client device events |
 | [ListFiles](#listfiles) | API Gateway | List user's files |
 | [LoginUser](#loginuser) | API Gateway | User authentication |
+| [LogoutUser](#logoutuser) | API Gateway | User logout |
 | [MigrateDSQL](#migratedsql) | Manual CLI | Run database migrations |
 | [PruneDevices](#prunedevices) | CloudWatch Events | Clean inactive devices |
 | [RefreshToken](#refreshtoken) | API Gateway | Refresh auth tokens |
@@ -93,6 +94,23 @@ Authenticates users via Better Auth.
 | **Integration Test** | Yes |
 
 **Purpose**: Validates credentials and creates a new session.
+
+---
+
+### LogoutUser
+
+Logs out users by invalidating their session.
+
+| Attribute | Value |
+|-----------|-------|
+| **Trigger** | API Gateway (POST /user/logout) |
+| **Input** | `APIGatewayProxyEvent` (authenticated) |
+| **Output** | `APIGatewayProxyResult` |
+| **Source** | `src/lambdas/LogoutUser/src/index.ts` |
+| **Test** | `src/lambdas/LogoutUser/test/index.test.ts` |
+| **Integration Test** | Yes |
+
+**Purpose**: Invalidates the user's session token for secure logout.
 
 ---
 
@@ -394,6 +412,7 @@ Runs Drizzle ORM migrations on Aurora DSQL.
 | DeviceEvent | Yes | No | Low-risk telemetry |
 | ListFiles | Yes | Yes | - |
 | LoginUser | Yes | Yes | - |
+| LogoutUser | Yes | Yes | - |
 | MigrateDSQL | Yes | No | Validated via CI |
 | PruneDevices | Yes | Yes | - |
 | RefreshToken | Yes | Yes | - |
@@ -406,7 +425,7 @@ Runs Drizzle ORM migrations on Aurora DSQL.
 | UserSubscribe | Yes | Yes | - |
 | WebhookFeedly | Yes | Yes | - |
 
-**Coverage**: 18/18 (100%) unit tests, 14/17 (82%) integration tests
+**Coverage**: 18/18 (100%) unit tests, 15/18 (83%) integration tests
 
 ## Related Documentation
 
