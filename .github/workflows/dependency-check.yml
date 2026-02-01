@@ -18,7 +18,13 @@ jobs:
       - uses: ./.github/actions/setup-node-pnpm
 
       - name: Security audit
-        run: pnpm audit --audit-level=high
+        # tar v6 vulnerabilities - required for fastembed (devDep for semantic search)
+        # fastembed uses default export removed in tar v7; not used in production
+        run: |
+          pnpm audit --audit-level=high \
+            --ignore GHSA-8qq5-rm4j-mr97 \
+            --ignore GHSA-r6q2-hw4h-h46w \
+            --ignore GHSA-34x7-hfp2-rc4v
 
       - name: Generate dependency graph
         run: pnpm run generate:graph
