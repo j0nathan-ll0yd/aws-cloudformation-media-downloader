@@ -154,12 +154,12 @@ module.exports = {
       },
     },
     {
-      comment: 'Allow MCP server to import handlers',
+      comment: 'Allow MCP server to import handlers and tools',
       from: {
         path: '^src/mcp/server\\.ts$',
       },
       to: {
-        path: '^src/mcp/handlers/',
+        path: '^src/mcp/(handlers|tools)/',
       },
     },
     {
@@ -214,6 +214,15 @@ module.exports = {
       },
       to: {
         path: '^src/config/',
+      },
+    },
+    {
+      comment: 'Allow MCP tools to import handlers and types',
+      from: {
+        path: '^src/mcp/tools/',
+      },
+      to: {
+        path: '^src/mcp/(handlers|tools)/',
       },
     },
   ],
