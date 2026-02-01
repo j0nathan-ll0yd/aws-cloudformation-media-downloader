@@ -47,8 +47,10 @@ jobs:
         run: pnpm run validate:docs:freshness
 
       - name: Security audit
-        # tar v6 vulnerabilities - required for fastembed (devDep for semantic search)
-        # fastembed uses default export removed in tar v7; not used in production
+        # tar 6.2.1 CVEs ignored for fastembed (devDep only, not in production bundle)
+        # fastembed uses `import tar from 'tar'` requiring default export removed in tar 7.x
+        # Risk assessment: fastembed only extracts ML model files locally during dev indexing
+        # Tracking: https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/issues/382
         run: |
           pnpm audit --audit-level=high \
             --ignore GHSA-8qq5-rm4j-mr97 \

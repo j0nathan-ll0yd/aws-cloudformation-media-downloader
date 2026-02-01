@@ -220,11 +220,7 @@
       "lodash@>=4.0.0 <=4.17.22": ">=4.17.23"
     },
     "auditConfig": {
-      "ignoreCves": [
-        "GHSA-8qq5-rm4j-mr97",
-        "GHSA-r6q2-hw4h-h46w",
-        "GHSA-34x7-hfp2-rc4v"
-      ]
+      "ignoreCves": []
     }
   }
 }
