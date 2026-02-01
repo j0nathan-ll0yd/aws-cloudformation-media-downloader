@@ -18,6 +18,9 @@
 
 set -euo pipefail
 
+# Suppress Node.js punycode deprecation warning from transitive dependencies
+export NODE_OPTIONS="${NODE_OPTIONS:-} --no-deprecation"
+
 # Color definitions
 RED='\033[0;31m'
 GREEN='\033[0;32m'
