@@ -81,3 +81,9 @@ deployment-logs/
 
 # Vale downloaded packages (use 'vale sync' to fetch)
 .vale/styles/
+
+# Gas Town (added by gt)
+.runtime/
+.claude/
+.beads/
+.logs/
