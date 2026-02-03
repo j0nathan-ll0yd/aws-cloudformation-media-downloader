@@ -24,7 +24,7 @@ jobs:
       - uses: ./.github/actions/build-project
 
       - name: Download previous incremental file
-        uses: dawidd6/action-download-artifact@v12
+        uses: dawidd6/action-download-artifact@v14
         with:
           workflow: mutation-tests.yml
           name: stryker-incremental
