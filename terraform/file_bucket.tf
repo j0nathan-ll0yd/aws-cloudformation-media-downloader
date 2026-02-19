@@ -53,6 +53,8 @@ resource "aws_cloudfront_distribution" "MediaFiles" {
     target_origin_id       = "S3-media-files"
     viewer_protocol_policy = "redirect-to-https"
 
+    response_headers_policy_id = length(var.cors_allowed_origins) > 0 ? aws_cloudfront_response_headers_policy.MediaFilesCors[0].id : null
+
     forwarded_values {
       query_string = false
       cookies {
@@ -79,6 +81,34 @@ resource "aws_cloudfront_distribution" "MediaFiles" {
   tags = merge(local.common_tags, {
     Name = "MediaFilesDistribution"
   })
+}
+
+# CORS Response Headers Policy for media files
+# Allows the Astro dashboard site to fetch files via browser fetch().
+# Only created when cors_allowed_origins is non-empty.
+resource "aws_cloudfront_response_headers_policy" "MediaFilesCors" {
+  count   = length(var.cors_allowed_origins) > 0 ? 1 : 0
+  name    = "${var.resource_prefix}-media-files-cors"
+  comment = "CORS for Astro dashboard site"
+
+  cors_config {
+    access_control_allow_credentials = false
+    origin_override                  = true
+
+    access_control_allow_headers {
+      items = ["*"]
+    }
+
+    access_control_allow_methods {
+      items = ["GET", "HEAD"]
+    }
+
+    access_control_allow_origins {
+      items = var.cors_allowed_origins
+    }
+
+    access_control_max_age_sec = 86400
+  }
 }
 
 # S3 Bucket Policy for CloudFront OAC access

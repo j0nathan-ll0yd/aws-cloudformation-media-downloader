@@ -110,3 +110,20 @@ variable "enable_cloudwatch_alarms" {
   type        = bool
   default     = false
 }
+
+# =============================================================================
+# CORS Configuration
+# =============================================================================
+# Origins allowed for cross-origin browser requests to CloudFront distributions.
+# Used by the Astro dashboard site to fetch media files via fetch().
+
+variable "cors_allowed_origins" {
+  description = "Origins allowed to fetch media files via CORS (empty list disables CORS)"
+  type        = list(string)
+  default     = []
+
+  validation {
+    condition     = alltrue([for o in var.cors_allowed_origins : can(regex("^https?://", o))])
+    error_message = "Each origin must start with http:// or https://."
+  }
+}
