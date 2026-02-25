@@ -32,8 +32,8 @@ This AWS Serverless Media Downloader demonstrates exceptional engineering practi
 ### Top Improvement Opportunities
 1. **arm64/Graviton Migration**: 30% cost reduction, 13-24% faster cold starts
 2. **Lambda SnapStart**: When available for Node.js
-3. **CloudWatch Alarms**: Missing critical alerting infrastructure
-4. **Provisioned Concurrency**: For auth-critical paths
+3. ~~**CloudWatch Alarms**~~: Complete (13 alarms in `terraform/cloudwatch.tf`)
+4. ~~**Provisioned Concurrency**~~: N/A (exceeds $15/month budget)
 
 ---
 
@@ -289,77 +289,41 @@ resource "aws_lambda_function" "example" {
 
 ### 5.2 CloudWatch Alarms
 
+**Status**: COMPLETE
 **Priority**: P0 (Quick Win)
 **Impact**: Medium
 **Effort**: Low
 
-**Missing Alerts:**
-- Lambda error rate thresholds
-- Authentication failure patterns
-- Download failure spikes
-- Queue depth anomalies
+**Implementation**: 13 alarms defined in `terraform/cloudwatch.tf` and `terraform/download_queue.tf`:
+- Lambda errors (API + Background)
+- Lambda throttles (API + Background)
+- SQS DLQ messages (2 queues)
+- SQS queue age
+- EventBridge failures and throttles
+- YouTube auth failures (bot detection, cookie expired, rate limited)
+- API Gateway 5xx errors
 
-**Recommended Alarms:**
-```hcl
-resource "aws_cloudwatch_metric_alarm" "lambda_errors" {
-  alarm_name          = "lambda-error-rate"
-  comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = 2
-  metric_name         = "Errors"
-  namespace           = "AWS/Lambda"
-  period              = 300
-  statistic           = "Sum"
-  threshold           = 5
-  alarm_actions       = [aws_sns_topic.alerts.arn]
-}
-```
+**Cost Constraint**: AWS Free Tier includes 10 alarms. Currently at 13 alarms (~$0.30/month overage). Keep total under 10 to stay within free tier, or accept minimal cost for comprehensive monitoring.
 
 ### 5.3 Powertools Idempotency
 
+**Status**: COMPLETE
 **Priority**: P1
 **Impact**: Medium
 **Effort**: Low
 
-**Current Gap:**
-- WebhookFeedly lacks explicit idempotency
-- Potential duplicate processing on retries
-
-**Solution:**
-```typescript
-import { makeIdempotent } from '@aws-lambda-powertools/idempotency';
-
-export const handler = makeIdempotent(async (event) => {
-  // Handler implementation
-}, {
-  persistenceStore: new DynamoDBPersistenceLayer({
-    tableName: process.env.IDEMPOTENCY_TABLE,
-  }),
-});
-```
+**Implementation**: WebhookFeedly uses Powertools `makeIdempotent` with DynamoDB persistence store. See `src/lambdas/WebhookFeedly/src/index.ts:142` for implementation. Idempotency configuration centralized in `#lib/vendor/Powertools/idempotency`.
 
 ### 5.4 Provisioned Concurrency
 
+**Status**: NOT APPLICABLE (Cost Constraint)
 **Priority**: P1
 **Impact**: High
 **Effort**: Medium
 
-**Critical Paths:**
-- `ApiGatewayAuthorizer`: Every authenticated request
-- `LoginUser`: User experience critical
+**Rationale**: Project goal is <$15/month total AWS spend. Provisioned concurrency costs ~$22/month for just 2 instances, which exceeds the entire budget. Cold starts (~220ms average) are acceptable for this personal-use application.
 
-**Implementation:**
-```hcl
-resource "aws_lambda_provisioned_concurrency_config" "auth" {
-  function_name                     = aws_lambda_function.authorizer.function_name
-  provisioned_concurrent_executions = 2
-  qualifier                         = aws_lambda_alias.auth_live.name
-}
-```
-
-**Cost Consideration:**
-- ~$0.015/provisioned concurrency/hour
-- 2 instances = ~$22/month
-- Justified for auth-critical paths
+**If budget changes**: Consider for `ApiGatewayAuthorizer` (every authenticated request) and `LoginUser` (user experience critical).
 
 ### 5.5 Lambda SnapStart
 
@@ -404,26 +368,23 @@ resource "aws_lambda_provisioned_concurrency_config" "auth" {
 | Item | Impact | Effort | Owner | Status |
 |------|--------|--------|-------|--------|
 | arm64/Graviton migration | High | Low | Infrastructure | Not Started |
-| CloudWatch Alarms | Medium | Low | Infrastructure | Not Started |
-| Powertools Idempotency | Medium | Low | Backend | Not Started |
+| CloudWatch Alarms | Medium | Low | Infrastructure | Complete |
+| Powertools Idempotency | Medium | Low | Backend | Complete |
 | Update AGENTS.md with findings | Low | Low | Documentation | Not Started |
 
 **Expected Outcomes:**
 - 30% cost reduction from Graviton
-- Proactive incident detection
-- Improved reliability for webhooks
 
 ### Phase 2: Medium-Term (1-2 months)
 
 | Item | Impact | Effort | Owner | Status |
 |------|--------|--------|-------|--------|
-| Provisioned Concurrency | High | Medium | Infrastructure | Not Started |
+| Provisioned Concurrency | High | Medium | Infrastructure | N/A (Cost) |
 | ADOT Lambda Layer | Medium | Medium | Backend | Not Started |
 | Terraform module refactor | Medium | Medium | Infrastructure | Not Started |
 | Enhanced MCP validation rules | Low | Medium | DX | Not Started |
 
 **Expected Outcomes:**
-- Eliminated cold starts for auth paths
 - Full OpenTelemetry compliance
 - Improved IaC maintainability
 
