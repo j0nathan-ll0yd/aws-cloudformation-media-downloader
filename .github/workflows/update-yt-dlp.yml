@@ -10,6 +10,10 @@ permissions:
   pull-requests: write
   issues: write
 
+concurrency:
+  group: yt-dlp-update
+  cancel-in-progress: false
+
 jobs:
   check-update:
     runs-on: ubuntu-latest
@@ -40,8 +44,31 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
-      - name: Download and verify binary for testing
+      - name: Check for existing PR
         if: steps.check.outputs.update_needed == 'true'
+        id: pr_check
+        run: |
+          set -e
+          VERSION="${{ steps.check.outputs.latest }}"
+          BRANCH_NAME="chore/update-yt-dlp-${VERSION}"
+
+          EXISTING_PR=$(gh pr list \
+            --head "${BRANCH_NAME}" \
+            --state open \
+            --json number,url \
+            --jq '.[0].url // empty')
+
+          if [ -n "$EXISTING_PR" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "ℹ️  Open PR already exists for ${VERSION}: ${EXISTING_PR}"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Download and verify binary for testing
+        if: steps.check.outputs.update_needed == 'true' && steps.pr_check.outputs.skip != 'true'
         run: |
           set -e
 
@@ -67,7 +94,7 @@ jobs:
           echo "Binary verification complete"
 
       - name: Ensure required labels exist
-        if: steps.check.outputs.update_needed == 'true'
+        if: steps.check.outputs.update_needed == 'true' && steps.pr_check.outputs.skip != 'true'
         run: |
           set -e
 
@@ -92,7 +119,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
 
       - name: Update VERSION file and create PR
-        if: steps.check.outputs.update_needed == 'true'
+        if: steps.check.outputs.update_needed == 'true' && steps.pr_check.outputs.skip != 'true'
         run: |
           set -e
 
@@ -105,6 +132,12 @@ jobs:
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Clean up stale remote branch if it exists (from closed/merged PRs)
+          if git ls-remote --exit-code --heads origin "${BRANCH_NAME}" > /dev/null 2>&1; then
+            echo "Removing stale remote branch ${BRANCH_NAME}..."
+            git push origin --delete "${BRANCH_NAME}"
+          fi
 
           git checkout -b "${BRANCH_NAME}"
           git add layers/yt-dlp/VERSION
@@ -154,11 +187,28 @@ jobs:
       - name: Notify on failure
         if: failure()
         run: |
-          gh issue create \
-            --title "yt-dlp update workflow failed" \
-            --body "The automated yt-dlp update workflow failed. Check [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})." \
-            --label "bug" \
-            --label "automation" \
-            --label "yt-dlp"
+          ISSUE_TITLE="yt-dlp update workflow failed"
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          EXISTING_ISSUE=$(gh issue list \
+            --state open \
+            --search "in:title ${ISSUE_TITLE}" \
+            --json number,title \
+            --jq '.[] | select(.title == "'"${ISSUE_TITLE}"'") | .number' \
+            | head -1)
+
+          if [ -n "$EXISTING_ISSUE" ]; then
+            echo "Adding comment to existing issue #${EXISTING_ISSUE}..."
+            gh issue comment "${EXISTING_ISSUE}" \
+              --body "Workflow failed again. See [run](${RUN_URL})."
+          else
+            echo "Creating new issue..."
+            gh issue create \
+              --title "${ISSUE_TITLE}" \
+              --body "The automated yt-dlp update workflow failed. Check [workflow run](${RUN_URL})." \
+              --label "bug" \
+              --label "automation" \
+              --label "yt-dlp"
+          fi
         env:
           GH_TOKEN: ${{ github.token }}
