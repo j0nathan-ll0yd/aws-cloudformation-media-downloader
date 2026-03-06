@@ -20,6 +20,10 @@ vi.mock('../embeddings.js', () => ({
   generateEmbedding: vi.fn().mockResolvedValue(new Array(384).fill(0.1))
 }))
 
+vi.mock('@huggingface/transformers', () => ({
+  pipeline: vi.fn().mockResolvedValue(vi.fn())
+}))
+
 // Import after mocks are set up
 const searchModule = await import('../searchCodebase.js')
 

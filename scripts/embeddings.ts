@@ -1,29 +1,24 @@
-import {EmbeddingModel, FlagEmbedding} from 'fastembed'
+import {type FeatureExtractionPipeline} from '@huggingface/transformers'
 
-let embedder: FlagEmbedding | null = null
+let extractor: FeatureExtractionPipeline | null = null
 
 /**
- * Get the embedding model (singleton)
+ * Get the feature extraction pipeline (singleton)
  */
-async function getEmbedder(): Promise<FlagEmbedding> {
-  if (!embedder) {
-    // Using all-MiniLM-L6-v2 for code/text embeddings
-    // Same model as before, but via fastembed (no sharp dependency)
-    embedder = await FlagEmbedding.init({model: EmbeddingModel.AllMiniLML6V2})
+async function getExtractor(): Promise<FeatureExtractionPipeline> {
+  if (!extractor) {
+    // Dynamic import avoids TS2590 from pipeline's complex overload union
+    const {pipeline} = await import('@huggingface/transformers')
+    extractor = (await (pipeline as unknown as (...args: unknown[]) => Promise<unknown>)('feature-extraction', 'Xenova/all-MiniLM-L6-v2')) as FeatureExtractionPipeline
   }
-  return embedder
+  return extractor
 }
 
 /**
  * Generate embedding for a string
  */
 export async function generateEmbedding(text: string): Promise<number[]> {
-  const model = await getEmbedder()
-  const embeddings = await model.embed([text])
-  for await (const batch of embeddings) {
-    // batch is an array of Float32Arrays, one per input text
-    // Since we only pass one text, batch[0] is our embedding
-    return Array.from(batch[0])
-  }
-  throw new Error('Failed to generate embedding')
+  const model = await getExtractor()
+  const output = await model(text, {pooling: 'mean', normalize: true})
+  return Array.from(output.data as Float32Array)
 }
