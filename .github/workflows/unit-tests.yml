@@ -178,7 +178,7 @@ jobs:
       - uses: ./.github/actions/setup-node-pnpm
 
       - name: Download build artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: build-output
           path: build/
