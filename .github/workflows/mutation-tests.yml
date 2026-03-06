@@ -39,7 +39,7 @@ jobs:
           LOG_LEVEL: SILENT
 
       - name: Upload mutation report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: mutation-report
@@ -47,7 +47,7 @@ jobs:
           retention-days: 30
 
       - name: Upload incremental file
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: stryker-incremental
