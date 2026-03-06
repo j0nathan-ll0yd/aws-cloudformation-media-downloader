@@ -1,6 +1,7 @@
 .DS_Store
 .env
 .idea
+.omc
 .nyc_output
 build
 coverage
