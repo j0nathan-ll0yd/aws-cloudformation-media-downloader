@@ -165,6 +165,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.4",
     "@eslint/js": "^10.0.1",
+    "@huggingface/transformers": "^3.8.1",
     "@lancedb/lancedb": "^0.26.2",
     "@modelcontextprotocol/inspector": "^0.21.1",
     "@redocly/cli": "^2.20.3",
@@ -190,7 +191,6 @@
     "eslint-plugin-drizzle": "^0.2.3",
     "eslint-plugin-jsdoc": "^62.7.1",
     "eslint-plugin-tsdoc": "^0.5.2",
-    "fastembed": "^2.1.0",
     "glob": "^13.0.6",
     "husky": "^9.1.7",
     "mock-jwks": "^3.3.5",
@@ -207,7 +207,6 @@
   },
   "pnpm": {
     "overrides": {
-      "fastembed>tar": "6.2.1",
       "qs": ">=6.14.1",
       "drizzle-zod>zod": "^4.3.4",
       "esbuild": ">=0.25.0",
@@ -220,11 +219,19 @@
       "fast-xml-parser@>=4.3.6 <=5.3.3": ">=5.3.4",
       "lodash@>=4.0.0 <=4.17.22": ">=4.17.23"
     },
+    "onlyBuiltDependencies": [
+      "@modelcontextprotocol/ext-apps",
+      "core-js",
+      "dprint",
+      "esbuild",
+      "msw",
+      "onnxruntime-node",
+      "protobufjs",
+      "sharp"
+    ],
     "auditConfig": {
       "ignoreCves": [
-        "GHSA-8qq5-rm4j-mr97",
-        "GHSA-r6q2-hw4h-h46w",
-        "GHSA-34x7-hfp2-rc4v"
+        "GHSA-46wh-pxpv-q5gq"
       ]
     }
   }
