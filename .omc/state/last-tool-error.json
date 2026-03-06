@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"cd ~/wt/aws-cloudformation-media-downloader-upgrade && pnpm run document:source && pnpm run document:api 2>&1 | tail -20\",\"timeout\":120000,\"description\":\"Regenerate stale documentation\"}",
+  "error": "Exit code 1\n\n> aws-cloudformation-media-downloader@1.0.0 document:source /Users/jlloyd/wt/aws-cloudformation-media-downloader-upgrade\n> ./bin/document-source.sh\n\n\u001b[0;31m✗\u001b[0m Error: Test file has changed; commit changes before running\n ELIFECYCLE  Command failed with exit code 1.\n\n\n> aws-cloudformation-media-downloader@1.0.0 document:source /Users/jlloyd/wt/aws-cloudformation-media-downloader-upgrade\n> ./bin/document-source.sh\n\n\u001b[0;31m✗\u001b[0m Error: Test file has changed; commit changes before run...",
+  "timestamp": "2026-03-06T03:52:40.308Z",
+  "retry_count": 4
+}

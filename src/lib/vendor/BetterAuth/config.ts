@@ -8,14 +8,15 @@
  */
 
 import {betterAuth} from 'better-auth'
-import {drizzleAdapter} from 'better-auth/adapters/drizzle'
+import {drizzleAdapter} from '@better-auth/drizzle-adapter'
 import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
 import * as schema from '#lib/vendor/Drizzle/schema'
 import {logDebug} from '#lib/system/logging'
 import {getRequiredEnv} from '#lib/system/env'
 
 // Cached instances for Lambda connection reuse
-let cachedAuth: ReturnType<typeof betterAuth> | null = null
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let cachedAuth: any = null
 
 /**
  * Get Better Auth instance with lazy initialization.
@@ -32,7 +33,7 @@ let cachedAuth: ReturnType<typeof betterAuth> | null = null
  *
  * @returns Better Auth instance
  */
-export async function getAuth(): Promise<ReturnType<typeof betterAuth>> {
+export async function getAuth() {
   if (cachedAuth) {
     return cachedAuth
   }

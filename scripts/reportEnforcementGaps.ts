@@ -42,7 +42,7 @@ function parseConventionsTracking(): Convention[] {
 
   for (const section of sections) {
     // Determine severity from section heading
-    let severity: Convention['severity'] = 'MEDIUM'
+    let severity: Convention['severity']
     if (section.startsWith('CRITICAL')) severity = 'CRITICAL'
     else if (section.startsWith('HIGH')) severity = 'HIGH'
     else if (section.startsWith('MEDIUM')) severity = 'MEDIUM'

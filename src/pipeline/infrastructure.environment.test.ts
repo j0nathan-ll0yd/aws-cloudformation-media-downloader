@@ -344,9 +344,9 @@ describe('#Infrastructure', () => {
       }
     }
 
-    let matchSlice = [0]
-    let matchSubstring = 0
-    let sourceCodeRegex
+    let matchSlice: number[] = [0]
+    let matchSubstring: number
+    let sourceCodeRegex: RegExp
     if (cloudFrontDistributionNames[functionName]) {
       matchSlice = [0, -2]
       matchSubstring = 15

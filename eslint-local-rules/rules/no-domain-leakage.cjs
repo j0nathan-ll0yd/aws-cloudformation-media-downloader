@@ -30,7 +30,7 @@ module.exports = {
   },
   create(context) {
     // Only check files in src/lib/domain
-    const filename = context.getFilename()
+    const filename = context.filename || context.getFilename()
     if (!filename.includes('/src/lib/domain/')) {
       return {}
     }

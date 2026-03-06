@@ -28,7 +28,7 @@ module.exports = {
   },
   create(context) {
     // Only check Lambda handler files
-    const filename = context.getFilename()
+    const filename = context.filename || context.getFilename()
     if (!filename.includes('/src/lambdas/')) {
       return {}
     }

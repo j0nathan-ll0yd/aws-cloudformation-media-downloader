@@ -39,7 +39,8 @@ export function withPowertools<TEvent, TResult>(
 ): (event: TEvent, context: Context) => Promise<TResult> {
   const isTestEnv = getOptionalEnv('NODE_ENV', 'development') === 'test'
 
-  const middyHandler = middy(handler).use(injectLambdaContext(logger, {clearState: true})).use(securityHeaders())
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Powertools middleware types lag behind middy v7
+  const middyHandler = middy(handler).use(injectLambdaContext(logger, {clearState: true}) as any).use(securityHeaders())
 
   // Cold start tracking (before handler)
   middyHandler.before(async () => {
