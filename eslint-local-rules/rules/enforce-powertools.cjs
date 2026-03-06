@@ -62,7 +62,7 @@ module.exports = {
   },
   create(context) {
     // Only check files in src/lambdas/*/src/index.ts
-    const filename = context.getFilename()
+    const filename = context.filename || context.getFilename()
     if (!filename.includes('/src/lambdas/') || !filename.endsWith('/src/index.ts')) {
       return {}
     }

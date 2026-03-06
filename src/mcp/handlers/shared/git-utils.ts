@@ -31,7 +31,7 @@ export function execGit(args: string[], options: {cwd?: string} = {}): string {
     return execSync(`git ${args.join(' ')}`, {cwd, encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024}).trim()
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    throw new Error(`Git command failed: git ${args.join(' ')}\n${message}`)
+    throw new Error(`Git command failed: git ${args.join(' ')}\n${message}`, {cause: error})
   }
 }
 

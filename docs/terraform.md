@@ -14,7 +14,7 @@
 | <a name="provider_aws"></a> [aws](#provider\_aws) | 6.19.0 |
 | <a name="provider_aws.us_east_1"></a> [aws.us\_east\_1](#provider\_aws.us\_east\_1) | 6.19.0 |
 | <a name="provider_http"></a> [http](#provider\_http) | 3.5.0 |
-| <a name="provider_local"></a> [local](#provider\_local) | 2.6.1 |
+| <a name="provider_local"></a> [local](#provider\_local) | 2.7.0 |
 | <a name="provider_null"></a> [null](#provider\_null) | 3.2.4 |
 | <a name="provider_sops"></a> [sops](#provider\_sops) | 1.2.1 |
 | <a name="provider_time"></a> [time](#provider\_time) | 0.13.1 |
@@ -72,6 +72,7 @@ No modules.
 | [aws_cloudfront_distribution.MediaFiles](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudfront_distribution) | resource |
 | [aws_cloudfront_distribution.Production](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudfront_distribution) | resource |
 | [aws_cloudfront_origin_access_control.MediaFilesOAC](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudfront_origin_access_control) | resource |
+| [aws_cloudfront_response_headers_policy.MediaFilesCors](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudfront_response_headers_policy) | resource |
 | [aws_cloudwatch_dashboard.Main](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_dashboard) | resource |
 | [aws_cloudwatch_event_bus.MediaDownloader](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_event_bus) | resource |
 | [aws_cloudwatch_event_rule.CleanupExpiredRecords](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_event_rule) | resource |
@@ -325,6 +326,7 @@ No modules.
 | <a name="input_api_quota_limit"></a> [api\_quota\_limit](#input\_api\_quota\_limit) | API Gateway daily quota limit | `number` | `10000` | no |
 | <a name="input_api_throttle_burst_limit"></a> [api\_throttle\_burst\_limit](#input\_api\_throttle\_burst\_limit) | API Gateway throttle burst limit | `number` | `100` | no |
 | <a name="input_api_throttle_rate_limit"></a> [api\_throttle\_rate\_limit](#input\_api\_throttle\_rate\_limit) | API Gateway throttle rate limit | `number` | `50` | no |
+| <a name="input_cors_allowed_origins"></a> [cors\_allowed\_origins](#input\_cors\_allowed\_origins) | Origins allowed to fetch media files via CORS (empty list disables CORS) | `list(string)` | `[]` | no |
 | <a name="input_download_reserved_concurrency"></a> [download\_reserved\_concurrency](#input\_download\_reserved\_concurrency) | Reserved concurrency for StartFileUpload Lambda | `number` | `10` | no |
 | <a name="input_dsql_deletion_protection"></a> [dsql\_deletion\_protection](#input\_dsql\_deletion\_protection) | Enable deletion protection for DSQL cluster | `bool` | `true` | no |
 | <a name="input_enable_cloudwatch_alarms"></a> [enable\_cloudwatch\_alarms](#input\_enable\_cloudwatch\_alarms) | Enable CloudWatch alarms (first 10 free, then $0.10/alarm) | `bool` | `false` | no |

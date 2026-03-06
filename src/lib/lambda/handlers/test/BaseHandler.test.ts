@@ -19,8 +19,8 @@ describe('Lambda:Handlers:BaseHandler', () => {
     loggerErrorSpy = vi.spyOn(logger, 'error').mockImplementation(() => undefined)
     loggerAddContextSpy = vi.spyOn(logger, 'addContext').mockImplementation(() => undefined)
     loggerAppendKeysSpy = vi.spyOn(logger, 'appendKeys').mockImplementation(() => undefined)
-    metricsAddMetricSpy = vi.spyOn(metrics, 'addMetric').mockImplementation(() => undefined)
-    metricsPublishSpy = vi.spyOn(metrics, 'publishStoredMetrics').mockImplementation(() => undefined)
+    metricsAddMetricSpy = vi.spyOn(metrics, 'addMetric').mockImplementation(() => metrics)
+    metricsPublishSpy = vi.spyOn(metrics, 'publishStoredMetrics').mockImplementation(() => metrics)
     originalLogLevel = process.env.LOG_LEVEL
     process.env.LOG_LEVEL = 'INFO'
   })

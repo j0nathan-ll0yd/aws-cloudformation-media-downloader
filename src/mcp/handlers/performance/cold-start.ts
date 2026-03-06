@@ -81,7 +81,6 @@ async function analyzeColdStartFactors(lambdaName: string): Promise<ColdStartFac
   }
 
   // Calculate import depth (max depth of dependency chain)
-  let maxDepth = 0
   function calculateDepth(file: string, visited: Set<string>, depth: number): number {
     if (visited.has(file)) {
       return depth
@@ -99,7 +98,7 @@ async function analyzeColdStartFactors(lambdaName: string): Promise<ColdStartFac
     }
     return maxChildDepth
   }
-  maxDepth = calculateDepth(entryPoint, new Set(), 0)
+  const maxDepth = calculateDepth(entryPoint, new Set(), 0)
 
   // Count AWS SDK clients
   const awsSdkClients = dependencies.filter((d) => d.includes('lib/vendor/AWS/')).length

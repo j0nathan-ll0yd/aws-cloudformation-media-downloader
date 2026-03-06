@@ -60,7 +60,7 @@ function loadMigrations(): MigrationFile[] {
     files = readdirSync(migrationsDir).filter((f) => f.endsWith('.sql')).sort()
   } catch (error) {
     logError('Failed to read migrations directory', {migrationsDir, error})
-    throw new Error(`Failed to read migrations directory: ${migrationsDir}`)
+    throw new Error(`Failed to read migrations directory: ${migrationsDir}`, {cause: error})
   }
 
   return files.map((filename) => {
