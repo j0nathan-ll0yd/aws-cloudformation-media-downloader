@@ -25,3 +25,9 @@ enable_cloudwatch_alarms    = false
 
 # Lower concurrency in staging
 download_reserved_concurrency = 2
+
+# CORS: Allow Astro dashboard site to fetch media files
+cors_allowed_origins = [
+  "https://j0nathan-ll0yd.github.io",
+  "https://jonathanlloyd.me"
+]
