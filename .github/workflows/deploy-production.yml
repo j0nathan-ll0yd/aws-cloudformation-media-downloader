@@ -108,6 +108,10 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_PRODUCTION }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Setup SOPS
+        if: steps.check-creds.outputs.configured == 'true'
+        uses: ./.github/actions/setup-sops
+
       - name: Decrypt production secrets
         if: steps.check-creds.outputs.configured == 'true'
         run: |
