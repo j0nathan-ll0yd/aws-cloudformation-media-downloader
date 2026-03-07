@@ -148,10 +148,10 @@ Secrets are encrypted using SOPS with age keys. See the `.sops.yaml` configurati
 
 The project uses OIDC authentication for secure AWS access without long-lived credentials:
 
-| Role | Purpose | Branch Restriction |
-|------|---------|-------------------|
-| `GitHubActions-MediaDownloader-Staging` | Staging deployments | Any branch |
-| `GitHubActions-MediaDownloader-Production` | Production deployments | `master` only |
+| Role | Purpose | Restriction |
+|------|---------|-------------|
+| `GitHubActions-MediaDownloader-Staging` | Staging deployments | Any branch (wildcard `sub` claim) |
+| `GitHubActions-MediaDownloader-Production` | Production deployments | `production` GitHub environment only (requires `master` branch via environment branch rules) |
 
 See [OIDC-AWS-Authentication.md](./OIDC-AWS-Authentication.md) for details.
 

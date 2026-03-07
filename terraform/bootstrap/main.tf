@@ -161,7 +161,7 @@ resource "aws_iam_role" "GitHubActionsProductionRole" {
       Condition = {
         StringEquals = {
           "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
-          "token.actions.githubusercontent.com:sub" = "repo:j0nathan-ll0yd/aws-cloudformation-media-downloader:ref:refs/heads/master"
+          "token.actions.githubusercontent.com:sub" = "repo:j0nathan-ll0yd/aws-cloudformation-media-downloader:environment:production"
         }
       }
     }]
