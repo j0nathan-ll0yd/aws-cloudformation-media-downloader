@@ -208,7 +208,11 @@ resource "aws_iam_policy" "TerraformDeployPolicy" {
         Action = [
           "lambda:*"
         ]
-        Resource = "arn:aws:lambda:us-west-2:${data.aws_caller_identity.current.account_id}:function:*"
+        Resource = [
+          "arn:aws:lambda:us-west-2:${data.aws_caller_identity.current.account_id}:function:*",
+          "arn:aws:lambda:us-west-2:${data.aws_caller_identity.current.account_id}:layer:*",
+          "arn:aws:lambda:us-west-2:${data.aws_caller_identity.current.account_id}:event-source-mapping:*"
+        ]
       },
       {
         Sid    = "APIGatewayManagement"

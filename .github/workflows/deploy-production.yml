@@ -120,6 +120,12 @@ jobs:
           export SOPS_AGE_KEY_FILE=/tmp/age-key.txt
           sops --decrypt secrets.prod.enc.yaml > secrets.prod.yaml
 
+      - name: Build Lambda layers
+        if: steps.check-creds.outputs.configured == 'true'
+        run: |
+          ./bin/build-deno-layer.sh
+          ./bin/build-bgutil-layer.sh
+
       - name: Deploy to Production
         if: steps.check-creds.outputs.configured == 'true'
         working-directory: terraform
