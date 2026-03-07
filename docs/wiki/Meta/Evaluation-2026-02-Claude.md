@@ -43,7 +43,7 @@ This document provides an exhaustive evaluation of the `aws-cloudformation-media
 | Directory Structure | Clean separation: lambdas/, entities/, lib/, types/ | Matches Clean Architecture principles | ✅ Excellent |
 | One Lambda Per Directory | Each Lambda has src/ and test/ subdirectory | Follows AWS best practices | ✅ Excellent |
 | Type Organization | Centralized in src/types/ with naming conventions | Matches TypeScript best practices | ✅ Excellent |
-| Vendor Encapsulation | src/lib/vendor/ for all 3rd party wrappers | Zero-tolerance policy documented | ✅ Excellent |
+| Vendor Encapsulation | src/lib/vendor/ for all third-party wrappers | Zero-tolerance policy documented | ✅ Excellent |
 | Monorepo Structure | pnpm workspaces configured | Ready for future expansion | ✅ Excellent |
 
 ### Recommendations
@@ -107,8 +107,8 @@ This document provides an exhaustive evaluation of the `aws-cloudformation-media
 | Handler Pattern | Typed handler classes (ApiHandler, AuthenticatedHandler) | Excellent abstraction | ✅ Excellent |
 | Architecture | ARM64 for most, x86_64 for yt-dlp | Optimal for cost/performance | ✅ Excellent |
 | Runtime | Node.js 24.x | Latest stable runtime | ✅ Excellent |
-| Memory Configuration | Right-sized per function (128MB-2048MB) | Follows AWS guidance | ✅ Excellent |
-| Timeout Configuration | Appropriate per use case (30s default, 900s for downloads) | Proper safety valves | ✅ Excellent |
+| Memory Configuration | Right-sized per function (128 MB-2048 MB) | Follows AWS guidance | ✅ Excellent |
+| Timeout Configuration | Appropriate per use case (30 s default, 900 s for downloads) | Proper safety valves | ✅ Excellent |
 | Error Classification | StartFileUpload has sophisticated error classifier | Advanced resilience pattern | ✅ Excellent |
 | Circuit Breaker | youtubeCircuitBreaker in StartFileUpload | Prevents cascading failures | ✅ Excellent |
 | Idempotency | AWS Powertools in WebhookFeedly | Proper duplicate protection | ✅ Excellent |
@@ -146,7 +146,7 @@ This document provides an exhaustive evaluation of the `aws-cloudformation-media
 ### Recommendations
 
 1. **[MEDIUM]** Consider Aurora DSQL Connectors (released Nov 2025) for simplified IAM token handling
-2. **[LOW]** Add connection `max_lifetime` < 3600s configuration per Aurora DSQL best practices
+2. **[LOW]** Add connection `max_lifetime` < 3600 s configuration per Aurora DSQL best practices
 3. **[LOW]** Consider `drizzle-zod` for runtime validation integration
 
 ---
@@ -456,7 +456,7 @@ Based on current YouTube restrictions:
 | 6 | Add `NODE_OPTIONS=--enable-source-maps` to Lambda env | Low | Better debugging |
 | 7 | Consider aws-sdk-vitest-mock for native matchers | Low | Test ergonomics |
 | 8 | Add CloudWatch EMF for custom metrics | Medium | Enhanced observability |
-| 9 | Add DSQL connection `max_lifetime` < 3600s | Low | Connection hygiene |
+| 9 | Add DSQL connection `max_lifetime` < 3600 s | Low | Connection hygiene |
 | 10 | Add Lambda Power Tuning analysis | Medium | Cost/performance optimization |
 
 ---
