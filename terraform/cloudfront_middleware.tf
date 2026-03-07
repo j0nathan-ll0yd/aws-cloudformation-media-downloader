@@ -49,7 +49,7 @@ resource "aws_lambda_function" "CloudfrontMiddleware" {
   role             = aws_iam_role.CloudfrontMiddleware.arn
   handler          = "index.handler"
   runtime          = "nodejs24.x"
-  architectures    = [local.lambda_architecture]
+  architectures    = ["x86_64"] # Must use x86_64 - Lambda@Edge does not support arm64
   publish          = true
   provider         = aws.us_east_1
   filename         = data.archive_file.CloudfrontMiddleware.output_path

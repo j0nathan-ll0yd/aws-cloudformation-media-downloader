@@ -14,7 +14,7 @@
 | <a name="provider_aws"></a> [aws](#provider\_aws) | 6.19.0 |
 | <a name="provider_aws.us_east_1"></a> [aws.us\_east\_1](#provider\_aws.us\_east\_1) | 6.19.0 |
 | <a name="provider_http"></a> [http](#provider\_http) | 3.5.0 |
-| <a name="provider_local"></a> [local](#provider\_local) | 2.7.0 |
+| <a name="provider_local"></a> [local](#provider\_local) | 2.6.1 |
 | <a name="provider_null"></a> [null](#provider\_null) | 3.2.4 |
 | <a name="provider_sops"></a> [sops](#provider\_sops) | 1.2.1 |
 | <a name="provider_time"></a> [time](#provider\_time) | 0.13.1 |

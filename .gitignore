@@ -1,6 +1,7 @@
 .DS_Store
 .env
 .idea
+.omc
 .nyc_output
 build
 coverage
@@ -21,6 +22,7 @@ secrets.enc.yaml
 youtube-cookies.txt
 cloudformation.json
 src/types/infrastructure.d.ts
+terraform/tfplan
 terraform/terraform.tfstate*
 terraform/.terraform.tfstate.lock.info
 terraform/.terraform.lock.hcl
