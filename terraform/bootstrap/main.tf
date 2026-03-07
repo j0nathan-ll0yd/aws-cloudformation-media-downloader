@@ -209,9 +209,9 @@ resource "aws_iam_policy" "TerraformDeployPolicy" {
           "lambda:*"
         ]
         Resource = [
-          "arn:aws:lambda:us-west-2:${data.aws_caller_identity.current.account_id}:function:*",
-          "arn:aws:lambda:us-west-2:${data.aws_caller_identity.current.account_id}:layer:*",
-          "arn:aws:lambda:us-west-2:${data.aws_caller_identity.current.account_id}:event-source-mapping:*"
+          "arn:aws:lambda:*:${data.aws_caller_identity.current.account_id}:function:*",
+          "arn:aws:lambda:*:${data.aws_caller_identity.current.account_id}:layer:*",
+          "arn:aws:lambda:*:${data.aws_caller_identity.current.account_id}:event-source-mapping:*"
         ]
       },
       {
