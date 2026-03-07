@@ -85,6 +85,8 @@ jobs:
 
       - name: Rollback deployment
         working-directory: terraform
+        env:
+          SOPS_AGE_KEY_FILE: /tmp/age-key.txt
         run: |
           tofu init
           tofu workspace select ${{ inputs.environment }}
