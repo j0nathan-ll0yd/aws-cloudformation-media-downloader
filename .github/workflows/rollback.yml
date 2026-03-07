@@ -73,6 +73,9 @@ jobs:
           role-to-assume: ${{ inputs.environment == 'production' && secrets.AWS_ROLE_PRODUCTION || secrets.AWS_ROLE_STAGING }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Setup SOPS
+        uses: ./.github/actions/setup-sops
+
       - name: Decrypt secrets
         run: |
           echo "${{ secrets.SOPS_AGE_KEY }}" > /tmp/age-key.txt
