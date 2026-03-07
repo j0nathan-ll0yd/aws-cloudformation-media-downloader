@@ -321,7 +321,7 @@ resource "aws_lambda_function" "example" {
 **Impact**: High
 **Effort**: Medium
 
-**Rationale**: Project goal is <$15/month total AWS spend. Provisioned concurrency costs ~$22/month for just 2 instances, which exceeds the entire budget. Cold starts (~220ms average) are acceptable for this personal-use application.
+**Rationale**: Project goal is <$15/month total AWS spend. Provisioned concurrency costs ~$22/month for just 2 instances, which exceeds the entire budget. Cold starts (~220 ms average) are acceptable for this personal-use application.
 
 **If budget changes**: Consider for `ApiGatewayAuthorizer` (every authenticated request) and `LoginUser` (user experience critical).
 
