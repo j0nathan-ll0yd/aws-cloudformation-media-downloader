@@ -285,6 +285,7 @@ resource "aws_iam_policy" "TerraformDeployPolicy" {
           "iam:GetPolicyVersion",
           "iam:ListRolePolicies",
           "iam:ListAttachedRolePolicies",
+          "iam:ListPolicyVersions",
           "iam:CreateRole",
           "iam:DeleteRole",
           "iam:UpdateRole",
