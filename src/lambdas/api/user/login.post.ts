@@ -9,7 +9,7 @@
  * Output: APIGatewayProxyResult with session token
  */
 import {getAuth} from '@mantleframework/auth'
-import {buildValidatedResponse} from '@mantleframework/core'
+import {buildValidatedResponse, defineLambda} from '@mantleframework/core'
 import {getRequiredEnv} from '@mantleframework/env'
 import {UnexpectedError} from '@mantleframework/errors'
 import {logInfo} from '@mantleframework/observability'
@@ -18,6 +18,14 @@ import {getDrizzleClient} from '#db/client'
 import {users, sessions, accounts, verification} from '#db/schema'
 import {userLoginResponseSchema} from '#types/api-schema'
 import type {SignInSocialTokenResult, GetSessionResult} from '#types/betterAuth'
+
+defineLambda({
+  secrets: {
+    AUTH_SECRET: 'platform.key',
+    APPLE_CLIENT_ID: 'signInWithApple.config',
+    APPLE_CLIENT_SECRET: 'signInWithApple.authKey'
+  }
+})
 
 const LoginRequestSchema = z.object({
   idToken: z.string()

@@ -8,9 +8,13 @@
  * Input: CloudFrontRequestEvent
  * Output: Modified CloudFrontRequest with headers
  */
+import {defineLambda} from '@mantleframework/core'
 import type {CloudFrontRequestEvent, Context} from 'aws-lambda'
 import type {CloudFrontHeaders, CloudFrontRequest} from 'aws-lambda/common/cloudfront'
 import type {CloudFrontHandlerResult, CustomCloudFrontRequest} from '#types/lambda'
+
+defineLambda({ edge: true, timeout: 5, memorySize: 128 })
+
 // Lambda@Edge: NO external imports (no @mantleframework/*, no layers, no ADOT)
 // Lambda@Edge has strict bundle size limits and doesn't support externalized modules
 

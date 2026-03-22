@@ -11,7 +11,7 @@
 import {createFileDownload, getFile, getFileDownload, getUserFilesByFileId, updateFile, updateFileDownload} from '#entities/queries'
 import {headObject} from '@mantleframework/aws'
 import {sendMessage} from '@mantleframework/aws'
-import {emitEvent} from '@mantleframework/core'
+import {emitEvent, defineLambda} from '@mantleframework/core'
 import {defineSqsHandler} from '@mantleframework/core'
 import {addAnnotation, addMetadata, endSpan, logDebug, logError, logInfo, metrics, MetricUnit, startSpan} from '@mantleframework/observability'
 import {downloadVideoToS3, fetchVideoInfo} from '#services/youtube/youtube'
@@ -29,6 +29,16 @@ import {closeCookieExpirationIssueIfResolved, createCookieExpirationIssue, creat
 import {createFailureNotification, createMetadataNotification} from '#services/notification/transformers'
 import {classifyVideoError, isRetryExhausted} from '#domain/video/errorClassifier'
 import {CircuitBreaker} from '@mantleframework/resilience'
+
+defineLambda({
+  architecture: 'x86_64',
+  memorySize: 2048,
+  timeout: 900,
+  reservedConcurrency: 1,
+  secrets: {
+    GITHUB_PERSONAL_TOKEN: 'github.issue.token'
+  }
+})
 
 const youtubeCircuitBreaker = new CircuitBreaker({name: 'youtube'})
 import {upsertFile} from './file-helpers'
@@ -536,7 +546,7 @@ async function processDownloadRequest(message: ValidatedDownloadQueueMessage, re
   logInfo('Download completed successfully', {fileId, correlationId, fileSize: uploadResult.fileSize})
 }
 
-const sqs = defineSqsHandler({operationName: 'StartFileUpload', parseBody: true, timeout: 900, memorySize: 2048})
+const sqs = defineSqsHandler({operationName: 'StartFileUpload', parseBody: true, timeout: 900, memorySize: 2048, queue: 'download'})
 
 export const handler = sqs(async (record, _metadata) => {
   // SQS provides ApproximateReceiveCount - how many times this message has been received

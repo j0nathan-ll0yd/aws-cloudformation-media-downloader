@@ -9,7 +9,7 @@
  * Output: PruneDevicesResult with deletion counts
  */
 import {deleteUserDevicesByDeviceId, getAllDevices} from '#entities/queries'
-import {defineScheduledHandler} from '@mantleframework/core'
+import {defineScheduledHandler, defineLambda} from '@mantleframework/core'
 import {addMetadata, endSpan, logDebug, logError, logInfo, metrics, MetricUnit, startSpan} from '@mantleframework/observability'
 import type {Device} from '#types/domainModels'
 import type {ApplePushNotificationResponse, PruneDevicesResult} from '#types/lambda'
@@ -17,6 +17,15 @@ import {deleteDevice} from '#services/device/deviceService'
 import {getOptionalEnv, getRequiredEnv} from '@mantleframework/env'
 import {UnexpectedError} from '@mantleframework/errors'
 import {Apns2Error} from '#errors/custom-errors'
+
+defineLambda({
+  secrets: {
+    APNS_SIGNING_KEY: 'apns.staging.signingKey',
+    APNS_TEAM: 'apns.staging.team',
+    APNS_KEY_ID: 'apns.staging.keyId',
+    APNS_DEFAULT_TOPIC: 'apns.staging.defaultTopic'
+  }
+})
 
 // Re-export types for external consumers
 export type {PruneDevicesResult} from '#types/lambda'

@@ -8,7 +8,7 @@
  * Input: Authenticated user context (userId from authorizer)
  * Output: APIGatewayProxyResult confirming deletion
  */
-import {buildValidatedResponse} from '@mantleframework/core'
+import {buildValidatedResponse, defineLambda} from '@mantleframework/core'
 import {UnauthorizedError, UnexpectedError} from '@mantleframework/errors'
 import {logDebug, logError} from '@mantleframework/observability'
 import {defineApiHandler} from '@mantleframework/validation'
@@ -17,6 +17,12 @@ import {providerFailureErrorMessage} from '#errors/custom-errors'
 import {createFailedUserDeletionIssue} from '#integrations/github/issueService'
 import {deleteDevice, getUserDevices} from '#services/device/deviceService'
 import type {Device} from '#types/domainModels'
+
+defineLambda({
+  secrets: {
+    GITHUB_PERSONAL_TOKEN: 'github.issue.token'
+  }
+})
 
 /** Delete all user-file relationships */
 async function deleteUserFiles(userId: string): Promise<void> {

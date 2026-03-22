@@ -75,7 +75,7 @@ async function sendNotificationToDevice(device: Device, messageBody: string, not
   }
 }
 
-const sqs = defineSqsHandler<string>({operationName: 'SendPushNotification', parseBody: false})
+const sqs = defineSqsHandler<string>({operationName: 'SendPushNotification', parseBody: false, queue: 'send-push-notification'})
 
 export const handler = sqs(async (record, _metadata) => {
   // Validate message attributes using Zod schema

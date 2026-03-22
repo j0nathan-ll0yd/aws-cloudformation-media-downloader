@@ -14,12 +14,18 @@ type GetApiKeysResult = Awaited<ReturnType<typeof getApiKeys>>
 type GetUsagePlansResult = Awaited<ReturnType<typeof getUsagePlans>>
 type ApiKey = NonNullable<GetApiKeysResult['items']>[number]
 type UsagePlan = NonNullable<GetUsagePlansResult['items']>[number]
-import {defineAuthorizerHandler} from '@mantleframework/core'
+import {defineAuthorizerHandler, defineLambda} from '@mantleframework/core'
 import {addAnnotation, addMetadata, endSpan, logDebug, logError, logInfo, metrics, MetricUnit, startSpan} from '@mantleframework/observability'
 import {validateSessionToken} from '#domain/auth/sessionService'
 import {getOptionalEnv, getRequiredEnv} from '@mantleframework/env'
 import {UnexpectedError} from '@mantleframework/errors'
 import {providerFailureErrorMessage} from '#errors/custom-errors'
+
+defineLambda({
+  secrets: {
+    AUTH_SECRET: 'platform.key'
+  }
+})
 
 /**
  * Generates an Allow policy for API Gateway authorization.
