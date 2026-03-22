@@ -3,7 +3,62 @@ import { defineConfig } from '@mantleframework/core'
 export default defineConfig({
   name: 'media-downloader',
   database: {provider: 'aurora-dsql'},
-  eventbridge: {bus: 'MediaDownloader'},
+  backend: {
+    s3: {
+      bucket: 'lifegames-media-downloader-tfstate',
+      key: 'infra.tfstate',
+      region: 'us-west-2',
+      encrypt: true,
+      dynamodbTable: 'MediaDownloader-TerraformStateLock',
+      workspaceKeyPrefix: 'env'
+    }
+  },
+  customVariables: [
+    {
+      name: 'resource_prefix',
+      type: 'string',
+      description: 'Prefix for all resource names (stag, prod)',
+      validation: {condition: 'contains(["stag", "prod"], var.resource_prefix)', errorMessage: "Resource prefix must be 'stag' or 'prod'."}
+    },
+    {name: 'download_reserved_concurrency', type: 'number', description: 'Reserved concurrency for StartFileUpload Lambda', default: '10'},
+    {name: 'api_throttle_burst_limit', type: 'number', description: 'API Gateway throttle burst limit', default: '100'},
+    {name: 'api_throttle_rate_limit', type: 'number', description: 'API Gateway throttle rate limit', default: '50'},
+    {name: 'api_quota_limit', type: 'number', description: 'API Gateway daily quota limit', default: '10000'},
+    {name: 'dsql_deletion_protection', type: 'bool', description: 'Enable deletion protection for DSQL cluster', default: 'true'},
+    {name: 'enable_cloudwatch_dashboard', type: 'bool', description: 'Enable CloudWatch dashboard (costs $3/month per environment)', default: 'false'},
+    {name: 'enable_cloudwatch_alarms', type: 'bool', description: 'Enable CloudWatch alarms (first 10 free, then $0.10/alarm)', default: 'false'},
+    {
+      name: 'cors_allowed_origins',
+      type: 'list(string)',
+      description: 'Origins allowed to fetch media files via CORS (empty list disables CORS)',
+      default: '[]',
+      validation: {condition: 'alltrue([for o in var.cors_allowed_origins : can(regex("^https?://", o))])', errorMessage: 'Each origin must start with http:// or https://.'}
+    }
+  ],
+  eventbridge: {
+    bus: 'MediaDownloader',
+    sqsTargets: [
+      {
+        detailType: 'DownloadRequested',
+        queue: 'DownloadQueue',
+        inputTransformer: {
+          inputPaths: {
+            fileId: '$.detail.fileId',
+            sourceUrl: '$.detail.sourceUrl',
+            correlationId: '$.detail.correlationId',
+            userId: '$.detail.userId'
+          },
+          inputTemplate: `{
+  "fileId": <fileId>,
+  "sourceUrl": <sourceUrl>,
+  "correlationId": <correlationId>,
+  "userId": <userId>,
+  "attempt": 1
+}`
+        }
+      }
+    ]
+  },
   observability: {
     adot: true,
     metricsNamespace: 'MediaDownloader'
