@@ -36,5 +36,12 @@ export default defineConfig({
   queues: [
     {name: 'download'},
     {name: 'send-push-notification', envAlias: 'SNS_QUEUE_URL'}
-  ]
+  ],
+  cloudfront: {
+    apiDistribution: {
+      geoRestriction: {type: 'whitelist', locations: ['US']},
+      forwardedHeaders: ['X-API-Key', 'Authorization', 'User-Agent'],
+      cacheTtl: {default: 0, min: 0, max: 0}
+    }
+  }
 })
