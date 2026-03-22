@@ -10,12 +10,18 @@
  * Output: APIGatewayProxyResult with refreshed session info
  */
 import {extractBearerToken, validateSession} from '@mantleframework/auth'
-import {buildValidatedResponse} from '@mantleframework/core'
+import {buildValidatedResponse, defineLambda} from '@mantleframework/core'
 import {UnauthorizedError} from '@mantleframework/errors'
 import {logDebug, logInfo} from '@mantleframework/observability'
 import {defineApiHandler} from '@mantleframework/validation'
 import {getAuthInstance} from '#domain/auth/authInstance'
 import {userLoginResponseSchema} from '#types/api-schema'
+
+defineLambda({
+  secrets: {
+    AUTH_SECRET: 'platform.key'
+  }
+})
 
 const api = defineApiHandler({auth: 'authorizer', operationName: 'RefreshToken'})
 export const handler = api(async ({event, context, userId}) => {

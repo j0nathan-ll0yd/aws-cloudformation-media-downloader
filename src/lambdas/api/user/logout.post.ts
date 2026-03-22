@@ -10,12 +10,18 @@
  * Output: 204 No Content on success
  */
 import {expireSession, extractBearerToken} from '@mantleframework/auth'
-import {buildValidatedResponse} from '@mantleframework/core'
+import {buildValidatedResponse, defineLambda} from '@mantleframework/core'
 import {UnauthorizedError} from '@mantleframework/errors'
 import {logDebug, logInfo} from '@mantleframework/observability'
 import {defineApiHandler} from '@mantleframework/validation'
 import {getDrizzleClient} from '#db/client'
 import {getAuthInstance} from '#domain/auth/authInstance'
+
+defineLambda({
+  secrets: {
+    AUTH_SECRET: 'platform.key'
+  }
+})
 
 const api = defineApiHandler({auth: 'authorizer', operationName: 'LogoutUser'})
 export const handler = api(async ({event, context, userId}) => {

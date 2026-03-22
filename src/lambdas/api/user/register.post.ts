@@ -26,6 +26,9 @@ defineLambda({
     AUTH_SECRET: 'platform.key',
     APPLE_CLIENT_ID: 'signInWithApple.config',
     APPLE_CLIENT_SECRET: 'signInWithApple.authKey'
+  },
+  staticEnvVars: {
+    APPLE_APP_BUNDLE_IDENTIFIER: 'lifegames.OfflineMediaDownloader'
   }
 })
 

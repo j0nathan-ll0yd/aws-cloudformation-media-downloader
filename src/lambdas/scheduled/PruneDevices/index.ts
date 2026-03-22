@@ -24,6 +24,9 @@ defineLambda({
     APNS_TEAM: 'apns.staging.team',
     APNS_KEY_ID: 'apns.staging.keyId',
     APNS_DEFAULT_TOPIC: 'apns.staging.defaultTopic'
+  },
+  staticEnvVars: {
+    APNS_HOST: 'api.sandbox.push.apple.com'
   }
 })
 

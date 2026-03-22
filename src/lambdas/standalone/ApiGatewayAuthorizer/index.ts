@@ -24,6 +24,10 @@ import {providerFailureErrorMessage} from '#errors/custom-errors'
 defineLambda({
   secrets: {
     AUTH_SECRET: 'platform.key'
+  },
+  staticEnvVars: {
+    MULTI_AUTHENTICATION_PATH_PARTS: 'device/register,device/event,files',
+    RESERVED_CLIENT_IP: '104.1.88.244'
   }
 })
 
