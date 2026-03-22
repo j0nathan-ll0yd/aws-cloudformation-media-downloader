@@ -54,3 +54,86 @@ variable "node_env" {
   type        = string
   default     = ""
 }
+
+variable "reserved_client_ip" {
+  description = "reserved client ip"
+  type        = string
+  default     = ""
+}
+
+variable "multi_authentication_path_parts" {
+  description = "multi authentication path parts"
+  type        = string
+  default     = ""
+}
+
+variable "apns_team" {
+  description = "apns team"
+  type        = string
+  default     = ""
+}
+
+variable "apns_key_id" {
+  description = "apns key id"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "apns_signing_key" {
+  description = "apns signing key"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "apns_default_topic" {
+  description = "apns default topic"
+  type        = string
+  default     = ""
+}
+
+variable "apns_host" {
+  description = "apns host"
+  type        = string
+  default     = ""
+}
+
+variable "ytdlp_binary_path" {
+  description = "ytdlp binary path"
+  type        = string
+  default     = ""
+}
+
+variable "github_personal_token" {
+  description = "github personal token"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "auth_secret" {
+  description = "auth secret"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "apple_client_id" {
+  description = "apple client id"
+  type        = string
+  default     = ""
+}
+
+variable "apple_client_secret" {
+  description = "apple client secret"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "apple_app_bundle_identifier" {
+  description = "apple app bundle identifier"
+  type        = string
+  default     = ""
+}
