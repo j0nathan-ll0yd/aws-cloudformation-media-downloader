@@ -1,0 +1,24 @@
+# Project-specific Locals
+#
+# ADOT layer ARNs, event bus name, and common Lambda environment variables.
+
+locals {
+  # ADOT collector layers (must match Lambda architecture)
+  adot_layer_arn        = "arn:aws:lambda:${module.core.region}:901920570463:layer:aws-otel-nodejs-arm64-ver-1-30-2:1"
+  adot_layer_arn_x86_64 = "arn:aws:lambda:${module.core.region}:901920570463:layer:aws-otel-nodejs-amd64-ver-1-30-2:1"
+
+  # EventBridge event bus name
+  event_bus_name = "${module.core.name_prefix}-MediaDownloader"
+
+  # Common environment variables for all Lambdas
+  common_lambda_env = {
+    OPENTELEMETRY_EXTENSION_LOG_LEVEL  = "warn"
+    OPENTELEMETRY_COLLECTOR_CONFIG_URI = "/var/task/collector.yaml"
+    NODE_OPTIONS                       = "--no-deprecation"
+    LOG_LEVEL                          = var.log_level
+    ENVIRONMENT                        = var.environment
+    DSQL_ENDPOINT                      = module.database.cluster_endpoint
+    DSQL_REGION                        = module.core.region
+    METRICS_NAMESPACE                  = "MediaDownloader"
+  }
+}

@@ -1,0 +1,70 @@
+# Lambda: DeviceRegister (ejected — SNS ARNs from our resources, ADOT)
+
+module "lambda_device_register" {
+  source = "../../mantle/modules/lambda"
+
+  function_name      = "DeviceRegister"
+  description        = "Registers iOS device for push notifications"
+  name_prefix        = module.core.name_prefix
+  source_dir         = "${path.module}/../build/lambdas/DeviceRegister"
+  assume_role_policy = module.core.lambda_gateway_assume_role_policy
+  region             = module.core.region
+  account_id         = module.core.account_id
+  tags               = module.core.common_tags
+  environment        = var.environment
+  log_retention_days = var.log_retention_days
+  log_level          = var.log_level
+  layers             = [local.adot_layer_arn]
+  xray_policy_arn    = module.core.lambda_xray_policy_arn
+  api_gateway_enabled = true
+
+  inline_policies = {
+    SNSAccess = jsonencode({
+      Version = "2012-10-17"
+      Statement = [{
+        Effect = "Allow"
+        Action = [
+          "sns:CreatePlatformEndpoint",
+          "sns:Subscribe",
+          "sns:ListSubscriptionsByTopic",
+          "sns:Unsubscribe"
+        ]
+        Resource = [
+          aws_sns_platform_application.apns.arn,
+          aws_sns_topic.push_notifications.arn
+        ]
+      }]
+    })
+  }
+
+  environment_variables = merge(local.common_lambda_env, {
+    DSQL_ROLE_NAME              = local.lambda_dsql_roles["DeviceRegister"].role_name
+    PLATFORM_APPLICATION_ARN    = aws_sns_platform_application.apns.arn
+    PUSH_NOTIFICATION_TOPIC_ARN = aws_sns_topic.push_notifications.arn
+  })
+
+  additional_policy_arns = [module.database.connect_policy_arn]
+}
+
+resource "aws_api_gateway_resource" "device_register" {
+  rest_api_id = module.api.rest_api_id
+  parent_id   = aws_api_gateway_resource.path_device.id
+  path_part   = "register"
+}
+
+resource "aws_api_gateway_method" "device_register" {
+  rest_api_id   = module.api.rest_api_id
+  resource_id   = aws_api_gateway_resource.device_register.id
+  http_method   = "POST"
+  authorization = "CUSTOM"
+  authorizer_id = module.api.authorizer_id
+}
+
+resource "aws_api_gateway_integration" "device_register" {
+  rest_api_id             = module.api.rest_api_id
+  resource_id             = aws_api_gateway_resource.device_register.id
+  http_method             = aws_api_gateway_method.device_register.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = module.lambda_device_register.invoke_arn
+}
