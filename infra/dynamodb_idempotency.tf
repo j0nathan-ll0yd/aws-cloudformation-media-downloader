@@ -9,5 +9,6 @@ module "dynamodb_idempotency" {
   tags        = module.core.common_tags
   hash_key    = "id"
   attributes  = [{name = "id", type = "S"}]
+  table_name_override = "${module.core.name_prefix}-MediaDownloader-Idempotency"
   ttl_attribute = "expiration"
 }

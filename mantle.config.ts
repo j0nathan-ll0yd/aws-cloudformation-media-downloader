@@ -3,7 +3,7 @@ import { defineConfig } from '@mantleframework/core'
 export default defineConfig({
   name: 'media-downloader',
   database: {provider: 'aurora-dsql'},
-  eventbridge: {bus: 'media-downloader'},
+  eventbridge: {bus: 'MediaDownloader'},
   observability: {
     adot: true,
     metricsNamespace: 'MediaDownloader'
@@ -28,7 +28,7 @@ export default defineConfig({
     ]
   },
   dynamodb: [
-    {name: 'idempotency', hashKey: 'id', attributes: [{name: 'id', type: 'S'}], ttlAttribute: 'expiration'}
+    {name: 'idempotency', tableNameOverride: '${module.core.name_prefix}-MediaDownloader-Idempotency', hashKey: 'id', attributes: [{name: 'id', type: 'S'}], ttlAttribute: 'expiration'}
   ],
   storage: [
     {name: 'files', bucketNameOverride: 'lifegames-${var.resource_prefix}-media-files-${module.core.account_id}', cloudfront: true, intelligentTiering: true, assets: ['videos/default-file.mp4']}

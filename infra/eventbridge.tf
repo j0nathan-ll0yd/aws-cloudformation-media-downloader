@@ -3,7 +3,7 @@
 
 module "eventbridge" {
   source      = "../../mantle/modules/eventbridge"
-  bus_name    = "media-downloader"
+  bus_name    = "MediaDownloader"
   name_prefix = module.core.name_prefix
   tags        = module.core.common_tags
 }
