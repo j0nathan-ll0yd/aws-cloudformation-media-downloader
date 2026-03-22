@@ -31,11 +31,11 @@ export default defineConfig({
     {name: 'idempotency', hashKey: 'id', attributes: [{name: 'id', type: 'S'}], ttlAttribute: 'expiration'}
   ],
   storage: [
-    {name: 'files', cloudfront: true, intelligentTiering: true, assets: ['videos/default-file.mp4']}
+    {name: 'files', bucketNameOverride: 'lifegames-${var.resource_prefix}-media-files-${module.core.account_id}', cloudfront: true, intelligentTiering: true, assets: ['videos/default-file.mp4']}
   ],
   queues: [
-    {name: 'download'},
-    {name: 'send-push-notification', envAlias: 'SNS_QUEUE_URL'}
+    {name: 'DownloadQueue'},
+    {name: 'SendPushNotification', envAlias: 'SNS_QUEUE_URL'}
   ],
   cloudfront: {
     apiDistribution: {

@@ -550,7 +550,7 @@ async function processDownloadRequest(message: ValidatedDownloadQueueMessage, re
   logInfo('Download completed successfully', {fileId, correlationId, fileSize: uploadResult.fileSize})
 }
 
-const sqs = defineSqsHandler({operationName: 'StartFileUpload', parseBody: true, timeout: 900, memorySize: 2048, queue: 'download'})
+const sqs = defineSqsHandler({operationName: 'StartFileUpload', parseBody: true, timeout: 900, memorySize: 2048, queue: 'DownloadQueue'})
 
 export const handler = sqs(async (record, _metadata) => {
   // SQS provides ApproximateReceiveCount - how many times this message has been received
