@@ -14,17 +14,17 @@ module "lambda_file_helpers" {
   region             = module.core.region
   account_id         = module.core.account_id
   environment        = var.environment
+  log_retention_days = var.log_retention_days
   log_level          = var.log_level
   tags               = module.core.common_tags
+  layers             = [local.adot_layer_arn]
 
   api_gateway_enabled = false
 
-    environment_variables = {
+  environment_variables = merge(local.common_lambda_env, {
       API_BEARER_TOKEN = var.api_bearer_token
-      DSQL_ENDPOINT = var.dsql_endpoint != "" ? var.dsql_endpoint : module.database.cluster_endpoint
       DSQL_ROLE_NAME = local.lambda_dsql_roles["FileHelpers"].role_name
-      METRICS_NAMESPACE = "MediaDownloader"
-    }
+  })
 
     additional_policy_arns = [module.database.connect_policy_arn]
 }
