@@ -22,7 +22,8 @@ export default defineConfig({
         name: 'media-downloader',
         platform: 'APNS_SANDBOX',
         credentialSecret: 'apns.staging.privateKey',
-        principalSecret: 'apns.staging.certificate'
+        principalSecret: 'apns.staging.certificate',
+        resourceName: 'apns'
       }
     ]
   },
@@ -34,6 +35,6 @@ export default defineConfig({
   ],
   queues: [
     {name: 'download'},
-    {name: 'send-push-notification'}
+    {name: 'send-push-notification', envAlias: 'SNS_QUEUE_URL'}
   ]
 })

@@ -37,6 +37,10 @@ defineLambda({
   reservedConcurrency: 1,
   secrets: {
     GITHUB_PERSONAL_TOKEN: 'github.issue.token'
+  },
+  staticEnvVars: {
+    YTDLP_BINARY_PATH: '/opt/bin/yt-dlp_linux',
+    YTDLP_COOKIES_PATH: '/opt/cookies/youtube-cookies.txt'
   }
 })
 
