@@ -5,14 +5,14 @@
  * @see src/lib/vendor/Drizzle/schema.ts for table definitions
  * @see src/lib/vendor/Drizzle/instrumentation.ts for query metrics
  */
-import {getDrizzleClient, withTransaction} from '#lib/vendor/Drizzle/client'
-import {assertDeviceExists, assertFileExists, assertUserExists} from '#lib/vendor/Drizzle/fkEnforcement'
-import {withQueryMetrics} from '#lib/vendor/Drizzle/instrumentation'
-import {devices, files, userDevices, userFiles} from '#lib/vendor/Drizzle/schema'
-import {and, eq, inArray, or} from '#lib/vendor/Drizzle/types'
-import type {InferInsertModel, InferSelectModel} from '#lib/vendor/Drizzle/types'
-import {userDeviceInsertSchema, userFileInsertSchema} from '#lib/vendor/Drizzle/zodSchemas'
-import {DatabaseOperation, DatabaseTable, RequiresTable} from '../decorators'
+import {RequiresTable, DatabaseOperation, withQueryMetrics} from '@mantleframework/database'
+import {getDrizzleClient, withTransaction} from '#db/client'
+import {and, eq, inArray, or} from '@mantleframework/database/orm'
+import type {InferInsertModel, InferSelectModel} from '@mantleframework/database/orm'
+import {assertDeviceExists, assertFileExists, assertUserExists} from '#db/fkEnforcement'
+import {devices, files, userDevices, userFiles} from '#db/schema'
+import {userDeviceInsertSchema, userFileInsertSchema} from '#db/zodSchemas'
+import {DatabaseTable} from '#types/databasePermissions'
 import type {DeviceRow} from './deviceQueries'
 import type {FileRow} from './fileQueries'
 
@@ -41,7 +41,7 @@ class RelationshipQueries {
     return withQueryMetrics('UserFiles.get', async () => {
       const db = await getDrizzleClient()
       const result = await db.select().from(userFiles).where(and(eq(userFiles.userId, userId), eq(userFiles.fileId, fileId))).limit(1)
-      return result.length > 0 ? result[0] : null
+      return result[0] ?? null
     })
   }
 
@@ -113,7 +113,7 @@ class RelationshipQueries {
   @RequiresTable([
     {table: DatabaseTable.Users, operations: [DatabaseOperation.Select]},
     {table: DatabaseTable.Files, operations: [DatabaseOperation.Select]},
-    {table: DatabaseTable.UserFiles, operations: [DatabaseOperation.Insert]}
+    {table: DatabaseTable.UserFiles, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}
   ])
   static createUserFile(input: CreateUserFileInput): Promise<UserFileRow> {
     return withQueryMetrics('UserFiles.create', async () => {
@@ -123,7 +123,7 @@ class RelationshipQueries {
         await assertUserExists(validatedInput.userId)
         await assertFileExists(validatedInput.fileId)
         const [userFile] = await tx.insert(userFiles).values(validatedInput).returning()
-        return userFile
+        return userFile!
       })
     })
   }
@@ -150,9 +150,9 @@ class RelationshipQueries {
       // If conflict occurred (no rows returned), fetch existing record
       if (result.length === 0) {
         const [existing] = await db.select().from(userFiles).where(and(eq(userFiles.userId, input.userId), eq(userFiles.fileId, input.fileId))).limit(1)
-        return existing
+        return existing!
       }
-      return result[0]
+      return result[0]!
     })
   }
 
@@ -215,7 +215,7 @@ class RelationshipQueries {
     return withQueryMetrics('UserDevices.get', async () => {
       const db = await getDrizzleClient()
       const result = await db.select().from(userDevices).where(and(eq(userDevices.userId, userId), eq(userDevices.deviceId, deviceId))).limit(1)
-      return result.length > 0 ? result[0] : null
+      return result[0] ?? null
     })
   }
 
@@ -306,7 +306,7 @@ class RelationshipQueries {
   @RequiresTable([
     {table: DatabaseTable.Users, operations: [DatabaseOperation.Select]},
     {table: DatabaseTable.Devices, operations: [DatabaseOperation.Select]},
-    {table: DatabaseTable.UserDevices, operations: [DatabaseOperation.Insert]}
+    {table: DatabaseTable.UserDevices, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}
   ])
   static createUserDevice(input: CreateUserDeviceInput): Promise<UserDeviceRow> {
     return withQueryMetrics('UserDevices.create', async () => {
@@ -316,7 +316,7 @@ class RelationshipQueries {
         await assertUserExists(validatedInput.userId)
         await assertDeviceExists(validatedInput.deviceId)
         const [userDevice] = await tx.insert(userDevices).values(validatedInput).returning()
-        return userDevice
+        return userDevice!
       })
     })
   }
@@ -345,9 +345,9 @@ class RelationshipQueries {
       if (result.length === 0) {
         const [existing] = await db.select().from(userDevices).where(and(eq(userDevices.userId, input.userId), eq(userDevices.deviceId, input.deviceId)))
           .limit(1)
-        return existing
+        return existing!
       }
-      return result[0]
+      return result[0]!
     })
   }
 
@@ -389,7 +389,7 @@ class RelationshipQueries {
   }
 }
 
-// Re-export static methods as named exports for backwards compatibility
+// Bound function exports for direct import by consumers
 export const getUserFile = RelationshipQueries.getUserFile.bind(RelationshipQueries)
 export const getUserFilesByUserId = RelationshipQueries.getUserFilesByUserId.bind(RelationshipQueries)
 export const getUserFileIdsByUserId = RelationshipQueries.getUserFileIdsByUserId.bind(RelationshipQueries)

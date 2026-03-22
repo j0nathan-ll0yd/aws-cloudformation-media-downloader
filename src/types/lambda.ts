@@ -324,6 +324,7 @@ export interface PruneDevicesResult {
   devicesPruned: number
   /** Error messages for any failed operations */
   errors: string[]
+  [key: string]: unknown
 }
 
 /**
@@ -341,6 +342,7 @@ export interface CleanupResult {
   verificationTokensDeleted: number
   /** Error messages for any failed operations */
   errors: string[]
+  [key: string]: unknown
 }
 
 /**

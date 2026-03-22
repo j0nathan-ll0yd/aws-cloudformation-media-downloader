@@ -5,13 +5,13 @@
  * @see src/lib/vendor/Drizzle/schema.ts for table definitions
  * @see src/lib/vendor/Drizzle/instrumentation.ts for query metrics
  */
-import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
-import {withQueryMetrics} from '#lib/vendor/Drizzle/instrumentation'
-import {accounts, sessions, verification} from '#lib/vendor/Drizzle/schema'
-import {eq, lt} from '#lib/vendor/Drizzle/types'
-import type {InferInsertModel, InferSelectModel} from '#lib/vendor/Drizzle/types'
-import {accountInsertSchema, sessionInsertSchema, sessionUpdateSchema, verificationInsertSchema} from '#lib/vendor/Drizzle/zodSchemas'
-import {DatabaseOperation, DatabaseTable, RequiresTable} from '../decorators'
+import {RequiresTable, DatabaseOperation, withQueryMetrics} from '@mantleframework/database'
+import {getDrizzleClient} from '#db/client'
+import {eq, lt} from '@mantleframework/database/orm'
+import type {InferInsertModel, InferSelectModel} from '@mantleframework/database/orm'
+import {accounts, sessions, verification} from '#db/schema'
+import {accountInsertSchema, sessionInsertSchema, sessionUpdateSchema, verificationInsertSchema} from '#db/zodSchemas'
+import {DatabaseTable} from '#types/databasePermissions'
 
 export type SessionRow = InferSelectModel<typeof sessions>
 export type AccountRow = InferSelectModel<typeof accounts>
@@ -43,7 +43,7 @@ class SessionQueries {
     return withQueryMetrics('Sessions.get', async () => {
       const db = await getDrizzleClient()
       const result = await db.select().from(sessions).where(eq(sessions.id, id)).limit(1)
-      return result.length > 0 ? result[0] : null
+      return result[0] ?? null
     })
   }
 
@@ -57,7 +57,7 @@ class SessionQueries {
     return withQueryMetrics('Sessions.getByToken', async () => {
       const db = await getDrizzleClient()
       const result = await db.select().from(sessions).where(eq(sessions.token, token)).limit(1)
-      return result.length > 0 ? result[0] : null
+      return result[0] ?? null
     })
   }
 
@@ -79,14 +79,14 @@ class SessionQueries {
    * @param input - The session data to create
    * @returns The created session row
    */
-  @RequiresTable([{table: DatabaseTable.Sessions, operations: [DatabaseOperation.Insert]}])
+  @RequiresTable([{table: DatabaseTable.Sessions, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}])
   static createSession(input: CreateSessionInput): Promise<SessionRow> {
     return withQueryMetrics('Sessions.create', async () => {
       // Validate session input against schema
       const validatedInput = sessionInsertSchema.parse(input)
       const db = await getDrizzleClient()
       const [session] = await db.insert(sessions).values(validatedInput).returning()
-      return session
+      return session!
     })
   }
 
@@ -96,14 +96,14 @@ class SessionQueries {
    * @param data - The fields to update
    * @returns The updated session row
    */
-  @RequiresTable([{table: DatabaseTable.Sessions, operations: [DatabaseOperation.Update]}])
+  @RequiresTable([{table: DatabaseTable.Sessions, operations: [DatabaseOperation.Select, DatabaseOperation.Update]}])
   static updateSession(id: string, data: UpdateSessionInput): Promise<SessionRow> {
     return withQueryMetrics('Sessions.update', async () => {
       // Validate partial update data against schema
       const validatedData = sessionUpdateSchema.partial().parse(data)
       const db = await getDrizzleClient()
       const [updated] = await db.update(sessions).set({...validatedData, updatedAt: new Date()}).where(eq(sessions.id, id)).returning()
-      return updated
+      return updated!
     })
   }
 
@@ -154,7 +154,7 @@ class SessionQueries {
     return withQueryMetrics('Accounts.get', async () => {
       const db = await getDrizzleClient()
       const result = await db.select().from(accounts).where(eq(accounts.id, id)).limit(1)
-      return result.length > 0 ? result[0] : null
+      return result[0] ?? null
     })
   }
 
@@ -176,14 +176,14 @@ class SessionQueries {
    * @param input - The account data to create
    * @returns The created account row
    */
-  @RequiresTable([{table: DatabaseTable.Accounts, operations: [DatabaseOperation.Insert]}])
+  @RequiresTable([{table: DatabaseTable.Accounts, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}])
   static createAccount(input: CreateAccountInput): Promise<AccountRow> {
     return withQueryMetrics('Accounts.create', async () => {
       // Validate account input against schema
       const validatedInput = accountInsertSchema.parse(input)
       const db = await getDrizzleClient()
       const [account] = await db.insert(accounts).values(validatedInput).returning()
-      return account
+      return account!
     })
   }
 
@@ -223,7 +223,7 @@ class SessionQueries {
     return withQueryMetrics('Verifications.getByIdentifier', async () => {
       const db = await getDrizzleClient()
       const result = await db.select().from(verification).where(eq(verification.identifier, identifier)).limit(1)
-      return result.length > 0 ? result[0] : null
+      return result[0] ?? null
     })
   }
 
@@ -232,14 +232,14 @@ class SessionQueries {
    * @param input - The verification data to create
    * @returns The created verification row
    */
-  @RequiresTable([{table: DatabaseTable.VerificationTokens, operations: [DatabaseOperation.Insert]}])
+  @RequiresTable([{table: DatabaseTable.VerificationTokens, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}])
   static createVerification(input: CreateVerificationInput): Promise<VerificationRow> {
     return withQueryMetrics('Verifications.create', async () => {
       // Validate verification input against schema
       const validatedInput = verificationInsertSchema.parse(input)
       const db = await getDrizzleClient()
       const [token] = await db.insert(verification).values(validatedInput).returning()
-      return token
+      return token!
     })
   }
 
@@ -267,7 +267,7 @@ class SessionQueries {
   }
 }
 
-// Re-export static methods as named exports for backwards compatibility
+// Bound function exports for direct import by consumers
 export const getSession = SessionQueries.getSession.bind(SessionQueries)
 export const getSessionByToken = SessionQueries.getSessionByToken.bind(SessionQueries)
 export const getSessionsByUserId = SessionQueries.getSessionsByUserId.bind(SessionQueries)

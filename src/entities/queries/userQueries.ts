@@ -7,13 +7,13 @@
  * @see src/lib/vendor/Drizzle/schema.ts for table definitions
  * @see src/lib/vendor/Drizzle/instrumentation.ts for query metrics
  */
-import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
-import {withQueryMetrics} from '#lib/vendor/Drizzle/instrumentation'
-import {users} from '#lib/vendor/Drizzle/schema'
-import {eq} from '#lib/vendor/Drizzle/types'
-import type {InferInsertModel, InferSelectModel} from '#lib/vendor/Drizzle/types'
-import {userInsertSchema, userUpdateSchema} from '#lib/vendor/Drizzle/zodSchemas'
-import {DatabaseOperation, DatabaseTable, RequiresTable} from '../decorators'
+import {RequiresTable, DatabaseOperation, withQueryMetrics} from '@mantleframework/database'
+import {getDrizzleClient} from '#db/client'
+import {eq} from '@mantleframework/database/orm'
+import type {InferInsertModel, InferSelectModel} from '@mantleframework/database/orm'
+import {users} from '#db/schema'
+import {userInsertSchema, userUpdateSchema} from '#db/zodSchemas'
+import {DatabaseTable} from '#types/databasePermissions'
 
 export type UserRow = InferSelectModel<typeof users>
 
@@ -61,13 +61,13 @@ class UserQueries {
    * @param input - The user data
    * @returns The created user
    */
-  @RequiresTable([{table: DatabaseTable.Users, operations: [DatabaseOperation.Insert]}])
+  @RequiresTable([{table: DatabaseTable.Users, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}])
   static createUser(input: CreateUserInput): Promise<UserItem> {
     return withQueryMetrics('Users.create', async () => {
       const validatedUser = userInsertSchema.parse(input)
       const db = await getDrizzleClient()
       const [user] = await db.insert(users).values({...validatedUser, updatedAt: new Date()}).returning()
-      return user
+      return user!
     })
   }
 
@@ -77,13 +77,13 @@ class UserQueries {
    * @param data - The fields to update
    * @returns The updated user
    */
-  @RequiresTable([{table: DatabaseTable.Users, operations: [DatabaseOperation.Update]}])
+  @RequiresTable([{table: DatabaseTable.Users, operations: [DatabaseOperation.Select, DatabaseOperation.Update]}])
   static updateUser(id: string, data: UpdateUserInput): Promise<UserItem> {
     return withQueryMetrics('Users.update', async () => {
       const validatedData = userUpdateSchema.partial().parse(data)
       const db = await getDrizzleClient()
       const [updated] = await db.update(users).set({...validatedData, updatedAt: new Date()}).where(eq(users.id, id)).returning()
-      return updated
+      return updated!
     })
   }
 
@@ -101,7 +101,7 @@ class UserQueries {
   }
 }
 
-// Re-export static methods as named exports for backwards compatibility
+// Bound function exports for direct import by consumers
 export const getUser = UserQueries.getUser.bind(UserQueries)
 export const getUsersByEmail = UserQueries.getUsersByEmail.bind(UserQueries)
 export const createUser = UserQueries.createUser.bind(UserQueries)

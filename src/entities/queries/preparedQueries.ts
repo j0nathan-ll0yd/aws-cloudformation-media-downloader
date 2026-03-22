@@ -11,10 +11,11 @@
  *
  * @see {@link https://orm.drizzle.team/docs/perf-queries | Drizzle Prepared Statements}
  */
-import {getDrizzleClient, onConnectionInvalidated} from '#lib/vendor/Drizzle/client'
-import {files, sessions, userFiles} from '#lib/vendor/Drizzle/schema'
-import {eq, sql} from '#lib/vendor/Drizzle/types'
-import {DatabaseOperation, DatabaseTable, RequiresTable} from '../decorators'
+import {RequiresTable, DatabaseOperation} from '@mantleframework/database'
+import {getDrizzleClient, onConnectionInvalidated} from '#db/client'
+import {eq, sql} from '@mantleframework/database/orm'
+import {files, sessions, userFiles} from '#db/schema'
+import {DatabaseTable} from '#types/databasePermissions'
 import type {FileRow} from './fileQueries'
 import type {SessionRow} from './sessionQueries'
 
@@ -121,7 +122,7 @@ class PreparedQueries {
   }
 }
 
-// Re-export static methods as named exports for backwards compatibility
+// Bound function exports for direct import by consumers
 export const getFileByKeyPrepared = PreparedQueries.getFileByKeyPrepared.bind(PreparedQueries)
 export const getUserFilesPrepared = PreparedQueries.getUserFilesPrepared.bind(PreparedQueries)
 export const getSessionByTokenPrepared = PreparedQueries.getSessionByTokenPrepared.bind(PreparedQueries)

@@ -5,13 +5,13 @@
  * @see src/lib/vendor/Drizzle/schema.ts for table definitions
  * @see src/lib/vendor/Drizzle/instrumentation.ts for query metrics
  */
-import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
-import {withQueryMetrics} from '#lib/vendor/Drizzle/instrumentation'
-import {devices} from '#lib/vendor/Drizzle/schema'
-import {eq, inArray} from '#lib/vendor/Drizzle/types'
-import type {InferInsertModel, InferSelectModel} from '#lib/vendor/Drizzle/types'
-import {deviceInsertSchema, deviceUpdateSchema} from '#lib/vendor/Drizzle/zodSchemas'
-import {DatabaseOperation, DatabaseTable, RequiresTable} from '../decorators'
+import {RequiresTable, DatabaseOperation, withQueryMetrics} from '@mantleframework/database'
+import {getDrizzleClient} from '#db/client'
+import {eq, inArray} from '@mantleframework/database/orm'
+import type {InferInsertModel, InferSelectModel} from '@mantleframework/database/orm'
+import {devices} from '#db/schema'
+import {deviceInsertSchema, deviceUpdateSchema} from '#db/zodSchemas'
+import {DatabaseTable} from '#types/databasePermissions'
 
 export type DeviceRow = InferSelectModel<typeof devices>
 
@@ -34,7 +34,7 @@ class DeviceQueries {
     return withQueryMetrics('Devices.get', async () => {
       const db = await getDrizzleClient()
       const result = await db.select().from(devices).where(eq(devices.deviceId, deviceId)).limit(1)
-      return result.length > 0 ? result[0] : null
+      return result[0] ?? null
     })
   }
 
@@ -59,14 +59,14 @@ class DeviceQueries {
    * @param input - The device data to create
    * @returns The created device row
    */
-  @RequiresTable([{table: DatabaseTable.Devices, operations: [DatabaseOperation.Insert]}])
+  @RequiresTable([{table: DatabaseTable.Devices, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}])
   static createDevice(input: CreateDeviceInput): Promise<DeviceRow> {
     return withQueryMetrics('Devices.create', async () => {
       // Validate device input against schema
       const validatedInput = deviceInsertSchema.parse(input)
       const db = await getDrizzleClient()
       const [device] = await db.insert(devices).values(validatedInput).returning()
-      return device
+      return device!
     })
   }
 
@@ -76,7 +76,7 @@ class DeviceQueries {
    * @param input - The device data to upsert
    * @returns The created or updated device row
    */
-  @RequiresTable([{table: DatabaseTable.Devices, operations: [DatabaseOperation.Insert, DatabaseOperation.Update]}])
+  @RequiresTable([{table: DatabaseTable.Devices, operations: [DatabaseOperation.Select, DatabaseOperation.Insert, DatabaseOperation.Update]}])
   static upsertDevice(input: CreateDeviceInput): Promise<DeviceRow> {
     return withQueryMetrics('Devices.upsert', async () => {
       // Validate device input against schema
@@ -86,7 +86,7 @@ class DeviceQueries {
         target: devices.deviceId,
         set: {name: input.name, token: input.token, systemVersion: input.systemVersion, systemName: input.systemName, endpointArn: input.endpointArn}
       }).returning()
-      return result
+      return result!
     })
   }
 
@@ -96,14 +96,14 @@ class DeviceQueries {
    * @param data - The fields to update
    * @returns The updated device row
    */
-  @RequiresTable([{table: DatabaseTable.Devices, operations: [DatabaseOperation.Update]}])
+  @RequiresTable([{table: DatabaseTable.Devices, operations: [DatabaseOperation.Select, DatabaseOperation.Update]}])
   static updateDevice(deviceId: string, data: UpdateDeviceInput): Promise<DeviceRow> {
     return withQueryMetrics('Devices.update', async () => {
       // Validate partial update data against schema
       const validatedData = deviceUpdateSchema.partial().parse(data)
       const db = await getDrizzleClient()
       const [updated] = await db.update(devices).set(validatedData).where(eq(devices.deviceId, deviceId)).returning()
-      return updated
+      return updated!
     })
   }
 
@@ -132,7 +132,7 @@ class DeviceQueries {
   }
 }
 
-// Re-export static methods as named exports for backwards compatibility
+// Bound function exports for direct import by consumers
 export const getDevice = DeviceQueries.getDevice.bind(DeviceQueries)
 export const getDevicesBatch = DeviceQueries.getDevicesBatch.bind(DeviceQueries)
 export const createDevice = DeviceQueries.createDevice.bind(DeviceQueries)

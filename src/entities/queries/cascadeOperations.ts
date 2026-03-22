@@ -14,11 +14,11 @@
  * @see docs/wiki/TypeScript/Entity-Query-Patterns.md for usage examples
  * @see src/lib/vendor/Drizzle/instrumentation.ts for query metrics
  */
-import {withTransaction} from '#lib/vendor/Drizzle/client'
-import {withQueryMetrics} from '#lib/vendor/Drizzle/instrumentation'
-import {accounts, sessions, userDevices, userFiles, users} from '#lib/vendor/Drizzle/schema'
-import {eq} from '#lib/vendor/Drizzle/types'
-import {DatabaseOperation, DatabaseTable, RequiresTable} from '../decorators'
+import {RequiresTable, DatabaseOperation, withQueryMetrics} from '@mantleframework/database'
+import {withTransaction} from '#db/client'
+import {eq} from '@mantleframework/database/orm'
+import {accounts, sessions, userDevices, userFiles, users} from '#db/schema'
+import {DatabaseTable} from '#types/databasePermissions'
 
 /**
  * Cascade entity operations with declarative permission metadata.
@@ -96,7 +96,7 @@ class CascadeOperations {
   }
 }
 
-// Re-export static methods as named exports for backwards compatibility
+// Bound function exports for direct import by consumers
 export const deleteUserCascade = CascadeOperations.deleteUserCascade.bind(CascadeOperations)
 export const deleteUserRelationships = CascadeOperations.deleteUserRelationships.bind(CascadeOperations)
 export const deleteUserAuthRecords = CascadeOperations.deleteUserAuthRecords.bind(CascadeOperations)

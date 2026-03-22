@@ -9,8 +9,8 @@
  * 2. EventBridge routes to DownloadQueue (SQS)
  * 3. StartFileUpload consumes from SQS, publishes DownloadCompleted/DownloadFailed
  *
- * @see terraform/eventbridge.tf for routing rules
- * @see terraform/download_queue.tf for SQS configuration
+ * @see infra/eventbridge.tf for routing rules
+ * @see infra/download_queue.tf for SQS configuration
  * @see src/lib/vendor/AWS/EventBridge.ts for event-specific publisher functions
  */
 
@@ -20,7 +20,7 @@
  * Single source of truth for all domain events in the MediaDownloader system.
  * Used by:
  * - Event-specific publisher functions (publishEventDownloadRequested, etc.)
- * - EventBridge routing rules (terraform/eventbridge.tf)
+ * - EventBridge routing rules (infra/eventbridge.tf)
  * - MCP validation rules
  * - Event flow documentation generation
  */
@@ -116,7 +116,7 @@ export interface DownloadFailedDetail {
  * routes DownloadRequested events. The input_transformer in EventBridge
  * extracts and flattens the detail fields.
  *
- * @see terraform/eventbridge.tf for input_transformer configuration
+ * @see infra/eventbridge.tf for input_transformer configuration
  * @see StartFileUpload Lambda for consumer
  */
 export interface DownloadQueueMessage {
