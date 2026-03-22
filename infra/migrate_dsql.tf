@@ -20,8 +20,8 @@ module "lambda_migrate_dsql" {
 
   environment_variables = {
     DSQL_CLUSTER_ENDPOINT = module.database.cluster_endpoint
-    DSQL_REGION       = module.core.region
-    DSQL_ROLE_NAME    = "admin"
+    DSQL_REGION           = module.core.region
+    DSQL_ROLE_NAME        = "admin"
     METRICS_NAMESPACE = "MediaDownloader"
     AWS_ACCOUNT_ID    = module.core.account_id
     RESOURCE_PREFIX   = module.core.name_prefix
@@ -35,13 +35,12 @@ resource "time_sleep" "wait_for_dsql" {
   create_duration = "60s"
 }
 
-# Temporarily disabled — re-enable after env var fix is deployed
-# data "aws_lambda_invocation" "run_migration" {
-#   function_name = module.lambda_migrate_dsql.function_name
-#   input         = jsonencode({ source = "terraform-deploy" })
-#   depends_on    = [time_sleep.wait_for_dsql]
-# }
-#
-# output "migration_result" {
-#   value = jsondecode(data.aws_lambda_invocation.run_migration.result)
-# }
+data "aws_lambda_invocation" "run_migration" {
+  function_name = module.lambda_migrate_dsql.function_name
+  input         = jsonencode({ source = "terraform-deploy" })
+  depends_on    = [time_sleep.wait_for_dsql]
+}
+
+output "migration_result" {
+  value = jsondecode(data.aws_lambda_invocation.run_migration.result)
+}
