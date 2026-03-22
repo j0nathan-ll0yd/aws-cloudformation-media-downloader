@@ -64,7 +64,7 @@ cd "$WORKTREE_PATH"
 pnpm list --depth=0
 
 # Verify terraform initialized
-cd terraform && tofu state list | wc -l
+cd infra && tofu state list | wc -l
 
 # Verify build works
 pnpm run build

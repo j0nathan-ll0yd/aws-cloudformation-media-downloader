@@ -273,7 +273,7 @@ brew install opentofu
 # OpenTofu is fully compatible with Terraform state
 
 # 3. Clean and reinitialize to use OpenTofu registry
-cd terraform
+cd infra
 rm -rf .terraform .terraform.lock.hcl
 tofu init
 
@@ -431,7 +431,7 @@ The project uses an **OpenTofu-based binary management system** with GitHub Acti
 
 **Version Tracking**: The `layers/yt-dlp/VERSION` file contains the current yt-dlp version (e.g., `2025.11.12`)
 
-**OpenTofu Download**: The `null_resource.DownloadYtDlpBinary` resource in `terraform/feedly_webhook.tf`:
+**OpenTofu Download**: The `null_resource.DownloadYtDlpBinary` resource in `infra/feedly_webhook.tf`:
 - Triggers whenever the VERSION file changes
 - Downloads the yt-dlp binary from GitHub releases
 - Verifies SHA256 checksum against official release checksums

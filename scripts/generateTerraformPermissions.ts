@@ -5,7 +5,7 @@
  * Lambda DSQL access levels. Also validates existing Terraform files
  * against declared permissions.
  *
- * Output: terraform/generated/lambda_dsql_access.tf
+ * Output: infra/generated/lambda_dsql_access.tf
  *
  * Usage: pnpm run generate:terraform-permissions
  *
@@ -103,7 +103,7 @@ function generateTerraformLocals(manifest: PermissionsManifest): string {
  * Validate existing Terraform files against manifest
  */
 function validateTerraformFiles(manifest: PermissionsManifest): ValidationIssue[] {
-  const terraformDir = join(projectRoot, 'terraform')
+  const terraformDir = join(projectRoot, 'infra')
   const issues: ValidationIssue[] = []
 
   const tfFiles = readdirSync(terraformDir).filter(f => f.endsWith('.tf'))
@@ -255,7 +255,7 @@ async function main(): Promise<void> {
 
   // Generate Terraform locals
   const terraformLocals = generateTerraformLocals(manifest)
-  const generatedDir = join(projectRoot, 'terraform/generated')
+  const generatedDir = join(projectRoot, 'infra/generated')
   if (!existsSync(generatedDir)) {
     mkdirSync(generatedDir, {recursive: true})
   }

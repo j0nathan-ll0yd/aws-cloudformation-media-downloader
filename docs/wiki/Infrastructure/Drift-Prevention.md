@@ -79,7 +79,7 @@ All Terraform-managed resources should have the `ManagedBy = terraform` tag. Thi
 - The audit script filters resources by this tag
 - Prevents accidental deletion of non-Terraform resources
 
-Tags are applied via the `local.common_tags` block in `terraform/main.tf`:
+Tags are applied via the `local.common_tags` block in `infra/main.tf`:
 
 ```hcl
 locals {

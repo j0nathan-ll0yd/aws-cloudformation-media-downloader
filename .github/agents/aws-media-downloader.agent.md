@@ -100,7 +100,7 @@ test/
 │   └── aws-sdk-mock.ts   # AWS SDK mock helpers
 └── integration/          # LocalStack integration tests
 util/                     # Shared utilities
-terraform/                # OpenTofu infrastructure
+infra/                    # OpenTofu infrastructure
 build/graph.json         # Code dependency graph - READ THIS FIRST
 ```
 
@@ -202,7 +202,7 @@ import {handler} from '../src'
 2. Implement handler with X-Ray decorator
 3. Add TypeDoc comments
 4. Create comprehensive tests with transitive mocking
-5. Define infrastructure in `terraform/Lambda[Name].tf`
+5. Define infrastructure in `infra/Lambda[Name].tf`
 6. Add IAM permissions as needed
 
 ### Pre-Commit Checklist

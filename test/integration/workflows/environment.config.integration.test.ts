@@ -112,7 +112,7 @@ describe('Environment Configuration', () => {
 
   describe('Terraform tfvars Consistency', () => {
     const projectRoot = join(__dirname, '../../..')
-    const terraformDir = join(projectRoot, 'terraform/environments')
+    const terraformDir = join(projectRoot, 'infra/environments')
 
     // Helper to match tfvars key-value pairs with flexible whitespace
     // terraform fmt may align '=' signs differently

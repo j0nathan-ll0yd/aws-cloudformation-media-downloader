@@ -12,11 +12,11 @@ This document outlines the strategy for establishing distinct Staging and Produc
 
 ## 2. Current State Assessment
 
-*   **Infrastructure Tool:** OpenTofu (via `terraform` directory).
-*   **State Management:** Currently implies a single state or local state usage (based on `terraform/main.tf` not showing a remote backend block explicitly in the snippet read, though it might be in `backend.tf` or implied).
+*   **Infrastructure Tool:** OpenTofu (via `infra` directory).
+*   **State Management:** Currently implies a single state or local state usage (based on `infra/main.tf` not showing a remote backend block explicitly in the snippet read, though it might be in `backend.tf` or implied).
 *   **Secrets:** SOPS with environment-specific files (`secrets.staging.enc.yaml`, `secrets.prod.enc.yaml`).
 *   **Deployment:** Manual scripts (`npm run deploy`) using local `.env` files.
-*   **Environment Awareness:** The `terraform/main.tf` currently hardcodes `Environment = "production"`, which indicates a single-environment setup.
+*   **Environment Awareness:** The `infra/main.tf` currently hardcodes `Environment = "production"`, which indicates a single-environment setup.
 
 ## 3. Recommended Architecture
 
@@ -26,7 +26,7 @@ The recommended approach is **OpenTofu Workspaces** to manage the environments w
 
 **Proposed Directory/File Changes:**
 ```text
-terraform/
+infra/
 ├── main.tf             # Core logic (remains mostly as is)
 ├── variables.tf        # Define input variables (for example, environment_name, instance_size)
 ├── backend.tf          # Configured for dynamic state paths or separate keys
@@ -41,7 +41,7 @@ The project uses environment-specific secret files (`secrets.staging.enc.yaml`, 
 
 **Strategy:**
 1.  Create `secrets.staging.enc.yaml` and `secrets.prod.enc.yaml`.
-2.  Update `terraform/main.tf` to select the secret file dynamically based on the workspace or an input variable.
+2.  Update `infra/main.tf` to select the secret file dynamically based on the workspace or an input variable.
 
 ```hcl
 # Example Terraform modification

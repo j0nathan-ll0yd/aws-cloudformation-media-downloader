@@ -27,12 +27,12 @@ aws sts get-caller-identity
 
 2. **Terraform state is accessible**:
 ```bash
-cd terraform && tofu state list | wc -l
+cd infra && tofu state list | wc -l
 ```
 
 3. **Check for obvious drift first**:
 ```bash
-cd terraform && tofu plan -detailed-exitcode
+cd infra && tofu plan -detailed-exitcode
 ```
 
 ## Manual Audit Steps
@@ -42,7 +42,7 @@ If you need more control than the automated script provides:
 ### Phase 1: Collect Terraform State
 
 ```bash
-cd terraform
+cd infra
 tofu state list | grep -E "^aws_" > /tmp/tf-resources.txt
 echo "Resources in state: $(wc -l < /tmp/tf-resources.txt)"
 ```
@@ -119,7 +119,7 @@ For each resource type, compare:
 
 **To import an orphaned resource** (add to Terraform state):
 ```bash
-cd terraform
+cd infra
 tofu import aws_lambda_function.<ResourceName> <function-name>
 tofu import aws_iam_role.<ResourceName> <role-name>
 tofu import aws_iam_policy.<ResourceName> arn:aws:iam::<account>:policy/<policy-name>
@@ -146,7 +146,7 @@ aws cloudfront delete-distribution --id <dist-id> --if-match <etag>
 
 After remediation:
 ```bash
-cd terraform && tofu plan -detailed-exitcode
+cd infra && tofu plan -detailed-exitcode
 ```
 
 Expected output: "No changes. Your infrastructure matches the configuration."
@@ -156,7 +156,7 @@ Expected output: "No changes. Your infrastructure matches the configuration."
 1. **NEVER auto-delete** without confirmation - the `--prune` flag prompts before deleting
 2. **Backup state** before imports:
    ```bash
-   cp terraform/terraform.tfstate terraform/terraform.tfstate.backup
+   cp infra/terraform.tfstate infra/terraform.tfstate.backup
    ```
 3. **Test imports** with `tofu plan` after each import
 4. **Document deletions** in git commit message
@@ -296,10 +296,10 @@ Understand service relationships before deleting orphaned resources.
 
 ```bash
 # Restore state backup
-cp terraform/terraform.tfstate.backup terraform/terraform.tfstate
+cp infra/terraform.tfstate.backup infra/terraform.tfstate
 
 # Re-sync state
-cd terraform && tofu refresh
+cd infra && tofu refresh
 ```
 
 ### If Accidental Deletion
@@ -312,7 +312,7 @@ cd terraform && tofu refresh
 
 ```bash
 # If state is corrupted
-cd terraform
+cd infra
 tofu state pull > /tmp/state-backup.json
 
 # Remove corrupted resource

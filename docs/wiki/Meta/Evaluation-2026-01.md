@@ -32,7 +32,7 @@ This AWS Serverless Media Downloader demonstrates exceptional engineering practi
 ### Top Improvement Opportunities
 1. **arm64/Graviton Migration**: 30% cost reduction, 13-24% faster cold starts
 2. **Lambda SnapStart**: When available for Node.js
-3. ~~**CloudWatch Alarms**~~: Complete (13 alarms in `terraform/cloudwatch.tf`)
+3. ~~**CloudWatch Alarms**~~: Complete (13 alarms in `infra/cloudwatch.tf`)
 4. ~~**Provisioned Concurrency**~~: N/A (exceeds $15/month budget)
 
 ---
@@ -275,7 +275,7 @@ Multi-layered enforcement prevents anti-patterns:
 
 **Implementation:**
 ```hcl
-# terraform/lambda.tf
+# infra/lambda.tf
 resource "aws_lambda_function" "example" {
   architectures = ["arm64"]  # Change from default x86_64
   # ...
@@ -294,7 +294,7 @@ resource "aws_lambda_function" "example" {
 **Impact**: Medium
 **Effort**: Low
 
-**Implementation**: 13 alarms defined in `terraform/cloudwatch.tf` and `terraform/download_queue.tf`:
+**Implementation**: 13 alarms defined in `infra/cloudwatch.tf` and `infra/download_queue.tf`:
 - Lambda errors (API + Background)
 - Lambda throttles (API + Background)
 - SQS DLQ messages (2 queues)

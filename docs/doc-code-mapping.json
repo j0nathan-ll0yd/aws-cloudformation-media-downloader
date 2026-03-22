@@ -96,7 +96,7 @@
   "codePathValidation": {
     "directory": "docs/wiki",
     "pattern": "**/*.md",
-    "pathPrefixes": ["src/", "test/", "util/", "types/", "build/", "graphrag/", "terraform/", "bin/", "scripts/"],
+    "pathPrefixes": ["src/", "test/", "util/", "types/", "build/", "graphrag/", "infra/", "bin/", "scripts/"],
     "assertion": "paths-exist",
     "blocking": false,
     "description": "Backtick-wrapped code paths in wiki docs must exist in filesystem"

@@ -269,7 +269,7 @@ describe('${NAME}', () => {
 
 ### Step 6: Create Terraform Configuration
 
-Create `terraform/lambda-${name-kebab}.tf`:
+Create `infra/lambda-${name-kebab}.tf`:
 
 ```hcl
 # Lambda: ${NAME}
@@ -382,7 +382,7 @@ pnpm run check-types
 |------|---------|
 | `src/lambdas/${NAME}/src/index.ts` | Handler implementation |
 | `src/lambdas/${NAME}/test/index.test.ts` | Unit tests |
-| `terraform/lambda-${name-kebab}.tf` | Infrastructure |
+| `infra/lambda-${name-kebab}.tf` | Infrastructure |
 
 ### Next Steps
 
@@ -399,7 +399,7 @@ pnpm run check-types
 - [x] Handler compiles
 - [x] Tests pass
 - [x] Conventions validated
-- [ ] Terraform plan succeeds (run `cd terraform && tofu plan`)
+- [ ] Terraform plan succeeds (run `cd infra && tofu plan`)
 ```
 
 ## Human Checkpoints
@@ -466,7 +466,7 @@ For API Gateway triggered Lambdas:
 
 ### Step 1: Add Route to API Gateway Module
 
-In `terraform/api-gateway.tf`, add:
+In `infra/api-gateway.tf`, add:
 
 ```hcl
 resource "aws_api_gateway_resource" "${name}" {
@@ -510,7 +510,7 @@ resource "aws_lambda_permission" "${name}_api" {
 **CHECKPOINT**: Before applying infrastructure:
 
 ```bash
-cd terraform && tofu plan
+cd infra && tofu plan
 ```
 
 Review the plan output for:

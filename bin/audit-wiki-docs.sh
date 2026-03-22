@@ -108,7 +108,7 @@ validate_code_paths() {
         [ -z "$path" ] && continue
 
         # Only check paths that look like file/directory references
-        if [[ "$path" =~ ^(src|lib|test|util|types|build|graphrag|terraform|bin|scripts)/ ]]; then
+        if [[ "$path" =~ ^(src|lib|test|util|types|build|graphrag|infra|bin|scripts)/ ]]; then
           # Add src/ prefix if path starts with lib/ (common error)
           check_path="$path"
           if [[ "$path" =~ ^lib/ ]]; then

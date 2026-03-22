@@ -34,7 +34,7 @@ This document provides an exhaustive evaluation of the `aws-cloudformation-media
 
 **Files Analyzed:**
 - Root configuration: `package.json`, `tsconfig.json`, `vitest.config.mts`, `.npmrc`, `pnpm-workspace.yaml`
-- Directory structure: `src/`, `terraform/`, `test/`, `docs/`, `scripts/`, `layers/`
+- Directory structure: `src/`, `infra/`, `test/`, `docs/`, `scripts/`, `layers/`
 
 ### Evaluation
 
@@ -58,9 +58,9 @@ This document provides an exhaustive evaluation of the `aws-cloudformation-media
 ### Current State Analysis
 
 **Files Analyzed:**
-- `terraform/*.tf` (30+ files)
-- `terraform/environments/*.tfvars`
-- `terraform/bootstrap/main.tf`
+- `infra/*.tf` (30+ files)
+- `infra/environments/*.tfvars`
+- `infra/bootstrap/main.tf`
 
 ### Evaluation
 
@@ -218,8 +218,8 @@ This document provides an exhaustive evaluation of the `aws-cloudformation-media
 **Files Analyzed:**
 - `.npmrc` (lifecycle script protection)
 - `.sops.yaml`
-- `terraform/dsql_permissions.tf`
-- `terraform/generated_service_permissions.tf`
+- `infra/dsql_permissions.tf`
+- `infra/generated_service_permissions.tf`
 - `src/lambdas/ApiGatewayAuthorizer/`
 
 ### Evaluation
@@ -254,7 +254,7 @@ This document provides an exhaustive evaluation of the `aws-cloudformation-media
 ### Current State Analysis
 
 **Files Analyzed:**
-- `terraform/cloudwatch.tf`
+- `infra/cloudwatch.tf`
 - `src/lib/system/logging.ts`
 - `src/lib/system/errorMetrics.ts`
 - OpenTelemetry configuration in Lambda definitions
@@ -286,7 +286,7 @@ This document provides an exhaustive evaluation of the `aws-cloudformation-media
 **Files Analyzed:**
 - `.github/workflows/` (GitHub Actions)
 - `scripts/deploy.*.sh`
-- `terraform/bootstrap/` (OIDC configuration)
+- `infra/bootstrap/` (OIDC configuration)
 
 ### Evaluation
 

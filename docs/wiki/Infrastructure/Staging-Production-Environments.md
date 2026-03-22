@@ -89,7 +89,7 @@ tofu workspace select production
 
 ## Environment Configuration
 
-Each environment has a `.tfvars` file in `terraform/environments/`:
+Each environment has a `.tfvars` file in `infra/environments/`:
 
 ### Staging (`staging.tfvars`)
 

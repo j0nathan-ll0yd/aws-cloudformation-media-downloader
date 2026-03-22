@@ -133,7 +133,7 @@ interface Devices {
 /**
  * Webhook operations
  */
-@route("/feedly")
+@route("/feedly/webhook")
 @tag("Webhooks")
 interface Webhooks {
   /**

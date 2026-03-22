@@ -17,7 +17,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-cd "${PROJECT_ROOT}/terraform"
+cd "${PROJECT_ROOT}/infra"
 
 # Verify workspace
 CURRENT_WS=$(tofu workspace show)

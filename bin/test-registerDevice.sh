@@ -50,7 +50,7 @@ if [[ "$ENVIRONMENT" != "staging" && "$ENVIRONMENT" != "production" ]]; then
 fi
 
 main() {
-  cd "${PROJECT_ROOT}/terraform"
+  cd "${PROJECT_ROOT}/infra"
 
   echo -e "${GREEN}▶${NC} Selecting ${ENVIRONMENT} workspace..."
   tofu workspace select "${ENVIRONMENT}" > /dev/null

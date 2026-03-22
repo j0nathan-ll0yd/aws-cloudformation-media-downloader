@@ -10,10 +10,10 @@ This project uses **AWS X-Ray** for distributed tracing via **OpenTelemetry** an
 
 | Component | Configuration | Location |
 |-----------|---------------|----------|
-| ADOT Lambda Layer | ARM64/x86_64 | `terraform/main.tf:35-38` |
+| ADOT Lambda Layer | ARM64/x86_64 | `infra/main.tf:35-38` |
 | X-Ray Active Tracing | All 17 Lambdas | Per-Lambda `.tf` files |
-| X-Ray IAM Policy | CommonLambdaXRay | `terraform/main.tf:90-104` |
-| API Gateway Tracing | Production stage | `terraform/api_gateway.tf:50` |
+| X-Ray IAM Policy | CommonLambdaXRay | `infra/main.tf:90-104` |
+| API Gateway Tracing | Production stage | `infra/api_gateway.tf:50` |
 | OTEL Collector Config | Custom | `config/otel-collector.yaml` |
 
 ### Application Layer
@@ -146,7 +146,7 @@ This creates:
 ## ADOT Layer Version Tracking
 
 Current version: v1.30.2 (ARM64)
-Terraform reference: `terraform/main.tf:44`
+Terraform reference: `infra/main.tf:44`
 
 **Monitoring required for:**
 - Breaking changes in trace propagation
@@ -155,7 +155,7 @@ Terraform reference: `terraform/main.tf:44`
 
 **Update process:**
 1. Check AWS ADOT releases: https://github.com/aws-observability/aws-otel-lambda
-2. Update layer ARN in terraform/main.tf
+2. Update layer ARN in infra/main.tf
 3. Test trace propagation across API Gateway to Lambda to SQS chains
 4. Verify X-Ray console shows connected traces
 

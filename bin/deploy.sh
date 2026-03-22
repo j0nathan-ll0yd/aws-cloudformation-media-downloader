@@ -103,7 +103,7 @@ deploy_to_environment() {
   log_info "Deploying to ${env}..."
   log_info "Log file: ${log_file}"
 
-  cd "${PROJECT_ROOT}/terraform"
+  cd "${PROJECT_ROOT}/infra"
 
   # Initialize and select workspace
   tofu init -input=false
@@ -152,7 +152,7 @@ handle_deployment_failure() {
   echo ""
   echo "Resilience Protocol - Next Steps:"
   echo "  1. Review the error in: ${log_file}"
-  echo "  2. Fix the issue in your code/terraform"
+  echo "  2. Fix the issue in your code/infra"
   echo "  3. Commit the fix: git add . && git commit -m 'fix: deployment issue'"
   echo "  4. Retry: ./bin/deploy.sh ${env}"
   echo ""

@@ -86,9 +86,9 @@ For each section, output one of:
 ## 3. INFRASTRUCTURE (OpenTofu)
 
 **Files to Read (ALL):**
-- ALL `.tf` files in `terraform/`
-- `terraform/environments/staging.tfvars`
-- `terraform/environments/production.tfvars`
+- ALL `.tf` files in `infra/`
+- `infra/environments/staging.tfvars`
+- `infra/environments/production.tfvars`
 - `bin/pre-deploy-check.sh`
 - `bin/verify-state.sh`
 - `bin/aws-audit.sh`
@@ -119,7 +119,7 @@ pnpm run plan:production          # Plan production changes
 **Red Flags:** Overly permissive IAM policies, missing security groups, resource drift,
               hardcoded values that should be variables, cross-environment resource access.
 
-**Sub-agent suggestion:** Use `humanlayer:codebase-analyzer` focused on terraform/ directory.
+**Sub-agent suggestion:** Use `humanlayer:codebase-analyzer` focused on infra/ directory.
 
 ---
 
@@ -229,7 +229,7 @@ pnpm run plan:production          # Plan production changes
 - `src/lambdas/ApiGatewayAuthorizer/src/index.ts`
 - `src/lambdas/LoginUser/src/index.ts`
 - `src/lib/vendor/BetterAuth/`
-- ALL IAM policies in `terraform/*.tf`
+- ALL IAM policies in `infra/*.tf`
 
 **Verify:**
 - Is SOPS encryption properly configured?
@@ -274,7 +274,7 @@ pnpm run plan:production          # Plan production changes
 **Files to Read (ALL):**
 - `src/lib/vendor/AWS/Powertools.ts`
 - ALL Lambda handlers for logging/metrics/tracer usage
-- `terraform/cloudwatch.tf`
+- `infra/cloudwatch.tf`
 - `src/util/` for error handling utilities
 
 **Verify:**

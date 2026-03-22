@@ -5,7 +5,7 @@
  * decorator metadata. Creates aws_iam_policy_document, aws_iam_policy, and
  * aws_iam_role_policy_attachment resources for each Lambda with service permissions.
  *
- * Output: terraform/generated_service_permissions.tf
+ * Output: infra/generated_service_permissions.tf
  *
  * Usage: pnpm run generate:service-iam-policies
  *
@@ -233,13 +233,13 @@ async function main(): Promise<void> {
   const content = header + policies.join('\n\n') + '\n'
 
   // Write to temp file, format with tofu fmt if available, then compare
-  const outputPath = join(projectRoot, 'terraform/generated_service_permissions.tf')
+  const outputPath = join(projectRoot, 'infra/generated_service_permissions.tf')
   let formattedContent = content
 
   // Try to format with tofu if available (optional - may not be installed in CI)
   try {
     execSync('which tofu', {stdio: 'pipe'})
-    const tempPath = join(projectRoot, 'terraform/generated_service_permissions_tmp.tf')
+    const tempPath = join(projectRoot, 'infra/generated_service_permissions_tmp.tf')
     writeFileSync(tempPath, content)
     execSync(`tofu fmt ${tempPath}`, {stdio: 'pipe'})
     formattedContent = readFileSync(tempPath, 'utf-8')
@@ -270,8 +270,8 @@ async function main(): Promise<void> {
   }
 
   console.log('\n=== Next Steps ===')
-  console.log('1. Review the generated terraform/generated_service_permissions.tf')
-  console.log('2. Run: cd terraform && tofu validate')
+  console.log('1. Review the generated infra/generated_service_permissions.tf')
+  console.log('2. Run: cd infra && tofu validate')
   console.log('3. If valid, existing hardcoded policies in Lambda .tf files can be removed')
 }
 

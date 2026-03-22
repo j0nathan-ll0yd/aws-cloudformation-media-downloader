@@ -233,7 +233,7 @@ DELETE FROM schema_migrations WHERE version = '0003';
 | `migrations/*.sql` | Migration SQL files |
 | `src/lib/vendor/Drizzle/schema.ts` | Drizzle schema definitions |
 | `src/lambdas/MigrateDSQL/src/index.ts` | Migration Lambda handler |
-| `terraform/migrate_dsql.tf` | Terraform configuration |
+| `infra/migrate_dsql.tf` | Terraform configuration |
 | `config/esbuild.config.ts` | Build config (bundles SQL files) |
 
 ## References

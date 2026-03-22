@@ -53,7 +53,7 @@ src/lambdas/FunctionName/
 └── fixtures/          # Convention: test data location
     └── event.json
 
-terraform/LambdaFunctionName.tf  # Convention: PascalCase matches function
+infra/LambdaFunctionName.tf  # Convention: PascalCase matches function
 ```
 
 No configuration needed - the structure itself is the convention.

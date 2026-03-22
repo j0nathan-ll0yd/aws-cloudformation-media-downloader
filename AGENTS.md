@@ -40,7 +40,7 @@ AWS Serverless media downloader service built with OpenTofu and TypeScript. Down
 ### Project Structure
 ```
 .
-├── terraform/             # AWS Infrastructure definitions (OpenTofu)
+├── infra/                 # AWS Infrastructure definitions (OpenTofu)
 ├── src/
 │   ├── entities/          # Entity query functions (Drizzle ORM with Aurora DSQL)
 │   │   └── queries/       # Native Drizzle query modules

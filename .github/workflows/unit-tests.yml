@@ -130,7 +130,7 @@ jobs:
         run: |
           # Install tofu for formatting check
           if command -v tofu &> /dev/null; then
-            tofu fmt -check -recursive terraform/
+            tofu fmt -check -recursive infra/
           else
             echo "OpenTofu not installed, skipping Terraform fmt check"
           fi

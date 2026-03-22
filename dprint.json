@@ -82,7 +82,7 @@
     "**/coverage",
     "**/.git",
     ".omc/**",
-    "terraform/**",
+    "infra/**",
     "src/mcp/test/fixtures/**/config-*.fixture.ts"
   ],
 

@@ -3,7 +3,11 @@ import {glob} from 'glob'
 import * as fs from 'fs'
 
 // Discover Lambda entry points dynamically
-const lambdaEntryFiles = glob.sync('./src/lambdas/**/src/index.ts')
+// API handlers use file-system routing: src/lambdas/api/<path>/<file>.<method>.ts
+// Non-API handlers use directory structure: src/lambdas/<type>/<Name>/index.ts
+const apiEntryFiles = glob.sync('./src/lambdas/api/**/*.{get,post,put,delete,patch}.ts')
+const nonApiEntryFiles = glob.sync('./src/lambdas/{sqs,s3,scheduled,standalone}/**/index.ts')
+const lambdaEntryFiles = [...apiEntryFiles, ...nonApiEntryFiles]
 
 if (process.env['LOG_LEVEL']?.toUpperCase() === 'SILENT') {
   console.log = () => {}
@@ -48,10 +52,36 @@ async function build() {
 
   // Build all Lambdas in parallel for speed
   const results = await Promise.all(lambdaEntryFiles.map(async (entryFile) => {
-    // Path is like "src/lambdas/WebhookFeedly/src/index.ts" or "./src/lambdas/WebhookFeedly/src/index.ts"
+    // Derive Lambda function name from path
+    // API: ./src/lambdas/api/files/index.get.ts -> ListFiles
+    // API: ./src/lambdas/api/user/login.post.ts -> LoginUser
+    // Non-API: ./src/lambdas/sqs/StartFileUpload/index.ts -> StartFileUpload
     const parts = entryFile.split('/')
     const lambdasIndex = parts.indexOf('lambdas')
-    const functionName = parts[lambdasIndex + 1]
+    const lambdaType = parts[lambdasIndex + 1]
+    let functionName: string
+    if (lambdaType === 'api') {
+      // API handler: derive name from path + method
+      // e.g., api/files/index.get.ts -> ListFiles, api/user/login.post.ts -> LoginUser
+      // Names must match what `mantle generate infra` produces
+      const apiNameMap: Record<string, string> = {
+        'files/index.get': 'FilesGet',
+        'user/login.post': 'UserLogin',
+        'user/logout.post': 'UserLogout',
+        'user/register.post': 'UserRegister',
+        'user/refresh.post': 'UserRefresh',
+        'user/index.delete': 'UserDelete',
+        'user/subscribe.post': 'UserSubscribe',
+        'device/register.post': 'DeviceRegister',
+        'device/event.post': 'DeviceEvent',
+        'feedly/webhook.post': 'FeedlyWebhook'
+      }
+      const relativePath = parts.slice(lambdasIndex + 2).join('/').replace(/\.ts$/, '')
+      functionName = apiNameMap[relativePath] ?? relativePath.replace(/\//g, '-')
+    } else {
+      // Non-API: directory name is the function name
+      functionName = parts[lambdasIndex + 2]
+    }
 
     // Create subdirectory for each Lambda (for packaging with collector.yaml)
     const lambdaDir = `build/lambdas/${functionName}`
@@ -87,7 +117,7 @@ async function build() {
     // Upstream issue: ADOT Lambda layer v1.30.2 uses deprecated collector config format
     // See: https://github.com/aws-observability/aws-otel-lambda/issues/1039
     // When ADOT layer is updated with fixed config, this custom collector.yaml can be removed
-    // and OPENTELEMETRY_COLLECTOR_CONFIG_URI env var can be deleted from terraform/main.tf
+    // and OPENTELEMETRY_COLLECTOR_CONFIG_URI env var can be deleted from infra/main.tf
     fs.copyFileSync('config/otel-collector.yaml', `${lambdaDir}/collector.yaml`)
 
     // Copy migration SQL files for MigrateDSQL Lambda

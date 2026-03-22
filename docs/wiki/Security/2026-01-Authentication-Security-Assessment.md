@@ -31,7 +31,7 @@ A comprehensive security review of the authentication system was conducted, focu
 - **Refresh Token Lambda** (`src/lambdas/RefreshToken/`)
 - **Better Auth Configuration** (`src/lib/vendor/BetterAuth/`)
 - **Session Service** (`src/lib/domain/auth/sessionService.ts`)
-- **API Gateway Infrastructure** (`terraform/api_gateway.tf`)
+- **API Gateway Infrastructure** (`infra/api_gateway.tf`)
 
 ### Assessment Areas
 1. Token validation and signature verification
@@ -76,7 +76,7 @@ const middyHandler = middy(handler)
 - Resource exhaustion attacks
 - Cost amplification from API abuse
 
-**Location**: `terraform/api_gateway.tf` (lines 65-72)
+**Location**: `infra/api_gateway.tf` (lines 65-72)
 
 **Remediation**: Added conservative rate limiting to the usage plan:
 - Burst limit: 100 requests
@@ -105,7 +105,7 @@ quota_settings {
 
 **Impact**: Error responses from API Gateway (for example, 401 Unauthorized, 403 Forbidden) would be sent without protective security headers.
 
-**Location**: `terraform/api_gateway.tf` (lines 87-101)
+**Location**: `infra/api_gateway.tf` (lines 87-101)
 
 **Remediation**: Added `response_parameters` to both DEFAULT_4XX and DEFAULT_5XX gateway responses:
 

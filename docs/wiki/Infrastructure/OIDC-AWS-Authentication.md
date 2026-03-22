@@ -13,7 +13,7 @@ GitHub Actions authenticates to AWS using OIDC (OpenID Connect) instead of long-
 
 ## Current State
 
-The project uses OIDC-based deployments via GitHub Actions. Infrastructure is defined in `terraform/bootstrap/main.tf`:
+The project uses OIDC-based deployments via GitHub Actions. Infrastructure is defined in `infra/bootstrap/main.tf`:
 
 - **OIDC Provider**: `aws_iam_openid_connect_provider.GitHubActionsOIDC`
 - **Staging Role**: `GitHubActions-MediaDownloader-Staging` (any branch)
@@ -117,7 +117,7 @@ steps:
 
 Get the ARN values from:
 ```bash
-cd terraform/bootstrap
+cd infra/bootstrap
 tofu output GitHubActionsProductionRoleArn
 tofu output GitHubActionsStagingRoleArn
 ```

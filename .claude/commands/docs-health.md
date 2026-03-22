@@ -44,7 +44,7 @@ fi
 
 ```bash
 # Verify terraform-docs output is current
-cd terraform
+cd infra
 terraform-docs markdown . > /tmp/tf-docs-current.md
 diff -q /tmp/tf-docs-current.md README.md || echo "WARNING: Terraform docs outdated"
 ```
@@ -227,7 +227,7 @@ on:
     paths:
       - 'docs/**'
       - 'src/**/*.ts'
-      - 'terraform/*.tf'
+      - 'infra/*.tf'
 
 jobs:
   check:
@@ -242,7 +242,7 @@ jobs:
 
       - name: Check Terraform Docs
         run: |
-          cd terraform
+          cd infra
           terraform-docs markdown . > /tmp/tf-docs.md
           diff -q /tmp/tf-docs.md README.md
 

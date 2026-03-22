@@ -27,7 +27,7 @@ This project uses AWS Lambda layers for:
 
 The ADOT layer provides OpenTelemetry instrumentation for distributed tracing via X-Ray.
 
-**Version Updates**: AWS manages these layers. To update, change the version in `terraform/main.tf`:
+**Version Updates**: AWS manages these layers. To update, change the version in `infra/main.tf`:
 - `local.adot_layer_arn` (ARM64)
 - `local.adot_layer_arn_x86_64` (x86_64)
 
@@ -103,12 +103,12 @@ Each Lambda is bundled as a self-contained unit for optimal performance.
 
 | Resource | File | Purpose |
 |----------|------|---------|
-| `null_resource.DownloadYtDlpBinary` | `terraform/feedly_webhook.tf` | Downloads yt-dlp binary |
-| `null_resource.DownloadFfmpegBinary` | `terraform/feedly_webhook.tf` | Downloads ffmpeg binary |
-| `archive_file.YtDlpLayer` | `terraform/feedly_webhook.tf` | Creates yt-dlp.zip |
-| `archive_file.FfmpegLayer` | `terraform/feedly_webhook.tf` | Creates ffmpeg.zip |
-| `aws_lambda_layer_version.YtDlp` | `terraform/feedly_webhook.tf` | yt-dlp layer resource |
-| `aws_lambda_layer_version.Ffmpeg` | `terraform/feedly_webhook.tf` | ffmpeg layer resource |
+| `null_resource.DownloadYtDlpBinary` | `infra/feedly_webhook.tf` | Downloads yt-dlp binary |
+| `null_resource.DownloadFfmpegBinary` | `infra/feedly_webhook.tf` | Downloads ffmpeg binary |
+| `archive_file.YtDlpLayer` | `infra/feedly_webhook.tf` | Creates yt-dlp.zip |
+| `archive_file.FfmpegLayer` | `infra/feedly_webhook.tf` | Creates ffmpeg.zip |
+| `aws_lambda_layer_version.YtDlp` | `infra/feedly_webhook.tf` | yt-dlp layer resource |
+| `aws_lambda_layer_version.Ffmpeg` | `infra/feedly_webhook.tf` | ffmpeg layer resource |
 
 ### Layer Directory Structure
 

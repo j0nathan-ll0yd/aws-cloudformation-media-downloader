@@ -84,11 +84,11 @@ elif [ -f "docs/terraform.md" ]; then
   if stat --version &> /dev/null; then
     # GNU stat (Linux)
     TF_DOC_MTIME=$(stat -c %Y docs/terraform.md 2> /dev/null || echo "0")
-    TF_SRC_MTIME=$(find terraform -type f -name "*.tf" -exec stat -c %Y {} \; 2> /dev/null | sort -rn | head -1 || echo "0")
+    TF_SRC_MTIME=$(find infra -type f -name "*.tf" -exec stat -c %Y {} \; 2> /dev/null | sort -rn | head -1 || echo "0")
   else
     # BSD stat (macOS)
     TF_DOC_MTIME=$(stat -f %m docs/terraform.md 2> /dev/null || echo "0")
-    TF_SRC_MTIME=$(find terraform -type f -name "*.tf" -exec stat -f %m {} \; 2> /dev/null | sort -rn | head -1 || echo "0")
+    TF_SRC_MTIME=$(find infra -type f -name "*.tf" -exec stat -f %m {} \; 2> /dev/null | sort -rn | head -1 || echo "0")
   fi
 
   if [ "$TF_SRC_MTIME" -gt "$TF_DOC_MTIME" ]; then

@@ -4,7 +4,7 @@ on:
   push:
     branches: [master, main]
     paths:
-      - 'terraform/**'
+      - 'infra/**'
       - 'src/**'
       - 'package.json'
       - 'pnpm-lock.yaml'
@@ -52,7 +52,7 @@ jobs:
           name: build-artifacts
           path: |
             build/
-            terraform/*.tf
+            infra/*.tf
             layers/
           retention-days: 1
 
@@ -128,7 +128,7 @@ jobs:
 
       - name: Deploy to Production
         if: steps.check-creds.outputs.configured == 'true'
-        working-directory: terraform
+        working-directory: infra
         env:
           SOPS_AGE_KEY_FILE: /tmp/age-key.txt
         run: |

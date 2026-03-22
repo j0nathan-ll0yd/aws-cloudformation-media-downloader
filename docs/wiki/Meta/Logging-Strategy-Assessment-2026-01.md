@@ -141,7 +141,7 @@ All logging functions (`logInfo`, `logDebug`, `logError`) in `src/lib/system/log
 
 | Environment | LOG_LEVEL | Source |
 |-------------|-----------|--------|
-| Production | DEBUG | `terraform/main.tf` (lines 47-64) |
+| Production | DEBUG | `infra/main.tf` (lines 47-64) |
 | Unit Tests | SILENT | `test/setup.ts` |
 | Integration Tests | SILENT | `test/integration/globalSetup.ts` |
 

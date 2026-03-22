@@ -331,7 +331,7 @@ main() {
       [[ "$path" == "lib/" ]] && continue
 
       # Only check paths that look like file/directory references
-      if [[ "$path" =~ ^(src|test|util|types|build|graphrag|terraform|bin|scripts)/ ]]; then
+      if [[ "$path" =~ ^(src|test|util|types|build|graphrag|infra|bin|scripts)/ ]]; then
         # Skip glob patterns (*, **, etc.)
         [[ "$path" == *"*"* ]] && continue
         # Skip template patterns ([name], {name}, etc.)

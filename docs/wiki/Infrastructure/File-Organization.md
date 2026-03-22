@@ -8,7 +8,7 @@
 ## Directory Structure
 
 ```
-terraform/
+infra/
 ├── main.tf                    # Provider configuration
 ├── api_gateway.tf             # API Gateway resources
 ├── api_gateway_authorizer.tf  # Custom authorizer

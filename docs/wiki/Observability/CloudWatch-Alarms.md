@@ -25,7 +25,7 @@ After production deployment, validate thresholds against actual error rates:
 
 ## Alarm Configuration Location
 
-All alarms are defined in `terraform/cloudwatch.tf` with the following structure:
+All alarms are defined in `infra/cloudwatch.tf` with the following structure:
 - Metric namespace and name
 - Comparison operator and threshold
 - Evaluation period and datapoints

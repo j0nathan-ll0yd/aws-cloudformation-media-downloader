@@ -33,7 +33,7 @@ This audit evaluated the completeness and accuracy of API documentation across T
 | DELETE /user | NONE | CUSTOM with authorizer |
 | POST /user/subscribe | NONE | CUSTOM with authorizer |
 
-**Fix**: Updated `terraform/user_delete.tf` and `terraform/user_subscribe.tf` to use CUSTOM authorization.
+**Fix**: Updated `infra/user_delete.tf` and `infra/user_subscribe.tf` to use CUSTOM authorization.
 
 ### 3. OpenAPI Response Descriptions (MEDIUM - Fixed)
 
@@ -72,8 +72,8 @@ All response models now include required fields:
 | `scripts/generateApiTypes.ts` | Added 3 types to DOMAIN_MODELS |
 | `src/types/api-schema/schemas.ts` | Regenerated with new Zod schemas |
 | `src/types/api-schema/types.ts` | Regenerated with new TypeScript types |
-| `terraform/user_delete.tf` | Changed authorization to CUSTOM |
-| `terraform/user_subscribe.tf` | Changed authorization to CUSTOM |
+| `infra/user_delete.tf` | Changed authorization to CUSTOM |
+| `infra/user_subscribe.tf` | Changed authorization to CUSTOM |
 | `tsp/operations/operations.tsp` | Added @doc decorators for response descriptions |
 | `docs/api/openapi.yaml` | Regenerated from TypeSpec |
 

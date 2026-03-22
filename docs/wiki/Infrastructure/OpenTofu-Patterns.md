@@ -371,7 +371,7 @@ pnpm run deploy:staging
 ### State Isolation
 
 ```hcl
-# terraform/backend.tf
+# infra/backend.tf
 terraform {
   backend "s3" {
     bucket               = "lifegames-media-downloader-tfstate"
@@ -389,14 +389,14 @@ State file paths:
 ### Environment-Specific Variables
 
 ```hcl
-# terraform/environments/staging.tfvars
+# infra/environments/staging.tfvars
 environment        = "staging"
 resource_prefix    = "stag"
 log_level          = "DEBUG"
 log_retention_days = 3
 enable_cloudwatch_alarms = false
 
-# terraform/environments/production.tfvars
+# infra/environments/production.tfvars
 environment        = "production"
 resource_prefix    = "prod"
 log_level          = "INFO"

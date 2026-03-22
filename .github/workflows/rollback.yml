@@ -89,7 +89,7 @@ jobs:
           ./bin/build-bgutil-layer.sh
 
       - name: Rollback deployment
-        working-directory: terraform
+        working-directory: infra
         env:
           SOPS_AGE_KEY_FILE: /tmp/age-key.txt
         run: |

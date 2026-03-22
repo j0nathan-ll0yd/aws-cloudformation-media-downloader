@@ -24,21 +24,20 @@
     "break": 45
   },
   "mutate": [
-    "src/lambdas/**/src/**/*.ts",
+    "src/lambdas/**/*.ts",
     "src/entities/**/*.ts",
-    "src/lib/**/*.ts",
-    "src/util/**/*.ts",
+    "src/domain/**/*.ts",
+    "src/services/**/*.ts",
+    "src/integrations/**/*.ts",
+    "src/utils/**/*.ts",
+    "src/errors/**/*.ts",
+    "src/db/**/*.ts",
     "!src/**/*.test.ts",
     "!src/**/*.fixture.ts",
     "!src/**/*.d.ts",
     "!src/mcp/**",
-    "!src/lib/vendor/AWS/**",
-    "!src/lib/vendor/BetterAuth/**",
-    "!src/lib/vendor/Drizzle/client.ts",
-    "!src/lib/vendor/Drizzle/schema.ts",
-    "!src/lib/vendor/Drizzle/instrumentation.ts",
-    "!src/lib/vendor/Powertools/**",
-    "!src/lib/vendor/OpenTelemetry/**"
+    "!src/db/client.ts",
+    "!src/db/schema.ts"
   ],
   "mutator": {
     "excludedMutations": [

@@ -148,9 +148,9 @@ main() {
 
   # Check Terraform formatting
   if command -v tofu &> /dev/null; then
-    if ! tofu fmt -check -recursive terraform/ > /dev/null; then
+    if ! tofu fmt -check -recursive infra/ > /dev/null; then
       echo -e "${RED}Error: Terraform formatting check failed.${NC}"
-      echo "Run 'tofu fmt -recursive terraform/' to fix."
+      echo "Run 'tofu fmt -recursive infra/' to fix."
       exit 1
     fi
     echo "  Terraform formatting passed"

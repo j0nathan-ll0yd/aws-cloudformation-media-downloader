@@ -201,7 +201,7 @@ export function getSecretPermissions(handlerClass: unknown): SecretPermissions |
 **File**: `scripts/generateSecretPermissions.ts` (new)
 - Generate IAM policy statements for Secrets Manager access
 - Generate IAM policy statements for SSM Parameter Store access
-- Output to `terraform/secret_permissions.tf`
+- Output to `infra/secret_permissions.tf`
 
 ### Success Criteria:
 

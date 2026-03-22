@@ -53,7 +53,7 @@ export interface EnvironmentConfig {
 
 /**
  * Staging environment configuration.
- * Matches terraform/environments/staging.tfvars
+ * Matches infra/environments/staging.tfvars
  */
 export const STAGING_CONFIG: EnvironmentConfig = {
   environment: 'staging',
@@ -74,7 +74,7 @@ export const STAGING_CONFIG: EnvironmentConfig = {
 
 /**
  * Production environment configuration.
- * Matches terraform/environments/production.tfvars
+ * Matches infra/environments/production.tfvars
  */
 export const PRODUCTION_CONFIG: EnvironmentConfig = {
   environment: 'production',

@@ -153,7 +153,7 @@ Some differences are expected:
 | Throttle | Lower | Higher | Cost vs capacity |
 | Cache TTL | Short | Long | Testing vs optimization |
 
-Document intentional differences in `terraform/environments/`.
+Document intentional differences in `infra/environments/`.
 
 ---
 
@@ -165,7 +165,7 @@ To align environments:
 
 ```bash
 # Update staging to match production memory
-cd terraform
+cd infra
 tofu workspace select staging
 tofu apply -var="list_files_memory=256"
 ```

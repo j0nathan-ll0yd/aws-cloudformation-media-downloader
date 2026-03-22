@@ -49,7 +49,7 @@ main() {
     set +a
   fi
 
-  local infrastructure_files=("${PROJECT_ROOT}"/terraform/*.tf)
+  local infrastructure_files=("${PROJECT_ROOT}"/infra/*.tf)
   local types_file_path="${PROJECT_ROOT}/src/types/infrastructure.d.ts"
   local infrastructure_hcl_file_path="${PROJECT_ROOT}/build/infrastructure.tf"
   local infrastructure_json_file_path="${PROJECT_ROOT}/build/infrastructure.json"
@@ -135,7 +135,7 @@ main() {
   # Format Terraform files (optional - tofu may not be installed in CI)
   if command -v tofu &> /dev/null; then
     echo 'Formatting generated Terraform files'
-    tofu fmt -recursive "${PROJECT_ROOT}/terraform/"
+    tofu fmt -recursive "${PROJECT_ROOT}/infra/"
   else
     echo -e "${YELLOW}Skipping Terraform formatting (tofu not installed)${NC}"
   fi
@@ -143,7 +143,7 @@ main() {
   # Regenerate Terraform documentation (optional - terraform-docs may not be installed in CI)
   if command -v terraform-docs &> /dev/null; then
     echo 'Regenerating Terraform documentation'
-    terraform-docs markdown "${PROJECT_ROOT}/terraform/" > "${PROJECT_ROOT}/docs/terraform.md"
+    terraform-docs markdown "${PROJECT_ROOT}/infra/" > "${PROJECT_ROOT}/docs/terraform.md"
   else
     echo -e "${YELLOW}Skipping Terraform docs generation (terraform-docs not installed)${NC}"
   fi
@@ -222,7 +222,7 @@ main() {
   echo "Generated files in build/:"
   ls -la "${PROJECT_ROOT}/build/"*.json 2>/dev/null || echo "  (no JSON files)"
   echo ""
-  echo "To validate Terraform, run: cd terraform && tofu validate"
+  echo "To validate Terraform, run: cd infra && tofu validate"
 }
 
 main "$@"

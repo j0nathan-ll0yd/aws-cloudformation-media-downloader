@@ -33,7 +33,7 @@ The project uses multiple validators to ensure documentation stays synchronized:
 
 1. **TSDoc freshness** - `docs/source/` is newer than `src/`
 2. **OpenAPI freshness** - `docs/api/` is newer than `tsp/`
-3. **Terraform freshness** - `docs/terraform.md` is newer than `terraform/`
+3. **Terraform freshness** - `docs/terraform.md` is newer than `infra/`
 
 ### MCP Validation Rules
 

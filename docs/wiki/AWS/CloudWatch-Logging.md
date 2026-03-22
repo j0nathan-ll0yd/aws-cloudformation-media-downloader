@@ -68,7 +68,7 @@ Controlled by `LOG_LEVEL` environment variable:
 All Lambda log groups follow the pattern `/aws/lambda/{FunctionName}`. Log groups are defined in Terraform alongside each Lambda function:
 
 ```hcl
-# Example from terraform/list_files.tf
+# Example from infra/list_files.tf
 resource "aws_cloudwatch_log_group" "ListFiles" {
   name              = "/aws/lambda/${aws_lambda_function.ListFiles.function_name}"
   retention_in_days = 14

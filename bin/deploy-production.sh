@@ -14,7 +14,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-cd "${PROJECT_ROOT}/terraform"
+cd "${PROJECT_ROOT}/infra"
 
 # Verify workspace
 CURRENT_WS=$(tofu workspace show)
@@ -40,7 +40,7 @@ if [[ "${1:-}" == "--auto-approve" ]]; then
 else
   echo ""
   echo "Review the plan above. To apply, run:"
-  echo "  cd terraform && tofu apply tfplan"
+  echo "  cd infra && tofu apply tfplan"
   echo ""
   echo "Or re-run with --auto-approve flag."
 fi

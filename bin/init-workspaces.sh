@@ -8,7 +8,7 @@
 
 set -euo pipefail
 
-cd "$(dirname "$0")/../terraform"
+cd "$(dirname "$0")/../infra"
 
 echo "Initializing OpenTofu backend..."
 tofu init -reconfigure

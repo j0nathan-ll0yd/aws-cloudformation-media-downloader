@@ -259,7 +259,7 @@ async function main() {
 
   if (totalMismatches > 0) {
     console.log(`\nAPI path validation FAILED: ${totalMismatches} mismatches found.`)
-    console.log('Ensure TypeSpec definitions in tsp/ match Terraform in terraform/')
+    console.log('Ensure TypeSpec definitions in tsp/ match Terraform in infra/')
     process.exit(1)
   } else {
     console.log('\nAPI path validation PASSED: All paths are aligned!')

@@ -217,7 +217,7 @@ pnpm test --coverage src/lambdas/GetUserProfile
 
 ## Step 5: Define OpenTofu Resources
 
-Add the Lambda definition in `terraform/lambdas.tf`:
+Add the Lambda definition in `infra/lambdas.tf`:
 
 ```hcl
 module "lambda_get_user_profile" {
@@ -241,7 +241,7 @@ module "lambda_get_user_profile" {
 }
 ```
 
-Add the API Gateway route in `terraform/api_gateway.tf`:
+Add the API Gateway route in `infra/api_gateway.tf`:
 
 ```hcl
 resource "aws_apigatewayv2_route" "get_user_profile" {
