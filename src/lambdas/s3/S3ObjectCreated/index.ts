@@ -55,7 +55,7 @@ function dispatchFileNotificationToUser(file: File, userId: string) {
 
 const s3 = defineS3Handler({operationName: 'S3ObjectCreated', trigger: 'direct'})
 
-export const handler = s3(async (record, _metadata) => {
+export const handler = s3(async (record) => {
   const fileName = record.key
   const span = startSpan('s3-event-process')
   addAnnotation(span, 's3Key', fileName)

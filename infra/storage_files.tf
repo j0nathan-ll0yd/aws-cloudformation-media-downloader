@@ -7,9 +7,6 @@ module "storage_files" {
   bucket_name = "files"
   name_prefix = module.core.name_prefix
   tags        = module.core.common_tags
-  # DEPRECATED: Uses legacy resource_prefix (stag/prod) for historical S3 bucket names.
-  # New instances should use module.core.name_prefix instead. These bucket names cannot
-  # be changed because S3 buckets are immutable once created. See ADR 0001.
   bucket_name_override = "lifegames-${var.resource_prefix}-media-files-${module.core.account_id}"
 
   cloudfront_enabled    = true

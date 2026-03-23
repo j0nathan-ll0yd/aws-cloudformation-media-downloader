@@ -80,7 +80,7 @@ async function dispatchHealthCheckNotificationToDeviceToken(token: string): Prom
 
 const scheduled = defineScheduledHandler({operationName: 'PruneDevices', schedule: {expression: 'rate(1 day)'}, timeout: 300})
 
-export const handler = scheduled(async ({metadata: _metadata}): Promise<PruneDevicesResult> => {
+export const handler = scheduled(async (): Promise<PruneDevicesResult> => {
   // Track prune devices run
   metrics.addMetric('PruneDevicesRun', MetricUnit.Count, 1)
 

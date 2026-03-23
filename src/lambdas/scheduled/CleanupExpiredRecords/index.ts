@@ -69,7 +69,7 @@ async function cleanupVerificationTokens(): Promise<number> {
 
 const scheduled = defineScheduledHandler({operationName: 'CleanupExpiredRecords', schedule: {expression: 'cron(0 3 * * ? *)'}, timeout: 60})
 
-export const handler = scheduled(async ({metadata: _metadata}): Promise<CleanupResult> => {
+export const handler = scheduled(async (): Promise<CleanupResult> => {
   // Track cleanup run
   metrics.addMetric('CleanupRun', MetricUnit.Count, 1)
 

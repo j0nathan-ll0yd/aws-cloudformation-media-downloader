@@ -99,6 +99,24 @@ variable "apns_host" {
   default     = ""
 }
 
+variable "ytdlp_sleep_requests" {
+  description = "ytdlp sleep requests"
+  type        = string
+  default     = ""
+}
+
+variable "ytdlp_sleep_interval" {
+  description = "ytdlp sleep interval"
+  type        = string
+  default     = ""
+}
+
+variable "ytdlp_max_sleep_interval" {
+  description = "ytdlp max sleep interval"
+  type        = string
+  default     = ""
+}
+
 variable "ytdlp_binary_path" {
   description = "ytdlp binary path"
   type        = string
@@ -141,7 +159,7 @@ variable "apple_app_bundle_identifier" {
 # Project-specific custom variables
 
 variable "resource_prefix" {
-  description = "DEPRECATED: Legacy prefix for S3 bucket names only. New resources use module.core.name_prefix. Do not replicate this pattern in new Mantle instances. See ADR 0001."
+  description = "DEPRECATED: Legacy prefix for S3 bucket names only. New resources use module.core.name_prefix. Do not replicate in new instances. See ADR 0001."
   type        = string
 
   validation {

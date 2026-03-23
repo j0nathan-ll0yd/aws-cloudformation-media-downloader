@@ -1,6 +1,6 @@
 -- Per-Lambda PostgreSQL roles with fine-grained table permissions
 -- Auto-generated from @RequiresTable decorators
--- Generated at: 2026-03-22T04:07:02.516Z
+-- Generated at: 2026-03-23T17:33:48.123Z
 
 -- CREATE ROLES
 
