@@ -17,7 +17,7 @@ export default defineConfig({
     {
       name: 'resource_prefix',
       type: 'string',
-      description: 'Prefix for all resource names (stag, prod)',
+      description: 'DEPRECATED: Legacy prefix for S3 bucket names only. New resources use module.core.name_prefix. Do not replicate in new instances. See ADR 0001.',
       validation: {condition: 'contains(["stag", "prod"], var.resource_prefix)', errorMessage: "Resource prefix must be 'stag' or 'prod'."}
     },
     {name: 'download_reserved_concurrency', type: 'number', description: 'Reserved concurrency for StartFileUpload Lambda', default: '10'},

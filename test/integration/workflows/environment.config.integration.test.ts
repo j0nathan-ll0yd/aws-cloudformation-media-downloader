@@ -44,7 +44,7 @@ describe('Environment Configuration', () => {
 
   describe('Production Configuration', () => {
     it('should have correct environment name', () => {
-      expect(PRODUCTION_CONFIG.environment).toBe('production')
+      expect(PRODUCTION_CONFIG.environment).toBe('prod')
     })
 
     it('should use prod- prefix for resources', () => {
@@ -79,7 +79,7 @@ describe('Environment Configuration', () => {
     })
 
     it('should generate correct production Lambda names', () => {
-      const lambdas = getLambdaFunctionNames('production')
+      const lambdas = getLambdaFunctionNames('prod')
       expect(lambdas).toContain('prod-RegisterUser')
       expect(lambdas).toContain('prod-LoginUser')
       expect(lambdas).toContain('prod-WebhookFeedly')
@@ -89,7 +89,7 @@ describe('Environment Configuration', () => {
 
     it('should prefix resource names correctly', () => {
       expect(getPrefixedResourceName('RegisterUser', 'staging')).toBe('stag-RegisterUser')
-      expect(getPrefixedResourceName('RegisterUser', 'production')).toBe('prod-RegisterUser')
+      expect(getPrefixedResourceName('RegisterUser', 'prod')).toBe('prod-RegisterUser')
     })
   })
 
@@ -100,7 +100,7 @@ describe('Environment Configuration', () => {
     })
 
     it('should return production config', () => {
-      const config = getEnvironmentConfig('production')
+      const config = getEnvironmentConfig('prod')
       expect(config).toEqual(PRODUCTION_CONFIG)
     })
 
@@ -138,7 +138,7 @@ describe('Environment Configuration', () => {
       const content = readFileSync(tfvarsPath, 'utf-8')
 
       // Verify key values match (flexible whitespace for terraform fmt compatibility)
-      expect(matchesTfvar(content, 'environment', '"production"')).toBe(true)
+      expect(matchesTfvar(content, 'environment', '"prod"')).toBe(true)
       expect(matchesTfvar(content, 'resource_prefix', '"prod"')).toBe(true)
       expect(matchesTfvar(content, 'log_level', '"INFO"')).toBe(true)
       expect(matchesTfvar(content, 'log_retention_days', '7')).toBe(true)

@@ -141,7 +141,7 @@ variable "apple_app_bundle_identifier" {
 # Project-specific custom variables
 
 variable "resource_prefix" {
-  description = "Prefix for all resource names (stag, prod)"
+  description = "DEPRECATED: Legacy prefix for S3 bucket names only. New resources use module.core.name_prefix. Do not replicate this pattern in new Mantle instances. See ADR 0001."
   type        = string
 
   validation {

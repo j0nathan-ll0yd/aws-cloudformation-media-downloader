@@ -32,7 +32,7 @@ infra/
 ├── backend.tf          # Configured for dynamic state paths or separate keys
 ├── environments/       # New directory for env-specific vars
 │   ├── staging.tfvars  # for example, environment="staging", log_level="DEBUG"
-│   └── prod.tfvars     # for example, environment="production", log_level="INFO"
+│   └── prod.tfvars     # for example, environment="prod", log_level="INFO"
 ```
 
 ### 3.2. Secrets Management (SOPS)

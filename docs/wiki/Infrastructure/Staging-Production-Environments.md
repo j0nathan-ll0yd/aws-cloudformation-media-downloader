@@ -114,7 +114,7 @@ enable_cloudwatch_alarms = false
 ### Production (`production.tfvars`)
 
 ```hcl
-environment       = "production"
+environment       = "prod"
 resource_prefix   = "prod"
 log_level         = "INFO"
 log_retention_days = 7

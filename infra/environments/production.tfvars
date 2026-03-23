@@ -3,7 +3,7 @@
 #
 # Full production settings with monitoring and protection enabled
 
-environment        = "production"
+environment        = "prod"
 resource_prefix    = "prod"
 log_level          = "INFO"
 log_retention_days = 7
