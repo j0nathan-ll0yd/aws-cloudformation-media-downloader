@@ -35,6 +35,7 @@ defineLambda({
   memorySize: 2048,
   timeout: 900,
   reservedConcurrency: 1,
+  layers: ['yt-dlp', 'bgutil'],
   secrets: {
     GITHUB_PERSONAL_TOKEN: 'github.issue.token'
   },

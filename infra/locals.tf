@@ -9,6 +9,10 @@ locals {
   # EventBridge event bus name
   event_bus_name = "${module.core.name_prefix}-MediaDownloader"
 
+  # Custom Lambda layer ARNs
+  layer_yt_dlp_arn = aws_lambda_layer_version.yt_dlp.arn
+  layer_bgutil_arn = aws_lambda_layer_version.bgutil.arn
+
   # Common environment variables for all Lambdas
   common_lambda_env = {
     OPENTELEMETRY_EXTENSION_LOG_LEVEL  = "warn"

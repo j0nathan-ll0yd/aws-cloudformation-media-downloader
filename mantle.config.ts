@@ -99,5 +99,19 @@ export default defineConfig({
       cacheTtl: {default: 0, min: 0, max: 0}
     }
   },
-  authorizer: {cacheTtl: 0}
+  authorizer: {cacheTtl: 0},
+  layers: [
+    {
+      name: 'yt-dlp',
+      path: 'layers/yt-dlp',
+      compatibleArchitectures: ['x86_64'],
+      description: 'yt-dlp binary and YouTube cookies'
+    },
+    {
+      name: 'bgutil',
+      path: 'layers/bgutil',
+      compatibleArchitectures: ['x86_64'],
+      description: 'bgutil PO-token provider for yt-dlp'
+    }
+  ]
 })

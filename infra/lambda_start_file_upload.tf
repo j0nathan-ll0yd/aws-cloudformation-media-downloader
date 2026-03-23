@@ -21,7 +21,7 @@ module "lambda_start_file_upload" {
   memory_size        = 2048
   reserved_concurrent_executions = 1
   architecture       = "x86_64"
-  layers             = [local.adot_layer_arn_x86_64]
+  layers             = [local.adot_layer_arn_x86_64, local.layer_yt_dlp_arn, local.layer_bgutil_arn]
 
   api_gateway_enabled = false
 
