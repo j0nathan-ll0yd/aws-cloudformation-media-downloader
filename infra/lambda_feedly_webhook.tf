@@ -54,6 +54,14 @@ module "lambda_feedly_webhook" {
         ]
       }]
     })
+    "EventBridgePutEvents" = jsonencode({
+      Version = "2012-10-17"
+      Statement = [{
+        Effect   = "Allow"
+        Action   = "events:PutEvents"
+        Resource = module.eventbridge.bus_arn
+      }]
+    })
   }
 }
 

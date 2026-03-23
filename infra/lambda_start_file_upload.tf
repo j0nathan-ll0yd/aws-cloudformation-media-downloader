@@ -58,6 +58,14 @@ module "lambda_start_file_upload" {
         Resource = "${module.storage_files.bucket_arn}/*"
       }]
     })
+    "EventBridgePutEvents" = jsonencode({
+      Version = "2012-10-17"
+      Statement = [{
+        Effect   = "Allow"
+        Action   = "events:PutEvents"
+        Resource = module.eventbridge.bus_arn
+      }]
+    })
   }
 
   sqs_trigger_arn     = module.queue_DownloadQueue.queue_arn
