@@ -557,13 +557,13 @@ export const handler = sqs(async (record) => {
   const receiveCount = parseInt(record.attributes?.ApproximateReceiveCount ?? '1', 10)
 
   // Validate body against schema
-  const validationErrors = validateSchema(downloadQueueMessageSchema, record.body)
-  if (validationErrors) {
+  const validationResult = validateSchema(downloadQueueMessageSchema, record.body)
+  if (!validationResult.success) {
     // Log invalid message format and return (don't throw - malformed messages will never succeed)
-    logError('Invalid SQS message format - discarding', {messageId: record.messageId, errors: validationErrors.errors})
+    logError('Invalid SQS message format - discarding', {messageId: record.messageId, errors: validationResult.errors})
     return
   }
 
-  const message = downloadQueueMessageSchema.parse(record.body)
+  const message = validationResult.data as ValidatedDownloadQueueMessage
   await processDownloadRequest(message, receiveCount)
 })
