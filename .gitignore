@@ -21,7 +21,7 @@ secrets.prod.yaml
 secrets.enc.yaml
 youtube-cookies.txt
 cloudformation.json
-src/types/infrastructure.d.ts
+
 terraform/tfplan
 terraform/terraform.tfstate*
 terraform/.terraform.tfstate.lock.info

@@ -4,7 +4,7 @@
 # Usage: pnpm run build:dependencies or ./bin/build-dependencies.sh
 #
 # Execution Order:
-# 1. Infrastructure types (HCL → JSON → TypeScript)
+# 1. Infrastructure JSON (HCL → JSON for resource extraction)
 # 2. Dependency graph (for permission tracing)
 # 3. Terraform resource extraction and enum generation
 # 4. Permission extraction (db, entity, service, dynamodb)
@@ -50,7 +50,6 @@ main() {
   fi
 
   local infrastructure_files=("${PROJECT_ROOT}"/infra/*.tf)
-  local types_file_path="${PROJECT_ROOT}/src/types/infrastructure.d.ts"
   local infrastructure_hcl_file_path="${PROJECT_ROOT}/build/infrastructure.tf"
   local infrastructure_json_file_path="${PROJECT_ROOT}/build/infrastructure.json"
 
@@ -58,9 +57,9 @@ main() {
   mkdir -p "$(dirname "${infrastructure_hcl_file_path}")"
 
   # ============================================================
-  # Phase 1: Infrastructure Types
+  # Phase 1: Infrastructure JSON (HCL → JSON for resource extraction)
   # ============================================================
-  section "Phase 1: Infrastructure Types"
+  section "Phase 1: Infrastructure JSON"
 
   echo "infrastructure_files = ${infrastructure_files[*]}"
 
@@ -70,13 +69,7 @@ main() {
   echo 'Converting HCL to JSON (via hcl2json)'
   hcl2json < "$infrastructure_hcl_file_path" > "$infrastructure_json_file_path"
 
-  echo 'Converting JSON to TypeScript (via Quicktype)'
-  node "${PROJECT_ROOT}/node_modules/quicktype/dist/index.js" "${infrastructure_json_file_path}" -o "${types_file_path}"
-
-  echo 'Prepending TypeScript nocheck on file'
-  printf '%s\n%s\n' "// @ts-nocheck" "$(cat "$types_file_path")" > "$types_file_path"
-
-  success "Infrastructure types generated"
+  success "Infrastructure JSON generated"
 
   # ============================================================
   # Phase 2: Dependency Graph

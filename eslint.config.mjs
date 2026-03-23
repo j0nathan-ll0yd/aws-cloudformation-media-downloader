@@ -35,12 +35,13 @@ export default [
       '**/.idea',
       '**/.webpackCache',
       'src/types/terraform.d.ts',
-      'src/types/infrastructure.d.ts',
+
       'eslint.config.mjs',
       '.dependency-cruiser.cjs',
       'src/mcp/test/fixtures/**/*',
       '**/*.fixture.ts',
-      'eslint-local-rules/**/*'
+      'eslint-local-rules/**/*',
+      'infra/cloudfront-functions/**/*'
     ]
   },
   ...compat.extends('eslint:recommended', 'plugin:@typescript-eslint/eslint-recommended', 'plugin:@typescript-eslint/recommended'),

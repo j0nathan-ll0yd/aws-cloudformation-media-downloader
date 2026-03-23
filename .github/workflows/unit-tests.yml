@@ -57,6 +57,9 @@ jobs:
       - name: Run convention validation
         run: pnpm run validate:conventions
 
+      - name: Validate environment variables
+        run: npx mantle check env-vars
+
       - name: Validate DSQL migration compatibility
         run: |
           echo "Checking Aurora DSQL migration compatibility..."
@@ -105,7 +108,7 @@ jobs:
       - uses: ./.github/actions/setup-node-pnpm
       - uses: ./.github/actions/setup-homebrew-tools
 
-      - name: Build dependencies (generate infrastructure.d.ts)
+      - name: Build dependencies (generate infrastructure.json and resource enums)
         run: pnpm run build:dependencies
 
       - name: Check types
