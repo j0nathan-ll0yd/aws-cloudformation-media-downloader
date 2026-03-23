@@ -19,6 +19,7 @@ locals {
     DSQL_ENDPOINT                      = module.database.cluster_endpoint
     DSQL_REGION                        = module.core.region
     EVENT_BUS_NAME                     = local.event_bus_name
+    EVENT_SOURCE                       = "media-downloader"
     METRICS_NAMESPACE                  = "MediaDownloader"
   }
 }
