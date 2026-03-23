@@ -22,8 +22,8 @@ importers:
   .:
     dependencies:
       '@aws-lambda-powertools/idempotency':
-        specifier: ^2.31.0
-        version: 2.31.0(@aws-sdk/client-dynamodb@3.1014.0)(@aws-sdk/lib-dynamodb@3.1014.0(@aws-sdk/client-dynamodb@3.1014.0))(@middy/core@7.1.6)
+        specifier: ^2.32.0
+        version: 2.32.0(@aws-sdk/client-dynamodb@3.1014.0)(@aws-sdk/lib-dynamodb@3.1014.0(@aws-sdk/client-dynamodb@3.1014.0))(@middy/core@7.1.6)
       '@aws-lambda-powertools/logger':
         specifier: ^2.31.0
         version: 2.31.0(@aws-lambda-powertools/jmespath@2.31.0)(@middy/core@7.1.6)
@@ -252,8 +252,11 @@ packages:
   '@aws-lambda-powertools/commons@2.31.0':
     resolution: {integrity: sha512-K5Hy3WtU/n0M8/kgsgw6OVlF709PHOfnTfsWrJS2Cs1vVjEeBvW22a6u9n3VPNpDeqJ7GIodmSkbuzvQzq6vaA==}
 
-  '@aws-lambda-powertools/idempotency@2.31.0':
-    resolution: {integrity: sha512-brQMmqf0b2kusFV0HUy0lEK9jQTwBFDyrRPmLCXPxIfHzRfram9NLbv0sP0kd7hYAjSxePOmfHJyalND0ziONw==}
+  '@aws-lambda-powertools/commons@2.32.0':
+    resolution: {integrity: sha512-vsdakJDZu/KkJ5+1WHkawQ5R06aCK0XYB3nc3tpcBfO1YmOHkn+QpuGiZtkmpzIykGPAO9lnBjK5joAeim2o4A==}
+
+  '@aws-lambda-powertools/idempotency@2.32.0':
+    resolution: {integrity: sha512-M0I3ZypGnvcnPrUZMQ6tKiNrT7aXlTOoUdf6Z+WH2kwU4p3I13D608zG7DKACDNIt8EWikxnBwpmJTZCJBWeiw==}
     peerDependencies:
       '@aws-sdk/client-dynamodb': '>=3.x'
       '@aws-sdk/lib-dynamodb': '>=3.x'
@@ -274,6 +277,9 @@ packages:
 
   '@aws-lambda-powertools/jmespath@2.31.0':
     resolution: {integrity: sha512-2pIWWr5ROhp/N7g+iyYTjUGz8M+QZVaOV/lMV1bqAwLO6amRv3GAZ/wj4v4ZtXoqNA0m7XcQVfFInNZuwhX0Rg==}
+
+  '@aws-lambda-powertools/jmespath@2.32.0':
+    resolution: {integrity: sha512-jHtETqs2hJbhNIM4hmGlVOxbEbgUwOxoVU6yBiekRd9UjHby3CsWjQUFluj93qeOFcK17iotczGzwTbVw4i6jg==}
 
   '@aws-lambda-powertools/logger@2.31.0':
     resolution: {integrity: sha512-FCchy2g/cK5poDvDWnVCBSN9uSDGSWDldDiHGC/bn1/oU2cCxIZu06QnYEOOOAUbCWdzgcT1F9fRjzzHbu0GxQ==}
@@ -6502,10 +6508,14 @@ snapshots:
     dependencies:
       '@aws/lambda-invoke-store': 0.2.3
 
-  '@aws-lambda-powertools/idempotency@2.31.0(@aws-sdk/client-dynamodb@3.1014.0)(@aws-sdk/lib-dynamodb@3.1014.0(@aws-sdk/client-dynamodb@3.1014.0))(@middy/core@7.1.6)':
+  '@aws-lambda-powertools/commons@2.32.0':
     dependencies:
-      '@aws-lambda-powertools/commons': 2.31.0
-      '@aws-lambda-powertools/jmespath': 2.31.0
+      '@aws/lambda-invoke-store': 0.2.4
+
+  '@aws-lambda-powertools/idempotency@2.32.0(@aws-sdk/client-dynamodb@3.1014.0)(@aws-sdk/lib-dynamodb@3.1014.0(@aws-sdk/client-dynamodb@3.1014.0))(@middy/core@7.1.6)':
+    dependencies:
+      '@aws-lambda-powertools/commons': 2.32.0
+      '@aws-lambda-powertools/jmespath': 2.32.0
     optionalDependencies:
       '@aws-sdk/client-dynamodb': 3.1014.0
       '@aws-sdk/lib-dynamodb': 3.1014.0(@aws-sdk/client-dynamodb@3.1014.0)
@@ -6514,6 +6524,11 @@ snapshots:
   '@aws-lambda-powertools/jmespath@2.31.0':
     dependencies:
       '@aws-lambda-powertools/commons': 2.31.0
+    optional: true
+
+  '@aws-lambda-powertools/jmespath@2.32.0':
+    dependencies:
+      '@aws-lambda-powertools/commons': 2.32.0
 
   '@aws-lambda-powertools/logger@2.31.0(@aws-lambda-powertools/jmespath@2.31.0)(@middy/core@7.1.6)':
     dependencies:
