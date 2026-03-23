@@ -41,7 +41,7 @@ Flag it with: "🔔 CONVENTION DETECTED" and document the pattern
 
 This is a production AWS serverless application with:
 - **Infrastructure**: OpenTofu (IaC)
-- **Runtime**: AWS Lambda (Node.js 22.x) with TypeScript
+- **Runtime**: AWS Lambda (Node.js 24.x) with TypeScript
 - **Storage**: S3 for media files
 - **Database**: Aurora DSQL with Drizzle ORM
 - **Testing**: Vitest with LocalStack for integration tests

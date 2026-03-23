@@ -10,7 +10,7 @@ status: current
 **Auditor:** Gemini CLI Agent
 
 ## Executive Summary
-This project employs a cutting-edge, "paranoid-security" stack (Node 22, pnpm 10, OpenTofu, Better Auth) that aligns with or exceeds 2025 industry best practices. 
+This project employs a cutting-edge, "paranoid-security" stack (Node 24, pnpm 10, OpenTofu, Better Auth) that aligns with or exceeds 2025 industry best practices. 
 
 ## Detailed Findings
 
@@ -18,8 +18,8 @@ This project employs a cutting-edge, "paranoid-security" stack (Node 22, pnpm 10
 - **OpenTofu (Verified):** The project uses OpenTofu as a drop-in replacement for Terraform.
   - *Status:* ✅ **Safe**. Current compatibility is high.
   - *Action:* Maintain a "Feature Parity Watchlist" in `docs/wiki/Infrastructure/OpenTofu-Patterns.md` to monitor divergence (for example, state encryption features).
-- **Node.js 22 (Verified):** Project explicitly targets `node22`.
-  - *Cold Start Risk:* Node 22 has known initial cold start regressions with `http` loading.
+- **Node.js 24 (Verified):** Project explicitly targets `node24`.
+  - *Cold Start Risk:* Node 24 has known initial cold start regressions with `http` loading.
   - *Mitigation:* The project uses `esbuild` with `external: [aws-sdk]` to utilize the Lambda runtime's pre-loaded SDK, effectively mitigating bundle-size related cold starts.
   - *Status:* ✅ **Optimized**.
 

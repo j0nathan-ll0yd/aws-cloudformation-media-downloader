@@ -29,7 +29,7 @@ AWS Serverless media downloader service built with OpenTofu and TypeScript. Down
 
 ### Architecture
 - **Infrastructure**: OpenTofu (IaC)
-- **Runtime**: AWS Lambda (Node.js 22.x)
+- **Runtime**: AWS Lambda (Node.js 24.x)
 - **Language**: TypeScript
 - **Storage**: Amazon S3
 - **API**: AWS API Gateway with custom authorizer

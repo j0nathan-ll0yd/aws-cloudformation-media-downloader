@@ -5,7 +5,7 @@ This tutorial guides you through creating a new Lambda function in the Media Dow
 ## Prerequisites
 
 Before starting, ensure you have:
-- Node.js 22.x installed
+- Node.js 24.x installed
 - pnpm package manager (`npm install -g pnpm`)
 - Project dependencies installed (`pnpm install`)
 - Basic understanding of TypeScript and AWS Lambda
@@ -226,7 +226,7 @@ module "lambda_get_user_profile" {
   function_name = "GetUserProfile"
   description   = "Retrieves user profile information"
   handler       = "index.handler"
-  runtime       = "nodejs22.x"
+  runtime       = "nodejs24.x"
   timeout       = 10
   memory_size   = 1024
 

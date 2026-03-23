@@ -2,7 +2,8 @@
   "compilerOptions": {
     "allowSyntheticDefaultImports": true,
     "module": "esnext",
-    "target": "ES2024",
+    "target": "ES2025",
+    "lib": ["ES2025"],
     "outDir": "./dist",
     "rootDir": ".",
     "strict": true,
@@ -10,6 +11,7 @@
     "noUncheckedIndexedAccess": true,
     "types": ["node"],
     "moduleResolution": "bundler",
+    "ignoreDeprecations": "6.0",
     "baseUrl": ".",
     "paths": {
       "#entities/*": ["src/entities/*"],

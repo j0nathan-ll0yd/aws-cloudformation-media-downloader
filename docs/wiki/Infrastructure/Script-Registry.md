@@ -58,7 +58,7 @@ Scripts documented in `AGENTS.md` and `README.md` are automatically validated ag
 
 ### `pnpm run ci:local`
 **Purpose**: Run all CI checks locally (fast mode, no integration tests)
-**Dependencies**: Node.js 22+, hcl2json, jq
+**Dependencies**: Node.js 24+, hcl2json, jq
 **CI Coverage**: Mirrors unit-tests.yml + dependency-check.yml
 **Notes**: ~2-3 minutes; catches ~95% of CI failures. Use before committing.
 

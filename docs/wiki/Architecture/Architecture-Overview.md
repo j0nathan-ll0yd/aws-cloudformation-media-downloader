@@ -43,7 +43,7 @@ C4Container
         Container(apiGateway, "API Gateway", "REST API", "Authenticates and routes requests")
         Container(authorizer, "Custom Authorizer", "Lambda", "JWT validation via Better Auth")
 
-        Container(lambdas, "Lambda Functions", "Node.js 22.x", "Business logic handlers")
+        Container(lambdas, "Lambda Functions", "Node.js 24.x", "Business logic handlers")
         Container(eventBridge, "EventBridge", "Event Bus", "Routes domain events")
         Container(sqs, "SQS Queues", "Message Queue", "Async processing with retry")
 

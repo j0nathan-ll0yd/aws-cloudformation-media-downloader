@@ -15,7 +15,7 @@ A standout feature is the project's **"AI-First" design philosophy**. The inclus
 ## 2. Architecture Assessment
 
 ### 2.1 Infrastructure & Services
-- **Compute**: AWS Lambda (Node.js 22.x, arm64) offers optimal cost/performance. The use of layers for `ffmpeg` and `yt-dlp` is the correct approach for runtime dependencies.
+- **Compute**: AWS Lambda (Node.js 24.x, arm64) offers optimal cost/performance. The use of layers for `ffmpeg` and `yt-dlp` is the correct approach for runtime dependencies.
 - **Storage**: S3 with Transfer Acceleration ensures global performance for large media files.
 - **Database**: The shift to **Aurora DSQL** is a forward-looking choice, eliminating VPC management overhead while providing SQL relational capabilities that NoSQL solutions lack for complex user-file-device relationships.
 - **Messaging**: EventBridge -> SQS fan-out pattern for downloads is robust, handling retries and backpressure effectively.

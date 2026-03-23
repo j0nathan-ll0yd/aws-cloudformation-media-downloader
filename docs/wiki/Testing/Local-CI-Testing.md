@@ -85,7 +85,7 @@ pnpm run localstack:stop
 
 The fast CI script (`pnpm run ci:local`) runs these checks in order:
 
-1. **Prerequisites** - Node.js 22+, hcl2json, jq
+1. **Prerequisites** - Node.js 24+, hcl2json, jq
 2. **Dependencies** - `pnpm install --frozen-lockfile`
 3. **TypeSpec compilation** - API spec validation
 4. **Build dependencies** - Terraform type generation

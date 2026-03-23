@@ -86,7 +86,7 @@ Problems: Configuration duplicates what conventions provide, custom patterns whe
     "ProcessFile": {
       "path": "src/lambdas/ProcessFile/src/index.ts",
       "handler": "handler",
-      "runtime": "nodejs22.x"
+      "runtime": "nodejs24.x"
     }
   }
 }

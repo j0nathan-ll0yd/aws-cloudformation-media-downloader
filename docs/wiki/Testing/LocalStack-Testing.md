@@ -109,7 +109,7 @@ aws --endpoint-url=http://localhost:4566 s3 mb s3://media-files
 ```bash
 aws --endpoint-url=http://localhost:4566 lambda create-function \
   --function-name ProcessFile \
-  --runtime nodejs22.x
+  --runtime nodejs24.x
 ```
 
 ## Aurora DSQL Integration Testing

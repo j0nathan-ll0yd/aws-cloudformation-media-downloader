@@ -9,7 +9,7 @@ View the [AWS Architecture Diagram](https://gitdiagram.com/repo/j0nathan-ll0yd/a
 ## Technologies
 
 ### Core Stack
-- **Runtime**: Node.js 22.x (AWS Lambda)
+- **Runtime**: Node.js 24.x (AWS Lambda)
 - **Language**: TypeScript with strict type checking
 - **Infrastructure as Code**: OpenTofu (Terraform fork)
 - **Package Manager**: pnpm (with security hardening)

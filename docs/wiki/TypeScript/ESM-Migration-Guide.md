@@ -7,7 +7,7 @@
 
 ## Overview
 
-This project uses **pure ESM (ECMAScript Modules)** for AWS Lambda functions running on Node.js 22+. All Lambda bundles are output as `.mjs` files with `format: 'esm'` in esbuild.
+This project uses **pure ESM (ECMAScript Modules)** for AWS Lambda functions running on Node.js 24+. All Lambda bundles are output as `.mjs` files with `format: 'esm'` in esbuild.
 
 However, not all npm packages support ESM natively. This guide documents the project's approach to maintaining ESM compatibility while using CommonJS (CJS) dependencies.
 
@@ -299,7 +299,7 @@ const result = await esbuild.build({
   entryPoints: [entryFile],
   bundle: true,
   platform: 'node',
-  target: 'es2022',           // Node.js 22+ supports ES2022
+  target: 'es2022',           // Node.js 24+ supports ES2022
   format: 'esm',              // Output ESM format
   outExtension: {'.js': '.mjs'},  // Explicit .mjs extension
   external: awsSdkExternals,  // Don't bundle AWS SDK (available in Lambda)
