@@ -166,7 +166,7 @@
     "@eslint/eslintrc": "^3.3.5",
     "@eslint/js": "^10.0.1",
     "@huggingface/transformers": "^3.8.1",
-    "@lancedb/lancedb": "^0.26.2",
+    "@lancedb/lancedb": "^0.27.1",
     "@modelcontextprotocol/inspector": "^0.21.1",
     "@redocly/cli": "^2.21.1",
     "@stryker-mutator/core": "^9.6.0",
