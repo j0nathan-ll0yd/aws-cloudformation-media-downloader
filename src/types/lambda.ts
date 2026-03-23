@@ -13,8 +13,7 @@
  * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/TypeScript/Lambda-Middleware-Patterns | Middleware Guide}
  */
 
-import type {APIGatewayRequestAuthorizerEvent, CloudFrontResponse, CloudFrontResultResponse, Context, ScheduledEvent} from 'aws-lambda'
-import type {CloudFrontCustomOrigin, CloudFrontRequest} from 'aws-lambda/common/cloudfront'
+import type {APIGatewayRequestAuthorizerEvent, Context, ScheduledEvent} from 'aws-lambda'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from './infrastructureTypes'
 import type {ResponseStatus, UserStatus} from './enums'
 import type {VideoErrorClassification} from './video'
@@ -356,35 +355,6 @@ export interface ApplePushNotificationResponse {
   statusCode: number
   /** Error reason if status is not 200 */
   reason?: string
-}
-
-// ============================================================================
-// CloudFront Types
-// ============================================================================
-
-/**
- * Union type for CloudFront Lambda\@Edge handler results.
- * Allows returning modified request, generated response, or pass-through.
- */
-export type CloudFrontHandlerResult = CloudFrontRequest | CloudFrontResultResponse | CloudFrontResponse
-
-/**
- * CloudFront origin configuration for custom origins.
- * Used when forwarding to API Gateway or S3.
- */
-export type CustomCloudFrontOrigin = {custom: CloudFrontCustomOrigin}
-
-/**
- * Extended CloudFront request with guaranteed clientIp and origin.
- * Used for edge processing and request routing.
- *
- * @see CloudfrontMiddleware Lambda for implementation
- */
-export interface CustomCloudFrontRequest extends CloudFrontRequest {
-  /** Client IP address from CloudFront headers */
-  clientIp: string
-  /** Custom origin configuration for routing */
-  origin: CustomCloudFrontOrigin
 }
 
 // ============================================================================

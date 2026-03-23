@@ -11,13 +11,10 @@
  * Invalid patterns:
  * - export const handler = async (event, context) => {...}
  * - export function handler(event, context) {...}
- *
- * Excluded:
- * - CloudfrontMiddleware (Lambda@Edge has bundle size constraints that prevent PowerTools usage)
  */
 
-// Lambda@Edge functions that can't use PowerTools due to bundle size constraints
-const EXCLUDED_LAMBDAS = ['CloudfrontMiddleware']
+// Lambdas excluded from PowerTools enforcement (none currently)
+const EXCLUDED_LAMBDAS = []
 
 // Allowed function wrapper names (functional composition pattern)
 const ALLOWED_WRAPPERS = ['withPowertools', 'wrapLambdaInvokeHandler']

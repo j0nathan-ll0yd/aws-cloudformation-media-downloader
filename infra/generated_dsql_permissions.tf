@@ -15,10 +15,6 @@ locals {
       role_name      = "lambda_cleanup_expired_records"
       requires_admin = false
     }
-    "CloudfrontMiddleware" = {
-      role_name      = "lambda_cloudfront_middleware"
-      requires_admin = false
-    }
     "DeviceEvent" = {
       role_name      = "lambda_device_event"
       requires_admin = false

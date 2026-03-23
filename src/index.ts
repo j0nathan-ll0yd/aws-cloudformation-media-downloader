@@ -20,4 +20,3 @@ export { handler as cleanupExpiredRecords } from './lambdas/scheduled/CleanupExp
 export { handler as pruneDevices } from './lambdas/scheduled/PruneDevices/index.js'
 export { handler as migrateDSQL } from './lambdas/standalone/MigrateDSQL/index.js'
 export { handler as apiGatewayAuthorizer } from './lambdas/standalone/ApiGatewayAuthorizer/index.js'
-export { handler as cloudfrontMiddleware } from './lambdas/standalone/CloudfrontMiddleware/index.js'

@@ -9,7 +9,6 @@
   "limits": {
     "ApiGatewayAuthorizer": 1048576,
     "CleanupExpiredRecords": 1048576,
-    "CloudfrontMiddleware": 524288,
     "DeviceEvent": 1048576,
     "ListFiles": 1048576,
     "LoginUser": 2097152,

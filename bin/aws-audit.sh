@@ -129,8 +129,8 @@ find_orphans() {
 main() {
   # Project resource patterns with environment prefix
   # These patterns match resources for the specific environment (stag-* or prod-*)
-  LAMBDA_PATTERN="^${RESOURCE_PREFIX}-(ListFiles|LoginUser|RegisterUser|RegisterDevice|WebhookFeedly|S3ObjectCreated|SendPushNotification|StartFileUpload|PruneDevices|ApiGatewayAuthorizer|CloudfrontMiddleware|UserDelete|UserSubscribe|RefreshToken|LogoutUser|CleanupExpiredRecords|DeviceEvent|MigrateDSQL)"
-  IAM_PATTERN="^${RESOURCE_PREFIX}-(ListFiles|LoginUser|RegisterUser|RegisterDevice|WebhookFeedly|S3ObjectCreated|SendPushNotification|StartFileUpload|PruneDevices|ApiGatewayAuthorizer|CloudfrontMiddleware|UserDelete|UserSubscribe|RefreshToken|LogoutUser|CleanupExpiredRecords|DeviceEvent|MigrateDSQL|ApiGatewayCloudwatch|SNSLoggingRole|CommonLambdaXRay|LambdaDSQLConnect|LambdaDSQLAdminConnect)"
+  LAMBDA_PATTERN="^${RESOURCE_PREFIX}-(ListFiles|LoginUser|RegisterUser|RegisterDevice|WebhookFeedly|S3ObjectCreated|SendPushNotification|StartFileUpload|PruneDevices|ApiGatewayAuthorizer|UserDelete|UserSubscribe|RefreshToken|LogoutUser|CleanupExpiredRecords|DeviceEvent|MigrateDSQL)"
+  IAM_PATTERN="^${RESOURCE_PREFIX}-(ListFiles|LoginUser|RegisterUser|RegisterDevice|WebhookFeedly|S3ObjectCreated|SendPushNotification|StartFileUpload|PruneDevices|ApiGatewayAuthorizer|UserDelete|UserSubscribe|RefreshToken|LogoutUser|CleanupExpiredRecords|DeviceEvent|MigrateDSQL|ApiGatewayCloudwatch|SNSLoggingRole|CommonLambdaXRay|LambdaDSQLConnect|LambdaDSQLAdminConnect)"
   DYNAMODB_PATTERN="^${RESOURCE_PREFIX}-(MediaDownloader|Idempotency)"
   S3_PATTERN="lifegames-${RESOURCE_PREFIX}-media"
   SQS_PATTERN="^${RESOURCE_PREFIX}-(SendPushNotification|DownloadQueue)"
