@@ -8,7 +8,7 @@
  * Input: Authenticated or anonymous request
  * Output: APIGatewayProxyResult with file list
  */
-import {buildValidatedResponse, defineLambda} from '@mantleframework/core'
+import {buildValidatedResponse, defineLambda, UserStatus} from '@mantleframework/core'
 
 defineLambda({staticAssets: ['videos/default-file.mp4']})
 import {logDebug} from '@mantleframework/observability'
@@ -56,7 +56,7 @@ async function getFilesByUser(userId: string): Promise<File[]> {
 
 const api = defineApiHandler({auth: 'authorizer', operationName: 'ListFiles'})
 export const handler = api(async ({event, context, userId, userStatus}) => {
-  if (userStatus === 'Anonymous') {
+  if (userStatus === UserStatus.Anonymous) {
     const myResponse = {contents: [getDefaultFile()], keyCount: 1}
     return buildValidatedResponse(context, 200, myResponse, fileListResponseSchema)
   }

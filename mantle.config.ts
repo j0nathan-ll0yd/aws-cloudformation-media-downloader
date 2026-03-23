@@ -98,5 +98,6 @@ export default defineConfig({
       forwardedHeaders: ['X-API-Key', 'Authorization', 'User-Agent'],
       cacheTtl: {default: 0, min: 0, max: 0}
     }
-  }
+  },
+  authorizer: {cacheTtl: 0}
 })

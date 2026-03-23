@@ -14,7 +14,7 @@ type GetApiKeysResult = Awaited<ReturnType<typeof getApiKeys>>
 type GetUsagePlansResult = Awaited<ReturnType<typeof getUsagePlans>>
 type ApiKey = NonNullable<GetApiKeysResult['items']>[number]
 type UsagePlan = NonNullable<GetUsagePlansResult['items']>[number]
-import {defineAuthorizerHandler, defineLambda} from '@mantleframework/core'
+import {defineAuthorizerHandler, defineLambda, UserStatus} from '@mantleframework/core'
 import {addAnnotation, addMetadata, endSpan, logDebug, logError, logInfo, metrics, MetricUnit, startSpan} from '@mantleframework/observability'
 import {validateSessionToken} from '#domain/auth/sessionService'
 import {getOptionalEnv, getRequiredEnv} from '@mantleframework/env'
@@ -39,9 +39,9 @@ defineLambda({
  * @param usageIdentifierKey - Optional API key identifier for usage tracking
  * @returns Custom authorizer result with Allow effect
  */
-function generateAllow(principalId: string, resource: string, usageIdentifierKey?: string): APIGatewayAuthorizerResult {
+function generateAllow(principalId: string, resource: string, usageIdentifierKey?: string, authContext: Record<string, string> = {}): APIGatewayAuthorizerResult {
   return {
-    context: {},
+    context: authContext,
     policyDocument: {
       Statement: [
         {Action: 'execute-api:Invoke', Effect: 'Allow', Resource: resource}
@@ -193,7 +193,7 @@ export const handler = authorizer(async ({event, headers, queryStringParameters,
     addAnnotation(span, 'principalId', fakeUserId)
     addMetadata(span, 'testRequest', true)
     endSpan(span)
-    return generateAllow(fakeUserId, methodArn, apiKeyValue)
+    return generateAllow(fakeUserId, methodArn, apiKeyValue, {userStatus: UserStatus.Authenticated})
   }
 
   const apiKeyId = apiKey.id as string
@@ -202,7 +202,8 @@ export const handler = authorizer(async ({event, headers, queryStringParameters,
   const usageData = await fetchUsageData(apiKeyId, usagePlanId)
   logInfo('usageData =>', {usageData: JSON.stringify(usageData)})
 
-  let principalId = 'unknown'
+  let principalId = 'anonymous'
+  let userStatus: UserStatus = UserStatus.Anonymous
   const pathPart = event.path.substring(1)
   const multiAuthenticationPathsString = getRequiredEnv('MULTI_AUTHENTICATION_PATH_PARTS')
   const multiAuthenticationPaths = multiAuthenticationPathsString.split(',')
@@ -210,6 +211,7 @@ export const handler = authorizer(async ({event, headers, queryStringParameters,
     const maybeUserId = await getUserIdFromAuthenticationHeader(headers.Authorization)
     if (maybeUserId) {
       principalId = maybeUserId
+      userStatus = UserStatus.Authenticated
     } else {
       if (multiAuthenticationPaths.includes(pathPart)) {
         logInfo('Multi-authentication path; userId not required')
@@ -240,7 +242,7 @@ export const handler = authorizer(async ({event, headers, queryStringParameters,
   addMetadata(span, 'success', true)
   endSpan(span)
 
-  return generateAllow(principalId, methodArn, apiKeyValue)
+  return generateAllow(principalId, methodArn, apiKeyValue, {userStatus})
 })
 
 // Re-export for testing

@@ -52,9 +52,11 @@ module "api" {
       "auth:authorizer",
       "auth:none",
       "auth:authorizer",
+      module.lambda_api_gateway_authorizer.invoke_arn,
+      "authorizer_ttl:0",
     ]))
 
   authorizer_lambda_invoke_arn = module.lambda_api_gateway_authorizer.invoke_arn
   authorizer_enabled           = true
-  authorizer_ttl_seconds       = 300
+  authorizer_ttl_seconds       = 0
 }

@@ -1,23 +1,4 @@
-/**
- * User authentication status from API Gateway custom authorizer.
- *
- * Determines which middleware wrapper to use and what access is granted.
- *
- * - Authenticated: Valid token, userId available
- * - Unauthenticated: Invalid/expired token, rejected with 401
- * - Anonymous: No token provided, allowed for some endpoints
- *
- * @see wrapAuthenticatedHandler - Requires Authenticated only
- * @see wrapOptionalAuthHandler - Allows Authenticated + Anonymous
- */
-export enum UserStatus {
-  /** Valid authentication token, userId guaranteed */
-  Authenticated,
-  /** Invalid or expired token, will be rejected with 401 */
-  Unauthenticated,
-  /** No token provided, may be allowed for certain endpoints */
-  Anonymous
-}
+export {UserStatus} from '@mantleframework/core'
 
 /**
  * File status for permanent media records.

@@ -9,7 +9,7 @@
  * Output: APIGatewayProxyResult with device registration
  */
 import {createPlatformEndpoint, listSubscriptionsByTopic} from '@mantleframework/aws'
-import {buildValidatedResponse} from '@mantleframework/core'
+import {buildValidatedResponse, UserStatus} from '@mantleframework/core'
 import {getRequiredEnv} from '@mantleframework/env'
 import {ServiceUnavailableError, UnexpectedError} from '@mantleframework/errors'
 import {logDebug} from '@mantleframework/observability'
@@ -92,7 +92,7 @@ export const handler = api(async ({context, userId, userStatus, body}) => {
   await upsertDevice(device)
 
   /* c8 ignore else */
-  if (userStatus === 'Authenticated' && userId) {
+  if (userStatus === UserStatus.Authenticated && userId) {
     // Store the device details associated with the user
     await upsertUserDevices(userId, body.deviceId)
     // Determine if the user already exists
@@ -105,7 +105,7 @@ export const handler = api(async ({context, userId, userStatus, body}) => {
       await unsubscribeEndpointToTopic(subscriptionArn)
       return buildValidatedResponse(context, 201, {endpointArn: platformEndpoint.EndpointArn}, deviceRegistrationResponseSchema)
     }
-  } else if (userStatus === 'Anonymous') {
+  } else if (userStatus === UserStatus.Anonymous) {
     // If the user hasn't registered; add them to the unregistered topic
     await subscribeEndpointToTopic(device.endpointArn, pushNotificationTopicArn)
   }
