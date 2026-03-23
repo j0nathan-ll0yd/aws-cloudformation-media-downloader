@@ -80,13 +80,13 @@ const sqs = defineSqsHandler<string>({operationName: 'SendPushNotification', par
 export const handler = sqs(async (record) => {
   // Validate message attributes using Zod schema
   const rawAttributes = {notificationType: record.messageAttributes.notificationType?.stringValue, userId: record.messageAttributes.userId?.stringValue}
-  const validationErrors = validateSchema(pushNotificationAttributesSchema, rawAttributes)
-  if (validationErrors) {
-    logError('Invalid SQS message attributes - discarding', {messageId: record.messageId, errors: validationErrors.errors})
+  const validationResult = validateSchema(pushNotificationAttributesSchema, rawAttributes)
+  if (!validationResult.success) {
+    logError('Invalid SQS message attributes - discarding', {messageId: record.messageId, errors: validationResult.errors})
     return
   }
 
-  const validatedAttrs = pushNotificationAttributesSchema.parse(rawAttributes)
+  const validatedAttrs = validationResult.data as {notificationType: string; userId: string}
   const notificationType = validatedAttrs.notificationType as FileNotificationType
   const userId = validatedAttrs.userId
 
