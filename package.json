@@ -127,7 +127,7 @@
   "author": "Jonathan Lloyd",
   "dependencies": {
     "@aws-lambda-powertools/idempotency": "^2.31.0",
-    "@aws-lambda-powertools/logger": "^2.31.0",
+    "@aws-lambda-powertools/logger": "^2.32.0",
     "@aws-lambda-powertools/metrics": "^2.31.0",
     "@aws-sdk/client-api-gateway": "3.1014.0",
     "@aws-sdk/client-cloudwatch-logs": "3.1014.0",
