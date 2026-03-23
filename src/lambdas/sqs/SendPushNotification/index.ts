@@ -10,7 +10,7 @@
  */
 import {getDevice as getDeviceRecord, getUserDevicesByUserId} from '#entities/queries'
 import {publish} from '@mantleframework/aws'
-import {defineSqsHandler} from '@mantleframework/core'
+import {defineSqsHandler, err, isErr, isOk, ok} from '@mantleframework/core'
 import {addAnnotation, addMetadata, endSpan, logDebug, logError, logInfo, metrics, MetricUnit, startSpan} from '@mantleframework/observability'
 import type {Device} from '#types/domainModels'
 import type {DeviceNotificationResult, FileNotificationType} from '#types/notificationTypes'
@@ -51,7 +51,7 @@ async function getDevice(deviceId: string): Promise<Device> {
 async function sendNotificationToDevice(device: Device, messageBody: string, notificationType: FileNotificationType): Promise<DeviceNotificationResult> {
   const targetArn = device.endpointArn
   if (!targetArn) {
-    return {deviceId: device.deviceId, success: false, error: 'No endpoint ARN configured'}
+    return err({deviceId: device.deviceId, error: 'No endpoint ARN configured', endpointDisabled: false})
   }
   try {
     logInfo(`Sending ${notificationType} to device`, {deviceId: device.deviceId})
@@ -65,19 +65,19 @@ async function sendNotificationToDevice(device: Device, messageBody: string, not
     const publishResponse = await publish(publishParams)
     logDebug('publish =>', publishResponse as unknown as Record<string, unknown>)
 
-    return {deviceId: device.deviceId, success: true}
+    return ok({deviceId: device.deviceId})
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     // Detect disabled endpoints - these occur when APNS token is invalid
     const isEndpointDisabled = message.includes('EndpointDisabled') || message.includes('endpoint is disabled')
 
-    return {deviceId: device.deviceId, success: false, error: message, endpointDisabled: isEndpointDisabled}
+    return err({deviceId: device.deviceId, error: message, endpointDisabled: isEndpointDisabled})
   }
 }
 
 const sqs = defineSqsHandler<string>({operationName: 'SendPushNotification', parseBody: false, queue: 'SendPushNotification'})
 
-export const handler = sqs(async (record, _metadata) => {
+export const handler = sqs(async (record) => {
   // Validate message attributes using Zod schema
   const rawAttributes = {notificationType: record.messageAttributes.notificationType?.stringValue, userId: record.messageAttributes.userId?.stringValue}
   const validationErrors = validateSchema(pushNotificationAttributesSchema, rawAttributes)
@@ -117,12 +117,12 @@ export const handler = sqs(async (record, _metadata) => {
       if (result.status === 'fulfilled') {
         return result.value
       }
-      return {deviceId: deviceIds[index]!, success: false as const, error: result.reason instanceof Error ? result.reason.message : String(result.reason)}
+      return err({deviceId: deviceIds[index]!, error: result.reason instanceof Error ? result.reason.message : String(result.reason), endpointDisabled: false})
     })
 
-    const succeeded = deviceResults.filter((r) => r.success)
-    const failed = deviceResults.filter((r) => !r.success)
-    const disabledEndpoints = deviceResults.filter((r) => r.endpointDisabled)
+    const succeeded = deviceResults.filter((r) => isOk(r))
+    const failed = deviceResults.filter((r) => !isOk(r))
+    const disabledEndpoints = deviceResults.filter((r) => !isOk(r) && r.error.endpointDisabled)
 
     // Emit metrics for observability
     metrics.addMetric('PushNotificationsSent', MetricUnit.Count, succeeded.length)
@@ -148,17 +148,20 @@ export const handler = sqs(async (record, _metadata) => {
       })
 
       failed.forEach((r) => {
-        logError('Device notification failed', {deviceId: r.deviceId, error: r.error, endpointDisabled: r.endpointDisabled})
+        if (isErr(r)) {
+          logError('Device notification failed', {deviceId: r.error.deviceId, error: r.error.error, endpointDisabled: r.error.endpointDisabled})
+        }
       })
     }
 
     // Clean up disabled endpoints (best-effort, don't fail the message)
     if (disabledEndpoints.length > 0) {
-      logInfo('Cleaning up disabled endpoints', {userId, deviceIds: disabledEndpoints.map((r) => r.deviceId)})
+      const disabledDeviceIds = disabledEndpoints.flatMap((r) => isErr(r) ? [r.error.deviceId] : [])
+      logInfo('Cleaning up disabled endpoints', {userId, deviceIds: disabledDeviceIds})
 
       // Run cleanup asynchronously (fire-and-forget to not block message processing)
       // Errors are logged within cleanupDisabledEndpoints, won't affect message success
-      cleanupDisabledEndpoints(disabledEndpoints.map((r) => r.deviceId)).catch((err: unknown) => {
+      cleanupDisabledEndpoints(disabledDeviceIds).catch((err: unknown) => {
         logError('Async endpoint cleanup failed', {error: err instanceof Error ? err.message : String(err)})
       })
     }

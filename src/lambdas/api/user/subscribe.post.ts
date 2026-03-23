@@ -19,6 +19,10 @@ const SubscriptionRequestSchema = z.object({
   topicArn: z.string()
 })
 
+const SubscriptionResponseSchema = z.object({
+  subscriptionArn: z.string().optional()
+})
+
 const api = defineApiHandler({auth: 'authorizer', schema: SubscriptionRequestSchema, operationName: 'UserSubscribe'})
 export const handler = api(async ({context, userId, body}) => {
   if (!userId) throw new UnauthorizedError('Authentication required')
@@ -27,5 +31,5 @@ export const handler = api(async ({context, userId, body}) => {
 
   const subscribeResponse = await subscribeEndpointToTopic(body.endpointArn, body.topicArn)
 
-  return buildValidatedResponse(context, 201, {subscriptionArn: subscribeResponse.SubscriptionArn})
+  return buildValidatedResponse(context, 201, {subscriptionArn: subscribeResponse.SubscriptionArn}, SubscriptionResponseSchema)
 })

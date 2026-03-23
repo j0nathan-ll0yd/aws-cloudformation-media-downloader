@@ -11,7 +11,7 @@
 import {createFileDownload, getFile, getFileDownload, getUserFilesByFileId, updateFile, updateFileDownload} from '#entities/queries'
 import {headObject} from '@mantleframework/aws'
 import {sendMessage} from '@mantleframework/aws'
-import {emitEvent, defineLambda} from '@mantleframework/core'
+import {emitEvent, defineLambda, isOk} from '@mantleframework/core'
 import {defineSqsHandler} from '@mantleframework/core'
 import {addAnnotation, addMetadata, endSpan, logDebug, logError, logInfo, metrics, MetricUnit, startSpan} from '@mantleframework/observability'
 import {downloadVideoToS3, fetchVideoInfo} from '#services/youtube/youtube'
@@ -67,7 +67,7 @@ async function fetchVideoInfoTraced(fileUrl: string, fileId: string): Promise<Fe
 
   addAnnotation(span, 'videoId', fileId)
   addMetadata(span, 'videoUrl', fileUrl)
-  addMetadata(span, 'success', result.success)
+  addMetadata(span, 'success', isOk(result))
   endSpan(span)
 
   return result
@@ -144,8 +144,8 @@ async function recoverFromS3(message: ValidatedDownloadQueueMessage, s3Size: num
   let videoInfo: YtDlpVideoInfo | undefined
   try {
     const videoInfoResult = await fetchVideoInfoTraced(fileUrl, fileId)
-    if (videoInfoResult.success && videoInfoResult.info) {
-      videoInfo = videoInfoResult.info
+    if (isOk(videoInfoResult)) {
+      videoInfo = videoInfoResult.value
       // Send MetadataNotification to users
       await dispatchMetadataNotifications(fileId, videoInfo)
     }
@@ -317,7 +317,7 @@ async function handleDownloadFailure(
   existingMaxRetries: number
 ): Promise<DownloadFailureResult> {
   // Classify the error to determine retry strategy
-  const classification = classifyVideoError(error, videoInfoResult.info, existingRetryCount)
+  const classification = classifyVideoError(error, isOk(videoInfoResult) ? videoInfoResult.value : undefined, existingRetryCount)
   const newRetryCount = existingRetryCount + 1
   const maxRetries = classification.maxRetries ?? existingMaxRetries
 
@@ -373,7 +373,7 @@ async function handleDownloadFailure(
   }
 
   // Dispatch FailureNotification to all users waiting for this file
-  const videoTitle = videoInfoResult.info?.title
+  const videoTitle = isOk(videoInfoResult) ? videoInfoResult.value.title : undefined
   await dispatchFailureNotifications(fileId, classification.category, classification.reason, isRetryExhausted(newRetryCount, maxRetries), videoTitle)
 
   const failureMetric = metrics.singleMetric()
@@ -470,8 +470,8 @@ async function processDownloadRequest(message: ValidatedDownloadQueueMessage, re
   logDebug('fetchVideoInfo <=', {fileUrl})
   const videoInfoResult = await fetchVideoInfoTraced(fileUrl, fileId)
 
-  if (!videoInfoResult.success || !videoInfoResult.info) {
-    const error = videoInfoResult.error ?? new UnexpectedError('Failed to fetch video info')
+  if (!isOk(videoInfoResult)) {
+    const error = videoInfoResult.error.error ?? new UnexpectedError('Failed to fetch video info')
     const result = await handleDownloadFailure(fileId, fileUrl, error, correlationId, videoInfoResult, existingRetryCount, existingMaxRetries)
     if (result.shouldRetry) {
       throw error // Throw to trigger SQS retry
@@ -479,7 +479,7 @@ async function processDownloadRequest(message: ValidatedDownloadQueueMessage, re
     return // Permanent failure - remove from queue
   }
 
-  const videoInfo = videoInfoResult.info
+  const videoInfo = videoInfoResult.value
   logDebug('fetchVideoInfo =>', videoInfo as unknown as Record<string, unknown>)
 
   // Dispatch MetadataNotification to all users waiting for this file
@@ -552,7 +552,7 @@ async function processDownloadRequest(message: ValidatedDownloadQueueMessage, re
 
 const sqs = defineSqsHandler({operationName: 'StartFileUpload', parseBody: true, timeout: 900, memorySize: 2048, queue: 'DownloadQueue'})
 
-export const handler = sqs(async (record, _metadata) => {
+export const handler = sqs(async (record) => {
   // SQS provides ApproximateReceiveCount - how many times this message has been received
   const receiveCount = parseInt(record.attributes?.ApproximateReceiveCount ?? '1', 10)
 

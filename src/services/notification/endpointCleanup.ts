@@ -18,6 +18,7 @@
  */
 import {deleteDevice as deleteDeviceRecord, deleteUserDevicesByDeviceId, getDevice} from '#entities/queries'
 import {deleteEndpoint} from '@mantleframework/aws'
+import {err, isOk, ok} from '@mantleframework/core'
 import {logDebug, logError, logInfo} from '@mantleframework/observability'
 import type {EndpointCleanupResult} from '#types/resilience'
 
@@ -55,12 +56,12 @@ export async function cleanupDisabledEndpoint(deviceId: string, endpointArn: str
 
     logInfo('Successfully cleaned up disabled endpoint', {deviceId})
 
-    return {deviceId, endpointArn, cleaned: true}
+    return ok({deviceId, endpointArn})
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     logError('Failed to cleanup disabled endpoint', {deviceId, endpointArn, error: message})
 
-    return {deviceId, endpointArn, cleaned: false, error: message}
+    return err({deviceId, endpointArn, error: message})
   }
 }
 
@@ -111,12 +112,12 @@ export async function cleanupDisabledEndpoints(deviceIds: string[]): Promise<End
     if (result.status === 'fulfilled' && result.value) {
       cleanupResults.push(result.value)
     } else if (result.status === 'rejected') {
-      cleanupResults.push({deviceId, endpointArn: '', cleaned: false, error: result.reason instanceof Error ? result.reason.message : String(result.reason)})
+      cleanupResults.push(err({deviceId, endpointArn: '', error: result.reason instanceof Error ? result.reason.message : String(result.reason)}))
     }
   }
 
-  const succeeded = cleanupResults.filter((r) => r.cleaned)
-  const failed = cleanupResults.filter((r) => !r.cleaned)
+  const succeeded = cleanupResults.filter((r) => isOk(r))
+  const failed = cleanupResults.filter((r) => !isOk(r))
 
   logInfo('Batch endpoint cleanup complete', {total: deviceIds.length, cleaned: succeeded.length, failed: failed.length})
 

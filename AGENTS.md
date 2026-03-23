@@ -355,6 +355,21 @@ See `package.json` for complete command list (cleanup, integration tests, deploy
 
 ---
 
+## Mantle Spec Conformance — Acknowledged Exceptions
+
+This project passes all Mantle spec checks (C1–C21) with three documented exceptions:
+
+### C6: MigrateDSQL dynamic env var substitution
+`src/lambdas/standalone/MigrateDSQL/index.ts:44` uses `process.env[varName]` for dynamic variable substitution in SQL migration files. This is intentional because the variable name is not known at compile time (comes from `${VAR_NAME}` patterns in SQL files), and `getOptionalEnv`/`getRequiredEnv` require a static string key. The eslint-disable comment documents the reason. The access is inside a function body (not module-level).
+
+### C9: buildErrorResponse handled by defineApiHandler
+`buildErrorResponse()` is not called directly in application code. This is not a violation — `defineApiHandler` (from `@mantleframework/validation`) calls `buildErrorResponse` internally at its catch boundary. All API handlers use `defineApiHandler`, so errors are formatted through `buildErrorResponse` automatically.
+
+### C20: x86_64 for StartFileUpload
+`infra/lambda_start_file_upload.tf` sets `architecture = "x86_64"`. This is intentional — the Lambda uses yt-dlp which requires a native x86_64 Linux binary distributed in a Lambda layer. The `.tf` file is CLI-generated (has header comment), configured via `mantle.config.ts`.
+
+---
+
 ## Changelog
 
 Track major changes to AI agent configuration.

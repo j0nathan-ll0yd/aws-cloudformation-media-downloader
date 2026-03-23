@@ -11,12 +11,17 @@
 import {buildValidatedResponse, defineLambda} from '@mantleframework/core'
 import {UnauthorizedError, UnexpectedError} from '@mantleframework/errors'
 import {logDebug, logError} from '@mantleframework/observability'
-import {defineApiHandler} from '@mantleframework/validation'
+import {defineApiHandler, z} from '@mantleframework/validation'
 import {deleteUser as deleteUserRecord, deleteUserDevicesByUserId, deleteUserFilesByUserId, getDevicesBatch} from '#entities/queries'
 import {providerFailureErrorMessage} from '#errors/custom-errors'
 import {createFailedUserDeletionIssue} from '#integrations/github/issueService'
 import {deleteDevice, getUserDevices} from '#services/device/deviceService'
 import type {Device} from '#types/domainModels'
+
+const PartialDeletionResponseSchema = z.object({
+  message: z.string(),
+  failedOperations: z.number()
+})
 
 defineLambda({
   secrets: {
@@ -78,7 +83,7 @@ export const handler = api(async ({context, userId}) => {
     return buildValidatedResponse(context, 207, {
       message: 'Partial deletion - some child records could not be removed',
       failedOperations: relationFailures.length
-    })
+    }, PartialDeletionResponseSchema)
   }
 
   // 2. Delete devices (parents of UserDevices)
@@ -88,7 +93,7 @@ export const handler = api(async ({context, userId}) => {
   const deviceFailures = deviceResults.filter((r) => r.status === 'rejected')
   if (deviceFailures.length > 0) {
     logError('Cascade deletion partial failure (devices)', {failedCount: deviceFailures.length})
-    return buildValidatedResponse(context, 207, {message: 'Partial deletion - some devices could not be removed', failedOperations: deviceFailures.length})
+    return buildValidatedResponse(context, 207, {message: 'Partial deletion - some devices could not be removed', failedOperations: deviceFailures.length}, PartialDeletionResponseSchema)
   }
 
   // Delete parent LAST - only if all children succeeded

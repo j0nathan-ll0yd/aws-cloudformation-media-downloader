@@ -7,12 +7,13 @@ import {logDebug, logError} from '@mantleframework/observability'
 import {CookieExpirationError} from '#errors/custom-errors'
 import {UnexpectedError} from '@mantleframework/errors'
 import {createUpload} from '@mantleframework/aws'
-import {getRequiredEnv} from '@mantleframework/env'
+import {getOptionalEnv, getRequiredEnv} from '@mantleframework/env'
+import {ok, err} from '@mantleframework/core'
 
 /**
- * yt-dlp configuration constants
+ * yt-dlp static configuration constants (values known at deploy time)
  */
-const YTDLP_CONFIG = {
+const YTDLP_STATIC_CONFIG = {
   /** Cookies source path (read-only in Lambda layer) */
   COOKIES_SOURCE: '/opt/cookies/youtube-cookies.txt',
   /** Cookies destination path (writable in Lambda) */
@@ -22,14 +23,21 @@ const YTDLP_CONFIG = {
   /** Number of concurrent fragment downloads for speed */
   CONCURRENT_FRAGMENTS: '4',
   /** bgutil plugin path in Lambda layer (set via PYTHONPATH env var) */
-  PLUGIN_PATH: '/opt/python',
-  /** Sleep between requests during data extraction (seconds) - helps avoid rate limiting */
-  SLEEP_REQUESTS: process.env.YTDLP_SLEEP_REQUESTS || '1',
-  /** Minimum sleep between downloads (seconds) */
-  SLEEP_INTERVAL: process.env.YTDLP_SLEEP_INTERVAL || '2',
-  /** Maximum sleep between downloads (seconds) - random delay between min and max */
-  MAX_SLEEP_INTERVAL: process.env.YTDLP_MAX_SLEEP_INTERVAL || '5'
+  PLUGIN_PATH: '/opt/python'
 } as const
+
+/** Runtime yt-dlp config — env vars read at call time, not import time */
+function getYtdlpConfig() {
+  return {
+    ...YTDLP_STATIC_CONFIG,
+    /** Sleep between requests during data extraction (seconds) - helps avoid rate limiting */
+    SLEEP_REQUESTS: getOptionalEnv('YTDLP_SLEEP_REQUESTS', '1'),
+    /** Minimum sleep between downloads (seconds) */
+    SLEEP_INTERVAL: getOptionalEnv('YTDLP_SLEEP_INTERVAL', '2'),
+    /** Maximum sleep between downloads (seconds) - random delay between min and max */
+    MAX_SLEEP_INTERVAL: getOptionalEnv('YTDLP_MAX_SLEEP_INTERVAL', '5')
+  }
+}
 
 /**
  * Prepare cookies for yt-dlp usage.
@@ -40,8 +48,8 @@ const YTDLP_CONFIG = {
  */
 async function prepareCookies(): Promise<string> {
   logDebug('Copying cookies from Lambda layer')
-  await copyFile(YTDLP_CONFIG.COOKIES_SOURCE, YTDLP_CONFIG.COOKIES_DEST)
-  return YTDLP_CONFIG.COOKIES_DEST
+  await copyFile(YTDLP_STATIC_CONFIG.COOKIES_SOURCE, YTDLP_STATIC_CONFIG.COOKIES_DEST)
+  return YTDLP_STATIC_CONFIG.COOKIES_DEST
 }
 
 /**
@@ -208,7 +216,7 @@ export async function fetchVideoInfo(uri: string): Promise<FetchVideoInfoResult>
     await prepareCookies()
   } catch (cookieError) {
     logError('Failed to prepare cookies', {error: cookieError instanceof Error ? cookieError.message : String(cookieError)})
-    return {success: false, error: cookieError instanceof Error ? cookieError : new Error(String(cookieError)), isCookieError: false}
+    return err({error: cookieError instanceof Error ? cookieError : new Error(String(cookieError)), isCookieError: false})
   }
 
   // Try each player client in order
@@ -218,14 +226,15 @@ export async function fetchVideoInfo(uri: string): Promise<FetchVideoInfoResult>
       logDebug('Trying player client', {client, uri})
 
       // Configure yt-dlp with flags to work around YouTube restrictions
+      const ytdlpConfig = getYtdlpConfig()
       const ytdlpFlags = [
         '--extractor-args',
         getExtractorArgs(client),
         '--no-warnings',
         '--cookies',
-        YTDLP_CONFIG.COOKIES_DEST,
+        ytdlpConfig.COOKIES_DEST,
         '--sleep-requests',
-        YTDLP_CONFIG.SLEEP_REQUESTS,
+        ytdlpConfig.SLEEP_REQUESTS,
         '--ignore-errors',
         uri
       ]
@@ -246,24 +255,24 @@ export async function fetchVideoInfo(uri: string): Promise<FetchVideoInfoResult>
       metrics.addDimension('PlayerClient', client)
       metrics.addMetric('YouTubeClientSuccess', MetricUnit.Count, 1)
 
-      return {success: true, info}
+      return ok(info)
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error))
-      lastError = err
-      logDebug('Player client failed', {client, uri, error: err.message})
+      const caughtError = error instanceof Error ? error : new Error(String(error))
+      lastError = caughtError
+      logDebug('Player client failed', {client, uri, error: caughtError.message})
 
       // Track client failure
       metrics.addDimension('PlayerClient', client)
       metrics.addMetric('YouTubeClientFailure', MetricUnit.Count, 1)
 
       // If it's a cookie error, don't try other clients - the issue is auth, not client
-      const cookieError = isCookieExpirationError(err.message)
+      const cookieError = isCookieExpirationError(caughtError.message)
       if (cookieError) {
-        logError('Cookie expiration detected', {message: err.message, client})
-        const errorSeverity = classifyCookieError(err.message)
+        logError('Cookie expiration detected', {message: caughtError.message, client})
+        const errorSeverity = classifyCookieError(caughtError.message)
         metrics.addDimension('ErrorType', errorSeverity || 'unknown')
         metrics.addMetric('YouTubeAuthFailure', MetricUnit.Count, 1)
-        return {success: false, error: err, isCookieError: true}
+        return err({error: caughtError, isCookieError: true})
       }
 
       // Try next client
@@ -273,7 +282,7 @@ export async function fetchVideoInfo(uri: string): Promise<FetchVideoInfoResult>
 
   // All clients failed
   logError('All player clients failed', {uri, lastError: lastError?.message})
-  return {success: false, error: lastError || new Error('All player clients failed'), isCookieError: false}
+  return err({error: lastError ?? new Error('All player clients failed'), isCookieError: false})
 }
 
 /**
@@ -418,22 +427,23 @@ export async function downloadVideoToS3(uri: string, bucket: string, key: string
         logDebug('Trying format selector', {formatSelector})
 
         // Phase 1: Download to temp file with proper merging (yt-dlp uses ffmpeg internally)
+        const ytdlpConfig = getYtdlpConfig()
         const ytdlpArgs = [
           '-f',
           formatSelector,
           '--merge-output-format',
-          YTDLP_CONFIG.MERGE_FORMAT,
+          ytdlpConfig.MERGE_FORMAT,
           '--cookies',
-          YTDLP_CONFIG.COOKIES_DEST,
+          ytdlpConfig.COOKIES_DEST,
           '--extractor-args',
           getExtractorArgs(PLAYER_CLIENTS[0]), // Use primary client for downloads
           '--no-warnings',
           '--concurrent-fragments',
-          YTDLP_CONFIG.CONCURRENT_FRAGMENTS,
+          ytdlpConfig.CONCURRENT_FRAGMENTS,
           '--sleep-interval',
-          YTDLP_CONFIG.SLEEP_INTERVAL,
+          ytdlpConfig.SLEEP_INTERVAL,
           '--max-sleep-interval',
-          YTDLP_CONFIG.MAX_SLEEP_INTERVAL,
+          ytdlpConfig.MAX_SLEEP_INTERVAL,
           '--progress',
           '--newline',
           '-o',
