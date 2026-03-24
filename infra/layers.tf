@@ -42,3 +42,24 @@ resource "aws_lambda_layer_version" "bgutil" {
     create_before_destroy = true
   }
 }
+
+data "archive_file" "layer_deno" {
+  type             = "zip"
+  source_dir       = "${path.module}/../layers/deno/build"
+  output_path      = "${path.module}/../build/layers/deno.zip"
+  output_file_mode = "0644"
+  excludes         = ["**/.DS_Store", "**/__pycache__/**", "**/*.pyc"]
+}
+
+resource "aws_lambda_layer_version" "deno" {
+  layer_name               = "${module.core.name_prefix}-deno"
+  filename                 = data.archive_file.layer_deno.output_path
+  source_code_hash         = data.archive_file.layer_deno.output_base64sha256
+  compatible_architectures = ["x86_64"]
+  description              = "Deno JS runtime for yt-dlp YouTube challenge solving"
+  skip_destroy             = true
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
