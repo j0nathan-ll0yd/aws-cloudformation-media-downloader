@@ -165,7 +165,7 @@ import type {FetchVideoInfoResult} from '#types/video'
  */
 function getVideoInfo(binaryPath: string, args: string[]): Promise<YtDlpVideoInfo> {
   return new Promise((resolve, reject) => {
-    const proc = spawn(binaryPath, ['--dump-json', ...args])
+    const proc = spawn(binaryPath, ['-J', '--skip-download', ...args])
     let stdout = ''
     let stderr = ''
 
@@ -219,13 +219,14 @@ export async function fetchVideoInfo(uri: string): Promise<FetchVideoInfoResult>
     return err({error: cookieError instanceof Error ? cookieError : new Error(String(cookieError)), isCookieError: false})
   }
 
-  // Try each player client in order
+  // Try each player client in order. Using -J --skip-download (set in getVideoInfo)
+  // skips format selection, avoiding "Requested format is not available" errors when
+  // a client returns limited formats. We only need metadata here, not format URLs.
   let lastError: Error | undefined
   for (const client of PLAYER_CLIENTS) {
     try {
       logDebug('Trying player client', {client, uri})
 
-      // Configure yt-dlp with flags to work around YouTube restrictions
       const ytdlpConfig = getYtdlpConfig()
       const ytdlpFlags = [
         '--extractor-args',
@@ -239,7 +240,6 @@ export async function fetchVideoInfo(uri: string): Promise<FetchVideoInfoResult>
         uri
       ]
 
-      // Get video info in JSON format
       const info = await getVideoInfo(ytdlpBinaryPath, ytdlpFlags)
 
       logDebug('fetchVideoInfo <=', {
@@ -251,7 +251,6 @@ export async function fetchVideoInfo(uri: string): Promise<FetchVideoInfoResult>
         client
       })
 
-      // Track which client succeeded
       metrics.addDimension('PlayerClient', client)
       metrics.addMetric('YouTubeClientSuccess', MetricUnit.Count, 1)
 
@@ -261,11 +260,10 @@ export async function fetchVideoInfo(uri: string): Promise<FetchVideoInfoResult>
       lastError = caughtError
       logDebug('Player client failed', {client, uri, error: caughtError.message})
 
-      // Track client failure
       metrics.addDimension('PlayerClient', client)
       metrics.addMetric('YouTubeClientFailure', MetricUnit.Count, 1)
 
-      // If it's a cookie error, don't try other clients - the issue is auth, not client
+      // If it's a cookie error, don't try other clients — the issue is auth, not client
       const cookieError = isCookieExpirationError(caughtError.message)
       if (cookieError) {
         logError('Cookie expiration detected', {message: caughtError.message, client})
@@ -275,7 +273,6 @@ export async function fetchVideoInfo(uri: string): Promise<FetchVideoInfoResult>
         return err({error: caughtError, isCookieError: true})
       }
 
-      // Try next client
       logDebug('Trying next player client', {failedClient: client})
     }
   }
