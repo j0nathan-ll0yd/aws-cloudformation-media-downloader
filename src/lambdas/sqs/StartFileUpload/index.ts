@@ -35,7 +35,7 @@ defineLambda({
   memorySize: 2048,
   timeout: 900,
   reservedConcurrency: 1,
-  layers: ['yt-dlp', 'bgutil', 'deno'],
+  layers: ['yt-dlp', 'bgutil', 'quickjs', 'ffmpeg'],
   skipAdot: true,
   secrets: {
     GITHUB_PERSONAL_TOKEN: 'github.issue.token'

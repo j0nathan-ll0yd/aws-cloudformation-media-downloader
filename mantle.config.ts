@@ -114,10 +114,16 @@ export default defineConfig({
       description: 'bgutil PO-token provider for yt-dlp'
     },
     {
-      name: 'deno',
-      path: 'layers/deno/build',
+      name: 'quickjs',
+      path: 'layers/quickjs',
       compatibleArchitectures: ['x86_64'],
-      description: 'Deno JS runtime for yt-dlp YouTube challenge solving'
+      description: 'QuickJS runtime for yt-dlp YouTube challenge solving'
+    },
+    {
+      name: 'ffmpeg',
+      path: 'layers/ffmpeg',
+      compatibleArchitectures: ['x86_64'],
+      description: 'ffmpeg binary for video/audio stream merging'
     }
   ]
 })

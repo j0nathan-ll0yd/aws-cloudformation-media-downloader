@@ -32,8 +32,10 @@ terraform/.terraform
 layers/yt-dlp/bin/ffmpeg
 layers/yt-dlp/cookies
 layers/ffmpeg/bin/ffmpeg
+layers/quickjs/bin/qjs
 layers/bgutil/build/
 layers/bgutil/bgutil-layer.zip
+layers/deno/build/
 
 # Playwright browser state (contains session data)
 playwright-state/

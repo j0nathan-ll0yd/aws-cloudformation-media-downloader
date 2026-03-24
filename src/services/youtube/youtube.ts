@@ -24,7 +24,8 @@ function runLayerDiagnostics(binaryPath: string): void {
   // Check key files exist
   const paths = [
     '/opt/bin/yt-dlp_linux',
-    '/opt/bin/deno',
+    '/opt/bin/qjs',
+    '/opt/bin/ffmpeg',
     '/opt/cookies/youtube-cookies.txt',
     '/opt/python'
   ]
@@ -56,11 +57,11 @@ function runLayerDiagnostics(binaryPath: string): void {
     checks['yt-dlp-version'] = `error: ${String(e).substring(0, 200)}`
   }
 
-  // Check if deno is executable
+  // Check if quickjs is executable
   try {
-    checks['deno-version'] = execSync('/opt/bin/deno --version', {timeout: 5000}).toString().trim().split('\n')[0]
+    checks['quickjs-version'] = execSync('/opt/bin/qjs --help 2>&1 | head -1', {timeout: 5000, shell: '/bin/sh'}).toString().trim()
   } catch (e) {
-    checks['deno-version'] = `error: ${String(e).substring(0, 200)}`
+    checks['quickjs-version'] = `error: ${String(e).substring(0, 200)}`
   }
 
   // Check PATH
@@ -112,14 +113,6 @@ async function prepareCookies(): Promise<string> {
 }
 
 /**
- * Player clients to try in order of preference.
- * mweb is primary (best bot detection bypass with PO tokens).
- * android_vr and ios are fallbacks if mweb fails.
- * @see https://github.com/yt-dlp/yt-dlp/wiki/PO-Token-Guide
- */
-const PLAYER_CLIENTS = ['mweb', 'android_vr', 'ios'] as const
-
-/**
  * Format selectors in order of preference (SABR fallback strategy).
  * When YouTube enforces SABR streaming, separate streams (video+audio) return 403.
  * Combined formats bypass SABR restrictions.
@@ -130,13 +123,6 @@ const FORMAT_SELECTORS = [
   'best[ext=mp4]/best', // Fallback 1: combined format (bypasses SABR)
   'bestvideo+bestaudio/best' // Fallback 2: any format
 ] as const
-
-/**
- * Get extractor args for a specific player client
- */
-function getExtractorArgs(client: string): string {
-  return `youtube:player_client=${client}`
-}
 
 /**
  * Cookie error patterns categorized by severity.
@@ -258,14 +244,14 @@ function getVideoInfo(binaryPath: string, args: string[]): Promise<YtDlpVideoInf
 }
 
 /**
- * Safely fetch video metadata using yt-dlp with player client rotation.
+ * Safely fetch video metadata using yt-dlp.
  *
  * This function is designed to be "safe" - it never throws, instead returning
  * a result object with success/failure status and optional error details.
  * This enables callers to handle errors gracefully (e.g., scheduling retries).
  *
- * Implements player client rotation: tries mweb first, then android_vr, then ios
- * if previous clients fail with non-cookie errors.
+ * Uses yt-dlp's default player client set which queries all clients and merges
+ * their format lists for best coverage.
  *
  * @param uri - YouTube video URL
  * @returns Result object with video info (if successful) or error details
@@ -294,6 +280,8 @@ export async function fetchVideoInfo(uri: string): Promise<FetchVideoInfoResult>
     const ytdlpFlags = [
       '--no-warnings',
       '--no-check-formats',
+      '--plugin-dirs',
+      ytdlpConfig.PLUGIN_PATH,
       '--cookies',
       ytdlpConfig.COOKIES_DEST,
       '--sleep-requests',
@@ -483,6 +471,8 @@ export async function downloadVideoToS3(uri: string, bucket: string, key: string
           ytdlpConfig.MERGE_FORMAT,
           '--cookies',
           ytdlpConfig.COOKIES_DEST,
+          '--plugin-dirs',
+          ytdlpConfig.PLUGIN_PATH,
           '--no-warnings',
           '--concurrent-fragments',
           ytdlpConfig.CONCURRENT_FRAGMENTS,

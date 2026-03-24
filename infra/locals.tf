@@ -12,7 +12,8 @@ locals {
   # Custom Lambda layer ARNs
   layer_yt_dlp_arn = aws_lambda_layer_version.yt_dlp.arn
   layer_bgutil_arn = aws_lambda_layer_version.bgutil.arn
-  layer_deno_arn = aws_lambda_layer_version.deno.arn
+  layer_quickjs_arn = aws_lambda_layer_version.quickjs.arn
+  layer_ffmpeg_arn = aws_lambda_layer_version.ffmpeg.arn
 
   # Common environment variables for all Lambdas
   common_lambda_env = {

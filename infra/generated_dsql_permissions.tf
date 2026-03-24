@@ -3,7 +3,7 @@
 
 # Auto-generated from @RequiresTable decorators
 # Do not edit manually - run: mantle generate permissions
-# Generated at: 2026-03-23T22:55:55.843Z
+# Generated at: 2026-03-24T19:17:03.228Z
 
 locals {
   lambda_dsql_roles = {
