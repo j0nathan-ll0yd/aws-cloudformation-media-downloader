@@ -36,6 +36,7 @@ defineLambda({
   timeout: 900,
   reservedConcurrency: 1,
   layers: ['yt-dlp', 'bgutil', 'deno'],
+  skipAdot: true,
   secrets: {
     GITHUB_PERSONAL_TOKEN: 'github.issue.token'
   },
