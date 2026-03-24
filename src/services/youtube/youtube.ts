@@ -219,67 +219,51 @@ export async function fetchVideoInfo(uri: string): Promise<FetchVideoInfoResult>
     return err({error: cookieError instanceof Error ? cookieError : new Error(String(cookieError)), isCookieError: false})
   }
 
-  // Try each player client in order. Using -J --skip-download (set in getVideoInfo)
-  // skips format selection, avoiding "Requested format is not available" errors when
-  // a client returns limited formats. We only need metadata here, not format URLs.
-  let lastError: Error | undefined
-  for (const client of PLAYER_CLIENTS) {
-    try {
-      logDebug('Trying player client', {client, uri})
+  // Let yt-dlp use its default player client set (android_vr, ios_downgraded, web, web_safari).
+  // Default mode queries ALL clients and merges their format lists. Individual clients may return
+  // limited formats (android_vr erratic since Mar 2026, mweb needs PO token), but merged results
+  // provide enough for format selection. Uses -J --skip-download (set in getVideoInfo).
+  try {
+    const ytdlpConfig = getYtdlpConfig()
+    const ytdlpFlags = [
+      '--no-warnings',
+      '--cookies',
+      ytdlpConfig.COOKIES_DEST,
+      '--sleep-requests',
+      ytdlpConfig.SLEEP_REQUESTS,
+      '--ignore-errors',
+      uri
+    ]
 
-      const ytdlpConfig = getYtdlpConfig()
-      const ytdlpFlags = [
-        '--extractor-args',
-        getExtractorArgs(client),
-        '--no-warnings',
-        '--cookies',
-        ytdlpConfig.COOKIES_DEST,
-        '--sleep-requests',
-        ytdlpConfig.SLEEP_REQUESTS,
-        '--ignore-errors',
-        uri
-      ]
+    const info = await getVideoInfo(ytdlpBinaryPath, ytdlpFlags)
 
-      const info = await getVideoInfo(ytdlpBinaryPath, ytdlpFlags)
+    logDebug('fetchVideoInfo <=', {
+      id: info?.id,
+      title: info?.title,
+      formatCount: info?.formats?.length || 0,
+      release_timestamp: info?.release_timestamp,
+      live_status: info?.live_status
+    })
 
-      logDebug('fetchVideoInfo <=', {
-        id: info?.id,
-        title: info?.title,
-        formatCount: info?.formats?.length || 0,
-        release_timestamp: info?.release_timestamp,
-        live_status: info?.live_status,
-        client
-      })
+    metrics.addMetric('YouTubeClientSuccess', MetricUnit.Count, 1)
+    return ok(info)
+  } catch (error) {
+    const caughtError = error instanceof Error ? error : new Error(String(error))
+    logError('fetchVideoInfo failed', {uri, error: caughtError.message})
 
-      metrics.addDimension('PlayerClient', client)
-      metrics.addMetric('YouTubeClientSuccess', MetricUnit.Count, 1)
-
-      return ok(info)
-    } catch (error) {
-      const caughtError = error instanceof Error ? error : new Error(String(error))
-      lastError = caughtError
-      logDebug('Player client failed', {client, uri, error: caughtError.message})
-
-      metrics.addDimension('PlayerClient', client)
-      metrics.addMetric('YouTubeClientFailure', MetricUnit.Count, 1)
-
-      // If it's a cookie error, don't try other clients — the issue is auth, not client
-      const cookieError = isCookieExpirationError(caughtError.message)
-      if (cookieError) {
-        logError('Cookie expiration detected', {message: caughtError.message, client})
-        const errorSeverity = classifyCookieError(caughtError.message)
-        metrics.addDimension('ErrorType', errorSeverity || 'unknown')
-        metrics.addMetric('YouTubeAuthFailure', MetricUnit.Count, 1)
-        return err({error: caughtError, isCookieError: true})
-      }
-
-      logDebug('Trying next player client', {failedClient: client})
+    // Detect cookie errors for upstream handling
+    const cookieError = isCookieExpirationError(caughtError.message)
+    if (cookieError) {
+      logError('Cookie expiration detected', {message: caughtError.message})
+      const errorSeverity = classifyCookieError(caughtError.message)
+      metrics.addDimension('ErrorType', errorSeverity || 'unknown')
+      metrics.addMetric('YouTubeAuthFailure', MetricUnit.Count, 1)
+      return err({error: caughtError, isCookieError: true})
     }
-  }
 
-  // All clients failed
-  logError('All player clients failed', {uri, lastError: lastError?.message})
-  return err({error: lastError ?? new Error('All player clients failed'), isCookieError: false})
+    metrics.addMetric('YouTubeClientFailure', MetricUnit.Count, 1)
+    return err({error: caughtError, isCookieError: false})
+  }
 }
 
 /**
