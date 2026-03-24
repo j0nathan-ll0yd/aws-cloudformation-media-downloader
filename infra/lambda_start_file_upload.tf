@@ -31,12 +31,12 @@ module "lambda_start_file_upload" {
       GITHUB_PERSONAL_TOKEN = data.sops_file.secrets.data["github.issue.token"]
       YTDLP_BINARY_PATH = "/opt/bin/yt-dlp_linux"
       YTDLP_COOKIES_PATH = "/opt/cookies/youtube-cookies.txt"
+      YTDLP_SLEEP_REQUESTS = "1"
+      YTDLP_SLEEP_INTERVAL = "2"
+      YTDLP_MAX_SLEEP_INTERVAL = "5"
       CLOUDFRONT_DOMAIN = module.storage_files.cloudfront_domain_name
       SNS_QUEUE_URL = module.queue_SendPushNotification.queue_url
       BUCKET = module.storage_files.bucket_id
-      YTDLP_SLEEP_REQUESTS = var.ytdlp_sleep_requests
-      YTDLP_SLEEP_INTERVAL = var.ytdlp_sleep_interval
-      YTDLP_MAX_SLEEP_INTERVAL = var.ytdlp_max_sleep_interval
   })
 
     additional_policy_arns = [module.database.connect_policy_arn]

@@ -41,7 +41,10 @@ defineLambda({
   },
   staticEnvVars: {
     YTDLP_BINARY_PATH: '/opt/bin/yt-dlp_linux',
-    YTDLP_COOKIES_PATH: '/opt/cookies/youtube-cookies.txt'
+    YTDLP_COOKIES_PATH: '/opt/cookies/youtube-cookies.txt',
+    YTDLP_SLEEP_REQUESTS: '1',
+    YTDLP_SLEEP_INTERVAL: '2',
+    YTDLP_MAX_SLEEP_INTERVAL: '5'
   }
 })
 
