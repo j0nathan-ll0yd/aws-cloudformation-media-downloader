@@ -435,8 +435,6 @@ export async function downloadVideoToS3(uri: string, bucket: string, key: string
           ytdlpConfig.MERGE_FORMAT,
           '--cookies',
           ytdlpConfig.COOKIES_DEST,
-          '--extractor-args',
-          getExtractorArgs(PLAYER_CLIENTS[0]), // Use primary client for downloads
           '--no-warnings',
           '--concurrent-fragments',
           ytdlpConfig.CONCURRENT_FRAGMENTS,
