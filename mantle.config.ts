@@ -109,7 +109,7 @@ export default defineConfig({
     },
     {
       name: 'bgutil',
-      path: 'layers/bgutil',
+      path: 'layers/bgutil/build',
       compatibleArchitectures: ['x86_64'],
       description: 'bgutil PO-token provider for yt-dlp'
     },

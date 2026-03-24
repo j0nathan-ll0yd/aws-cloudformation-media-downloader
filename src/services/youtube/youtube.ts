@@ -1,5 +1,5 @@
-import {spawn} from 'child_process'
-import {createReadStream} from 'fs'
+import {execSync, spawn} from 'child_process'
+import {createReadStream, existsSync, readdirSync, statSync} from 'fs'
 import {copyFile, stat, unlink} from 'fs/promises'
 import type {YtDlpVideoInfo} from '#types/youtube'
 import {metrics, MetricUnit} from '@mantleframework/observability'
@@ -9,6 +9,65 @@ import {UnexpectedError} from '@mantleframework/errors'
 import {createUpload} from '@mantleframework/aws'
 import {getOptionalEnv, getRequiredEnv} from '@mantleframework/env'
 import {ok, err} from '@mantleframework/core'
+
+/**
+ * One-time diagnostic check for Lambda layer environment.
+ * Logs layer file presence, permissions, and yt-dlp version on cold start.
+ */
+let diagnosticsRun = false
+function runLayerDiagnostics(binaryPath: string): void {
+  if (diagnosticsRun) return
+  diagnosticsRun = true
+
+  const checks: Record<string, unknown> = {}
+
+  // Check key files exist
+  const paths = [
+    '/opt/bin/yt-dlp_linux',
+    '/opt/bin/deno',
+    '/opt/cookies/youtube-cookies.txt',
+    '/opt/python'
+  ]
+  for (const p of paths) {
+    try {
+      const exists = existsSync(p)
+      if (exists) {
+        const s = statSync(p)
+        checks[p] = {exists: true, size: s.size, mode: s.mode.toString(8), isDir: s.isDirectory()}
+      } else {
+        checks[p] = {exists: false}
+      }
+    } catch (e) {
+      checks[p] = {error: String(e)}
+    }
+  }
+
+  // List /opt/bin contents
+  try {
+    checks['/opt/bin/*'] = readdirSync('/opt/bin')
+  } catch {
+    checks['/opt/bin/*'] = 'not readable'
+  }
+
+  // Check yt-dlp version
+  try {
+    checks['yt-dlp-version'] = execSync(`${binaryPath} --version`, {timeout: 5000}).toString().trim()
+  } catch (e) {
+    checks['yt-dlp-version'] = `error: ${String(e).substring(0, 200)}`
+  }
+
+  // Check if deno is executable
+  try {
+    checks['deno-version'] = execSync('/opt/bin/deno --version', {timeout: 5000}).toString().trim().split('\n')[0]
+  } catch (e) {
+    checks['deno-version'] = `error: ${String(e).substring(0, 200)}`
+  }
+
+  // Check PATH
+  checks['PATH'] = process.env['PATH']?.substring(0, 300)
+
+  logDebug('Layer diagnostics', checks)
+}
 
 /**
  * yt-dlp static configuration constants (values known at deploy time)
@@ -165,7 +224,7 @@ import type {FetchVideoInfoResult} from '#types/video'
  */
 function getVideoInfo(binaryPath: string, args: string[]): Promise<YtDlpVideoInfo> {
   return new Promise((resolve, reject) => {
-    const proc = spawn(binaryPath, ['-J', '--skip-download', ...args])
+    const proc = spawn(binaryPath, ['-J', '--skip-download', '--no-check-formats', '-f', 'worst', ...args])
     let stdout = ''
     let stderr = ''
 
@@ -181,6 +240,10 @@ function getVideoInfo(binaryPath: string, args: string[]): Promise<YtDlpVideoInf
     })
 
     proc.on('close', (code) => {
+      // Always log stderr for debugging yt-dlp client/format behavior
+      if (stderr) {
+        logDebug('yt-dlp stderr', {stderr: stderr.substring(0, 2000)})
+      }
       if (code === 0) {
         try {
           resolve(JSON.parse(stdout))
@@ -219,6 +282,9 @@ export async function fetchVideoInfo(uri: string): Promise<FetchVideoInfoResult>
     return err({error: cookieError instanceof Error ? cookieError : new Error(String(cookieError)), isCookieError: false})
   }
 
+  // Run one-time diagnostics on cold start
+  runLayerDiagnostics(ytdlpBinaryPath)
+
   // Let yt-dlp use its default player client set (android_vr, ios_downgraded, web, web_safari).
   // Default mode queries ALL clients and merges their format lists. Individual clients may return
   // limited formats (android_vr erratic since Mar 2026, mweb needs PO token), but merged results
@@ -227,6 +293,7 @@ export async function fetchVideoInfo(uri: string): Promise<FetchVideoInfoResult>
     const ytdlpConfig = getYtdlpConfig()
     const ytdlpFlags = [
       '--no-warnings',
+      '--no-check-formats',
       '--cookies',
       ytdlpConfig.COOKIES_DEST,
       '--sleep-requests',

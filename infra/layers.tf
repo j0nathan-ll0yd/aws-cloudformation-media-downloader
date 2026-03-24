@@ -24,7 +24,7 @@ resource "aws_lambda_layer_version" "yt_dlp" {
 
 data "archive_file" "layer_bgutil" {
   type             = "zip"
-  source_dir       = "${path.module}/../layers/bgutil"
+  source_dir       = "${path.module}/../layers/bgutil/build"
   output_path      = "${path.module}/../build/layers/bgutil.zip"
   output_file_mode = "0644"
   excludes         = ["**/.DS_Store", "**/__pycache__/**", "**/*.pyc"]
