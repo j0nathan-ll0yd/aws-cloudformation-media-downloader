@@ -1,26 +1,24 @@
 #!/usr/bin/env bash
 # build-quickjs-layer.sh
-# Builds the QuickJS runtime Lambda layer (replaces Deno — 2MB vs 138MB)
+# Downloads pre-built QuickJS binary for the Lambda layer
 # Usage: ./bin/build-quickjs-layer.sh
 #
-# QuickJS is a lightweight JavaScript runtime that yt-dlp uses to solve
-# YouTube's JavaScript challenges. It replaces Deno, freeing ~136MB of
-# layer space for ffmpeg (which previously had to be downloaded from S3
-# at cold start).
+# Downloads a statically-linked (musl) QuickJS binary from
+# ctn-malone/quickjs-cross-compiler GitHub releases. No Docker needed.
 #
-# Requires: Docker (cross-compiles using Amazon Linux 2023 to match Lambda)
+# QuickJS replaces Deno (~2MB vs 145MB) as the JS runtime for yt-dlp's
+# YouTube challenge solver, freeing layer space for ffmpeg.
 #
 # @see https://bellard.org/quickjs/
-# @see https://github.com/yt-dlp/yt-dlp/wiki/EJS
+# @see https://github.com/ctn-malone/quickjs-cross-compiler
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 LAYER_DIR="${PROJECT_ROOT}/layers/quickjs"
-VERSION="2025-04-26"
+VERSION_FILE="${LAYER_DIR}/VERSION"
 
-# Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -32,71 +30,71 @@ error() {
 }
 
 main() {
-  echo -e "${GREEN}Building QuickJS ${VERSION} for Linux x86_64${NC}"
-  echo "============================================="
+  if [ ! -f "$VERSION_FILE" ]; then
+    error "VERSION file not found at ${VERSION_FILE}"
+  fi
+
+  local VERSION
+  VERSION=$(cat "$VERSION_FILE" | tr -d '[:space:]')
+  echo -e "${GREEN}QuickJS Layer Builder${NC}"
+  echo "====================="
   echo ""
+  echo "Version: ${VERSION}"
 
-  # Check Docker is available
-  if ! command -v docker &>/dev/null; then
-    error "Docker is required to cross-compile QuickJS for Linux x86_64"
-  fi
-
-  if ! docker info &>/dev/null 2>&1; then
-    error "Docker daemon is not running"
-  fi
-
-  echo -e "${YELLOW}Step 1: Preparing build directory${NC}"
   mkdir -p "${LAYER_DIR}/bin"
-  echo -e "${GREEN}Done${NC}"
+
+  # Download pre-built statically-linked binary from ctn-malone/quickjs-cross-compiler
+  # These are upstream Bellard QuickJS compiled with musl (fully portable, no glibc dependency)
+  local RELEASE_TAG="v${VERSION}_3+ext-lib-0.17.3"
+  local DOWNLOAD_URL="https://github.com/ctn-malone/quickjs-cross-compiler/releases/download/${RELEASE_TAG}/quickjs.ext.${VERSION}_3.ext-lib-0.17.3.x86_64.tar.xz"
 
   echo ""
-  echo -e "${YELLOW}Step 2: Downloading QuickJS ${VERSION} source${NC}"
+  echo -e "${YELLOW}Downloading QuickJS ${VERSION} (statically linked, x86_64)...${NC}"
+
+  local TEMP_DIR
   TEMP_DIR=$(mktemp -d)
-  trap 'rm -rf "${TEMP_DIR}"' EXIT
+  trap 'rm -rf "${TEMP_DIR:-}"' EXIT
 
-  curl -fsSL "https://bellard.org/quickjs/quickjs-${VERSION}.tar.xz" -o "${TEMP_DIR}/quickjs.tar.xz" \
-    || error "Failed to download QuickJS source"
-  tar -xf "${TEMP_DIR}/quickjs.tar.xz" -C "${TEMP_DIR}"
-  echo -e "${GREEN}Done${NC}"
-
-  echo ""
-  echo -e "${YELLOW}Step 3: Cross-compiling with Amazon Linux 2023 (matches Lambda runtime)${NC}"
-  docker run --rm \
-    -v "${TEMP_DIR}/quickjs-${VERSION}:/build" \
-    amazonlinux:2023 \
-    bash -c "yum install -y gcc make && cd /build && make LDFLAGS=-static qjs" \
-    || error "Docker build failed"
-  echo -e "${GREEN}Done${NC}"
-
-  echo ""
-  echo -e "${YELLOW}Step 4: Installing binary${NC}"
-  cp "${TEMP_DIR}/quickjs-${VERSION}/qjs" "${LAYER_DIR}/bin/qjs"
-  chmod +x "${LAYER_DIR}/bin/qjs"
-  echo "${VERSION}" > "${LAYER_DIR}/VERSION"
-  echo -e "${GREEN}Done${NC}"
-
-  # Verify it's a Linux x86_64 binary
-  local file_type
-  file_type=$(file "${LAYER_DIR}/bin/qjs")
-  if [[ "$file_type" != *"ELF 64-bit"* ]] || [[ "$file_type" != *"x86-64"* ]]; then
-    error "Built binary is not Linux x86_64: ${file_type}"
+  if ! curl -fsSL "${DOWNLOAD_URL}" -o "${TEMP_DIR}/quickjs.tar.xz"; then
+    # Fallback: try official Bellard binary (may be glibc-linked)
+    echo -e "${YELLOW}Cross-compiler release not found, trying official bellard.org binary...${NC}"
+    local BELLARD_URL="https://bellard.org/quickjs/binary_releases/quickjs-linux-x86_64-${VERSION}.zip"
+    curl -fsSL "${BELLARD_URL}" -o "${TEMP_DIR}/quickjs.zip" \
+      || error "Failed to download QuickJS from both sources"
+    cd "${TEMP_DIR}" && unzip -q quickjs.zip
+    cp "${TEMP_DIR}/qjs" "${LAYER_DIR}/bin/qjs"
+  else
+    tar -xf "${TEMP_DIR}/quickjs.tar.xz" -C "${TEMP_DIR}"
+    # Find the qjs binary in the extracted archive
+    local QJS_BIN
+    QJS_BIN=$(find "${TEMP_DIR}" -name "qjs" -type f | head -1)
+    if [ -z "$QJS_BIN" ]; then
+      error "qjs binary not found in downloaded archive"
+    fi
+    cp "$QJS_BIN" "${LAYER_DIR}/bin/qjs"
   fi
 
-  local binary_size
-  binary_size=$(du -sh "${LAYER_DIR}/bin/qjs" | awk '{print $1}')
+  chmod +x "${LAYER_DIR}/bin/qjs"
+  echo -e "${GREEN}Done${NC}"
+
+  # Verify binary
+  local FILE_TYPE
+  FILE_TYPE=$(file "${LAYER_DIR}/bin/qjs")
+  if [[ "$FILE_TYPE" != *"ELF 64-bit"* ]] || [[ "$FILE_TYPE" != *"x86-64"* ]]; then
+    error "Downloaded binary is not Linux x86_64: ${FILE_TYPE}"
+  fi
+
+  local BINARY_SIZE
+  BINARY_SIZE=$(du -sh "${LAYER_DIR}/bin/qjs" | awk '{print $1}')
 
   echo ""
-  echo -e "${GREEN}QuickJS ${VERSION} built successfully${NC}"
+  echo -e "${GREEN}QuickJS ${VERSION} ready${NC}"
   echo ""
-  echo "Layer details:"
   echo "  Binary: ${LAYER_DIR}/bin/qjs"
-  echo "  Size: ${binary_size}"
-  echo "  Type: ${file_type}"
+  echo "  Size:   ${BINARY_SIZE}"
+  echo "  Type:   ${FILE_TYPE}"
   echo ""
-  echo "Next steps:"
-  echo "  1. npx mantle generate infra"
-  echo "  2. npx mantle build"
-  echo "  3. npx mantle deploy --stage staging"
+  echo "Next: npx mantle build && npx mantle deploy --stage staging"
 }
 
 main "$@"
