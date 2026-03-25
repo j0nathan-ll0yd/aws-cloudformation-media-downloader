@@ -7,7 +7,7 @@ module "storage_files" {
   bucket_name = "files"
   name_prefix = module.core.name_prefix
   tags        = module.core.common_tags
-  bucket_name_override = "lifegames-${var.resource_prefix}-media-files-${module.core.account_id}"
+  bucket_name_override = "${module.core.name_prefix}-mantle-lifegamesportal-videos"
 
   cloudfront_enabled    = true
   intelligent_tiering_enabled = true

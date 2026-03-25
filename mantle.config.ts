@@ -20,7 +20,6 @@ export default defineConfig({
       description: 'DEPRECATED: Legacy prefix for S3 bucket names only. New resources use module.core.name_prefix. Do not replicate in new instances. See ADR 0001.',
       validation: {condition: 'contains(["stag", "prod"], var.resource_prefix)', errorMessage: "Resource prefix must be 'stag' or 'prod'."}
     },
-    {name: 'download_reserved_concurrency', type: 'number', description: 'Reserved concurrency for StartFileUpload Lambda', default: '10'},
     {name: 'api_throttle_burst_limit', type: 'number', description: 'API Gateway throttle burst limit', default: '100'},
     {name: 'api_throttle_rate_limit', type: 'number', description: 'API Gateway throttle rate limit', default: '50'},
     {name: 'api_quota_limit', type: 'number', description: 'API Gateway daily quota limit', default: '10000'},
@@ -86,7 +85,7 @@ export default defineConfig({
     {name: 'idempotency', tableNameOverride: '${module.core.name_prefix}-MediaDownloader-Idempotency', hashKey: 'id', attributes: [{name: 'id', type: 'S'}], ttlAttribute: 'expiration'}
   ],
   storage: [
-    {name: 'files', bucketNameOverride: 'lifegames-${var.resource_prefix}-media-files-${module.core.account_id}', cloudfront: true, intelligentTiering: true, assets: ['videos/default-file.mp4']}
+    {name: 'files', bucketNameOverride: '${module.core.name_prefix}-mantle-lifegamesportal-videos', cloudfront: true, intelligentTiering: true, assets: ['videos/default-file.mp4']}
   ],
   queues: [
     {name: 'DownloadQueue', visibilityTimeoutSeconds: 900},
