@@ -23,11 +23,10 @@ secrets.enc.yaml
 youtube-cookies.txt
 cloudformation.json
 
-terraform/tfplan
-terraform/terraform.tfstate*
-terraform/.terraform.tfstate.lock.info
-terraform/.terraform.lock.hcl
-terraform/.terraform
+terraform/
+infra/.terraform/
+infra/.terraform.lock.hcl
+infra/.terraform.tfstate.lock.info
 .webpackCache
 .python-version
 layers/yt-dlp/bin/ffmpeg
