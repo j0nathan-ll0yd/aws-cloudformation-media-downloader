@@ -7,4 +7,5 @@ module "queue_DownloadQueue" {
   queue_name  = "DownloadQueue"
   name_prefix = module.core.name_prefix
   tags        = module.core.common_tags
+  visibility_timeout_seconds = 900
 }

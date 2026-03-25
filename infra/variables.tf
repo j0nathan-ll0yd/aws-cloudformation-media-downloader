@@ -220,3 +220,9 @@ variable "cors_allowed_origins" {
     error_message = "Each origin must start with http:// or https://."
   }
 }
+
+variable "image_uri_start_file_upload" {
+  description = "ECR image URI for StartFileUpload container Lambda"
+  type        = string
+  default     = ""
+}

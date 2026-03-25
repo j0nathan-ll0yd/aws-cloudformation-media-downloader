@@ -31,17 +31,17 @@ import {classifyVideoError, isRetryExhausted} from '#domain/video/errorClassifie
 import {CircuitBreaker} from '@mantleframework/resilience'
 
 defineLambda({
+  packageType: 'container',
+  dockerfile: 'Dockerfile.download',
   architecture: 'x86_64',
   memorySize: 2048,
   timeout: 900,
   reservedConcurrency: 1,
-  layers: ['yt-dlp', 'bgutil', 'quickjs', 'ffmpeg'],
-  skipAdot: true,
   secrets: {
     GITHUB_PERSONAL_TOKEN: 'github.issue.token'
   },
   staticEnvVars: {
-    YTDLP_BINARY_PATH: '/opt/bin/yt-dlp_linux',
+    YTDLP_BINARY_PATH: '/opt/bin/yt-dlp',
     YTDLP_COOKIES_PATH: '/opt/cookies/youtube-cookies.txt',
     YTDLP_SLEEP_REQUESTS: '1',
     YTDLP_SLEEP_INTERVAL: '2',

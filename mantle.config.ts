@@ -89,7 +89,7 @@ export default defineConfig({
     {name: 'files', bucketNameOverride: 'lifegames-${var.resource_prefix}-media-files-${module.core.account_id}', cloudfront: true, intelligentTiering: true, assets: ['videos/default-file.mp4']}
   ],
   queues: [
-    {name: 'DownloadQueue'},
+    {name: 'DownloadQueue', visibilityTimeoutSeconds: 900},
     {name: 'SendPushNotification', envAlias: 'SNS_QUEUE_URL'}
   ],
   cloudfront: {

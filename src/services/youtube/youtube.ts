@@ -23,8 +23,9 @@ function runLayerDiagnostics(binaryPath: string): void {
 
   // Check key files exist
   const paths = [
-    '/opt/bin/yt-dlp_linux',
-    '/opt/bin/qjs',
+    binaryPath,
+    '/opt/bin/bgutil',
+    '/opt/bin/deno',
     '/opt/bin/ffmpeg',
     '/opt/cookies/youtube-cookies.txt',
     '/opt/python'
@@ -57,11 +58,11 @@ function runLayerDiagnostics(binaryPath: string): void {
     checks['yt-dlp-version'] = `error: ${String(e).substring(0, 200)}`
   }
 
-  // Check if quickjs is executable
+  // Check if deno is executable
   try {
-    checks['quickjs-version'] = execSync('/opt/bin/qjs --help 2>&1 | head -1', {timeout: 5000, shell: '/bin/sh'}).toString().trim()
+    checks['deno-version'] = execSync('/opt/bin/deno --version 2>&1 | head -1', {timeout: 5000, shell: '/bin/sh'}).toString().trim()
   } catch (e) {
-    checks['quickjs-version'] = `error: ${String(e).substring(0, 200)}`
+    checks['deno-version'] = `error: ${String(e).substring(0, 200)}`
   }
 
   // Check PATH
