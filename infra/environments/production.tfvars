@@ -21,7 +21,7 @@ enable_cloudwatch_dashboard = false # Use AWS Console on-demand ($3/month saving
 enable_cloudwatch_alarms    = true
 
 # Production concurrency
-download_reserved_concurrency = 10
+reserved_concurrency_start_file_upload = 10
 
 # CORS: Allow Astro dashboard site to fetch media files
 cors_allowed_origins = [

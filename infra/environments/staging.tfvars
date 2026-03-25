@@ -23,8 +23,8 @@ dsql_deletion_protection = false
 enable_cloudwatch_dashboard = false
 enable_cloudwatch_alarms    = false
 
-# Lower concurrency in staging
-download_reserved_concurrency = 2
+# Disable reserved concurrency in staging (low-quota account)
+reserved_concurrency_start_file_upload = -1
 
 # CORS: Allow Astro dashboard site to fetch media files
 cors_allowed_origins = [

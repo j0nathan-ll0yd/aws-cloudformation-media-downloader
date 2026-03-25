@@ -50,7 +50,7 @@ module "lambda_start_file_upload" {
   tags               = module.core.common_tags
   timeout            = 900
   memory_size        = 2048
-  reserved_concurrent_executions = 1
+  reserved_concurrent_executions = var.reserved_concurrency_start_file_upload
   architecture       = "x86_64"
 
   api_gateway_enabled = false

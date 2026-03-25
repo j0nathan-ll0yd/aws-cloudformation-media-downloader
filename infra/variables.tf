@@ -168,12 +168,6 @@ variable "resource_prefix" {
   }
 }
 
-variable "download_reserved_concurrency" {
-  description = "Reserved concurrency for StartFileUpload Lambda"
-  type        = number
-  default     = 10
-}
-
 variable "api_throttle_burst_limit" {
   description = "API Gateway throttle burst limit"
   type        = number
@@ -225,4 +219,10 @@ variable "image_uri_start_file_upload" {
   description = "ECR image URI for StartFileUpload container Lambda"
   type        = string
   default     = ""
+}
+
+variable "reserved_concurrency_start_file_upload" {
+  description = "Reserved concurrent executions for StartFileUpload Lambda (-1 for unreserved)"
+  type        = number
+  default     = 1
 }
