@@ -1,5 +1,6 @@
 .DS_Store
 .env
+.envrc
 .idea
 .omc
 .nyc_output
