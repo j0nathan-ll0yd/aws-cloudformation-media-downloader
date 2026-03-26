@@ -18,7 +18,7 @@ import {closeTestDb, createAllTables, getSessionById, getTestDbAsync, insertSess
 import {createMockContext} from '../helpers/lambda-context'
 import {createMockAPIGatewayProxyEvent} from '../helpers/test-data'
 
-const {handler} = await import('#lambdas/LogoutUser/src/index')
+const {handler} = await import('#lambdas/api/user/logout.post')
 
 describe('LogoutUser Workflow Integration Tests', () => {
   let mockContext: Context

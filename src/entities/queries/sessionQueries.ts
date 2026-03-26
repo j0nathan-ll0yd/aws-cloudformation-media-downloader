@@ -5,7 +5,7 @@
  * @see src/lib/vendor/Drizzle/schema.ts for table definitions
  * @see src/lib/vendor/Drizzle/instrumentation.ts for query metrics
  */
-import {RequiresTable, DatabaseOperation, withQueryMetrics} from '@mantleframework/database'
+import {DatabaseOperation, RequiresTable, withQueryMetrics} from '@mantleframework/database'
 import {getDrizzleClient} from '#db/client'
 import {eq, lt} from '@mantleframework/database/orm'
 import type {InferInsertModel, InferSelectModel} from '@mantleframework/database/orm'

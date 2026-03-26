@@ -124,7 +124,7 @@ describe('External Services Failure Scenario Tests', () => {
     })
 
     test('should handle malformed SQS message body gracefully', async () => {
-      const {handler} = await import('#lambdas/SendPushNotification/src/index')
+      const {handler} = await import('#lambdas/sqs/SendPushNotification/index')
 
       const event = {
         Records: [
@@ -146,7 +146,7 @@ describe('External Services Failure Scenario Tests', () => {
     })
 
     test('should handle empty SQS batch gracefully', async () => {
-      const {handler} = await import('#lambdas/SendPushNotification/src/index')
+      const {handler} = await import('#lambdas/sqs/SendPushNotification/index')
 
       const event = {Records: []}
 
@@ -199,7 +199,7 @@ describe('External Services Failure Scenario Tests', () => {
     })
 
     test('should handle invalid ARN format', async () => {
-      const {handler} = await import('#lambdas/UserSubscribe/src/index')
+      const {handler} = await import('#lambdas/api/user/subscribe.post')
 
       const userId = crypto.randomUUID()
       await insertUser({userId, email: 'invalid-arn@example.com'})

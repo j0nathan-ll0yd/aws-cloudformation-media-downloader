@@ -8,7 +8,7 @@
 import {getAuth} from '@mantleframework/auth'
 import {getRequiredEnv} from '@mantleframework/env'
 import {getDrizzleClient} from '#db/client'
-import {users, sessions, accounts, verification} from '#db/schema'
+import {accounts, sessions, users, verification} from '#db/schema'
 
 /**
  * Return the cached BetterAuth instance, initializing on first call.

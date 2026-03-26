@@ -22,7 +22,7 @@ import {
   linkUserFile,
   truncateAllTables
 } from '../helpers/postgres-helpers'
-import {files, userFiles} from '#lib/vendor/Drizzle/schema'
+import {files, userFiles} from '#db/schema'
 import {and, eq} from 'drizzle-orm'
 
 describe('WebhookFeedly Workflow Integration Tests', () => {

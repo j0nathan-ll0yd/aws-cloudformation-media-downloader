@@ -44,4 +44,3 @@ export async function validateSessionToken(token: string): Promise<SessionPayloa
 
   return {userId: session.userId, sessionId: session.id, expiresAt: session.expiresAt.getTime()}
 }
-

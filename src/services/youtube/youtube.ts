@@ -8,7 +8,7 @@ import {CookieExpirationError} from '#errors/custom-errors'
 import {UnexpectedError} from '@mantleframework/errors'
 import {createUpload} from '@mantleframework/aws'
 import {getOptionalEnv, getRequiredEnv} from '@mantleframework/env'
-import {ok, err} from '@mantleframework/core'
+import {err, ok} from '@mantleframework/core'
 
 /**
  * One-time diagnostic check for Lambda layer environment.
@@ -16,7 +16,9 @@ import {ok, err} from '@mantleframework/core'
  */
 let diagnosticsRun = false
 function runLayerDiagnostics(binaryPath: string): void {
-  if (diagnosticsRun) return
+  if (diagnosticsRun) {
+    return
+  }
   diagnosticsRun = true
 
   const checks: Record<string, unknown> = {}
@@ -510,7 +512,10 @@ export async function downloadVideoToS3(uri: string, bucket: string, key: string
 
         // If it's a SABR error, 403, or ffmpeg postprocessing failure, try next format
         // Postprocessing failures indicate ffmpeg couldn't merge separate streams — combined formats bypass this
-        if (isSabrError(errorMessage) || (errorMessage.includes('403') && !isCookieExpirationError(errorMessage)) || errorMessage.includes('Postprocessing: Conversion failed')) {
+        if (
+          isSabrError(errorMessage) || (errorMessage.includes('403') && !isCookieExpirationError(errorMessage)) ||
+          errorMessage.includes('Postprocessing: Conversion failed')
+        ) {
           logDebug('Format failed, trying next format', {formatSelector, error: errorMessage})
           // Clean up partial temp file before retry
           try {

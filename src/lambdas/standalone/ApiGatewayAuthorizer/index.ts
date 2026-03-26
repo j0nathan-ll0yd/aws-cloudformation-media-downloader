@@ -22,13 +22,8 @@ import {UnexpectedError} from '@mantleframework/errors'
 import {providerFailureErrorMessage} from '#errors/custom-errors'
 
 defineLambda({
-  secrets: {
-    AUTH_SECRET: 'platform.key'
-  },
-  staticEnvVars: {
-    MULTI_AUTHENTICATION_PATH_PARTS: 'device/register,device/event,files',
-    RESERVED_CLIENT_IP: '104.1.88.244'
-  }
+  secrets: {AUTH_SECRET: 'platform.key'},
+  staticEnvVars: {MULTI_AUTHENTICATION_PATH_PARTS: 'device/register,device/event,files', RESERVED_CLIENT_IP: '104.1.88.244'}
 })
 
 /**
@@ -39,7 +34,12 @@ defineLambda({
  * @param usageIdentifierKey - Optional API key identifier for usage tracking
  * @returns Custom authorizer result with Allow effect
  */
-function generateAllow(principalId: string, resource: string, usageIdentifierKey?: string, authContext: Record<string, string> = {}): APIGatewayAuthorizerResult {
+function generateAllow(
+  principalId: string,
+  resource: string,
+  usageIdentifierKey?: string,
+  authContext: Record<string, string> = {}
+): APIGatewayAuthorizerResult {
   return {
     context: authContext,
     policyDocument: {
@@ -246,4 +246,4 @@ export const handler = authorizer(async ({event, headers, queryStringParameters,
 })
 
 // Re-export for testing
-export {generateAllow}
+export { generateAllow }

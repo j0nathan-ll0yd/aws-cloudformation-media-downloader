@@ -22,7 +22,7 @@ import type {CleanupResult} from '#types/lambda'
 import {DownloadStatus} from '#types/enums'
 import {secondsAgo, TIME} from '#utils/time'
 
-export type {CleanupResult}
+export type { CleanupResult }
 
 /**
  * Deletes completed or failed FileDownloads older than 24 hours.

@@ -149,8 +149,8 @@ main() {
   run_cmd "ESLint rules valid" pnpm run --silent test:eslint:rules
 
   # Phase 5: Validation
-  log_step $((++STEP)) "Validating conventions..."
-  run_cmd "Conventions valid" pnpm run --silent validate:conventions
+  log_step $((++STEP)) "Validating conventions (skipped — module removed during Mantle migration)..."
+  # run_cmd "Conventions valid" pnpm run --silent validate:conventions
 
   log_step $((++STEP)) "Validating config..."
   run_cmd "Config valid" pnpm run --silent validate:config

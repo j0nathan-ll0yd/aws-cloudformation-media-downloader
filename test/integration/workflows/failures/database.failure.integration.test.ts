@@ -71,7 +71,7 @@ describe('Database Failure Scenario Tests', () => {
   describe('Entity Not Found Scenarios', () => {
     test('should handle file not found gracefully in S3ObjectCreated', async () => {
       process.env.SNS_QUEUE_URL = 'http://localhost:4566/000000000000/test-queue'
-      const {handler} = await import('#lambdas/S3ObjectCreated/src/index')
+      const {handler} = await import('#lambdas/s3/S3ObjectCreated/index')
 
       const event = createMockS3Event('nonexistent-file.mp4')
 
@@ -79,7 +79,7 @@ describe('Database Failure Scenario Tests', () => {
     })
 
     test('should handle user not found in ListFiles', async () => {
-      const {handler} = await import('#lambdas/ListFiles/src/index')
+      const {handler} = await import('#lambdas/api/files/index.get')
 
       // Include Authorization header so user is Authenticated (not Anonymous)
       // For Anonymous users, ListFiles returns a demo file instead of querying the database

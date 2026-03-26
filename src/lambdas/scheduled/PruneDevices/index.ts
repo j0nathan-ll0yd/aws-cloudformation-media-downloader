@@ -9,7 +9,7 @@
  * Output: PruneDevicesResult with deletion counts
  */
 import {deleteUserDevicesByDeviceId, getAllDevices} from '#entities/queries'
-import {defineScheduledHandler, defineLambda} from '@mantleframework/core'
+import {defineLambda, defineScheduledHandler} from '@mantleframework/core'
 import {addMetadata, endSpan, logDebug, logError, logInfo, metrics, MetricUnit, startSpan} from '@mantleframework/observability'
 import type {Device} from '#types/domainModels'
 import type {ApplePushNotificationResponse, PruneDevicesResult} from '#types/lambda'
@@ -25,13 +25,11 @@ defineLambda({
     APNS_KEY_ID: 'apns.staging.keyId',
     APNS_DEFAULT_TOPIC: 'apns.staging.defaultTopic'
   },
-  staticEnvVars: {
-    APNS_HOST: 'api.sandbox.push.apple.com'
-  }
+  staticEnvVars: {APNS_HOST: 'api.sandbox.push.apple.com'}
 })
 
 // Re-export types for external consumers
-export type {PruneDevicesResult} from '#types/lambda'
+export type { PruneDevicesResult } from '#types/lambda'
 
 // Get all devices
 async function getDevices(): Promise<Device[]> {

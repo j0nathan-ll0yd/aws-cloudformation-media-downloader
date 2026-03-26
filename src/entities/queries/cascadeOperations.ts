@@ -14,7 +14,7 @@
  * @see docs/wiki/TypeScript/Entity-Query-Patterns.md for usage examples
  * @see src/lib/vendor/Drizzle/instrumentation.ts for query metrics
  */
-import {RequiresTable, DatabaseOperation, withQueryMetrics} from '@mantleframework/database'
+import {DatabaseOperation, RequiresTable, withQueryMetrics} from '@mantleframework/database'
 import {withTransaction} from '#db/client'
 import {eq} from '@mantleframework/database/orm'
 import {accounts, sessions, userDevices, userFiles, users} from '#db/schema'

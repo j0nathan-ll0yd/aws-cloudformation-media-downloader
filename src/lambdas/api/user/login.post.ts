@@ -15,24 +15,16 @@ import {UnexpectedError} from '@mantleframework/errors'
 import {logInfo} from '@mantleframework/observability'
 import {defineApiHandler, z} from '@mantleframework/validation'
 import {getDrizzleClient} from '#db/client'
-import {users, sessions, accounts, verification} from '#db/schema'
+import {accounts, sessions, users, verification} from '#db/schema'
 import {userLoginResponseSchema} from '#types/api-schema'
-import type {SignInSocialTokenResult, GetSessionResult} from '#types/betterAuth'
+import type {GetSessionResult, SignInSocialTokenResult} from '#types/betterAuth'
 
 defineLambda({
-  secrets: {
-    AUTH_SECRET: 'platform.key',
-    APPLE_CLIENT_ID: 'signInWithApple.config',
-    APPLE_CLIENT_SECRET: 'signInWithApple.authKey'
-  },
-  staticEnvVars: {
-    APPLE_APP_BUNDLE_IDENTIFIER: 'lifegames.OfflineMediaDownloader'
-  }
+  secrets: {AUTH_SECRET: 'platform.key', APPLE_CLIENT_ID: 'signInWithApple.config', APPLE_CLIENT_SECRET: 'signInWithApple.authKey'},
+  staticEnvVars: {APPLE_APP_BUNDLE_IDENTIFIER: 'lifegames.OfflineMediaDownloader'}
 })
 
-const LoginRequestSchema = z.object({
-  idToken: z.string()
-})
+const LoginRequestSchema = z.object({idToken: z.string()})
 
 const api = defineApiHandler({auth: 'none', schema: LoginRequestSchema, operationName: 'LoginUser'})
 export const handler = api(async ({event, context, body}) => {
@@ -62,9 +54,7 @@ export const handler = api(async ({event, context, body}) => {
 
   // signInSocial only returns { token, user } — no session metadata.
   // Use bearer plugin's getSession to retrieve session metadata via Authorization header.
-  const sessionResult = await auth.api.getSession({
-    headers: new Headers({'Authorization': `Bearer ${result.token}`})
-  }) as GetSessionResult | null
+  const sessionResult = await auth.api.getSession({headers: new Headers({Authorization: `Bearer ${result.token}`})}) as GetSessionResult | null
 
   if (!sessionResult?.session) {
     throw new UnexpectedError('signInSocial succeeded but getSession returned null — is bearer plugin enabled?')

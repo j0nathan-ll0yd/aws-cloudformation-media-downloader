@@ -6,7 +6,14 @@ const mockAddMetric = vi.fn()
 const mockSingleMetric = vi.fn(() => ({addDimension: mockAddDimension, addMetric: mockAddMetric}))
 
 vi.mock('@mantleframework/observability',
-  () => ({metrics: {singleMetric: mockSingleMetric}, MetricUnit: {Count: 'Count', Milliseconds: 'Milliseconds', Seconds: 'Seconds', Bytes: 'Bytes'}, logDebug: vi.fn(), logInfo: vi.fn(), logWarn: vi.fn(), logError: vi.fn()}))
+  () => ({
+    metrics: {singleMetric: mockSingleMetric},
+    MetricUnit: {Count: 'Count', Milliseconds: 'Milliseconds', Seconds: 'Seconds', Bytes: 'Bytes'},
+    logDebug: vi.fn(),
+    logInfo: vi.fn(),
+    logWarn: vi.fn(),
+    logError: vi.fn()
+  }))
 
 const {emitErrorMetrics, emitSuccessMetrics} = await import('#utils/errorMetrics.js')
 

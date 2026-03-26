@@ -42,7 +42,7 @@ vi.mock('apns2', () => ({
   PushType: {background: 'background'}
 }))
 
-const {handler} = await import('#lambdas/PruneDevices/src/index')
+const {handler} = await import('#lambdas/scheduled/PruneDevices/index')
 
 describe('PruneDevices Workflow Integration Tests', () => {
   let mockContext: Context

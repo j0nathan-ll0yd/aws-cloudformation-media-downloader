@@ -11,7 +11,7 @@
 import {createFileDownload, getFile, getFileDownload, getUserFilesByFileId, updateFile, updateFileDownload} from '#entities/queries'
 import {headObject} from '@mantleframework/aws'
 import {sendMessage} from '@mantleframework/aws'
-import {emitEvent, defineLambda, isOk} from '@mantleframework/core'
+import {defineLambda, emitEvent, isOk} from '@mantleframework/core'
 import {defineSqsHandler} from '@mantleframework/core'
 import {addAnnotation, addMetadata, endSpan, logDebug, logError, logInfo, metrics, MetricUnit, startSpan} from '@mantleframework/observability'
 import {downloadVideoToS3, fetchVideoInfo} from '#services/youtube/youtube'
@@ -37,9 +37,7 @@ defineLambda({
   memorySize: 2048,
   timeout: 900,
   reservedConcurrency: 1,
-  secrets: {
-    GITHUB_PERSONAL_TOKEN: 'github.issue.token'
-  },
+  secrets: {GITHUB_PERSONAL_TOKEN: 'github.issue.token'},
   staticEnvVars: {
     YTDLP_BINARY_PATH: '/opt/bin/yt-dlp',
     YTDLP_COOKIES_PATH: '/opt/cookies/youtube-cookies.txt',
@@ -93,7 +91,11 @@ async function downloadVideoToS3Traced(fileUrl: string, bucket: string, fileName
   const span = startSpan('yt-dlp-download-to-s3')
   try {
     // Use circuit breaker to protect against cascading failures
-    const result = await youtubeCircuitBreaker.execute(() => downloadVideoToS3(fileUrl, bucket, fileName)) as {fileSize: number; s3Url: string; duration: number}
+    const result = await youtubeCircuitBreaker.execute(() => downloadVideoToS3(fileUrl, bucket, fileName)) as {
+      fileSize: number
+      s3Url: string
+      duration: number
+    }
     addAnnotation(span, 's3Bucket', bucket)
     addAnnotation(span, 's3Key', fileName)
     addMetadata(span, 'fileSize', result.fileSize)

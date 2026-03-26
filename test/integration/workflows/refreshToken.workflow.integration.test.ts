@@ -18,7 +18,7 @@ import {closeTestDb, createAllTables, getSessionById, getTestDbAsync, insertSess
 import {createMockContext} from '../helpers/lambda-context'
 import {createMockAPIGatewayProxyEvent} from '../helpers/test-data'
 
-const {handler} = await import('#lambdas/RefreshToken/src/index')
+const {handler} = await import('#lambdas/api/user/refresh.post')
 
 describe('RefreshToken Workflow Integration Tests', () => {
   let mockContext: Context

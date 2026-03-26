@@ -4,11 +4,11 @@ import type {YtDlpVideoInfo} from '#types/youtube'
 import {FileStatus} from '#types/enums'
 
 // Mock SQS stringAttribute
-vi.mock('@mantleframework/aws', () => ({
-  stringAttribute: vi.fn((value: string) => ({DataType: 'String', StringValue: value}))
-}))
+vi.mock('@mantleframework/aws', () => ({stringAttribute: vi.fn((value: string) => ({DataType: 'String', StringValue: value}))}))
 
-const {truncateDescription, createMetadataNotification, createDownloadReadyNotification, transformToAPNSNotification} = await import('#services/notification/transformers.js')
+const {truncateDescription, createMetadataNotification, createDownloadReadyNotification, transformToAPNSNotification} = await import(
+  '#services/notification/transformers.js'
+)
 
 describe('Notification Transformers', () => {
   describe('truncateDescription', () => {

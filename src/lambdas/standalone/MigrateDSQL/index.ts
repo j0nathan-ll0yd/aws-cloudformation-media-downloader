@@ -190,7 +190,9 @@ async function applyMigration(migration: MigrationFile): Promise<void> {
   }
 
   // Record the migration as applied
-  await db.execute(sql.raw(`INSERT INTO schema_migrations (version, name, applied_at) VALUES ('${migration.version}', '${migration.name}', '${new Date().toISOString()}')`))
+  await db.execute(
+    sql.raw(`INSERT INTO schema_migrations (version, name, applied_at) VALUES ('${migration.version}', '${migration.name}', '${new Date().toISOString()}')`)
+  )
 
   logInfo('Migration applied successfully', {version: migration.version})
 }

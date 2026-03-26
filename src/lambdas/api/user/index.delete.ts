@@ -18,16 +18,9 @@ import {createFailedUserDeletionIssue} from '#integrations/github/issueService'
 import {deleteDevice, getUserDevices} from '#services/device/deviceService'
 import type {Device} from '#types/domainModels'
 
-const PartialDeletionResponseSchema = z.object({
-  message: z.string(),
-  failedOperations: z.number()
-})
+const PartialDeletionResponseSchema = z.object({message: z.string(), failedOperations: z.number()})
 
-defineLambda({
-  secrets: {
-    GITHUB_PERSONAL_TOKEN: 'github.issue.token'
-  }
-})
+defineLambda({secrets: {GITHUB_PERSONAL_TOKEN: 'github.issue.token'}})
 
 /** Delete all user-file relationships */
 async function deleteUserFiles(userId: string): Promise<void> {
@@ -52,7 +45,9 @@ async function deleteUser(userId: string): Promise<void> {
 
 const api = defineApiHandler({auth: 'authorizer', operationName: 'UserDelete'})
 export const handler = api(async ({context, userId}) => {
-  if (!userId) throw new UnauthorizedError('Authentication required')
+  if (!userId) {
+    throw new UnauthorizedError('Authentication required')
+  }
 
   const deletableDevices: Device[] = []
 
@@ -93,7 +88,8 @@ export const handler = api(async ({context, userId}) => {
   const deviceFailures = deviceResults.filter((r) => r.status === 'rejected')
   if (deviceFailures.length > 0) {
     logError('Cascade deletion partial failure (devices)', {failedCount: deviceFailures.length})
-    return buildValidatedResponse(context, 207, {message: 'Partial deletion - some devices could not be removed', failedOperations: deviceFailures.length}, PartialDeletionResponseSchema)
+    return buildValidatedResponse(context, 207, {message: 'Partial deletion - some devices could not be removed', failedOperations: deviceFailures.length},
+      PartialDeletionResponseSchema)
   }
 
   // Delete parent LAST - only if all children succeeded

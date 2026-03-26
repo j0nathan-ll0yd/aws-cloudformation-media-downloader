@@ -65,7 +65,7 @@ describe('CloudWatch Logs Integration Tests', () => {
     const events = await getTestLogEvents(groupName, streamName)
 
     expect(events.length).toBeGreaterThanOrEqual(1)
-    expect(events[0].message).toBe('test message')
+    expect(events[0]!.message).toBe('test message')
 
     // Clean up
     await deleteTestLogGroup(groupName)

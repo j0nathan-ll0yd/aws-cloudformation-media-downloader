@@ -17,19 +17,19 @@ import {defineApiHandler} from '@mantleframework/validation'
 import {getAuthInstance} from '#domain/auth/authInstance'
 import {userLoginResponseSchema} from '#types/api-schema'
 
-defineLambda({
-  secrets: {
-    AUTH_SECRET: 'platform.key'
-  }
-})
+defineLambda({secrets: {AUTH_SECRET: 'platform.key'}})
 
 const api = defineApiHandler({auth: 'authorizer', operationName: 'RefreshToken'})
 export const handler = api(async ({event, context, userId}) => {
-  if (!userId) throw new UnauthorizedError('Authentication required')
+  if (!userId) {
+    throw new UnauthorizedError('Authentication required')
+  }
 
   // Extract Bearer token from Authorization header
   const token = extractBearerToken(event.headers?.['Authorization'] || event.headers?.['authorization'])
-  if (!token) throw new UnauthorizedError('Missing Authorization header')
+  if (!token) {
+    throw new UnauthorizedError('Missing Authorization header')
+  }
 
   // Validate and refresh via BetterAuth — getSession() auto-extends when updateAge elapsed
   logDebug('RefreshToken: validating session via BetterAuth')

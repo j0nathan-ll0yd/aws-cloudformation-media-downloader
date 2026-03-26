@@ -67,7 +67,11 @@ export function loadEntityPermissions(): EntityPermissionsManifest {
  */
 export function servicePermissionsExist(): boolean {
   const manifestPath = join(process.cwd(), 'build/service-permissions.json')
-  return existsSync(manifestPath)
+  if (!existsSync(manifestPath)) {
+    return false
+  }
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
+  return Object.keys(manifest.lambdas ?? {}).length > 0
 }
 
 /**
@@ -75,7 +79,11 @@ export function servicePermissionsExist(): boolean {
  */
 export function entityPermissionsExist(): boolean {
   const manifestPath = join(process.cwd(), 'build/entity-permissions.json')
-  return existsSync(manifestPath)
+  if (!existsSync(manifestPath)) {
+    return false
+  }
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
+  return Object.keys(manifest.lambdas ?? {}).length > 0
 }
 
 interface PermissionVerificationResult {

@@ -32,8 +32,8 @@ import {createMockContext} from '../helpers/lambda-context'
 import {generateAppleIdToken, startAppleJWKSMock, stopAppleJWKSMock} from '../helpers/apple-jwks-mock'
 import {createMockAPIGatewayProxyEvent} from '../helpers/test-data'
 
-const {handler: loginHandler} = await import('#lambdas/LoginUser/src/index')
-const {handler: registerHandler} = await import('#lambdas/RegisterUser/src/index')
+const {handler: loginHandler} = await import('#lambdas/api/user/login.post')
+const {handler: registerHandler} = await import('#lambdas/api/user/register.post')
 
 interface AuthRequestBody {
   idToken: string
@@ -114,10 +114,10 @@ describe('Auth Flow Integration Tests', () => {
       const users = await db.execute(sql`SELECT * FROM users WHERE email = ${testEmail}`)
       const userRows = [...users] as Array<{id: string; email: string}>
       expect(userRows).toHaveLength(1)
-      expect(userRows[0].email).toBe(testEmail)
+      expect(userRows[0]!.email).toBe(testEmail)
 
       // Verify session was created in database
-      const sessions = await db.execute(sql`SELECT * FROM sessions WHERE user_id = ${userRows[0].id}`)
+      const sessions = await db.execute(sql`SELECT * FROM sessions WHERE user_id = ${userRows[0]!.id}`)
       const sessionRows = [...sessions] as Array<{id: string; user_id: string; token: string}>
       expect(sessionRows.length).toBeGreaterThanOrEqual(1)
     })
@@ -165,14 +165,14 @@ describe('Auth Flow Integration Tests', () => {
       const users = await db.execute(sql`SELECT * FROM users WHERE email = ${testEmail}`)
       const userRows = [...users] as Array<{id: string; email: string; first_name: string | null; last_name: string | null}>
       expect(userRows).toHaveLength(1)
-      expect(userRows[0].first_name).toBe('John')
-      expect(userRows[0].last_name).toBe('Doe')
+      expect(userRows[0]!.first_name).toBe('John')
+      expect(userRows[0]!.last_name).toBe('Doe')
 
       // Verify account was created (Better Auth creates this for OAuth)
-      const accounts = await db.execute(sql`SELECT * FROM accounts WHERE user_id = ${userRows[0].id}`)
+      const accounts = await db.execute(sql`SELECT * FROM accounts WHERE user_id = ${userRows[0]!.id}`)
       const accountRows = [...accounts] as Array<{id: string; provider_id: string}>
       expect(accountRows.length).toBeGreaterThanOrEqual(1)
-      expect(accountRows[0].provider_id).toBe('apple')
+      expect(accountRows[0]!.provider_id).toBe('apple')
     })
 
     test('should not update name for existing user', async () => {
@@ -203,8 +203,8 @@ describe('Auth Flow Integration Tests', () => {
       // Verify name was NOT updated (reusing db from earlier in test)
       const users = await db.execute(sql`SELECT * FROM users WHERE email = ${testEmail}`)
       const userRows = [...users] as Array<{first_name: string | null; last_name: string | null}>
-      expect(userRows[0].first_name).toBe('Original')
-      expect(userRows[0].last_name).toBe('Name')
+      expect(userRows[0]!.first_name).toBe('Original')
+      expect(userRows[0]!.last_name).toBe('Name')
     })
 
     test('should allow registration without optional name fields', async () => {

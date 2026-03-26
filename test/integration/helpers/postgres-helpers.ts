@@ -13,7 +13,7 @@
 import {drizzle} from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import {eq, sql} from 'drizzle-orm'
-import {devices, files, userDevices, userFiles, users} from '#lib/vendor/Drizzle/schema'
+import {devices, files, userDevices, userFiles, users} from '#db/schema'
 import type {Device, File, User} from '#types/domainModels'
 import {FileStatus} from '#types/enums'
 import {createMockDevice, createMockFile, createMockUser} from './test-data'
@@ -745,7 +745,7 @@ export async function getSessionByToken(token: string): Promise<{id: string; use
   if (rows.length === 0) {
     return null
   }
-  const row = rows[0]
+  const row = rows[0]!
   return {id: row.id, userId: row.user_id, expiresAt: new Date(row.expires_at), updatedAt: new Date(row.updated_at)}
 }
 
@@ -762,7 +762,7 @@ export async function getSessionById(sessionId: string): Promise<{id: string; us
   if (rows.length === 0) {
     return null
   }
-  const row = rows[0]
+  const row = rows[0]!
   return {id: row.id, userId: row.user_id, token: row.token, expiresAt: new Date(row.expires_at), updatedAt: new Date(row.updated_at)}
 }
 

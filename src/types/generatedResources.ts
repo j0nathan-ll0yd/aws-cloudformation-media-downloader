@@ -4,42 +4,31 @@
  *
  * Regenerate with: pnpm run generate:resource-enums
  * Source: build/terraform-resources.json
- * Generated at: 2026-01-20T05:30:07.571Z
+ * Generated at: 2026-03-26T21:21:52.237Z
  */
 
 /** S3 bucket resources from Terraform */
-export enum S3Resource {
-  Files = 'Files'
-}
+export enum S3Resource {}
 
 /** SQS queue resources from Terraform */
-export enum SQSResource {
-  DownloadDLQ = 'DownloadDLQ',
-  DownloadQueue = 'DownloadQueue',
-  SendPushNotification = 'SendPushNotification',
-  SendPushNotificationDLQ = 'SendPushNotificationDLQ'
-}
+export enum SQSResource {}
 
 /** SNS topic resources from Terraform */
 export enum SNSTopicResource {
-  OperationsAlerts = 'OperationsAlerts',
-  PushNotifications = 'PushNotifications'
+  operations_alerts = 'operations_alerts',
+  push_notifications = 'push_notifications'
 }
 
 /** SNS platform application resources from Terraform */
 export enum SNSPlatformResource {
-  OfflineMediaDownloader = 'OfflineMediaDownloader'
+  apns = 'apns'
 }
 
 /** EventBridge event bus resources from Terraform */
-export enum EventBridgeResource {
-  MediaDownloader = 'MediaDownloader'
-}
+export enum EventBridgeResource {}
 
 /** DynamoDB table resources from Terraform */
-export enum DynamoDBResource {
-  IdempotencyTable = 'IdempotencyTable'
-}
+export enum DynamoDBResource {}
 
 /** Union of all SNS resources (topics and platform applications) */
 export type SNSResource = SNSTopicResource | SNSPlatformResource

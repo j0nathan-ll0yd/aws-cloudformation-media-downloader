@@ -117,7 +117,11 @@ export const handler = sqs(async (record) => {
       if (result.status === 'fulfilled') {
         return result.value
       }
-      return err({deviceId: deviceIds[index]!, error: result.reason instanceof Error ? result.reason.message : String(result.reason), endpointDisabled: false})
+      return err({
+        deviceId: deviceIds[index]!,
+        error: result.reason instanceof Error ? result.reason.message : String(result.reason),
+        endpointDisabled: false
+      })
     })
 
     const succeeded = deviceResults.filter((r) => isOk(r))

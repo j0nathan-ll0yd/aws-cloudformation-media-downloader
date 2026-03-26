@@ -19,7 +19,7 @@ import {createMockSQSFileNotificationEvent} from '../helpers/test-data'
 import {closeTestDb, createAllTables, getTestDbAsync, insertDevice, insertUser, truncateAllTables, upsertUserDevice} from '../helpers/postgres-helpers'
 import {createTestEndpoint, createTestPlatformApplication, deleteTestPlatformApplication, generateIsolatedAppName} from '../helpers/sns-helpers'
 
-const {handler} = await import('#lambdas/SendPushNotification/src/index')
+const {handler} = await import('#lambdas/sqs/SendPushNotification/index')
 
 describe('SendPushNotification Workflow Integration Tests', () => {
   let platformAppArn: string

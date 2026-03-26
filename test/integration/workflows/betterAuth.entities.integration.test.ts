@@ -28,7 +28,7 @@ import {
   linkUserDevice,
   truncateAllTables
 } from '../helpers/postgres-helpers'
-import {accounts, devices, sessions, userDevices, users} from '#lib/vendor/Drizzle/schema'
+import {accounts, devices, sessions, userDevices, users} from '#db/schema'
 import {eq} from 'drizzle-orm'
 
 describe('Better Auth Entities Integration Tests', () => {
@@ -106,7 +106,7 @@ describe('Better Auth Entities Integration Tests', () => {
       const results = await db.select().from(users).where(eq(users.email, email))
 
       expect(results).toHaveLength(1)
-      expect(results[0].id).toBe(userId)
+      expect(results[0]!.id).toBe(userId)
     })
   })
 
@@ -161,7 +161,7 @@ describe('Better Auth Entities Integration Tests', () => {
       const associations = await db.select().from(userDevices).where(eq(userDevices.userId, userId))
 
       expect(associations).toHaveLength(1)
-      expect(associations[0].deviceId).toBe(deviceId)
+      expect(associations[0]!.deviceId).toBe(deviceId)
     })
 
     test('should support multiple devices per user', async () => {
@@ -206,8 +206,8 @@ describe('Better Auth Entities Integration Tests', () => {
       const results = await db.select().from(sessions).where(eq(sessions.userId, userId))
 
       expect(results).toHaveLength(1)
-      expect(results[0].token).toBe('session-token-123')
-      expect(results[0].ipAddress).toBe('192.168.1.1')
+      expect(results[0]!.token).toBe('session-token-123')
+      expect(results[0]!.ipAddress).toBe('192.168.1.1')
     })
 
     test('should query sessions by token', async () => {
@@ -225,7 +225,7 @@ describe('Better Auth Entities Integration Tests', () => {
       const results = await db.select().from(sessions).where(eq(sessions.token, token))
 
       expect(results).toHaveLength(1)
-      expect(results[0].userId).toBe(userId)
+      expect(results[0]!.userId).toBe(userId)
     })
 
     test('should delete expired sessions', async () => {
@@ -273,8 +273,8 @@ describe('Better Auth Entities Integration Tests', () => {
       const results = await db.select().from(accounts).where(eq(accounts.userId, userId))
 
       expect(results).toHaveLength(1)
-      expect(results[0].providerId).toBe('apple')
-      expect(results[0].accountId).toBe('apple-user-123')
+      expect(results[0]!.providerId).toBe('apple')
+      expect(results[0]!.accountId).toBe('apple-user-123')
     })
 
     test('should query account by provider', async () => {
@@ -290,7 +290,7 @@ describe('Better Auth Entities Integration Tests', () => {
       const results = await db.select().from(accounts).where(eq(accounts.accountId, 'unique-apple-id'))
 
       expect(results).toHaveLength(1)
-      expect(results[0].userId).toBe(userId)
+      expect(results[0]!.userId).toBe(userId)
     })
   })
 

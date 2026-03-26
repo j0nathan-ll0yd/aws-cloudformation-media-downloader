@@ -25,7 +25,7 @@ import {
   generateIsolatedAppName
 } from '../helpers/sns-helpers'
 
-const {handler} = await import('#lambdas/UserSubscribe/src/index')
+const {handler} = await import('#lambdas/api/user/subscribe.post')
 
 describe('UserSubscribe Workflow Integration Tests', () => {
   let mockContext: Context
@@ -79,7 +79,7 @@ describe('UserSubscribe Workflow Integration Tests', () => {
       createMockCustomAPIGatewayEvent({
         path: '/subscriptions',
         httpMethod: 'POST',
-        userStatus: UserStatus.Unauthenticated,
+        userStatus: UserStatus.Anonymous,
         body: JSON.stringify({endpointArn: testEndpointArn, topicArn})
       }),
       mockContext

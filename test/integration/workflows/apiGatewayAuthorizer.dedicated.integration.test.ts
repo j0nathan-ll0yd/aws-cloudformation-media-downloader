@@ -31,7 +31,7 @@ const {getApiKeysMock, getUsagePlansMock, getUsageMock} = vi.hoisted(() => ({get
 
 vi.mock('#lib/vendor/AWS/ApiGateway', () => ({getApiKeys: getApiKeysMock, getUsagePlans: getUsagePlansMock, getUsage: getUsageMock}))
 
-const {handler} = await import('#lambdas/ApiGatewayAuthorizer/src/index')
+const {handler} = await import('#lambdas/standalone/ApiGatewayAuthorizer/index')
 
 // Helper to set up standard API Gateway mocks
 function setupApiGatewayMocks() {
@@ -73,7 +73,7 @@ describe('ApiGatewayAuthorizer Dedicated Integration Tests', () => {
     const result = await handler(createMockAPIGatewayRequestAuthorizerEvent({token}), mockContext)
 
     expect(result.principalId).toBe(userId)
-    expect(result.policyDocument.Statement[0].Effect).toBe('Allow')
+    expect(result.policyDocument.Statement[0]!.Effect).toBe('Allow')
   })
 
   test('should return unknown principal for expired session', async () => {
@@ -92,7 +92,7 @@ describe('ApiGatewayAuthorizer Dedicated Integration Tests', () => {
     const result = await handler(event, mockContext)
 
     expect(result.principalId).toBe('unknown')
-    expect(result.policyDocument.Statement[0].Effect).toBe('Allow')
+    expect(result.policyDocument.Statement[0]!.Effect).toBe('Allow')
   })
 
   test('should return unknown principal for missing Authorization header on multi-auth path', async () => {
@@ -105,7 +105,7 @@ describe('ApiGatewayAuthorizer Dedicated Integration Tests', () => {
     const result = await handler(event, mockContext)
 
     expect(result.principalId).toBe('unknown')
-    expect(result.policyDocument.Statement[0].Effect).toBe('Allow')
+    expect(result.policyDocument.Statement[0]!.Effect).toBe('Allow')
   })
 
   test('should throw Unauthorized for malformed token on protected path', async () => {
@@ -141,6 +141,6 @@ describe('ApiGatewayAuthorizer Dedicated Integration Tests', () => {
     const result = await handler(createMockAPIGatewayRequestAuthorizerEvent({token}), mockContext)
 
     expect(result.principalId).toBe(userId)
-    expect(result.policyDocument.Statement[0].Effect).toBe('Allow')
+    expect(result.policyDocument.Statement[0]!.Effect).toBe('Allow')
   })
 })

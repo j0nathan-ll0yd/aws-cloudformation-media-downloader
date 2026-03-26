@@ -134,13 +134,13 @@ function getIdempotentProcessor() {
   return idempotentProcessor
 }
 
-const FeedlyWebhookRequestSchema = z.object({
-  articleURL: z.string()
-})
+const FeedlyWebhookRequestSchema = z.object({articleURL: z.string()})
 
 const api = defineApiHandler({auth: 'authorizer', schema: FeedlyWebhookRequestSchema, operationName: 'WebhookFeedly'})
 export const handler = api(async ({context, userId, body, metadata}) => {
-  if (!userId) throw new UnauthorizedError('Authentication required')
+  if (!userId) {
+    throw new UnauthorizedError('Authentication required')
+  }
 
   // Track webhook received
   metrics.addMetric('WebhookReceived', MetricUnit.Count, 1)

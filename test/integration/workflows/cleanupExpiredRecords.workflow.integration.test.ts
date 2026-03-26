@@ -29,7 +29,7 @@ import {
 } from '../helpers/postgres-helpers'
 import {DownloadStatus} from '#types/enums'
 
-const {handler} = await import('#lambdas/CleanupExpiredRecords/src/index')
+const {handler} = await import('#lambdas/scheduled/CleanupExpiredRecords/index')
 
 describe('CleanupExpiredRecords Workflow Integration Tests', () => {
   beforeAll(async () => {
@@ -70,7 +70,7 @@ describe('CleanupExpiredRecords Workflow Integration Tests', () => {
       // Verify only the expired one was deleted
       const afterDownloads = await getFileDownloads()
       expect(afterDownloads).toHaveLength(1)
-      expect(afterDownloads[0].fileId).toBe('recent-completed')
+      expect(afterDownloads[0]!.fileId).toBe('recent-completed')
     })
 
     test('should delete Failed file downloads older than 24 hours', async () => {

@@ -11,7 +11,7 @@
  *
  * @see {@link https://orm.drizzle.team/docs/perf-queries | Drizzle Prepared Statements}
  */
-import {RequiresTable, DatabaseOperation} from '@mantleframework/database'
+import {DatabaseOperation, RequiresTable} from '@mantleframework/database'
 import {getDrizzleClient, onConnectionInvalidated} from '#db/client'
 import {eq, sql} from '@mantleframework/database/orm'
 import {files, sessions, userFiles} from '#db/schema'

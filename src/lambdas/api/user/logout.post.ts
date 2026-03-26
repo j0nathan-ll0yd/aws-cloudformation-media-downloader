@@ -17,19 +17,19 @@ import {defineApiHandler} from '@mantleframework/validation'
 import {getDrizzleClient} from '#db/client'
 import {getAuthInstance} from '#domain/auth/authInstance'
 
-defineLambda({
-  secrets: {
-    AUTH_SECRET: 'platform.key'
-  }
-})
+defineLambda({secrets: {AUTH_SECRET: 'platform.key'}})
 
 const api = defineApiHandler({auth: 'authorizer', operationName: 'LogoutUser'})
 export const handler = api(async ({event, context, userId}) => {
-  if (!userId) throw new UnauthorizedError('Authentication required')
+  if (!userId) {
+    throw new UnauthorizedError('Authentication required')
+  }
 
   // Extract Bearer token from Authorization header
   const token = extractBearerToken(event.headers?.['Authorization'] || event.headers?.['authorization'])
-  if (!token) throw new UnauthorizedError('Missing Authorization header')
+  if (!token) {
+    throw new UnauthorizedError('Missing Authorization header')
+  }
 
   // Expire the session via BetterAuth (validates then sets expiresAt = now, preserving row)
   logDebug('LogoutUser: expiring session via BetterAuth')

@@ -62,15 +62,13 @@ function adaptMigrationForSchema(migrationSql: string, schema: string): string {
   for (const table of tables) {
     // Match table name in CREATE TABLE, CREATE INDEX, ON clauses
     // Use word boundaries to avoid partial matches
-    const patterns = [
-      new RegExp(`CREATE TABLE IF NOT EXISTS ${table}`, 'g'),
-      new RegExp(`ON ${table}\\(`, 'g'),
-      new RegExp(`ON ${table} `, 'g')
-    ]
+    const createTablePattern = new RegExp(`CREATE TABLE IF NOT EXISTS ${table}`, 'g')
+    const onParenPattern = new RegExp(`ON ${table}\\(`, 'g')
+    const onSpacePattern = new RegExp(`ON ${table} `, 'g')
 
-    adapted = adapted.replace(patterns[0], `CREATE TABLE IF NOT EXISTS ${schema}.${table}`)
-    adapted = adapted.replace(patterns[1], `ON ${schema}.${table}(`)
-    adapted = adapted.replace(patterns[2], `ON ${schema}.${table} `)
+    adapted = adapted.replace(createTablePattern, `CREATE TABLE IF NOT EXISTS ${schema}.${table}`)
+    adapted = adapted.replace(onParenPattern, `ON ${schema}.${table}(`)
+    adapted = adapted.replace(onSpacePattern, `ON ${schema}.${table} `)
   }
 
   // Convert Aurora DSQL specific syntax for regular PostgreSQL:

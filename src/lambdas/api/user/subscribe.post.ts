@@ -14,18 +14,15 @@ import {defineApiHandler, z} from '@mantleframework/validation'
 import {subscribeEndpointToTopic} from '#services/device/deviceService'
 import {verifyPlatformConfiguration} from '#utils/platform-config'
 
-const SubscriptionRequestSchema = z.object({
-  endpointArn: z.string(),
-  topicArn: z.string()
-})
+const SubscriptionRequestSchema = z.object({endpointArn: z.string(), topicArn: z.string()})
 
-const SubscriptionResponseSchema = z.object({
-  subscriptionArn: z.string().optional()
-})
+const SubscriptionResponseSchema = z.object({subscriptionArn: z.string().optional()})
 
 const api = defineApiHandler({auth: 'authorizer', schema: SubscriptionRequestSchema, operationName: 'UserSubscribe'})
 export const handler = api(async ({context, userId, body}) => {
-  if (!userId) throw new UnauthorizedError('Authentication required')
+  if (!userId) {
+    throw new UnauthorizedError('Authentication required')
+  }
 
   verifyPlatformConfiguration()
 

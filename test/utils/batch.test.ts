@@ -15,8 +15,8 @@ describe('batch', () => {
 
       expect(succeeded).toEqual(['success1', 'success2'])
       expect(failed).toHaveLength(2)
-      expect(failed[0].message).toBe('error1')
-      expect(failed[1].message).toBe('error2')
+      expect(failed[0]!.message).toBe('error1')
+      expect(failed[1]!.message).toBe('error2')
     })
 
     it('should handle all fulfilled results', () => {
@@ -63,12 +63,12 @@ describe('batch', () => {
       const {failed} = separateBatchResults(results)
 
       expect(failed).toHaveLength(3)
-      expect(failed[0]).toBeInstanceOf(Error)
-      expect(failed[0].message).toBe('string error')
-      expect(failed[1]).toBeInstanceOf(Error)
-      expect(failed[1].message).toBe('123')
-      expect(failed[2]).toBeInstanceOf(Error)
-      expect(failed[2].message).toBe('[object Object]')
+      expect(failed[0]!).toBeInstanceOf(Error)
+      expect(failed[0]!.message).toBe('string error')
+      expect(failed[1]!).toBeInstanceOf(Error)
+      expect(failed[1]!.message).toBe('123')
+      expect(failed[2]!).toBeInstanceOf(Error)
+      expect(failed[2]!.message).toBe('[object Object]')
     })
 
     it('should preserve original Error instances', () => {
@@ -84,8 +84,8 @@ describe('batch', () => {
 
       const {failed} = separateBatchResults(results)
 
-      expect(failed[0]).toBe(customError)
-      expect((failed[0] as CustomError).code).toBe('ERR_CUSTOM')
+      expect(failed[0]!).toBe(customError)
+      expect((failed[0]! as CustomError).code).toBe('ERR_CUSTOM')
     })
 
     it('should handle object results with complex types', () => {
@@ -101,8 +101,8 @@ describe('batch', () => {
       const {succeeded} = separateBatchResults(results)
 
       expect(succeeded).toHaveLength(2)
-      expect(succeeded[0].name).toBe('Alice')
-      expect(succeeded[1].name).toBe('Bob')
+      expect(succeeded[0]!.name).toBe('Alice')
+      expect(succeeded[1]!.name).toBe('Bob')
     })
   })
 

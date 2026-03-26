@@ -11,14 +11,12 @@ vi.mock('#entities/queries', () => ({deleteDevice: vi.fn(), deleteUserDevice: vi
 
 vi.mock('@mantleframework/observability', () => ({logDebug: vi.fn(), logInfo: vi.fn(), logWarn: vi.fn(), logError: vi.fn()}))
 
-vi.mock('@mantleframework/aws', () => ({
-  deleteEndpoint: vi.fn(),
-  subscribe: vi.fn(),
-  unsubscribe: vi.fn()
-}))
+vi.mock('@mantleframework/aws', () => ({deleteEndpoint: vi.fn(), subscribe: vi.fn(), unsubscribe: vi.fn()}))
 
 // Import after mocking
-const {deleteUserDevice, deleteDevice, getUserDevices, subscribeEndpointToTopic, unsubscribeEndpointToTopic} = await import('#services/device/deviceService.js')
+const {deleteUserDevice, deleteDevice, getUserDevices, subscribeEndpointToTopic, unsubscribeEndpointToTopic} = await import(
+  '#services/device/deviceService.js'
+)
 import {deleteDevice as deleteDeviceQuery, deleteUserDevice as deleteUserDeviceQuery, getUserDevicesByUserId} from '#entities/queries'
 import {deleteEndpoint, subscribe, unsubscribe} from '@mantleframework/aws'
 import {logDebug} from '@mantleframework/observability'
@@ -62,7 +60,7 @@ describe('Device Service', () => {
     }
 
     it('should delete SNS endpoint and device record', async () => {
-      vi.mocked(deleteEndpoint).mockResolvedValue({})
+      vi.mocked(deleteEndpoint).mockResolvedValue({$metadata: {}})
       vi.mocked(deleteDeviceQuery).mockResolvedValue(undefined)
 
       await deleteDevice(mockDevice)
@@ -70,7 +68,7 @@ describe('Device Service', () => {
       expect(deleteEndpoint).toHaveBeenCalledWith(mockDevice.endpointArn)
       expect(deleteDeviceQuery).toHaveBeenCalledWith(mockDevice.deviceId)
       expect(logDebug).toHaveBeenCalledWith('deleteDevice.deleteEndpoint <=', {endpointArn: mockDevice.endpointArn})
-      expect(logDebug).toHaveBeenCalledWith('deleteDevice.deleteEndpoint =>', {})
+      expect(logDebug).toHaveBeenCalledWith('deleteDevice.deleteEndpoint =>', {$metadata: {}})
       expect(logDebug).toHaveBeenCalledWith('deleteDevice.deleteItem <=', {deviceId: mockDevice.deviceId})
       expect(logDebug).toHaveBeenCalledWith('deleteDevice.deleteItem => done')
     })
@@ -83,7 +81,7 @@ describe('Device Service', () => {
     })
 
     it('should propagate device deletion errors', async () => {
-      vi.mocked(deleteEndpoint).mockResolvedValue({})
+      vi.mocked(deleteEndpoint).mockResolvedValue({$metadata: {}})
       vi.mocked(deleteDeviceQuery).mockRejectedValue(new Error('DB error'))
 
       await expect(deleteDevice(mockDevice)).rejects.toThrow('DB error')
@@ -123,7 +121,7 @@ describe('Device Service', () => {
 
   describe('subscribeEndpointToTopic', () => {
     it('should subscribe an endpoint to an SNS topic', async () => {
-      const mockResponse = {SubscriptionArn: 'arn:aws:sns:us-east-1:123456789:subscription/app/sub-123'}
+      const mockResponse = {SubscriptionArn: 'arn:aws:sns:us-east-1:123456789:subscription/app/sub-123', $metadata: {}}
       vi.mocked(subscribe).mockResolvedValue(mockResponse)
 
       const result = await subscribeEndpointToTopic('arn:aws:sns:endpoint', 'arn:aws:sns:topic')
@@ -142,7 +140,7 @@ describe('Device Service', () => {
 
   describe('unsubscribeEndpointToTopic', () => {
     it('should unsubscribe from an SNS topic', async () => {
-      const mockResponse = {}
+      const mockResponse = {$metadata: {}}
       vi.mocked(unsubscribe).mockResolvedValue(mockResponse)
 
       const result = await unsubscribeEndpointToTopic('arn:aws:sns:subscription/sub-123')

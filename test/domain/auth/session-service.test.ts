@@ -91,5 +91,4 @@ describe('Better Auth Helpers', () => {
       await expect(validateSessionToken('expired-token')).rejects.toThrow('Session expired')
     })
   })
-
 })

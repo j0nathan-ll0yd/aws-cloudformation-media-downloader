@@ -1,4 +1,4 @@
-export {UserStatus} from '@mantleframework/core'
+export { UserStatus } from '@mantleframework/core'
 
 /**
  * File status for permanent media records.

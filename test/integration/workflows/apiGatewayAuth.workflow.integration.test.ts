@@ -24,7 +24,7 @@ const {mockGetApiKeys, mockGetUsagePlans, mockGetUsage} = vi.hoisted(() => ({moc
 
 vi.mock('#lib/vendor/AWS/ApiGateway', () => ({getApiKeys: mockGetApiKeys, getUsagePlans: mockGetUsagePlans, getUsage: mockGetUsage}))
 
-const {handler} = await import('#lambdas/ApiGatewayAuthorizer/src/index')
+const {handler} = await import('#lambdas/standalone/ApiGatewayAuthorizer/index')
 
 const TEST_API_KEY = 'test-api-key-12345'
 const TEST_API_KEY_ID = 'test-key-id'
@@ -88,7 +88,7 @@ describe('ApiGatewayAuthorizer Workflow Integration Tests', () => {
       const event = createAuthorizerEvent({headers: {Authorization: `Bearer ${sessionToken}`, 'User-Agent': 'iOS/17.0'}})
       const result = await handler(event, context)
 
-      expect(result.policyDocument.Statement[0].Effect).toBe('Allow')
+      expect(result.policyDocument.Statement[0]!.Effect).toBe('Allow')
       expect(result.principalId).toBe(userId)
       expect(result.usageIdentifierKey).toBe(TEST_API_KEY)
     })
@@ -125,7 +125,7 @@ describe('ApiGatewayAuthorizer Workflow Integration Tests', () => {
       const event = createAuthorizerEvent({headers: {Authorization: `Bearer ${sessionToken}`, 'User-Agent': 'iOS/17.0'}})
       const result = await handler(event, context)
 
-      expect(result.policyDocument.Statement[0].Effect).toBe('Allow')
+      expect(result.policyDocument.Statement[0]!.Effect).toBe('Allow')
       expect(result.principalId).toBe(userId)
     })
   })
@@ -140,7 +140,7 @@ describe('ApiGatewayAuthorizer Workflow Integration Tests', () => {
 
       const result = await handler(event, context)
 
-      expect(result.policyDocument.Statement[0].Effect).toBe('Allow')
+      expect(result.policyDocument.Statement[0]!.Effect).toBe('Allow')
       expect(result.principalId).toBe('unknown')
     })
 
@@ -151,7 +151,7 @@ describe('ApiGatewayAuthorizer Workflow Integration Tests', () => {
 
       const result = await handler(event, context)
 
-      expect(result.policyDocument.Statement[0].Effect).toBe('Allow')
+      expect(result.policyDocument.Statement[0]!.Effect).toBe('Allow')
       expect(result.principalId).toBe('unknown')
     })
 
@@ -186,7 +186,7 @@ describe('ApiGatewayAuthorizer Workflow Integration Tests', () => {
       const event = createAuthorizerEvent({headers: {Authorization: `Bearer ${sessionToken}`, 'User-Agent': 'iOS/17.0'}})
       const result = await handler(event, context)
 
-      expect(result.policyDocument.Statement[0].Effect).toBe('Allow')
+      expect(result.policyDocument.Statement[0]!.Effect).toBe('Allow')
       expect(result.principalId).toBe(userId)
     })
   })
@@ -207,7 +207,7 @@ describe('ApiGatewayAuthorizer Workflow Integration Tests', () => {
       const event = createAuthorizerEvent({headers: {Authorization: `Bearer ${token2}`, 'User-Agent': 'iOS/17.0'}})
       const result = await handler(event, context)
 
-      expect(result.policyDocument.Statement[0].Effect).toBe('Allow')
+      expect(result.policyDocument.Statement[0]!.Effect).toBe('Allow')
       expect(result.principalId).toBe(userId)
     })
   })

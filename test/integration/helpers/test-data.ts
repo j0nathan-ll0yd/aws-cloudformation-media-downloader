@@ -5,10 +5,9 @@
  * Reduces inline JSON and provides consistent test data patterns.
  */
 
-import type {APIGatewayRequestAuthorizerEvent, S3Event, ScheduledEvent, SQSEvent} from 'aws-lambda'
+import type {APIGatewayProxyEvent, APIGatewayRequestAuthorizerEvent, S3Event, ScheduledEvent, SQSEvent} from 'aws-lambda'
 import {FileStatus, UserStatus} from '#types/enums'
 import type {Device, File, User} from '#types/domainModels'
-import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
 
 /**
  * Creates a mock file object with sensible defaults
@@ -179,7 +178,7 @@ export function createMockS3Event(objectKey: string, options?: {bucket?: string;
  */
 export function createMockAPIGatewayProxyEvent(
   options: {path: string; httpMethod: string; headers?: Record<string, string>; body?: string | null; userId?: string}
-): CustomAPIGatewayRequestAuthorizerEvent {
+): APIGatewayProxyEvent {
   return {
     body: options.body ?? null,
     headers: options.headers ?? {},
@@ -223,7 +222,7 @@ export function createMockAPIGatewayProxyEvent(
       authorizer: {integrationLatency: 0, principalId: options.userId ?? 'unknown'}
     },
     resource: options.path
-  } as CustomAPIGatewayRequestAuthorizerEvent
+  } as unknown as APIGatewayProxyEvent
 }
 
 /**
@@ -292,17 +291,13 @@ export function createMockAPIGatewayRequestAuthorizerEvent(
  */
 export function createMockCustomAPIGatewayEvent(
   options: {path: string; httpMethod: string; userId?: string; userStatus: UserStatus; body?: string | null; headers?: Record<string, string>}
-): CustomAPIGatewayRequestAuthorizerEvent {
-  const principalId = options.userStatus === UserStatus.Unauthenticated
-    ? 'unknown'
-    : options.userStatus === UserStatus.Anonymous
+): APIGatewayProxyEvent {
+  const principalId = options.userStatus === UserStatus.Anonymous
     ? 'anonymous'
     : options.userId || 'unknown'
 
   const defaultHeaders: Record<string, string> = options.userId && options.userStatus === UserStatus.Authenticated
     ? {Authorization: 'Bearer test-token'}
-    : options.userStatus === UserStatus.Unauthenticated
-    ? {Authorization: 'Bearer invalid-token'}
     : {}
 
   return {
@@ -337,7 +332,7 @@ export function createMockCustomAPIGatewayEvent(
       identity: {sourceIp: '127.0.0.1', userAgent: 'test-agent'}
     },
     resource: options.path
-  } as unknown as CustomAPIGatewayRequestAuthorizerEvent
+  } as unknown as APIGatewayProxyEvent
 }
 
 /**

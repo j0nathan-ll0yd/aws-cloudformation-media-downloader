@@ -31,9 +31,7 @@ vi.mock('fs', () => ({createReadStream: mockCreateReadStream}))
 
 // Mock S3 Upload - simplified (no EventEmitter progress tracking needed)
 const mockUploadDone = vi.fn<() => Promise<{Location: string}>>()
-const mockCreateUpload = vi.fn(
-  () => ({done: mockUploadDone})
-)
+const mockCreateUpload = vi.fn(() => ({done: mockUploadDone}))
 
 vi.mock('@mantleframework/aws', () => ({
   createUpload: mockCreateUpload,
@@ -54,24 +52,26 @@ vi.mock('@mantleframework/aws', () => ({
   setTestCloudWatchClient: vi.fn()
 }))
 
-vi.mock('@mantleframework/observability', () => ({
-  logDebug: vi.fn(),
-  logInfo: vi.fn(),
-  logWarn: vi.fn(),
-  logError: vi.fn(),
-  metrics: {
-    addMetric: vi.fn(),
-    addDimension: vi.fn(),
-    publishStoredMetrics: vi.fn(),
-    singleMetric: vi.fn(() => ({addDimension: vi.fn(), addMetric: vi.fn()}))
-  },
-  MetricUnit: {Count: 'Count', Seconds: 'Seconds', Milliseconds: 'Milliseconds', Bytes: 'Bytes'}
-}))
+vi.mock('@mantleframework/observability',
+  () => ({
+    logDebug: vi.fn(),
+    logInfo: vi.fn(),
+    logWarn: vi.fn(),
+    logError: vi.fn(),
+    metrics: {
+      addMetric: vi.fn(),
+      addDimension: vi.fn(),
+      publishStoredMetrics: vi.fn(),
+      singleMetric: vi.fn(() => ({addDimension: vi.fn(), addMetric: vi.fn()}))
+    },
+    MetricUnit: {Count: 'Count', Seconds: 'Seconds', Milliseconds: 'Milliseconds', Bytes: 'Bytes'}
+  }))
 
-vi.mock('@mantleframework/env', () => ({
-  getRequiredEnv: vi.fn((key: string) => process.env[key] ?? `mock-${key}`),
-  getOptionalEnv: vi.fn((key: string, defaultVal?: string) => process.env[key] ?? defaultVal)
-}))
+vi.mock('@mantleframework/env',
+  () => ({
+    getRequiredEnv: vi.fn((key: string) => process.env[key] ?? `mock-${key}`),
+    getOptionalEnv: vi.fn((key: string, defaultVal?: string) => process.env[key] ?? defaultVal)
+  }))
 
 // Set up environment variables before importing
 process.env.YTDLP_BINARY_PATH = '/opt/bin/yt-dlp_linux'
