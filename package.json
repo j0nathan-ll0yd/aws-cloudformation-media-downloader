@@ -118,7 +118,7 @@
     "update:ytdlp": "./bin/update-yt-dlp.sh",
     "update:ytdlp:check": "./bin/update-yt-dlp.sh --check-only",
     "validate:api:paths": "node --import tsx scripts/validateApiPaths.ts",
-    "validate:env-vars": "mantle check env-vars",
+    "validate:env-vars": "./node_modules/.bin/mantle check env-vars",
     "validate:config": "node --import tsx scripts/validateConfig.ts",
     "validate:conventions": "node --import tsx scripts/validateConventions.ts",
     "validate:doc:sync": "./bin/validate-doc-sync.sh",
