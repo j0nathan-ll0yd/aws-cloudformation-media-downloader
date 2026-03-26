@@ -16,7 +16,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      # Checkout mantle framework as a sibling directory.
+      # actions/checkout@v6 requires path to be within $GITHUB_WORKSPACE,
+      # but link: deps point to ../mantle — so we use git clone directly.
+      - name: Setup SSH for mantle checkout
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.MANTLE_DEPLOY_KEY }}" > ~/.ssh/mantle_deploy_key
+          chmod 600 ~/.ssh/mantle_deploy_key
+          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+      - name: Checkout mantle framework
+        run: GIT_SSH_COMMAND="ssh -i ~/.ssh/mantle_deploy_key -o StrictHostKeyChecking=no" git clone --depth 1 --branch main git@github.com:j0nathan-ll0yd/mantle.git ../mantle
       - uses: ./.github/actions/setup-node-pnpm
+      - name: Install mantle dependencies
+        working-directory: ../mantle
+        run: pnpm install --frozen-lockfile
+      - name: Build mantle packages
+        working-directory: ../mantle
+        run: pnpm build
       - run: pnpm run typecheck
 
   lint:
@@ -24,7 +41,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - name: Setup SSH for mantle checkout
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.MANTLE_DEPLOY_KEY }}" > ~/.ssh/mantle_deploy_key
+          chmod 600 ~/.ssh/mantle_deploy_key
+          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+      - name: Checkout mantle framework
+        run: GIT_SSH_COMMAND="ssh -i ~/.ssh/mantle_deploy_key -o StrictHostKeyChecking=no" git clone --depth 1 --branch main git@github.com:j0nathan-ll0yd/mantle.git ../mantle
       - uses: ./.github/actions/setup-node-pnpm
+      - name: Install mantle dependencies
+        working-directory: ../mantle
+        run: pnpm install --frozen-lockfile
+      - name: Build mantle packages
+        working-directory: ../mantle
+        run: pnpm build
       - run: pnpm run lint
 
   format:
@@ -32,7 +63,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - name: Setup SSH for mantle checkout
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.MANTLE_DEPLOY_KEY }}" > ~/.ssh/mantle_deploy_key
+          chmod 600 ~/.ssh/mantle_deploy_key
+          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+      - name: Checkout mantle framework
+        run: GIT_SSH_COMMAND="ssh -i ~/.ssh/mantle_deploy_key -o StrictHostKeyChecking=no" git clone --depth 1 --branch main git@github.com:j0nathan-ll0yd/mantle.git ../mantle
       - uses: ./.github/actions/setup-node-pnpm
+      - name: Install mantle dependencies
+        working-directory: ../mantle
+        run: pnpm install --frozen-lockfile
+      - name: Build mantle packages
+        working-directory: ../mantle
+        run: pnpm build
       - run: pnpm run format:check
 
   test:
@@ -40,7 +85,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - name: Setup SSH for mantle checkout
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.MANTLE_DEPLOY_KEY }}" > ~/.ssh/mantle_deploy_key
+          chmod 600 ~/.ssh/mantle_deploy_key
+          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+      - name: Checkout mantle framework
+        run: GIT_SSH_COMMAND="ssh -i ~/.ssh/mantle_deploy_key -o StrictHostKeyChecking=no" git clone --depth 1 --branch main git@github.com:j0nathan-ll0yd/mantle.git ../mantle
       - uses: ./.github/actions/setup-node-pnpm
+      - name: Install mantle dependencies
+        working-directory: ../mantle
+        run: pnpm install --frozen-lockfile
+      - name: Build mantle packages
+        working-directory: ../mantle
+        run: pnpm build
       - run: pnpm test
       - name: Upload coverage
         if: always()
@@ -55,7 +114,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - name: Setup SSH for mantle checkout
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.MANTLE_DEPLOY_KEY }}" > ~/.ssh/mantle_deploy_key
+          chmod 600 ~/.ssh/mantle_deploy_key
+          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+      - name: Checkout mantle framework
+        run: GIT_SSH_COMMAND="ssh -i ~/.ssh/mantle_deploy_key -o StrictHostKeyChecking=no" git clone --depth 1 --branch main git@github.com:j0nathan-ll0yd/mantle.git ../mantle
       - uses: ./.github/actions/setup-node-pnpm
+      - name: Install mantle dependencies
+        working-directory: ../mantle
+        run: pnpm install --frozen-lockfile
+      - name: Build mantle packages
+        working-directory: ../mantle
+        run: pnpm build
       - run: pnpm run build
       - name: Verify Lambda outputs
         run: |
@@ -72,7 +145,21 @@ jobs:
     needs: [build]
     steps:
       - uses: actions/checkout@v6
+      - name: Setup SSH for mantle checkout
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.MANTLE_DEPLOY_KEY }}" > ~/.ssh/mantle_deploy_key
+          chmod 600 ~/.ssh/mantle_deploy_key
+          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+      - name: Checkout mantle framework
+        run: GIT_SSH_COMMAND="ssh -i ~/.ssh/mantle_deploy_key -o StrictHostKeyChecking=no" git clone --depth 1 --branch main git@github.com:j0nathan-ll0yd/mantle.git ../mantle
       - uses: ./.github/actions/setup-node-pnpm
+      - name: Install mantle dependencies
+        working-directory: ../mantle
+        run: pnpm install --frozen-lockfile
+      - name: Build mantle packages
+        working-directory: ../mantle
+        run: pnpm build
       - name: Start LocalStack
         run: docker compose -f docker-compose.localstack.yml up -d
       - name: Wait for LocalStack

@@ -5,11 +5,11 @@ export default defineConfig({
   database: {provider: 'aurora-dsql'},
   backend: {
     s3: {
-      bucket: 'lifegames-media-downloader-tfstate',
+      bucket: 'mantle-offlinemediadownloader-tfstate',
       key: 'infra.tfstate',
       region: 'us-west-2',
       encrypt: true,
-      dynamodbTable: 'MediaDownloader-TerraformStateLock',
+      dynamodbTable: 'TerraformStateLock',
       workspaceKeyPrefix: 'env'
     }
   },
@@ -99,6 +99,13 @@ export default defineConfig({
     }
   },
   authorizer: {cacheTtl: 0},
+  // @ts-expect-error ci config is consumed by @mantleframework/cli, not typed in @mantleframework/core
+  ci: {
+    mantleRepo: 'j0nathan-ll0yd/mantle',
+    mantleRef: 'main',
+    mantleAuthSecret: 'MANTLE_DEPLOY_KEY',
+    deploy: false,
+  },
   layers: [
     {
       name: 'yt-dlp',
