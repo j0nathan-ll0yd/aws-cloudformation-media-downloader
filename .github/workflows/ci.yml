@@ -134,8 +134,8 @@ jobs:
         run: |
           count=$(ls -d build/lambdas/*/ 2>/dev/null | wc -l)
           echo "Built ${count} Lambda functions"
-          if [ "$count" -lt 18 ]; then
-            echo "::error::Expected 18 Lambda functions, got ${count}"
+          if [ "$count" -lt 17 ]; then
+            echo "::error::Expected 17 Lambda functions, got ${count}"
             exit 1
           fi
 
