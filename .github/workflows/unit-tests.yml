@@ -76,9 +76,8 @@ jobs:
       # - name: Run convention validation
       #   run: pnpm run validate:conventions
 
-      # SKIPPED: mantle CLI binary not available via pnpm exec with link: deps in CI
-      # - name: Validate environment variables
-      #   run: pnpm exec mantle check env-vars
+      - name: Validate environment variables
+        run: pnpm run validate:env-vars
 
       - name: Validate DSQL migration compatibility
         run: |
