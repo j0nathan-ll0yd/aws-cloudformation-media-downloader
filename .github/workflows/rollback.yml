@@ -21,6 +21,8 @@ env:
 
 jobs:
   rollback:
+    # TEMPORARILY DISABLED: Re-enable after AWS environment setup is complete
+    if: false
     name: Rollback ${{ inputs.environment }}
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}

@@ -60,6 +60,8 @@ jobs:
   # Deploy Production (automatic on merge to main)
   # ==========================================================================
   deploy-production:
+    # TEMPORARILY DISABLED: Re-enable after repo rename and CI stabilization
+    if: false
     name: Deploy Production
     needs: build
     runs-on: ubuntu-latest
