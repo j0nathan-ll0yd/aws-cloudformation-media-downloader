@@ -27,10 +27,10 @@ ARG DENO_VERSION=2.7.7
 ADD https://github.com/denoland/deno/releases/download/v${DENO_VERSION}/deno-x86_64-unknown-linux-gnu.zip /tmp/deno.zip
 RUN cd /tmp && unzip deno.zip && chmod +x deno && mv deno /opt/bin/deno && rm deno.zip
 
-# --- ffmpeg (static build for stream muxing) ---
+# --- ffmpeg + ffprobe (static build for stream muxing and analysis) ---
 ADD https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz /tmp/ffmpeg.tar.xz
-RUN cd /tmp && tar xf ffmpeg.tar.xz --wildcards '*/ffmpeg' --strip-components=1 \
-  && chmod +x ffmpeg && mv ffmpeg /opt/bin/ffmpeg && rm ffmpeg.tar.xz
+RUN cd /tmp && tar xf ffmpeg.tar.xz --wildcards '*/ffmpeg' '*/ffprobe' --strip-components=1 \
+  && chmod +x ffmpeg ffprobe && mv ffmpeg ffprobe /opt/bin/ && rm ffmpeg.tar.xz
 
 # --- yt-dlp cookies ---
 COPY layers/yt-dlp/cookies/ /opt/cookies/
