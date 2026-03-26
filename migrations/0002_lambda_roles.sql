@@ -1,32 +1,31 @@
 -- Migration: 0002_lambda_roles
 -- Description: Per-Lambda PostgreSQL roles with fine-grained table permissions
 -- Auto-generated from @RequiresTable decorators
--- Generated at: 2026-01-26T05:40:17.317Z
+-- Generated at: 2026-03-25T21:06:27.125Z
 --
 -- This migration creates per-Lambda PostgreSQL roles and grants them
 -- exactly the table permissions declared in their @RequiresTable decorators.
--- Note: ${AWS_ACCOUNT_ID} is replaced at runtime by MigrateDSQL handler.
+-- Note: ${AWS_ACCOUNT_ID} and ${RESOURCE_PREFIX} are replaced at runtime by MigrateDSQL handler.
 
 -- =============================================================================
 -- CREATE ROLES (per-Lambda with LOGIN for IAM auth)
 -- =============================================================================
 
 CREATE ROLE lambda_api_gateway_authorizer WITH LOGIN;
-CREATE ROLE lambda_cleanup_expired_records WITH LOGIN;
-CREATE ROLE lambda_list_files WITH LOGIN;
-CREATE ROLE lambda_login_user WITH LOGIN;
-CREATE ROLE lambda_logout_user WITH LOGIN;
--- MigrateDSQL: Uses built-in admin role (DDL/DML access)
+CREATE ROLE lambda_device_register WITH LOGIN;
+CREATE ROLE lambda_feedly_webhook WITH LOGIN;
+CREATE ROLE lambda_file_helpers WITH LOGIN;
+CREATE ROLE lambda_files_get WITH LOGIN;
 CREATE ROLE lambda_prune_devices WITH LOGIN;
-CREATE ROLE lambda_refresh_token WITH LOGIN;
-CREATE ROLE lambda_register_device WITH LOGIN;
-CREATE ROLE lambda_register_user WITH LOGIN;
 CREATE ROLE lambda_s3_object_created WITH LOGIN;
 CREATE ROLE lambda_send_push_notification WITH LOGIN;
 CREATE ROLE lambda_start_file_upload WITH LOGIN;
 CREATE ROLE lambda_user_delete WITH LOGIN;
+CREATE ROLE lambda_user_login WITH LOGIN;
+CREATE ROLE lambda_user_logout WITH LOGIN;
+CREATE ROLE lambda_user_refresh WITH LOGIN;
+CREATE ROLE lambda_user_register WITH LOGIN;
 CREATE ROLE lambda_user_subscribe WITH LOGIN;
-CREATE ROLE lambda_webhook_feedly WITH LOGIN;
 
 -- =============================================================================
 -- GRANT TABLE PERMISSIONS (per-Lambda least-privilege)
@@ -35,36 +34,25 @@ CREATE ROLE lambda_webhook_feedly WITH LOGIN;
 -- ApiGatewayAuthorizer: sessions
 GRANT SELECT, UPDATE ON sessions TO lambda_api_gateway_authorizer;
 
--- CleanupExpiredRecords: sessions, verification, file_downloads
-GRANT SELECT, DELETE ON sessions TO lambda_cleanup_expired_records;
-GRANT SELECT, DELETE ON verification TO lambda_cleanup_expired_records;
-GRANT SELECT, DELETE ON file_downloads TO lambda_cleanup_expired_records;
+-- DeviceRegister: devices, user_devices
+GRANT DELETE, INSERT, SELECT, UPDATE ON devices TO lambda_device_register;
+GRANT DELETE, INSERT, SELECT ON user_devices TO lambda_device_register;
 
--- ListFiles: files, user_files
-GRANT SELECT ON files TO lambda_list_files;
-GRANT SELECT ON user_files TO lambda_list_files;
+-- FeedlyWebhook: file_downloads, files, user_files
+GRANT INSERT, SELECT ON file_downloads TO lambda_feedly_webhook;
+GRANT INSERT, SELECT ON files TO lambda_feedly_webhook;
+GRANT INSERT, SELECT ON user_files TO lambda_feedly_webhook;
 
--- LoginUser: users, sessions, accounts
-GRANT SELECT, INSERT, UPDATE ON users TO lambda_login_user;
-GRANT SELECT, INSERT, UPDATE, DELETE ON sessions TO lambda_login_user;
-GRANT SELECT, INSERT ON accounts TO lambda_login_user;
+-- FileHelpers: files
+GRANT INSERT, SELECT, UPDATE ON files TO lambda_file_helpers;
 
--- LogoutUser: sessions
-GRANT SELECT, UPDATE ON sessions TO lambda_logout_user;
+-- FilesGet: files, user_files
+GRANT SELECT ON files TO lambda_files_get;
+GRANT SELECT ON user_files TO lambda_files_get;
 
 -- PruneDevices: devices, user_devices
 GRANT DELETE, SELECT ON devices TO lambda_prune_devices;
 GRANT DELETE, SELECT ON user_devices TO lambda_prune_devices;
-
--- RefreshToken: sessions
-GRANT SELECT, UPDATE ON sessions TO lambda_refresh_token;
-
--- RegisterDevice: devices, user_devices
-GRANT DELETE, INSERT, UPDATE ON devices TO lambda_register_device;
-GRANT DELETE, INSERT, SELECT ON user_devices TO lambda_register_device;
-
--- RegisterUser: users
-GRANT UPDATE ON users TO lambda_register_user;
 
 -- S3ObjectCreated: files, user_files
 GRANT SELECT ON files TO lambda_s3_object_created;
@@ -85,14 +73,33 @@ GRANT DELETE, SELECT ON user_devices TO lambda_user_delete;
 GRANT DELETE ON user_files TO lambda_user_delete;
 GRANT DELETE ON users TO lambda_user_delete;
 
+-- UserLogin: users, sessions, accounts, verification
+GRANT SELECT, INSERT, UPDATE ON users TO lambda_user_login;
+GRANT SELECT, INSERT, UPDATE, DELETE ON sessions TO lambda_user_login;
+GRANT SELECT, INSERT, DELETE ON accounts TO lambda_user_login;
+GRANT SELECT, INSERT, DELETE ON verification TO lambda_user_login;
+
+-- UserLogout: users, sessions, accounts, verification
+GRANT SELECT, INSERT, UPDATE ON users TO lambda_user_logout;
+GRANT SELECT, INSERT, UPDATE, DELETE ON sessions TO lambda_user_logout;
+GRANT SELECT, INSERT, DELETE ON accounts TO lambda_user_logout;
+GRANT SELECT, INSERT, DELETE ON verification TO lambda_user_logout;
+
+-- UserRefresh: users, sessions, accounts, verification
+GRANT SELECT, INSERT, UPDATE ON users TO lambda_user_refresh;
+GRANT SELECT, INSERT, UPDATE, DELETE ON sessions TO lambda_user_refresh;
+GRANT SELECT, INSERT, DELETE ON accounts TO lambda_user_refresh;
+GRANT SELECT, INSERT, DELETE ON verification TO lambda_user_refresh;
+
+-- UserRegister: accounts, sessions, users, verification
+GRANT SELECT, INSERT, DELETE ON accounts TO lambda_user_register;
+GRANT SELECT, INSERT, UPDATE, DELETE ON sessions TO lambda_user_register;
+GRANT SELECT, UPDATE, INSERT ON users TO lambda_user_register;
+GRANT SELECT, INSERT, DELETE ON verification TO lambda_user_register;
+
 -- UserSubscribe: devices, user_devices
 GRANT DELETE ON devices TO lambda_user_subscribe;
 GRANT DELETE, SELECT ON user_devices TO lambda_user_subscribe;
-
--- WebhookFeedly: file_downloads, files, user_files
-GRANT INSERT ON file_downloads TO lambda_webhook_feedly;
-GRANT INSERT, SELECT ON files TO lambda_webhook_feedly;
-GRANT INSERT, SELECT ON user_files TO lambda_webhook_feedly;
 
 -- =============================================================================
 -- AWS IAM GRANT (associate Lambda IAM roles with PostgreSQL roles)
@@ -101,18 +108,17 @@ GRANT INSERT, SELECT ON user_files TO lambda_webhook_feedly;
 -- ${AWS_ACCOUNT_ID} and ${RESOURCE_PREFIX} are replaced at runtime by MigrateDSQL handler.
 
 AWS IAM GRANT lambda_api_gateway_authorizer TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-ApiGatewayAuthorizer';
-AWS IAM GRANT lambda_cleanup_expired_records TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-CleanupExpiredRecords';
-AWS IAM GRANT lambda_list_files TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-ListFiles';
-AWS IAM GRANT lambda_login_user TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-LoginUser';
-AWS IAM GRANT lambda_logout_user TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-LogoutUser';
--- MigrateDSQL: Uses admin (no IAM GRANT needed, uses DbConnectAdmin)
+AWS IAM GRANT lambda_device_register TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-DeviceRegister';
+AWS IAM GRANT lambda_feedly_webhook TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-FeedlyWebhook';
+AWS IAM GRANT lambda_file_helpers TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-FileHelpers';
+AWS IAM GRANT lambda_files_get TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-FilesGet';
 AWS IAM GRANT lambda_prune_devices TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-PruneDevices';
-AWS IAM GRANT lambda_refresh_token TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-RefreshToken';
-AWS IAM GRANT lambda_register_device TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-RegisterDevice';
-AWS IAM GRANT lambda_register_user TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-RegisterUser';
 AWS IAM GRANT lambda_s3_object_created TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-S3ObjectCreated';
 AWS IAM GRANT lambda_send_push_notification TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-SendPushNotification';
 AWS IAM GRANT lambda_start_file_upload TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-StartFileUpload';
 AWS IAM GRANT lambda_user_delete TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-UserDelete';
+AWS IAM GRANT lambda_user_login TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-UserLogin';
+AWS IAM GRANT lambda_user_logout TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-UserLogout';
+AWS IAM GRANT lambda_user_refresh TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-UserRefresh';
+AWS IAM GRANT lambda_user_register TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-UserRegister';
 AWS IAM GRANT lambda_user_subscribe TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-UserSubscribe';
-AWS IAM GRANT lambda_webhook_feedly TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-WebhookFeedly';
