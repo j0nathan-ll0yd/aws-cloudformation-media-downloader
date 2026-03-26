@@ -67,11 +67,8 @@ jobs:
         # pnpm trust-downgrade protection blocks the patched version (missing provenance attestation)
         run: pnpm audit --audit-level=high --ignore GHSA-46wh-pxpv-q5gq
 
-      # SKIPPED: validate:config and validate:conventions reference removed src/mcp/ module
-      # - name: Validate configuration enforcement
-      #   run: pnpm run validate:config
-      # - name: Run convention validation
-      #   run: pnpm run validate:conventions
+      - name: Run convention validation (Mantle CLI)
+        run: pnpm run validate:conventions
 
       - name: Validate environment variables
         run: pnpm run validate:env-vars

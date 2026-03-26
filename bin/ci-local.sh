@@ -196,14 +196,16 @@ main() {
   echo -e "${GREEN}  ESLint local rules tests passed${NC}"
   echo ""
 
-  # Step 12: MCP conventions validation (SKIPPED — src/mcp/ removed during Mantle migration)
-  echo -e "${YELLOW}[12/21] Validating MCP conventions...${NC}"
-  echo -e "${GREEN}  MCP conventions skipped (module removed during Mantle migration)${NC}"
+  # Step 12: Mantle conventions validation
+  echo -e "${YELLOW}[12/21] Validating conventions (Mantle CLI)...${NC}"
+  pnpm run validate:conventions
+  echo -e "${GREEN}  Conventions validation passed${NC}"
   echo ""
 
-  # Step 13: Config validation (SKIPPED — src/mcp/ removed during Mantle migration)
-  echo -e "${YELLOW}[13/21] Validating config...${NC}"
-  echo -e "${GREEN}  Config validation skipped (module removed during Mantle migration)${NC}"
+  # Step 13: Environment variables validation
+  echo -e "${YELLOW}[13/21] Validating environment variables...${NC}"
+  pnpm run validate:env-vars
+  echo -e "${GREEN}  Environment variables validation passed${NC}"
   echo ""
 
   # Step 14: API paths validation (SKIPPED — script references terraform/ dir, Mantle uses infra/ with module pattern)
