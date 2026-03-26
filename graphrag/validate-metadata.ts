@@ -37,11 +37,40 @@ interface ValidationResult {
 
 /**
  * Discover Lambda names from src/lambdas/ directory
+ *
+ * Supports two Lambda layout conventions:
+ * - File-based routing (Mantle): `api/user/login.post.ts` -> `api/user/login`
+ * - Directory-based: `sqs/SendPushNotification/index.ts` -> `sqs/SendPushNotification`
  */
 async function discoverLambdas(): Promise<string[]> {
   const lambdasDir = path.join(projectRoot, 'src', 'lambdas')
-  const entries = await fs.readdir(lambdasDir, {withFileTypes: true})
-  return entries.filter((e) => e.isDirectory()).map((e) => e.name)
+  const lambdas: string[] = []
+
+  async function walk(dir: string): Promise<void> {
+    const entries = await fs.readdir(dir, {withFileTypes: true})
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name)
+      if (entry.isDirectory()) {
+        await walk(fullPath)
+      } else if (entry.isFile() && entry.name.endsWith('.ts') && !entry.name.endsWith('.test.ts')) {
+        // File-based routing: event.post.ts, index.get.ts, webhook.post.ts
+        const routeMatch = entry.name.match(/^(.+)\.(post|get|delete|put|patch)\.ts$/)
+        if (routeMatch) {
+          const rel = path.relative(lambdasDir, path.join(dir, routeMatch[1]))
+          lambdas.push(rel)
+          continue
+        }
+        // Directory-based: index.ts inside a named folder
+        if (entry.name === 'index.ts') {
+          const rel = path.relative(lambdasDir, dir)
+          lambdas.push(rel)
+        }
+      }
+    }
+  }
+
+  await walk(lambdasDir)
+  return lambdas.sort()
 }
 
 /**

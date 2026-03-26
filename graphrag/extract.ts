@@ -92,13 +92,52 @@ interface TypeSpecEndpointMetadata {
   description?: string
 }
 
+interface LambdaEntry {
+  name: string
+  entryPoint: string
+}
+
 /**
- * Discover Lambda names from src/lambdas/ directory
+ * Discover Lambda entry points from src/lambdas/ directory
+ *
+ * Supports two Lambda layout conventions:
+ * - File-based routing (Mantle): `api/user/login.post.ts` -> name `api/user/login`
+ * - Directory-based: `sqs/SendPushNotification/index.ts` -> name `sqs/SendPushNotification`
+ *
+ * Returns Lambda identifiers (relative paths from src/lambdas/) paired with
+ * their entry point file paths (relative to project root, for graph.json lookup).
  */
-async function discoverLambdas(): Promise<string[]> {
+async function discoverLambdas(): Promise<LambdaEntry[]> {
   const lambdasDir = path.join(projectRoot, 'src', 'lambdas')
-  const entries = await fs.readdir(lambdasDir, {withFileTypes: true})
-  return entries.filter((e) => e.isDirectory()).map((e) => e.name)
+  const lambdas: LambdaEntry[] = []
+
+  async function walk(dir: string): Promise<void> {
+    const entries = await fs.readdir(dir, {withFileTypes: true})
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name)
+      if (entry.isDirectory()) {
+        await walk(fullPath)
+      } else if (entry.isFile() && entry.name.endsWith('.ts') && !entry.name.endsWith('.test.ts')) {
+        // File-based routing: event.post.ts, index.get.ts, webhook.post.ts
+        const routeMatch = entry.name.match(/^(.+)\.(post|get|delete|put|patch)\.ts$/)
+        if (routeMatch) {
+          const name = path.relative(lambdasDir, path.join(dir, routeMatch[1]))
+          const entryPoint = `src/lambdas/${path.relative(lambdasDir, fullPath)}`
+          lambdas.push({name, entryPoint})
+          continue
+        }
+        // Directory-based: index.ts inside a named folder
+        if (entry.name === 'index.ts') {
+          const name = path.relative(lambdasDir, dir)
+          const entryPoint = `src/lambdas/${path.relative(lambdasDir, fullPath)}`
+          lambdas.push({name, entryPoint})
+        }
+      }
+    }
+  }
+
+  await walk(lambdasDir)
+  return lambdas.sort((a, b) => a.name.localeCompare(b.name))
 }
 
 /**
@@ -106,7 +145,7 @@ async function discoverLambdas(): Promise<string[]> {
  * Parses src/lib/vendor/Drizzle/schema.ts to find all pgTable definitions
  */
 async function discoverEntities(): Promise<string[]> {
-  const schemaPath = path.join(projectRoot, 'src', 'lib', 'vendor', 'Drizzle', 'schema.ts')
+  const schemaPath = path.join(projectRoot, 'src', 'db', 'schema.ts')
   const content = await fs.readFile(schemaPath, 'utf-8')
 
   // Match pattern: export const tableName = pgTable('
@@ -192,15 +231,15 @@ async function discoverTypeSpecModels(): Promise<TypeSpecModelMetadata[]> {
  * @see tsp/operations/operations.tsp for current operations
  */
 const OPERATION_TO_HANDLER: Record<string, string> = {
-  listFiles: 'ListFiles',
-  registerDevice: 'RegisterDevice',
-  logClientEvent: 'DeviceEvent',
-  processFeedlyWebhook: 'WebhookFeedly',
-  registerUser: 'RegisterUser',
-  loginUser: 'LoginUser',
-  refreshToken: 'RefreshToken',
-  deleteUser: 'UserDelete',
-  subscribeUser: 'UserSubscribe'
+  listFiles: 'api/files/index',
+  registerDevice: 'api/device/register',
+  logClientEvent: 'api/device/event',
+  processFeedlyWebhook: 'api/feedly/webhook',
+  registerUser: 'api/user/register',
+  loginUser: 'api/user/login',
+  refreshToken: 'api/user/refresh',
+  deleteUser: 'api/user/index',
+  subscribeUser: 'api/user/subscribe'
 }
 
 /**
@@ -464,7 +503,7 @@ export async function extractKnowledgeGraph(): Promise<KnowledgeGraph> {
   const edges: Edge[] = []
 
   // Load all data sources
-  const [lambdaNames, entityNames, depGraph, metadata, typeSpecModels, typeSpecEndpoints] = await Promise.all([
+  const [lambdaEntries, entityNames, depGraph, metadata, typeSpecModels, typeSpecEndpoints] = await Promise.all([
     discoverLambdas(),
     discoverEntities(),
     loadDependencyGraph(),
@@ -472,6 +511,9 @@ export async function extractKnowledgeGraph(): Promise<KnowledgeGraph> {
     discoverTypeSpecModels(),
     discoverTypeSpecEndpoints()
   ])
+
+  const lambdaNames = lambdaEntries.map((e) => e.name)
+  const lambdaEntryPoints = new Map(lambdaEntries.map((e) => [e.name, e.entryPoint]))
 
   console.log(`  Discovered ${lambdaNames.length} Lambdas`)
   console.log(`  Discovered ${entityNames.length} Entities`)
@@ -576,11 +618,11 @@ export async function extractKnowledgeGraph(): Promise<KnowledgeGraph> {
 
   // Add Lambda → ApiModel validation edges (based on generated type imports)
   const lambdaToModelMap: Record<string, string[]> = {
-    LoginUser: ['UserLoginRequest'],
-    RegisterUser: ['UserRegistrationRequest'],
-    RegisterDevice: ['DeviceRegistrationRequest'],
-    UserSubscribe: ['UserSubscriptionRequest'],
-    WebhookFeedly: ['FeedlyWebhookRequest']
+    'api/user/login': ['UserLoginRequest'],
+    'api/user/register': ['UserRegistrationRequest'],
+    'api/device/register': ['DeviceRegistrationRequest'],
+    'api/user/subscribe': ['UserSubscriptionRequest'],
+    'api/feedly/webhook': ['FeedlyWebhookRequest']
   }
 
   for (const [lambdaName, models] of Object.entries(lambdaToModelMap)) {
@@ -597,7 +639,7 @@ export async function extractKnowledgeGraph(): Promise<KnowledgeGraph> {
 
   // 7. Add Lambda → Service/External edges (derived from dependency graph)
   for (const lambdaName of lambdaNames) {
-    const entryPoint = `src/lambdas/${lambdaName}/src/index.ts`
+    const entryPoint = lambdaEntryPoints.get(lambdaName) || ''
     const deps = depGraph.transitiveDependencies[entryPoint] || []
 
     // AWS Services

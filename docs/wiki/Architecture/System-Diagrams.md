@@ -180,7 +180,6 @@ erDiagram
 |--------|-------------|--------|---------|
 | ApiGatewayAuthorizer | API Gateway | All authenticated routes | Authorize API requests via Better Auth |
 | CleanupExpiredRecords | CloudWatch Events | Daily schedule (3 AM UTC) | Clean expired records |
-| CloudfrontMiddleware | CloudFront | Edge requests | Edge processing for CDN |
 | DeviceEvent | API Gateway | POST /device/event | Log client-side device events |
 | ListFiles | API Gateway | GET /files | List user's available files |
 | LoginUser | API Gateway | POST /user/login | Authenticate user |

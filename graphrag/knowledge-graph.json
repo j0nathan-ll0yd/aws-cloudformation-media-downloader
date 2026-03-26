@@ -1,165 +1,156 @@
 {
   "nodes": [
     {
-      "id": "lambda:ApiGatewayAuthorizer",
+      "id": "lambda:api/device/event",
       "type": "Lambda",
       "properties": {
-        "name": "ApiGatewayAuthorizer",
-        "trigger": "API Gateway",
-        "purpose": "Authorize API requests via Better Auth sessions"
-      }
-    },
-    {
-      "id": "lambda:CleanupExpiredRecords",
-      "type": "Lambda",
-      "properties": {
-        "name": "CleanupExpiredRecords",
-        "trigger": "CloudWatch Events",
-        "purpose": "Scheduled cleanup of expired FileDownloads, Sessions, and VerificationTokens"
-      }
-    },
-    {
-      "id": "lambda:CloudfrontMiddleware",
-      "type": "Lambda",
-      "properties": {
-        "name": "CloudfrontMiddleware",
-        "trigger": "CloudFront",
-        "purpose": "Edge processing for CDN requests"
-      }
-    },
-    {
-      "id": "lambda:DeviceEvent",
-      "type": "Lambda",
-      "properties": {
-        "name": "DeviceEvent",
+        "name": "api/device/event",
         "trigger": "API Gateway",
         "purpose": "Log client-side events for analytics"
       }
     },
     {
-      "id": "lambda:ListFiles",
+      "id": "lambda:api/device/register",
       "type": "Lambda",
       "properties": {
-        "name": "ListFiles",
-        "trigger": "API Gateway",
-        "purpose": "List files available to authenticated user"
-      }
-    },
-    {
-      "id": "lambda:LoginUser",
-      "type": "Lambda",
-      "properties": {
-        "name": "LoginUser",
-        "trigger": "API Gateway",
-        "purpose": "Authenticate user via Sign In With Apple"
-      }
-    },
-    {
-      "id": "lambda:LogoutUser",
-      "type": "Lambda",
-      "properties": {
-        "name": "LogoutUser",
-        "trigger": "API Gateway",
-        "purpose": "Invalidate user session and log out"
-      }
-    },
-    {
-      "id": "lambda:MigrateDSQL",
-      "type": "Lambda",
-      "properties": {
-        "name": "MigrateDSQL",
-        "trigger": "Manual",
-        "purpose": "Apply Drizzle ORM migrations to Aurora DSQL database"
-      }
-    },
-    {
-      "id": "lambda:PruneDevices",
-      "type": "Lambda",
-      "properties": {
-        "name": "PruneDevices",
-        "trigger": "CloudWatch Events",
-        "purpose": "Scheduled cleanup of inactive devices"
-      }
-    },
-    {
-      "id": "lambda:RefreshToken",
-      "type": "Lambda",
-      "properties": {
-        "name": "RefreshToken",
-        "trigger": "API Gateway",
-        "purpose": "Refresh authentication token"
-      }
-    },
-    {
-      "id": "lambda:RegisterDevice",
-      "type": "Lambda",
-      "properties": {
-        "name": "RegisterDevice",
+        "name": "api/device/register",
         "trigger": "API Gateway",
         "purpose": "Register iOS device for push notifications"
       }
     },
     {
-      "id": "lambda:RegisterUser",
+      "id": "lambda:api/feedly/webhook",
       "type": "Lambda",
       "properties": {
-        "name": "RegisterUser",
+        "name": "api/feedly/webhook",
         "trigger": "API Gateway",
-        "purpose": "Register new user via Sign In With Apple"
+        "purpose": "Process Feedly webhooks, publish DownloadRequested events to EventBridge"
       }
     },
     {
-      "id": "lambda:S3ObjectCreated",
+      "id": "lambda:api/files/index",
       "type": "Lambda",
       "properties": {
-        "name": "S3ObjectCreated",
-        "trigger": "S3 Event",
-        "purpose": "Handle uploaded files and notify users"
+        "name": "api/files/index",
+        "trigger": "API Gateway",
+        "purpose": "List files available to authenticated user"
       }
     },
     {
-      "id": "lambda:SendPushNotification",
+      "id": "lambda:api/user/index",
       "type": "Lambda",
       "properties": {
-        "name": "SendPushNotification",
-        "trigger": "SQS",
-        "purpose": "Send push notification to user devices via APNS"
-      }
-    },
-    {
-      "id": "lambda:StartFileUpload",
-      "type": "Lambda",
-      "properties": {
-        "name": "StartFileUpload",
-        "trigger": "SQS",
-        "purpose": "Download video from YouTube to S3 (event-driven via DownloadQueue)"
-      }
-    },
-    {
-      "id": "lambda:UserDelete",
-      "type": "Lambda",
-      "properties": {
-        "name": "UserDelete",
+        "name": "api/user/index",
         "trigger": "API Gateway",
         "purpose": "Delete user and cascade to related records"
       }
     },
     {
-      "id": "lambda:UserSubscribe",
+      "id": "lambda:api/user/login",
       "type": "Lambda",
       "properties": {
-        "name": "UserSubscribe",
+        "name": "api/user/login",
+        "trigger": "API Gateway",
+        "purpose": "Authenticate user via Sign In With Apple"
+      }
+    },
+    {
+      "id": "lambda:api/user/logout",
+      "type": "Lambda",
+      "properties": {
+        "name": "api/user/logout",
+        "trigger": "API Gateway",
+        "purpose": "Invalidate user session and log out"
+      }
+    },
+    {
+      "id": "lambda:api/user/refresh",
+      "type": "Lambda",
+      "properties": {
+        "name": "api/user/refresh",
+        "trigger": "API Gateway",
+        "purpose": "Refresh authentication token"
+      }
+    },
+    {
+      "id": "lambda:api/user/register",
+      "type": "Lambda",
+      "properties": {
+        "name": "api/user/register",
+        "trigger": "API Gateway",
+        "purpose": "Register new user via Sign In With Apple"
+      }
+    },
+    {
+      "id": "lambda:api/user/subscribe",
+      "type": "Lambda",
+      "properties": {
+        "name": "api/user/subscribe",
         "trigger": "API Gateway",
         "purpose": "Manage user topic subscriptions"
       }
     },
     {
-      "id": "lambda:WebhookFeedly",
+      "id": "lambda:s3/S3ObjectCreated",
       "type": "Lambda",
       "properties": {
-        "name": "WebhookFeedly",
+        "name": "s3/S3ObjectCreated",
+        "trigger": "S3 Event",
+        "purpose": "Handle uploaded files and notify users"
+      }
+    },
+    {
+      "id": "lambda:scheduled/CleanupExpiredRecords",
+      "type": "Lambda",
+      "properties": {
+        "name": "scheduled/CleanupExpiredRecords",
+        "trigger": "CloudWatch Events",
+        "purpose": "Scheduled cleanup of expired FileDownloads, Sessions, and VerificationTokens"
+      }
+    },
+    {
+      "id": "lambda:scheduled/PruneDevices",
+      "type": "Lambda",
+      "properties": {
+        "name": "scheduled/PruneDevices",
+        "trigger": "CloudWatch Events",
+        "purpose": "Scheduled cleanup of inactive devices"
+      }
+    },
+    {
+      "id": "lambda:sqs/SendPushNotification",
+      "type": "Lambda",
+      "properties": {
+        "name": "sqs/SendPushNotification",
+        "trigger": "SQS",
+        "purpose": "Send push notification to user devices via APNS"
+      }
+    },
+    {
+      "id": "lambda:sqs/StartFileUpload",
+      "type": "Lambda",
+      "properties": {
+        "name": "sqs/StartFileUpload",
+        "trigger": "SQS",
+        "purpose": "Download video from YouTube to S3 (event-driven via DownloadQueue)"
+      }
+    },
+    {
+      "id": "lambda:standalone/ApiGatewayAuthorizer",
+      "type": "Lambda",
+      "properties": {
+        "name": "standalone/ApiGatewayAuthorizer",
         "trigger": "API Gateway",
-        "purpose": "Process Feedly webhooks, publish DownloadRequested events to EventBridge"
+        "purpose": "Authorize API requests via Better Auth sessions"
+      }
+    },
+    {
+      "id": "lambda:standalone/MigrateDSQL",
+      "type": "Lambda",
+      "properties": {
+        "name": "standalone/MigrateDSQL",
+        "trigger": "Manual",
+        "purpose": "Apply Drizzle ORM migrations to Aurora DSQL database"
       }
     },
     {
@@ -188,27 +179,6 @@
       "type": "Entity",
       "properties": {
         "name": "Devices"
-      }
-    },
-    {
-      "id": "entity:Sessions",
-      "type": "Entity",
-      "properties": {
-        "name": "Sessions"
-      }
-    },
-    {
-      "id": "entity:Accounts",
-      "type": "Entity",
-      "properties": {
-        "name": "Accounts"
-      }
-    },
-    {
-      "id": "entity:VerificationTokens",
-      "type": "Entity",
-      "properties": {
-        "name": "VerificationTokens"
       }
     },
     {
@@ -649,7 +619,7 @@
       "type": "ApiEndpoint",
       "properties": {
         "name": "processFeedlyWebhook",
-        "route": "/feedly",
+        "route": "/feedly/webhook",
         "method": "POST",
         "description": "Process Feedly webhook"
       }
@@ -708,32 +678,32 @@
   "edges": [
     {
       "source": "apiendpoint:listFiles",
-      "target": "lambda:ListFiles",
+      "target": "lambda:api/files/index",
       "relationship": "implemented_by"
     },
     {
       "source": "apiendpoint:registerDevice",
-      "target": "lambda:RegisterDevice",
+      "target": "lambda:api/device/register",
       "relationship": "implemented_by"
     },
     {
       "source": "apiendpoint:logClientEvent",
-      "target": "lambda:DeviceEvent",
+      "target": "lambda:api/device/event",
       "relationship": "implemented_by"
     },
     {
       "source": "apiendpoint:processFeedlyWebhook",
-      "target": "lambda:WebhookFeedly",
+      "target": "lambda:api/feedly/webhook",
       "relationship": "implemented_by"
     },
     {
       "source": "apiendpoint:registerUser",
-      "target": "lambda:RegisterUser",
+      "target": "lambda:api/user/register",
       "relationship": "implemented_by"
     },
     {
       "source": "apiendpoint:loginUser",
-      "target": "lambda:LoginUser",
+      "target": "lambda:api/user/login",
       "relationship": "implemented_by"
     },
     {
@@ -743,7 +713,7 @@
     },
     {
       "source": "apiendpoint:refreshToken",
-      "target": "lambda:RefreshToken",
+      "target": "lambda:api/user/refresh",
       "relationship": "implemented_by"
     },
     {
@@ -753,497 +723,302 @@
     },
     {
       "source": "apiendpoint:deleteUser",
-      "target": "lambda:UserDelete",
+      "target": "lambda:api/user/index",
       "relationship": "implemented_by"
     },
     {
       "source": "apiendpoint:subscribeUser",
-      "target": "lambda:UserSubscribe",
+      "target": "lambda:api/user/subscribe",
       "relationship": "implemented_by"
     },
     {
-      "source": "lambda:LoginUser",
+      "source": "lambda:api/user/login",
       "target": "apimodel:UserLoginRequest",
       "relationship": "validates_with"
     },
     {
-      "source": "lambda:RegisterUser",
+      "source": "lambda:api/user/register",
       "target": "apimodel:UserRegistrationRequest",
       "relationship": "validates_with"
     },
     {
-      "source": "lambda:RegisterDevice",
+      "source": "lambda:api/device/register",
       "target": "apimodel:DeviceRegistrationRequest",
       "relationship": "validates_with"
     },
     {
-      "source": "lambda:UserSubscribe",
+      "source": "lambda:api/user/subscribe",
       "target": "apimodel:UserSubscriptionRequest",
       "relationship": "validates_with"
     },
     {
-      "source": "lambda:WebhookFeedly",
+      "source": "lambda:api/feedly/webhook",
       "target": "apimodel:FeedlyWebhookRequest",
       "relationship": "validates_with"
     },
     {
-      "source": "lambda:ApiGatewayAuthorizer",
+      "source": "service:API Gateway",
+      "target": "lambda:api/device/event",
+      "relationship": "triggers"
+    },
+    {
+      "source": "lambda:api/device/register",
       "target": "entity:Users",
       "relationship": "accesses"
     },
     {
-      "source": "lambda:ApiGatewayAuthorizer",
+      "source": "lambda:api/device/register",
       "target": "entity:Files",
       "relationship": "accesses"
     },
     {
-      "source": "lambda:ApiGatewayAuthorizer",
+      "source": "lambda:api/device/register",
       "target": "entity:Devices",
       "relationship": "accesses"
     },
     {
-      "source": "lambda:ApiGatewayAuthorizer",
+      "source": "lambda:api/device/register",
       "target": "entity:Sessions",
       "relationship": "accesses"
     },
     {
       "source": "service:API Gateway",
-      "target": "lambda:ApiGatewayAuthorizer",
+      "target": "lambda:api/device/register",
       "relationship": "triggers"
     },
     {
-      "source": "service:CloudWatch",
-      "target": "lambda:CleanupExpiredRecords",
-      "relationship": "triggers"
-    },
-    {
-      "source": "service:CloudFront",
-      "target": "lambda:CloudfrontMiddleware",
-      "relationship": "triggers"
-    },
-    {
-      "source": "service:API Gateway",
-      "target": "lambda:DeviceEvent",
-      "relationship": "triggers"
-    },
-    {
-      "source": "lambda:ListFiles",
+      "source": "lambda:api/feedly/webhook",
       "target": "entity:Users",
       "relationship": "accesses"
     },
     {
-      "source": "lambda:ListFiles",
+      "source": "lambda:api/feedly/webhook",
       "target": "entity:Files",
       "relationship": "accesses"
     },
     {
-      "source": "lambda:ListFiles",
+      "source": "lambda:api/feedly/webhook",
       "target": "entity:Devices",
       "relationship": "accesses"
     },
     {
-      "source": "lambda:ListFiles",
+      "source": "lambda:api/feedly/webhook",
       "target": "entity:Sessions",
       "relationship": "accesses"
     },
     {
       "source": "service:API Gateway",
-      "target": "lambda:ListFiles",
+      "target": "lambda:api/feedly/webhook",
       "relationship": "triggers"
     },
     {
-      "source": "lambda:LoginUser",
-      "target": "external:Sign In With Apple",
-      "relationship": "uses"
-    },
-    {
-      "source": "service:API Gateway",
-      "target": "lambda:LoginUser",
-      "relationship": "triggers"
-    },
-    {
-      "source": "lambda:LogoutUser",
+      "source": "lambda:api/files/index",
       "target": "entity:Users",
       "relationship": "accesses"
     },
     {
-      "source": "lambda:LogoutUser",
+      "source": "lambda:api/files/index",
       "target": "entity:Files",
       "relationship": "accesses"
     },
     {
-      "source": "lambda:LogoutUser",
+      "source": "lambda:api/files/index",
       "target": "entity:Devices",
       "relationship": "accesses"
     },
     {
-      "source": "lambda:LogoutUser",
+      "source": "lambda:api/files/index",
       "target": "entity:Sessions",
       "relationship": "accesses"
     },
     {
       "source": "service:API Gateway",
-      "target": "lambda:LogoutUser",
+      "target": "lambda:api/files/index",
       "relationship": "triggers"
     },
     {
-      "source": "lambda:PruneDevices",
-      "target": "service:SNS",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:PruneDevices",
+      "source": "lambda:api/user/index",
       "target": "entity:Users",
       "relationship": "accesses"
     },
     {
-      "source": "lambda:PruneDevices",
+      "source": "lambda:api/user/index",
       "target": "entity:Files",
       "relationship": "accesses"
     },
     {
-      "source": "lambda:PruneDevices",
+      "source": "lambda:api/user/index",
       "target": "entity:Devices",
       "relationship": "accesses"
     },
     {
-      "source": "lambda:PruneDevices",
-      "target": "entity:Sessions",
-      "relationship": "accesses"
-    },
-    {
-      "source": "service:CloudWatch",
-      "target": "lambda:PruneDevices",
-      "relationship": "triggers"
-    },
-    {
-      "source": "lambda:RefreshToken",
-      "target": "entity:Users",
-      "relationship": "accesses"
-    },
-    {
-      "source": "lambda:RefreshToken",
-      "target": "entity:Files",
-      "relationship": "accesses"
-    },
-    {
-      "source": "lambda:RefreshToken",
-      "target": "entity:Devices",
-      "relationship": "accesses"
-    },
-    {
-      "source": "lambda:RefreshToken",
+      "source": "lambda:api/user/index",
       "target": "entity:Sessions",
       "relationship": "accesses"
     },
     {
       "source": "service:API Gateway",
-      "target": "lambda:RefreshToken",
+      "target": "lambda:api/user/index",
       "relationship": "triggers"
     },
     {
-      "source": "lambda:RegisterDevice",
-      "target": "service:SNS",
-      "relationship": "uses"
+      "source": "service:API Gateway",
+      "target": "lambda:api/user/login",
+      "relationship": "triggers"
     },
     {
-      "source": "lambda:RegisterDevice",
+      "source": "service:API Gateway",
+      "target": "lambda:api/user/logout",
+      "relationship": "triggers"
+    },
+    {
+      "source": "service:API Gateway",
+      "target": "lambda:api/user/refresh",
+      "relationship": "triggers"
+    },
+    {
+      "source": "lambda:api/user/register",
       "target": "entity:Users",
       "relationship": "accesses"
     },
     {
-      "source": "lambda:RegisterDevice",
+      "source": "lambda:api/user/register",
       "target": "entity:Files",
       "relationship": "accesses"
     },
     {
-      "source": "lambda:RegisterDevice",
+      "source": "lambda:api/user/register",
       "target": "entity:Devices",
       "relationship": "accesses"
     },
     {
-      "source": "lambda:RegisterDevice",
+      "source": "lambda:api/user/register",
       "target": "entity:Sessions",
       "relationship": "accesses"
     },
     {
       "source": "service:API Gateway",
-      "target": "lambda:RegisterDevice",
+      "target": "lambda:api/user/register",
       "relationship": "triggers"
-    },
-    {
-      "source": "lambda:RegisterUser",
-      "target": "external:Sign In With Apple",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:RegisterUser",
-      "target": "entity:Users",
-      "relationship": "accesses"
-    },
-    {
-      "source": "lambda:RegisterUser",
-      "target": "entity:Files",
-      "relationship": "accesses"
-    },
-    {
-      "source": "lambda:RegisterUser",
-      "target": "entity:Devices",
-      "relationship": "accesses"
-    },
-    {
-      "source": "lambda:RegisterUser",
-      "target": "entity:Sessions",
-      "relationship": "accesses"
     },
     {
       "source": "service:API Gateway",
-      "target": "lambda:RegisterUser",
+      "target": "lambda:api/user/subscribe",
       "relationship": "triggers"
     },
     {
-      "source": "lambda:S3ObjectCreated",
-      "target": "service:SNS",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:S3ObjectCreated",
-      "target": "service:SQS",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:S3ObjectCreated",
+      "source": "lambda:s3/S3ObjectCreated",
       "target": "entity:Users",
       "relationship": "accesses"
     },
     {
-      "source": "lambda:S3ObjectCreated",
+      "source": "lambda:s3/S3ObjectCreated",
       "target": "entity:Files",
       "relationship": "accesses"
     },
     {
-      "source": "lambda:S3ObjectCreated",
+      "source": "lambda:s3/S3ObjectCreated",
       "target": "entity:Devices",
       "relationship": "accesses"
     },
     {
-      "source": "lambda:S3ObjectCreated",
+      "source": "lambda:s3/S3ObjectCreated",
       "target": "entity:Sessions",
       "relationship": "accesses"
     },
     {
       "source": "service:S3",
-      "target": "lambda:S3ObjectCreated",
+      "target": "lambda:s3/S3ObjectCreated",
       "relationship": "triggers"
     },
     {
-      "source": "lambda:SendPushNotification",
-      "target": "service:SNS",
-      "relationship": "uses"
+      "source": "service:CloudWatch",
+      "target": "lambda:scheduled/CleanupExpiredRecords",
+      "relationship": "triggers"
     },
     {
-      "source": "lambda:SendPushNotification",
-      "target": "service:SQS",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:SendPushNotification",
+      "source": "lambda:scheduled/PruneDevices",
       "target": "entity:Users",
       "relationship": "accesses"
     },
     {
-      "source": "lambda:SendPushNotification",
+      "source": "lambda:scheduled/PruneDevices",
       "target": "entity:Files",
       "relationship": "accesses"
     },
     {
-      "source": "lambda:SendPushNotification",
+      "source": "lambda:scheduled/PruneDevices",
       "target": "entity:Devices",
       "relationship": "accesses"
     },
     {
-      "source": "lambda:SendPushNotification",
+      "source": "lambda:scheduled/PruneDevices",
+      "target": "entity:Sessions",
+      "relationship": "accesses"
+    },
+    {
+      "source": "service:CloudWatch",
+      "target": "lambda:scheduled/PruneDevices",
+      "relationship": "triggers"
+    },
+    {
+      "source": "lambda:sqs/SendPushNotification",
+      "target": "entity:Users",
+      "relationship": "accesses"
+    },
+    {
+      "source": "lambda:sqs/SendPushNotification",
+      "target": "entity:Files",
+      "relationship": "accesses"
+    },
+    {
+      "source": "lambda:sqs/SendPushNotification",
+      "target": "entity:Devices",
+      "relationship": "accesses"
+    },
+    {
+      "source": "lambda:sqs/SendPushNotification",
       "target": "entity:Sessions",
       "relationship": "accesses"
     },
     {
       "source": "service:SQS",
-      "target": "lambda:SendPushNotification",
+      "target": "lambda:sqs/SendPushNotification",
       "relationship": "triggers"
     },
     {
-      "source": "lambda:StartFileUpload",
-      "target": "service:EventBridge",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:StartFileUpload",
-      "target": "service:S3",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:StartFileUpload",
-      "target": "service:SNS",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:StartFileUpload",
-      "target": "service:SQS",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:StartFileUpload",
-      "target": "external:GitHub",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:StartFileUpload",
-      "target": "external:YouTube",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:StartFileUpload",
+      "source": "lambda:sqs/StartFileUpload",
       "target": "entity:Users",
       "relationship": "accesses"
     },
     {
-      "source": "lambda:StartFileUpload",
+      "source": "lambda:sqs/StartFileUpload",
       "target": "entity:Files",
       "relationship": "accesses"
     },
     {
-      "source": "lambda:StartFileUpload",
+      "source": "lambda:sqs/StartFileUpload",
       "target": "entity:Devices",
       "relationship": "accesses"
     },
     {
-      "source": "lambda:StartFileUpload",
+      "source": "lambda:sqs/StartFileUpload",
       "target": "entity:Sessions",
       "relationship": "accesses"
     },
     {
       "source": "service:SQS",
-      "target": "lambda:StartFileUpload",
+      "target": "lambda:sqs/StartFileUpload",
       "relationship": "triggers"
-    },
-    {
-      "source": "lambda:UserDelete",
-      "target": "service:SNS",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:UserDelete",
-      "target": "external:GitHub",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:UserDelete",
-      "target": "entity:Users",
-      "relationship": "accesses"
-    },
-    {
-      "source": "lambda:UserDelete",
-      "target": "entity:Files",
-      "relationship": "accesses"
-    },
-    {
-      "source": "lambda:UserDelete",
-      "target": "entity:Devices",
-      "relationship": "accesses"
-    },
-    {
-      "source": "lambda:UserDelete",
-      "target": "entity:Sessions",
-      "relationship": "accesses"
     },
     {
       "source": "service:API Gateway",
-      "target": "lambda:UserDelete",
+      "target": "lambda:standalone/ApiGatewayAuthorizer",
       "relationship": "triggers"
     },
     {
-      "source": "lambda:UserSubscribe",
-      "target": "service:SNS",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:UserSubscribe",
-      "target": "entity:Users",
-      "relationship": "accesses"
-    },
-    {
-      "source": "lambda:UserSubscribe",
-      "target": "entity:Files",
-      "relationship": "accesses"
-    },
-    {
-      "source": "lambda:UserSubscribe",
-      "target": "entity:Devices",
-      "relationship": "accesses"
-    },
-    {
-      "source": "lambda:UserSubscribe",
-      "target": "entity:Sessions",
-      "relationship": "accesses"
-    },
-    {
-      "source": "service:API Gateway",
-      "target": "lambda:UserSubscribe",
-      "relationship": "triggers"
-    },
-    {
-      "source": "lambda:WebhookFeedly",
-      "target": "service:EventBridge",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:WebhookFeedly",
-      "target": "service:S3",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:WebhookFeedly",
-      "target": "service:SNS",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:WebhookFeedly",
-      "target": "service:SQS",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:WebhookFeedly",
-      "target": "external:YouTube",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:WebhookFeedly",
-      "target": "entity:Users",
-      "relationship": "accesses"
-    },
-    {
-      "source": "lambda:WebhookFeedly",
-      "target": "entity:Files",
-      "relationship": "accesses"
-    },
-    {
-      "source": "lambda:WebhookFeedly",
-      "target": "entity:Devices",
-      "relationship": "accesses"
-    },
-    {
-      "source": "lambda:WebhookFeedly",
-      "target": "entity:Sessions",
-      "relationship": "accesses"
-    },
-    {
-      "source": "service:API Gateway",
-      "target": "lambda:WebhookFeedly",
-      "relationship": "triggers"
-    },
-    {
-      "source": "lambda:S3ObjectCreated",
-      "target": "lambda:SendPushNotification",
+      "source": "lambda:s3/S3ObjectCreated",
+      "target": "lambda:sqs/SendPushNotification",
       "relationship": "invokes",
       "properties": {
         "via": "SQS"

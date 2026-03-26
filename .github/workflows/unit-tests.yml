@@ -56,16 +56,14 @@ jobs:
       - name: Validate documented scripts exist
         run: ./bin/validate-docs.sh
 
-      # SKIPPED: validate:doc:sync Lambda counts changed during Mantle migration
-      # - name: Validate documentation sync
-      #   run: pnpm run validate:doc:sync
+      - name: Validate documentation sync
+        run: pnpm run validate:doc:sync
 
       - name: Audit wiki documentation
         run: pnpm run audit:wiki
 
-      # SKIPPED: validate:docs:freshness needs TSDoc regeneration post-migration
-      # - name: Validate docs freshness
-      #   run: pnpm run validate:docs:freshness
+      - name: Validate docs freshness
+        run: pnpm run validate:docs:freshness
 
       - name: Security audit
         # express-rate-limit CVE in @modelcontextprotocol/inspector (devDep only, not in production bundle)
@@ -209,9 +207,8 @@ jobs:
       - name: Check bundle sizes
         run: pnpm run check:bundle:size
 
-      # SKIPPED: validate:graphrag metadata.json needs updating for Mantle Lambda structure
-      # - name: Validate GraphRAG synchronization
-      #   run: pnpm run validate:graphrag
+      - name: Validate GraphRAG synchronization
+        run: pnpm run validate:graphrag
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v7

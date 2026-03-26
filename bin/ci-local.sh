@@ -216,9 +216,9 @@ main() {
   ./bin/validate-docs.sh
   echo ""
 
-  # Step 16: Documentation freshness validation (SKIPPED — needs TSDoc regeneration post-migration)
+  # Step 16: Documentation freshness validation
   echo -e "${YELLOW}[16/21] Validating documentation freshness...${NC}"
-  echo -e "${GREEN}  Documentation freshness skipped (needs regeneration post-migration)${NC}"
+  ./bin/validate-docs-freshness.sh
   echo ""
 
   # Step 17: Dependency rules check
@@ -227,14 +227,14 @@ main() {
   echo -e "${GREEN}  Dependency rules passed${NC}"
   echo ""
 
-  # Step 18: GraphRAG validation (SKIPPED — metadata.json needs updating for Mantle Lambda structure)
+  # Step 18: GraphRAG validation
   echo -e "${YELLOW}[18/21] Validating GraphRAG...${NC}"
-  echo -e "${GREEN}  GraphRAG validation skipped (metadata.json needs Mantle Lambda update)${NC}"
+  ./bin/validate-graphrag.sh
   echo ""
 
-  # Step 19: Documentation sync validation (SKIPPED — Lambda counts changed during Mantle migration)
+  # Step 19: Documentation sync validation
   echo -e "${YELLOW}[19/21] Validating documentation sync...${NC}"
-  echo -e "${GREEN}  Documentation sync skipped (counts changed during Mantle migration)${NC}"
+  ./bin/validate-doc-sync.sh
   echo ""
 
   # Step 20: Unit tests
