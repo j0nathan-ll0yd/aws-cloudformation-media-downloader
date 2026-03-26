@@ -181,7 +181,7 @@ These old MCP rules have no replacement in `mantle check`. Some are covered by o
 | True gaps (no automated enforcement) | 13 |
 | New rules only in Mantle | 12 (7 rules + 5 subcommands) |
 
-Of the 13 true gaps, most are LOW risk due to the Mantle architecture changes (e.g., `define*Handler()` eliminates the need for `response-helpers` and `response-enum`; Aurora DSQL migration eliminated DynamoDB scan pagination concerns). The two MEDIUM-risk gaps are `cascade-safety` and `batch-retry`, which guard against data loss patterns.
+Of the 13 true gaps, most are LOW risk due to the Mantle architecture changes (for example, `define*Handler()` eliminates the need for `response-helpers` and `response-enum`; Aurora DSQL migration eliminated DynamoDB scan pagination concerns). The two MEDIUM-risk gaps are `cascade-safety` and `batch-retry`, which guard against data loss patterns.
 
 ## Decision
 
