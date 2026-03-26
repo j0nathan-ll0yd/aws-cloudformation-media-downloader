@@ -55,10 +55,12 @@ jobs:
   full-ci:
     needs: quick-checks
     uses: ./.github/workflows/unit-tests.yml
+    secrets: inherit
 
   integration:
     needs: quick-checks
     uses: ./.github/workflows/integration-tests.yml
+    secrets: inherit
 
   # Final status check for branch protection
   pr-ready:
