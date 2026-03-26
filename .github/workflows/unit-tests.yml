@@ -77,7 +77,7 @@ jobs:
       #   run: pnpm run validate:conventions
 
       - name: Validate environment variables
-        run: npx mantle check env-vars
+        run: pnpm exec mantle check env-vars
 
       - name: Validate DSQL migration compatibility
         run: |

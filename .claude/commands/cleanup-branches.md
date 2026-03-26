@@ -42,7 +42,7 @@ echo "$LOCAL_BRANCHES"
 
 ```bash
 # List all worktrees (excluding main repository)
-MAIN_REPO="/Users/jlloyd/Repositories/aws-cloudformation-media-downloader"
+MAIN_REPO="/Users/jlloyd/Repositories/mantle-OfflineMediaDownloader"
 git worktree list --porcelain | grep '^worktree ' | sed 's/^worktree //' | grep -v "^${MAIN_REPO}$"
 ```
 
@@ -190,8 +190,8 @@ In dry-run mode:
 | #456 | fix/bug-fix | Fix critical bug |
 
 ### Deleted Worktrees
-- ~/wt/aws-cloudformation-media-downloader-old-feature (branch: feat/old-feature)
-- ~/wt/aws-cloudformation-media-downloader-abandoned (branch: feat/abandoned)
+- ~/wt/mantle-OfflineMediaDownloader-old-feature (branch: feat/old-feature)
+- ~/wt/mantle-OfflineMediaDownloader-abandoned (branch: feat/abandoned)
 
 ### Deleted Branches
 - feat/old-feature
@@ -208,8 +208,8 @@ In dry-run mode:
 ### Verification
 ```
 $ git worktree list
-/Users/jlloyd/Repositories/aws-cloudformation-media-downloader  abc1234 [master]
-/Users/jlloyd/wt/aws-cloudformation-media-downloader-new-feature  def5678 [feat/new-feature]
+/Users/jlloyd/Repositories/mantle-OfflineMediaDownloader  abc1234 [master]
+/Users/jlloyd/wt/mantle-OfflineMediaDownloader-new-feature  def5678 [feat/new-feature]
 
 $ git branch
 * master

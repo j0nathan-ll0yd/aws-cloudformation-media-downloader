@@ -174,7 +174,7 @@ tofu apply -var="list_files_memory=256"
 
 ```bash
 # Update deployed Lambda
-cd ~/wt/aws-cloudformation-media-downloader-staging
+cd ~/wt/mantle-OfflineMediaDownloader-staging
 pnpm update
 pnpm run build
 pnpm run deploy
