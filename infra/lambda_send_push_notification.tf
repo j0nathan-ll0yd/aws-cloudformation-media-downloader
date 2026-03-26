@@ -28,6 +28,17 @@ module "lambda_send_push_notification" {
 
     additional_policy_arns = [module.database.connect_policy_arn]
 
+  inline_policies = {
+    "SNSAccess" = jsonencode({
+      Version = "2012-10-17"
+      Statement = [{
+        Effect   = "Allow"
+        Action   = ["sns:DeleteEndpoint","sns:Publish"]
+        Resource = ["${aws_sns_topic.push_notifications.arn}","${aws_sns_topic.operations_alerts.arn}","${aws_sns_platform_application.apns.arn}","${aws_sns_platform_application.apns.arn}/*"]
+      }]
+    })
+  }
+
   sqs_trigger_arn     = module.queue_SendPushNotification.queue_arn
   sqs_trigger_enabled = true
 }

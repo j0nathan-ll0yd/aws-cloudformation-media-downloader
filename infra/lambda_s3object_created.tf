@@ -39,4 +39,6 @@ module "lambda_s3object_created" {
       }]
     })
   }
+
+  s3_trigger_bucket_arn = module.storage_files.bucket_arn
 }

@@ -53,7 +53,7 @@ function dispatchFileNotificationToUser(file: File, userId: string) {
   return sendMessage(sendMessageParams)
 }
 
-const s3 = defineS3Handler({operationName: 'S3ObjectCreated', trigger: 'direct'})
+const s3 = defineS3Handler({operationName: 'S3ObjectCreated', trigger: 'direct', bucket: 'files'})
 
 export const handler = s3(async (record) => {
   const fileName = record.key

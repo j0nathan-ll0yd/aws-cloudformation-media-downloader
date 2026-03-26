@@ -11,6 +11,13 @@ module "storage_files" {
 
   cloudfront_enabled    = true
   intelligent_tiering_enabled = true
+  lambda_notifications = [
+    {
+      id                  = "S3ObjectCreated"
+      lambda_function_arn = module.lambda_s3object_created.function_arn
+      events              = ["s3:ObjectCreated:*"]
+    }
+  ]
 }
 
 resource "aws_s3_object" "asset_videos_default_file" {
