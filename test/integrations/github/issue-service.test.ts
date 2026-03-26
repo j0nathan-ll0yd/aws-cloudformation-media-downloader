@@ -60,7 +60,7 @@ describe('#Util:GithubHelper', () => {
       expect(mockIssuesCreate).toHaveBeenCalledWith(
         expect.objectContaining({
           owner: 'j0nathan-ll0yd',
-          repo: 'aws-cloudformation-media-downloader',
+          repo: 'mantle-OfflineMediaDownloader',
           title: `User Deletion Failed: ${userId}`,
           body: expect.stringContaining('Rendered template: user-deletion-failure'),
           labels: expect.arrayContaining(['bug', 'user-management', 'automated', 'requires-manual-fix'])
@@ -133,7 +133,7 @@ describe('#Util:GithubHelper', () => {
       expect(mockIssuesCreate).toHaveBeenCalledWith(
         expect.objectContaining({
           owner: 'j0nathan-ll0yd',
-          repo: 'aws-cloudformation-media-downloader',
+          repo: 'mantle-OfflineMediaDownloader',
           title: `Video Download Failed: ${fileId}`,
           body: expect.stringContaining('Rendered template: video-download-failure'),
           labels: expect.arrayContaining(['bug', 'video-download', 'automated'])
@@ -202,7 +202,7 @@ describe('#Util:GithubHelper', () => {
       expect(mockIssuesCreate).toHaveBeenCalledWith(
         expect.objectContaining({
           owner: 'j0nathan-ll0yd',
-          repo: 'aws-cloudformation-media-downloader',
+          repo: 'mantle-OfflineMediaDownloader',
           title: '🍪 YouTube Cookie Expiration Detected',
           body: expect.stringContaining('Rendered template: cookie-expiration'),
           labels: expect.arrayContaining(['cookie-expiration', 'requires-manual-fix', 'automated', 'priority'])

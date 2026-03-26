@@ -82,7 +82,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
       "args": [
         "--import",
         "tsx",
-        "/Users/YOUR_USERNAME/path/to/aws-cloudformation-media-downloader-2/src/mcp/server.ts"
+        "/Users/YOUR_USERNAME/path/to/mantle-OfflineMediaDownloader-2/src/mcp/server.ts"
       ]
     }
   }

@@ -68,9 +68,9 @@ All AWS resources follow the naming convention documented in [Resource-Naming.md
 OpenTofu workspaces provide isolated state files:
 
 ```
-s3://lifegames-media-downloader-tfstate/
-├── env/staging/terraform.tfstate
-├── env/production/terraform.tfstate
+s3://mantle-offlinemediadownloader-tfstate/
+├── env/staging/infra.tfstate
+├── env/production/infra.tfstate
 └── bootstrap/terraform.tfstate
 ```
 

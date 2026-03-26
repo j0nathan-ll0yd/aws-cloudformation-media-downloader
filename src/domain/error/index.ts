@@ -17,7 +17,7 @@ import {classifyExternalApiError} from './externalApiErrorClassifier'
  * @param options - Additional options (e.g., serviceName for external APIs)
  * @returns Classification with retry strategy and issue creation guidance
  *
- * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/TypeScript/TypeScript-Error-Handling#error-classification | Error Classification}
+ * @see {@link https://github.com/j0nathan-ll0yd/mantle-OfflineMediaDownloader/wiki/TypeScript/TypeScript-Error-Handling#error-classification | Error Classification}
  */
 export function classifyError(error: Error, domain: ErrorDomain, options?: ClassifyErrorOptions): ErrorClassification {
   switch (domain) {

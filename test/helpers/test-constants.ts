@@ -191,7 +191,7 @@ export const TEST_IDEMPOTENCY_TABLE_NAME = 'IdempotencyTable'
 export const TEST_GITHUB_API_BASE = 'https://api.github.com'
 
 /** Test GitHub repository path */
-export const TEST_GITHUB_REPO = 'j0nathan-ll0yd/aws-cloudformation-media-downloader'
+export const TEST_GITHUB_REPO = 'j0nathan-ll0yd/mantle-OfflineMediaDownloader'
 
 /** Full GitHub issues API URL */
 export const TEST_GITHUB_ISSUES_URL = `${TEST_GITHUB_API_BASE}/repos/${TEST_GITHUB_REPO}/issues`

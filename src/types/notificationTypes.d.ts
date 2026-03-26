@@ -5,7 +5,7 @@
  * These notifications inform the iOS app about file download progress.
  *
  * @see SendPushNotification Lambda for delivery implementation
- * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/iOS/Push-Notifications | Push Notification Guide}
+ * @see {@link https://github.com/j0nathan-ll0yd/mantle-OfflineMediaDownloader/wiki/iOS/Push-Notifications | Push Notification Guide}
  */
 import type {Result} from '@mantleframework/core'
 

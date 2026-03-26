@@ -193,7 +193,7 @@ Some test files contain hardcoded values instead of constants:
 // Current pattern (scattered magic strings)
 const fakeGithubIssueResponse = {
   status: '201',
-  url: 'https://api.github.com/repos/j0nathan-ll0yd/aws-cloudformation-media-downloader/issues',
+  url: 'https://api.github.com/repos/j0nathan-ll0yd/mantle-OfflineMediaDownloader/issues',
   // ...
 }
 
@@ -205,7 +205,7 @@ event = createDownloadQueueEvent('YcuKhcqzt7w', {messageId: 'test-message-id-123
 ```typescript
 export const TEST_MESSAGE_ID = 'test-message-id-123'
 export const TEST_VIDEO_ID = 'YcuKhcqzt7w'
-export const TEST_GITHUB_API_URL = 'https://api.github.com/repos/j0nathan-ll0yd/aws-cloudformation-media-downloader/issues'
+export const TEST_GITHUB_API_URL = 'https://api.github.com/repos/j0nathan-ll0yd/mantle-OfflineMediaDownloader/issues'
 ```
 
 ### 4.3 Test Depth Variance

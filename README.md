@@ -4,7 +4,7 @@ A media downloader designed to integrate with [it's companion iOS App](https://g
 
 ## Architecture
 
-View the [AWS Architecture Diagram](https://gitdiagram.com/repo/j0nathan-ll0yd/aws-cloudformation-media-downloader) (via GitDiagram)
+View the [AWS Architecture Diagram](https://gitdiagram.com/repo/j0nathan-ll0yd/mantle-OfflineMediaDownloader) (via GitDiagram)
 
 ## Technologies
 
@@ -250,7 +250,7 @@ brew install gh
 
 ## Migration from Terraform to OpenTofu
 
-This project migrated from Terraform to OpenTofu in [PR #95](https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/pull/95). OpenTofu is a drop-in replacement for Terraform with 100% HCL compatibility.
+This project migrated from Terraform to OpenTofu in [PR #95](https://github.com/j0nathan-ll0yd/mantle-OfflineMediaDownloader/pull/95). OpenTofu is a drop-in replacement for Terraform with 100% HCL compatibility.
 
 ### Why OpenTofu?
 

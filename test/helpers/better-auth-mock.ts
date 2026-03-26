@@ -27,7 +27,7 @@ export interface SignOutParams {
  * Better Auth Mock Structure
  * Provides type-safe mocks for Better Auth API methods
  *
- * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/Vitest-Mocking-Strategy | Vitest Mocking Strategy}
+ * @see {@link https://github.com/j0nathan-ll0yd/mantle-OfflineMediaDownloader/wiki/Vitest-Mocking-Strategy | Vitest Mocking Strategy}
  */
 interface BetterAuthMock {
   /** The auth object to pass to vi.mock */
@@ -62,7 +62,7 @@ interface BetterAuthMock {
  * authMock.mocks.signOut.mockResolvedValue(undefined)
  * ```
  *
- * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/Vitest-Mocking-Strategy | Vitest Mocking Strategy}
+ * @see {@link https://github.com/j0nathan-ll0yd/mantle-OfflineMediaDownloader/wiki/Vitest-Mocking-Strategy | Vitest Mocking Strategy}
  */
 export function createBetterAuthMock(): BetterAuthMock {
   const signInSocialMock = vi.fn<(params: SignInSocialParams) => Promise<SignInSocialResult>>()

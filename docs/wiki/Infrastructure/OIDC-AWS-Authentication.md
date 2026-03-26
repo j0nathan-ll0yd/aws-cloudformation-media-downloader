@@ -35,8 +35,8 @@ When GitHub Actions requests an OIDC token, the `sub` claim format depends on wh
 
 | Job Configuration | `sub` Claim Format | Example |
 |-------------------|--------------------|---------|
-| No `environment:` key | `repo:OWNER/REPO:ref:refs/heads/BRANCH` | `repo:j0nathan-ll0yd/aws-cloudformation-media-downloader:ref:refs/heads/master` |
-| With `environment: production` | `repo:OWNER/REPO:environment:ENVNAME` | `repo:j0nathan-ll0yd/aws-cloudformation-media-downloader:environment:production` |
+| No `environment:` key | `repo:OWNER/REPO:ref:refs/heads/BRANCH` | `repo:j0nathan-ll0yd/mantle-OfflineMediaDownloader:ref:refs/heads/master` |
+| With `environment: production` | `repo:OWNER/REPO:environment:ENVNAME` | `repo:j0nathan-ll0yd/mantle-OfflineMediaDownloader:environment:production` |
 
 **Important**: These formats are mutually exclusive. When a job uses `environment:`, the `sub` claim always uses the `environment:` format, never `ref:`.
 
@@ -51,7 +51,7 @@ Used when the workflow declares `environment: production`:
   "Condition": {
     "StringEquals": {
       "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
-      "token.actions.githubusercontent.com:sub": "repo:j0nathan-ll0yd/aws-cloudformation-media-downloader:environment:production"
+      "token.actions.githubusercontent.com:sub": "repo:j0nathan-ll0yd/mantle-OfflineMediaDownloader:environment:production"
     }
   }
 }
@@ -70,7 +70,7 @@ Used when the role should be accessible from any branch or environment:
       "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
     },
     "StringLike": {
-      "token.actions.githubusercontent.com:sub": "repo:j0nathan-ll0yd/aws-cloudformation-media-downloader:*"
+      "token.actions.githubusercontent.com:sub": "repo:j0nathan-ll0yd/mantle-OfflineMediaDownloader:*"
     }
   }
 }
@@ -85,7 +85,7 @@ For workflows that do NOT use GitHub environments:
   "Condition": {
     "StringEquals": {
       "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
-      "token.actions.githubusercontent.com:sub": "repo:j0nathan-ll0yd/aws-cloudformation-media-downloader:ref:refs/heads/master"
+      "token.actions.githubusercontent.com:sub": "repo:j0nathan-ll0yd/mantle-OfflineMediaDownloader:ref:refs/heads/master"
     }
   }
 }

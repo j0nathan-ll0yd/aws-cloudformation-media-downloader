@@ -13,7 +13,7 @@ This document is the **authoritative source** for conventions shared across all 
 **Repositories governed:**
 - `mantle/` — Shared framework (monorepo, 13 `@mantleframework/*` packages)
 - `mantle-Lifegames-Portal/` — Production instance built on mantle
-- `aws-cloudformation-media-downloader/` — Original project mantle was extracted from
+- `mantle-OfflineMediaDownloader/` — Original project mantle was extracted from
 
 ---
 
@@ -805,7 +805,7 @@ All Lambda handler files (`src/lambdas/*/src/index.ts` or `src/lambdas/**/index.
  */
 ```
 
-See [Code-Comments.md](aws-cloudformation-media-downloader/docs/wiki/Conventions/Code-Comments.md) for the complete convention reference.
+See [Code-Comments.md](mantle-OfflineMediaDownloader/docs/wiki/Conventions/Code-Comments.md) for the complete convention reference.
 
 ---
 
@@ -835,6 +835,6 @@ Instance repos run `mantle check --severity HIGH` to validate conventions. This 
 ### MCP validation server — INFORMATIONAL
 
 Media-downloader has an MCP validation server with 29 convention rules (7 CRITICAL, 17 HIGH, 5 MEDIUM) using ts-morph AST analysis. These rules serve as the reference implementation for what `mantle check` enforces across all repos.
-- Evidence: `aws-cloudformation-media-downloader/src/mcp/validation/`
+- Evidence: `mantle-OfflineMediaDownloader/src/mcp/validation/`
 
 This section does not duplicate individual rules. See per-project CLAUDE.md files for project-specific rule lists.

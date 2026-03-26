@@ -8,7 +8,7 @@ status: current
 
 **Audit Date**: 2025-12-29
 **Auditor**: Claude Code (Automated Security Review)
-**Scope**: Comprehensive security review of aws-cloudformation-media-downloader codebase
+**Scope**: Comprehensive security review of mantle-OfflineMediaDownloader codebase
 
 ---
 

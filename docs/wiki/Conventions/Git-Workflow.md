@@ -197,7 +197,7 @@ git push -u origin feature/my-feature
 gh pr create --title "feat: description" --body "..."
 
 # 6. After merge, cleanup
-cd ~/Repositories/aws-cloudformation-media-downloader
+cd ~/Repositories/mantle-OfflineMediaDownloader
 git worktree remove ~/wt/my-feature
 git branch -d feature/my-feature
 ```

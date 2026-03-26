@@ -9,7 +9,7 @@ import {extractFingerprintFromError, generateErrorFingerprint} from './errorFing
 export type { IssueResult } from '#types/errorFingerprint'
 
 const owner = 'j0nathan-ll0yd'
-const repo = 'aws-cloudformation-media-downloader'
+const repo = 'mantle-OfflineMediaDownloader'
 
 async function getOctokitInstance() {
   // Constrained to only reading/writing issues

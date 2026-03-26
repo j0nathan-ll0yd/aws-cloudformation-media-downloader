@@ -4,7 +4,7 @@
  * Provides helpers for working with Promise.allSettled results,
  * commonly used in Lambda handlers that process multiple items.
  *
- * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/TypeScript/System-Library | System Library Guide}
+ * @see {@link https://github.com/j0nathan-ll0yd/mantle-OfflineMediaDownloader/wiki/TypeScript/System-Library | System Library Guide}
  */
 import type {BatchResultCounts, SeparatedBatchResults} from '#types/util'
 
@@ -16,7 +16,7 @@ export type { BatchResultCounts, SeparatedBatchResults }
  * @param results - Array of PromiseSettledResult from Promise.allSettled
  * @returns Object with succeeded values and failed errors
  *
- * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/TypeScript/System-Library#batch-utilities | Batch Utilities}
+ * @see {@link https://github.com/j0nathan-ll0yd/mantle-OfflineMediaDownloader/wiki/TypeScript/System-Library#batch-utilities | Batch Utilities}
  */
 export function separateBatchResults<T>(results: PromiseSettledResult<T>[]): SeparatedBatchResults<T> {
   const succeeded: T[] = []
@@ -41,7 +41,7 @@ export function separateBatchResults<T>(results: PromiseSettledResult<T>[]): Sep
  * @param results - Array of PromiseSettledResult from Promise.allSettled
  * @returns Object with successCount and failureCount
  *
- * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/TypeScript/System-Library#batch-utilities | Batch Utilities}
+ * @see {@link https://github.com/j0nathan-ll0yd/mantle-OfflineMediaDownloader/wiki/TypeScript/System-Library#batch-utilities | Batch Utilities}
  */
 export function countBatchResults(results: PromiseSettledResult<unknown>[]): BatchResultCounts {
   const successCount = results.filter((r) => r.status === 'fulfilled').length
@@ -54,7 +54,7 @@ export function countBatchResults(results: PromiseSettledResult<unknown>[]): Bat
  * @param results - Array of PromiseSettledResult from Promise.allSettled
  * @returns Array of error messages from rejected promises
  *
- * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/TypeScript/System-Library#batch-utilities | Batch Utilities}
+ * @see {@link https://github.com/j0nathan-ll0yd/mantle-OfflineMediaDownloader/wiki/TypeScript/System-Library#batch-utilities | Batch Utilities}
  */
 export function getFailureMessages(results: PromiseSettledResult<unknown>[]): string[] {
   return results.filter((r): r is PromiseRejectedResult => r.status === 'rejected').map((

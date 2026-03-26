@@ -6,7 +6,7 @@
 
 ## 1. Executive Summary
 
-This project (`aws-cloudformation-media-downloader`) represents a highly mature, production-grade serverless application. Far exceeding typical "hobbyist" implementation of media downloaders, it exhibits architectural patterns usually reserved for enterprise-scale distributed systems.
+This project (`mantle-OfflineMediaDownloader`) represents a highly mature, production-grade serverless application. Far exceeding typical "hobbyist" implementation of media downloaders, it exhibits architectural patterns usually reserved for enterprise-scale distributed systems.
 
 The codebase uses a cutting-edge Serverless Aurora DSQL (Drizzle ORM) architecture. The architecture is implemented with remarkable discipline regarding vendor encapsulation and type safety.
 

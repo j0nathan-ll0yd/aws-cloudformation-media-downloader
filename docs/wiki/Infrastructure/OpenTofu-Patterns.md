@@ -374,17 +374,19 @@ pnpm run deploy:staging
 # infra/backend.tf
 terraform {
   backend "s3" {
-    bucket               = "lifegames-media-downloader-tfstate"
-    key                  = "terraform.tfstate"
+    bucket               = "mantle-offlinemediadownloader-tfstate"
+    key                  = "infra.tfstate"
     region               = "us-west-2"
+    encrypt              = true
+    dynamodb_table       = "TerraformStateLock"
     workspace_key_prefix = "env"
   }
 }
 ```
 
 State file paths:
-- Staging: `s3://lifegames-media-downloader-tfstate/env/staging/terraform.tfstate`
-- Production: `s3://lifegames-media-downloader-tfstate/env/production/terraform.tfstate`
+- Staging: `s3://mantle-offlinemediadownloader-tfstate/env/staging/infra.tfstate`
+- Production: `s3://mantle-offlinemediadownloader-tfstate/env/production/infra.tfstate`
 
 ### Environment-Specific Variables
 

@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-This document provides an exhaustive evaluation of the `aws-cloudformation-media-downloader` repository, covering every aspect of the codebase against 2025-2026 industry best practices. The repository is a **well-architected, enterprise-grade serverless application** with strong conventions, comprehensive documentation, and modern tooling.
+This document provides an exhaustive evaluation of the `mantle-OfflineMediaDownloader` repository, covering every aspect of the codebase against 2025-2026 industry best practices. The repository is a **well-architected, enterprise-grade serverless application** with strong conventions, comprehensive documentation, and modern tooling.
 
 **Overall Assessment**: The repository demonstrates **advanced maturity** in serverless architecture, with only minor improvement opportunities identified.
 

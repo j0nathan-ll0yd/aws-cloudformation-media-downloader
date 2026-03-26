@@ -10,7 +10,7 @@
  * 3. Handler receives typed params with guaranteed fields
  *
  * @see src/lib/lambda/middleware/ for wrapper implementations
- * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/TypeScript/Lambda-Middleware-Patterns | Middleware Guide}
+ * @see {@link https://github.com/j0nathan-ll0yd/mantle-OfflineMediaDownloader/wiki/TypeScript/Lambda-Middleware-Patterns | Middleware Guide}
  */
 
 import type {APIGatewayRequestAuthorizerEvent, Context, ScheduledEvent} from 'aws-lambda'

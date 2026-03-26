@@ -2,7 +2,7 @@
 
 ## 1. Executive Summary
 
-This document outlines the strategy for establishing distinct Staging and Production environments for the `aws-cloudformation-media-downloader` repository. The goal is to enable safe testing of infrastructure and application changes in an isolated Staging environment before promoting them to Production, reducing the risk of "blast radius" incidents and ensuring business continuity.
+This document outlines the strategy for establishing distinct Staging and Production environments for the `mantle-OfflineMediaDownloader` repository. The goal is to enable safe testing of infrastructure and application changes in an isolated Staging environment before promoting them to Production, reducing the risk of "blast radius" incidents and ensuring business continuity.
 
 **Key Recommendations:**
 *   **Infrastructure as Code:** Adopt a "Hybrid" approach using Terraform/OpenTofu Workspaces for state isolation combined with environment-specific `.tfvars` files.

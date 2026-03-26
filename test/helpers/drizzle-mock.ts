@@ -4,7 +4,7 @@
  * Provides reusable mock patterns for Drizzle database operations.
  * Used by Lambdas that directly query the database.
  *
- * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/Vitest-Mocking-Strategy | Vitest Mocking Strategy}
+ * @see {@link https://github.com/j0nathan-ll0yd/mantle-OfflineMediaDownloader/wiki/Vitest-Mocking-Strategy | Vitest Mocking Strategy}
  */
 import {type Mock, vi} from 'vitest'
 

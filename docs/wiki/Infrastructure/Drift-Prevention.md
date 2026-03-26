@@ -97,8 +97,8 @@ This project uses git worktrees for isolated development. Terraform state is sto
 
 | Component | Location |
 |-----------|----------|
-| State bucket | `s3://lifegames-media-downloader-tfstate` |
-| Lock table | `MediaDownloader-TerraformStateLock` (DynamoDB) |
+| State bucket | `s3://mantle-offlinemediadownloader-tfstate` |
+| Lock table | `TerraformStateLock` (DynamoDB) |
 | Region | `us-west-2` |
 
 **Important:**

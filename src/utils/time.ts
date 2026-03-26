@@ -10,13 +10,13 @@
  * const cutoffTime = new Date(Date.now() - TWENTY_FOUR_HOURS_SEC * 1000)
  * ```
  *
- * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/TypeScript/System-Library | System Library Guide}
+ * @see {@link https://github.com/j0nathan-ll0yd/mantle-OfflineMediaDownloader/wiki/TypeScript/System-Library | System Library Guide}
  */
 
 /**
  * Time constants in various units for consistent usage across handlers.
  *
- * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/TypeScript/System-Library#time-constants | Time Constants}
+ * @see {@link https://github.com/j0nathan-ll0yd/mantle-OfflineMediaDownloader/wiki/TypeScript/System-Library#time-constants | Time Constants}
  */
 export const TIME = {
   /** Seconds in one minute (60) */
@@ -47,7 +47,7 @@ export const TIME = {
  *
  * @param seconds - Number of seconds ago
  * @returns Date object representing that time
- * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/TypeScript/System-Library#date-helpers | Date Helpers}
+ * @see {@link https://github.com/j0nathan-ll0yd/mantle-OfflineMediaDownloader/wiki/TypeScript/System-Library#date-helpers | Date Helpers}
  */
 export function secondsAgo(seconds: number): Date {
   return new Date(Date.now() - seconds * 1000)
@@ -58,7 +58,7 @@ export function secondsAgo(seconds: number): Date {
  *
  * @param seconds - Number of seconds from now
  * @returns Date object representing that time
- * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/TypeScript/System-Library#date-helpers | Date Helpers}
+ * @see {@link https://github.com/j0nathan-ll0yd/mantle-OfflineMediaDownloader/wiki/TypeScript/System-Library#date-helpers | Date Helpers}
  */
 export function secondsFromNow(seconds: number): Date {
   return new Date(Date.now() + seconds * 1000)
@@ -89,7 +89,7 @@ export function millisecondsFromNow(milliseconds: number): Date {
  *
  * @param timestampSec - Unix timestamp in seconds
  * @returns ISO 8601 date string
- * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/TypeScript/System-Library#timestamp-conversion | Timestamp Conversion}
+ * @see {@link https://github.com/j0nathan-ll0yd/mantle-OfflineMediaDownloader/wiki/TypeScript/System-Library#timestamp-conversion | Timestamp Conversion}
  */
 export function unixToISOString(timestampSec: number): string {
   return new Date(timestampSec * 1000).toISOString()

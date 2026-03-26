@@ -33,7 +33,7 @@ jobs:
         if: steps.check.outputs.ts_morph_updated == 'true'
         run: |
           gh issue comment 137 \
-            --repo j0nathan-ll0yd/aws-cloudformation-media-downloader \
+            --repo j0nathan-ll0yd/mantle-OfflineMediaDownloader \
             --body "$(cat <<EOF
           📦 **ts-morph Update Detected**
 

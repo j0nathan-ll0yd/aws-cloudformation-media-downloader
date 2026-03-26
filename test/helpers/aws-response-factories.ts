@@ -4,7 +4,7 @@
  * Provides type-safe factories for AWS SDK response objects used in mocks.
  * Use these with aws-sdk-client-mock to configure consistent mock responses.
  *
- * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/Vitest-Mocking-Strategy#aws-response-factories | Usage Examples}
+ * @see {@link https://github.com/j0nathan-ll0yd/mantle-OfflineMediaDownloader/wiki/Vitest-Mocking-Strategy#aws-response-factories | Usage Examples}
  */
 
 import {randomUUID} from 'node:crypto'
