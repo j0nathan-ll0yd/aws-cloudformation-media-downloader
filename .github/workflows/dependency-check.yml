@@ -22,9 +22,6 @@ jobs:
         # pnpm trust-downgrade protection blocks the patched version (missing provenance attestation)
         run: pnpm audit --audit-level=high --ignore GHSA-46wh-pxpv-q5gq
 
-      - name: Generate dependency graph
-        run: pnpm run generate:graph
-
       - name: Check dependency rules
         run: pnpm run deps:check
 

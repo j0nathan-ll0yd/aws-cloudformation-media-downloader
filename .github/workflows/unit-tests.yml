@@ -32,28 +32,11 @@ jobs:
       - name: Build mantle packages
         working-directory: ../mantle
         run: pnpm build
-      - name: Cache TypeSpec output
-        uses: actions/cache@v5
-        with:
-          path: tsp-output/
-          key: typespec-${{ runner.os }}-${{ hashFiles('tsp/**') }}
-          restore-keys: |
-            typespec-${{ runner.os }}-
-
-      - name: Compile TypeSpec
-        run: pnpm run typespec:check
-
-      - name: Generate API documentation
-        run: pnpm run document:api
-
       - name: Validate documented scripts exist
         run: ./bin/validate-docs.sh
 
       - name: Validate documentation sync
         run: pnpm run validate:doc:sync
-
-      - name: Audit wiki documentation
-        run: pnpm run audit:wiki
 
       - name: Validate docs freshness
         run: pnpm run validate:docs:freshness

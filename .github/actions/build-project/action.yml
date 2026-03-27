@@ -20,14 +20,10 @@ runs:
       with:
         path: |
           build
-        key: build-${{ runner.os }}-${{ hashFiles('src/**', 'config/esbuild.config.ts', 'scripts/generateDependencyGraph.ts') }}
+        key: build-${{ runner.os }}-${{ hashFiles('src/**') }}
         restore-keys: |
           build-${{ runner.os }}-
 
-    - name: Build dependencies
-      shell: bash
-      run: pnpm run build:dependencies
-
-    - name: Webpack Build
+    - name: Build
       shell: bash
       run: pnpm run build
