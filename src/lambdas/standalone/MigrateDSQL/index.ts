@@ -82,7 +82,7 @@ function loadMigrations(): MigrationFile[] {
  */
 async function ensureMigrationsTable(): Promise<void> {
   const db = await getDrizzleClient()
-  // eslint-disable-next-line local-rules/migrations-safety -- This IS the migration runner; it needs DDL to bootstrap its own tracking table
+  // This IS the migration runner; it needs DDL to bootstrap its own tracking table
   await db.execute(sql.raw(`
     CREATE TABLE IF NOT EXISTS schema_migrations (
       version TEXT PRIMARY KEY,
