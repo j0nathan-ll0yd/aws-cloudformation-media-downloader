@@ -134,8 +134,8 @@ jobs:
 
       - uses: ./.github/actions/setup-homebrew-tools
 
-      - name: Build dependencies (generate infrastructure.json and resource enums)
-        run: pnpm run build:dependencies
+      - name: Build project
+        run: pnpm run build
 
       - name: Check types
         run: pnpm run check:types

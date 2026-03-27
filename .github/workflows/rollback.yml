@@ -60,9 +60,7 @@ jobs:
       - uses: ./.github/actions/setup-homebrew-tools
 
       - name: Build
-        run: |
-          pnpm run build:dependencies
-          pnpm run build
+        run: pnpm run build
 
       - name: Setup OpenTofu
         uses: opentofu/setup-opentofu@v1
