@@ -10,8 +10,11 @@ process.env.USE_LOCALSTACK = 'true'
 process.env.AWS_REGION = 'us-west-2'
 process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
 
-import {afterAll, afterEach, beforeAll, describe, expect, test} from 'vitest'
+import {afterAll, afterEach, beforeAll, describe, expect, test, vi} from 'vitest'
 import type {Context} from 'aws-lambda'
+import {createObservabilityMock} from '@mantleframework/testing/lambda-mocks'
+
+vi.mock('@mantleframework/observability', () => createObservabilityMock())
 
 // Test helpers
 import {closeTestDb, createAllTables, getSessionById, getTestDbAsync, insertSession, insertUser, truncateAllTables} from '../helpers/postgres-helpers'
