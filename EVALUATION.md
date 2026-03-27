@@ -62,7 +62,7 @@ Compared to top GitHub repositories for "serverless video downloader" and "aws l
 -   **Edge Optimization**: Move read-heavy, low-latency logic (like serving the file list) closer to the edge using CloudFront Functions or Lambda@Edge, caching the API responses.
 
 ### Phase 3: AI-Agent Capabilities (Medium Term)
--   **Agentic CI/CD**: Integrate the `validate:conventions` and `repomix` context packing directly into the GitHub Actions pipeline to automatically "groom" the codebase for AI contributors.
+-   **Agentic CI/CD**: Integrate the `check:conventions` and `repomix` context packing directly into the GitHub Actions pipeline to automatically "groom" the codebase for AI contributors.
 -   **Self-Healing**: Implement a "Codebase Doctor" agent that runs on a schedule to check for convention drift (using AST analysis) and auto-generates PRs to fix minor issues.
 
 ### Phase 4: Feature Expansion (Long Term)

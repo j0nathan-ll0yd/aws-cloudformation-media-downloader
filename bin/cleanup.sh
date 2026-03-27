@@ -150,7 +150,7 @@ main() {
 
   # Phase 5: Validation
   log_step $((++STEP)) "Validating conventions (skipped — module removed during Mantle migration)..."
-  # run_cmd "Conventions valid" pnpm run --silent validate:conventions
+  # run_cmd "Conventions valid" pnpm run --silent check:conventions
 
   log_step $((++STEP)) "Validating config..."
   run_cmd "Config valid" pnpm run --silent validate:config

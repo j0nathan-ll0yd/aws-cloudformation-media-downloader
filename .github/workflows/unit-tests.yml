@@ -64,7 +64,7 @@ jobs:
         run: pnpm audit --audit-level=high --ignore GHSA-46wh-pxpv-q5gq
 
       - name: Run convention validation (Mantle CLI)
-        run: pnpm run validate:conventions
+        run: pnpm run check:conventions
 
       - name: Validate environment variables
         run: pnpm run validate:env-vars

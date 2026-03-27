@@ -168,7 +168,7 @@ pnpm run check-types
 pnpm run lint
 
 # Convention validation
-pnpm run validate:conventions
+pnpm run check:conventions
 
 # Unit tests
 pnpm test

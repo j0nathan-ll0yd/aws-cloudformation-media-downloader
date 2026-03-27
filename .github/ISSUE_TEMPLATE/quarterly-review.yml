@@ -41,7 +41,7 @@ body:
       label: Validation Rule Review
       description: Verify validation rules are working correctly
       options:
-        - label: "Run `pnpm run validate:conventions` - All rules pass"
+        - label: "Run `pnpm run check:conventions` - All rules pass"
         - label: "Review MCP rule count in Conventions-Tracking.md matches actual rules"
         - label: "Check for any new conventions that need rules"
         - label: "Verify no deprecated rules are still enabled"

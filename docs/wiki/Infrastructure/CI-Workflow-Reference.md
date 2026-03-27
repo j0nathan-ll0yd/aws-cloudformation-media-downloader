@@ -83,7 +83,7 @@ Complete reference for all GitHub Actions workflows in the project.
 - Pull request to master/main
 
 **Validation**:
-- Runs `pnpm run validate:conventions`
+- Runs `pnpm run check:conventions`
 - Checks 13+ convention rules via AST analysis
 
 **Rules Validated**:

@@ -198,7 +198,7 @@ main() {
 
   # Step 12: Mantle conventions validation
   echo -e "${YELLOW}[12/21] Validating conventions (Mantle CLI)...${NC}"
-  pnpm run validate:conventions
+  pnpm run check:conventions
   echo -e "${GREEN}  Conventions validation passed${NC}"
   echo ""
 

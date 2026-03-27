@@ -37,7 +37,7 @@ Based on the convention type:
 
 **For `mantle check` rules:**
 
-Review `mantle.config.ts` for existing rule patterns to use as templates. Run `pnpm run validate:conventions` to see all currently enforced rules and their structure.
+Review `mantle.config.ts` for existing rule patterns to use as templates. Run `pnpm run check:conventions` to see all currently enforced rules and their structure.
 
 **For ESLint rules:**
 Review `eslint-local-rules/rules/` for patterns:
@@ -49,7 +49,7 @@ Review `eslint-local-rules/rules/` for patterns:
 
 #### Mantle Check Rule Structure
 
-Convention enforcement is done via the Mantle CLI's convention validation engine. Add rules to `mantle.config.ts` following the existing rule patterns. Run `pnpm run validate:conventions` to execute all rules.
+Convention enforcement is done via the Mantle CLI's convention validation engine. Add rules to `mantle.config.ts` following the existing rule patterns. Run `pnpm run check:conventions` to execute all rules.
 
 #### ESLint Rule Structure
 
@@ -98,7 +98,7 @@ module.exports = {
 
 ```bash
 # For mantle check rules
-pnpm run validate:conventions
+pnpm run check:conventions
 
 # For ESLint rules
 node eslint-local-rules/test/{rule-name}.test.cjs
@@ -195,6 +195,6 @@ if (filePath.endsWith('.sql')) {
 ## References
 
 - Conventions Tracking: `docs/wiki/Meta/Conventions-Tracking.md`
-- Mantle Convention Validation: `mantle.config.ts` + `pnpm run validate:conventions`
+- Mantle Convention Validation: `mantle.config.ts` + `pnpm run check:conventions`
 - ESLint Local Rules: `eslint-local-rules/`
 - Example ESLint Rule: `eslint-local-rules/rules/no-direct-aws-sdk-import.cjs`

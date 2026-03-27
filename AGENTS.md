@@ -251,7 +251,7 @@ Queued | Downloading | Downloaded | Failed
 ```bash
 pnpm run precheck              # Type check + lint (run before commits)
 pnpm run test                  # Unit tests
-pnpm run validate:conventions  # MCP rule validation
+pnpm run check:conventions  # MCP rule validation
 pnpm run ci:local              # Full local CI
 ```
 
@@ -276,7 +276,7 @@ pnpm run plan:production         # Preview production changes
 ```
 
 ### Pre-Commit Checklist
-1. `pnpm run validate:conventions` - No rule violations
+1. `pnpm run check:conventions` - No rule violations
 2. `pnpm run precheck` - TypeScript + ESLint clean
 3. `pnpm run test` - All tests pass
 4. Verify NO AI references in commit message
@@ -398,7 +398,7 @@ When making significant changes to AGENTS.md:
 3. Update `.gemini/instructions.md` if critical rules changed
 4. Update `.cursorrules` if patterns changed
 5. Update `.github/copilot-instructions.md` if patterns changed
-6. Run `pnpm run validate:conventions` to verify consistency
+6. Run `pnpm run check:conventions` to verify consistency
 
 ### Version Compatibility
 

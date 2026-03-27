@@ -15,7 +15,7 @@ permissionMode: plan
 
 ## Validation Commands
 ```bash
-pnpm run validate:conventions  # MCP rules
+pnpm run check:conventions  # MCP rules
 pnpm run precheck             # ESLint + TypeScript
 ```
 

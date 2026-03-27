@@ -85,11 +85,11 @@
     "update:ytdlp": "./bin/update-yt-dlp.sh",
     "update:ytdlp:check": "./bin/update-yt-dlp.sh --check-only",
     "validate:env-vars": "node ../mantle/packages/cli/dist/index.mjs check env-vars",
-    "validate:conventions": "node ../mantle/packages/cli/dist/index.mjs check --severity HIGH || true",
     "validate:doc:sync": "./bin/validate-doc-sync.sh",
     "validate:docs": "./bin/validate-docs.sh",
     "validate:docs:freshness": "./bin/validate-docs-freshness.sh",
-    "validate:graphrag": "./bin/validate-graphrag.sh"
+    "validate:graphrag": "./bin/validate-graphrag.sh",
+    "check:conventions": "npx mantle check --severity HIGH"
   },
   "author": "Jonathan Lloyd",
   "dependencies": {
