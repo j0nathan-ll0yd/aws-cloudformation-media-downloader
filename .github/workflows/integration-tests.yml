@@ -24,14 +24,20 @@ jobs:
       - name: Checkout mantle framework
         run: GIT_SSH_COMMAND="ssh -i ~/.ssh/mantle_deploy_key -o StrictHostKeyChecking=no" git clone --depth 1 --branch main git@github.com:j0nathan-ll0yd/mantle.git ../mantle
 
-      - uses: ./.github/actions/setup-node-pnpm
-
-      - name: Install mantle dependencies
-        working-directory: ../mantle
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+      - name: Install and build mantle (before project install)
+        run: |
+          cd ../mantle
+          pnpm install --frozen-lockfile
+          pnpm build
+      - name: Install project dependencies
         run: pnpm install --frozen-lockfile
-      - name: Build mantle packages
-        working-directory: ../mantle
-        run: pnpm build
 
       # Note: Type checking and linting removed - unit-tests workflow handles these
 
