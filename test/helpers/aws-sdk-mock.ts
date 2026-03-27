@@ -50,8 +50,8 @@ import {
 /**
  * Version-safe wrapper around mockClient.
  *
- * The AWS SDK Client classes resolve through @mantleframework/aws (linked package),
- * while aws-sdk-client-mock resolves @smithy/types from pnpm store. This creates
+ * The AWS SDK Client classes resolve through \@mantleframework/aws (linked package),
+ * while aws-sdk-client-mock resolves \@smithy/types from pnpm store. This creates
  * a nominal type mismatch even though the types are structurally identical.
  * This wrapper bridges the gap by accepting any Client constructor.
  */

@@ -415,10 +415,10 @@ async function handleDownloadFailure(
  * Flow:
  * 1. Mark download as in_progress
  * 2. Fetch video info (safe - never throws)
- * 3. If fetch failed -> classify -> throw for SQS retry or return for removal
- * 4. If fetch succeeded -> stream to S3
- * 5. If stream failed -> classify -> throw for SQS retry or return for removal
- * 6. If stream succeeded -> update Files entity, publish DownloadCompleted event
+ * 3. If fetch failed -\> classify -\> throw for SQS retry or return for removal
+ * 4. If fetch succeeded -\> stream to S3
+ * 5. If stream failed -\> classify -\> throw for SQS retry or return for removal
+ * 6. If stream succeeded -\> update Files entity, publish DownloadCompleted event
  *
  * @param message - The download request from SQS
  * @param receiveCount - SQS ApproximateReceiveCount

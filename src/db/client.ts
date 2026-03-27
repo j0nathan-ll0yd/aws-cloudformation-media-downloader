@@ -20,14 +20,17 @@ function getDbConfig(): DatabaseConfig {
   return {provider: 'aurora-dsql', endpoint: getRequiredEnv('DSQL_ENDPOINT'), region: getRequiredEnv('DSQL_REGION'), username, isAdmin: username === 'admin'}
 }
 
+/** Returns a Drizzle client configured for the project's Aurora DSQL instance. */
 export function getDrizzleClient() {
   return _getDrizzleClient(getDbConfig())
 }
 
+/** Closes the Drizzle client connection for the project's Aurora DSQL instance. */
 export function closeDrizzleClient() {
   return _closeDrizzleClient(getDbConfig())
 }
 
+/** Runs `fn` inside a database transaction, rolling back on error. */
 export async function withTransaction<T>(fn: (tx: Parameters<Parameters<typeof _withTransaction>[1]>[0]) => Promise<T>): Promise<T> {
   const db = await getDrizzleClient()
   return _withTransaction(db, fn)

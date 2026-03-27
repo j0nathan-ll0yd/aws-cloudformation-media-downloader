@@ -39,8 +39,8 @@ interface ValidationResult {
  * Discover Lambda names from src/lambdas/ directory
  *
  * Supports two Lambda layout conventions:
- * - File-based routing (Mantle): `api/user/login.post.ts` -> `api/user/login`
- * - Directory-based: `sqs/SendPushNotification/index.ts` -> `sqs/SendPushNotification`
+ * - File-based routing (Mantle): `api/user/login.post.ts` -\> `api/user/login`
+ * - Directory-based: `sqs/SendPushNotification/index.ts` -\> `sqs/SendPushNotification`
  */
 async function discoverLambdas(): Promise<string[]> {
   const lambdasDir = path.join(projectRoot, 'src', 'lambdas')

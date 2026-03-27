@@ -101,8 +101,8 @@ interface LambdaEntry {
  * Discover Lambda entry points from src/lambdas/ directory
  *
  * Supports two Lambda layout conventions:
- * - File-based routing (Mantle): `api/user/login.post.ts` -> name `api/user/login`
- * - Directory-based: `sqs/SendPushNotification/index.ts` -> name `sqs/SendPushNotification`
+ * - File-based routing (Mantle): `api/user/login.post.ts` -\> name `api/user/login`
+ * - Directory-based: `sqs/SendPushNotification/index.ts` -\> name `sqs/SendPushNotification`
  *
  * Returns Lambda identifiers (relative paths from src/lambdas/) paired with
  * their entry point file paths (relative to project root, for graph.json lookup).

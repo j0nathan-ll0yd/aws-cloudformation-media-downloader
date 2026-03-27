@@ -7,7 +7,7 @@
  * BetterAuth will attempt to decrypt plaintext strings and throw an error.
  *
  * Encryption format (plain string key path):
- *   symmetricEncrypt({ key: AUTH_SECRET, data: plaintext }) → raw hex string
+ *   symmetricEncrypt(\{ key: AUTH_SECRET, data: plaintext \}) → raw hex string
  *   The nonce is prepended to the ciphertext, all encoded as hex.
  *
  * Idempotency:
