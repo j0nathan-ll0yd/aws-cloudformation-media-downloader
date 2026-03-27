@@ -24,8 +24,8 @@ if [ "$CURRENT_BRANCH" = "master" ] || [ "$CURRENT_BRANCH" = "main" ]; then
   exit 1
 fi
 
-echo "Running pre-push checks (ci:local)..."
-echo "This may take 5-10 minutes. Use 'git push --no-verify' to bypass in emergencies."
+echo "Running pre-push checks (precheck)..."
+echo "Use 'git push --no-verify' to bypass in emergencies."
 echo ""
 
-pnpm run ci:local
+pnpm run precheck
