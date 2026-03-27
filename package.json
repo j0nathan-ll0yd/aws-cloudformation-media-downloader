@@ -115,7 +115,6 @@
     "update:ffmpeg:check": "./bin/update-ffmpeg.sh --check-only",
     "update:ytdlp": "./bin/update-yt-dlp.sh",
     "update:ytdlp:check": "./bin/update-yt-dlp.sh --check-only",
-    "validate:api:paths": "node --import tsx scripts/validateApiPaths.ts",
     "validate:env-vars": "node ../mantle/packages/cli/dist/index.mjs check env-vars",
     "validate:conventions": "node ../mantle/packages/cli/dist/index.mjs check --severity HIGH || true",
     "validate:doc:sync": "./bin/validate-doc-sync.sh",

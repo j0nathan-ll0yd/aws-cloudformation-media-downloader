@@ -47,11 +47,21 @@ export default defineConfig({
       customProviderModule: 'vitest-monocart-coverage',
       reportsDirectory: './coverage/integration'
     },
+    env: {
+      METRICS_NAMESPACE: 'MediaDownloaderTest'
+    },
     alias: {
       '#entities': resolve(__dirname, 'src/entities'),
+      '#lambdas': resolve(__dirname, 'src/lambdas'),
       '#lib': resolve(__dirname, 'src/lib'),
       '#util': resolve(__dirname, 'src/util'),
       '#types': resolve(__dirname, 'src/types'),
+      '#db': resolve(__dirname, 'src/db'),
+      '#domain': resolve(__dirname, 'src/domain'),
+      '#services': resolve(__dirname, 'src/services'),
+      '#integrations': resolve(__dirname, 'src/integrations'),
+      '#errors': resolve(__dirname, 'src/errors'),
+      '#utils': resolve(__dirname, 'src/utils'),
       '#test': resolve(__dirname, 'test')
     },
     silent: process.env.LOG_LEVEL === 'SILENT'

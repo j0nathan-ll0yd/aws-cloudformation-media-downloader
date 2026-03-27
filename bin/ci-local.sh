@@ -208,9 +208,7 @@ main() {
   echo -e "${GREEN}  Environment variables validation passed${NC}"
   echo ""
 
-  # Step 14: API paths validation (SKIPPED — script references terraform/ dir, Mantle uses infra/ with module pattern)
-  echo -e "${YELLOW}[14/21] Validating API paths...${NC}"
-  echo -e "${GREEN}  API paths validation skipped (needs update for Mantle module pattern)${NC}"
+  # Step 14: API paths validation (removed — Mantle generates routes from filesystem, doc-sync validates operation count)
   echo ""
 
   # Step 15: Documentation validation

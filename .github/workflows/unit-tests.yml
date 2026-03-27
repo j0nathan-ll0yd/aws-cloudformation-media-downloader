@@ -46,10 +46,6 @@ jobs:
       - name: Generate API documentation
         run: pnpm run document:api
 
-      # SKIPPED: validate:api:paths references terraform/ dir, needs update for Mantle infra/ module pattern
-      # - name: Validate API path alignment
-      #   run: pnpm run validate:api:paths
-
       - name: Validate documented scripts exist
         run: ./bin/validate-docs.sh
 
