@@ -75,6 +75,22 @@ export default defineConfig({
       BUCKET: 'test-media-bucket',
       RESOURCE_PREFIX: 'test'
     },
+    resolve: {
+      dedupe: [
+        '@mantleframework/core',
+        '@mantleframework/aws',
+        '@mantleframework/database',
+        '@mantleframework/errors',
+        '@mantleframework/env',
+        '@mantleframework/observability',
+        '@mantleframework/resilience',
+        '@mantleframework/validation',
+        '@mantleframework/auth',
+        '@mantleframework/security',
+        'drizzle-orm',
+        'zod'
+      ]
+    },
     alias: {
       '#entities': resolve(__dirname, 'src/entities'),
       '#lambdas': resolve(__dirname, 'src/lambdas'),
@@ -87,7 +103,9 @@ export default defineConfig({
       '#integrations': resolve(__dirname, 'src/integrations'),
       '#errors': resolve(__dirname, 'src/errors'),
       '#utils': resolve(__dirname, 'src/utils'),
-      '#test': resolve(__dirname, 'test')
+      '#test': resolve(__dirname, 'test'),
+      'drizzle-orm': resolve(__dirname, 'node_modules/@mantleframework/database/node_modules/drizzle-orm'),
+      'zod': resolve(__dirname, 'node_modules/@mantleframework/validation/node_modules/zod')
     },
     silent: process.env.LOG_LEVEL === 'SILENT'
   }
