@@ -22,10 +22,12 @@ import {dirname, join} from 'path'
 import {fileURLToPath} from 'url'
 import {sql} from 'drizzle-orm'
 import {getDrizzleClient} from '#db/client'
-import {withObservability} from '@mantleframework/core'
+import {defineLambda, withObservability} from '@mantleframework/core'
 import {addMetadata, endSpan, logDebug, logError, logInfo, metrics, MetricUnit, startSpan} from '@mantleframework/observability'
 import type {MigrationFile, MigrationResult} from '#types/lambda'
 import {getRequiredEnv} from '@mantleframework/env'
+
+defineLambda({timeout: 300})
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -40,12 +42,7 @@ function substituteEnvVars(sqlContent: string): string {
   // Match ${VAR_NAME} pattern
   return sqlContent.replace(/\$\{(\w+)\}/g, (_, varName: string) => {
     // Dynamic lookup is intentional - migration files can reference any env var
-    // eslint-disable-next-line local-rules/env-validation, local-rules/strict-env-vars
-    const value = process.env[varName]
-    if (!value) {
-      throw new Error(`Environment variable ${varName} is required but not set`)
-    }
-    return value
+    return getRequiredEnv(varName)
   })
 }
 

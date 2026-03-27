@@ -13,7 +13,7 @@ import {buildValidatedResponse, defineLambda, UserStatus} from '@mantleframework
 defineLambda({staticAssets: ['videos/default-file.mp4']})
 import {logDebug} from '@mantleframework/observability'
 import {metrics, MetricUnit} from '@mantleframework/observability'
-import {defineApiHandler} from '@mantleframework/validation'
+import {defineApiHandler, z} from '@mantleframework/validation'
 import {getDefaultFile} from '#config/constants'
 import {getFilesForUser} from '#entities/queries'
 import {fileListResponseSchema} from '#types/api-schema'
@@ -54,15 +54,17 @@ async function getFilesByUser(userId: string): Promise<File[]> {
   return files
 }
 
-const api = defineApiHandler({auth: 'authorizer', operationName: 'ListFiles'})
-export const handler = api(async ({event, context, userId, userStatus}) => {
+const ListFilesQuerySchema = z.object({status: z.string().optional().default('downloaded')})
+
+const api = defineApiHandler({auth: 'authorizer', querySchema: ListFilesQuerySchema, operationName: 'ListFiles'})
+export const handler = api(async ({context, userId, userStatus, query}) => {
   if (userStatus === UserStatus.Anonymous) {
     const myResponse = {contents: [getDefaultFile()], keyCount: 1}
     return buildValidatedResponse(context, 200, myResponse, fileListResponseSchema)
   }
 
   // Extract status query parameter (default to 'downloaded' for backwards compatibility)
-  const statusParam = event.queryStringParameters?.status || 'downloaded'
+  const statusParam = query.status ?? 'downloaded'
   const showAllStatuses = statusParam === 'all'
 
   const files = await getFilesByUser(userId as string)

@@ -68,7 +68,7 @@ function runLayerDiagnostics(binaryPath: string): void {
   }
 
   // Check PATH
-  checks['PATH'] = process.env['PATH']?.substring(0, 300)
+  checks['PATH'] = getOptionalEnv('PATH', '').substring(0, 300)
 
   logDebug('Layer diagnostics', checks)
 }

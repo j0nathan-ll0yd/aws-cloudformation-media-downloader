@@ -117,6 +117,7 @@ class PreparedQueries {
    * This is called automatically when the database connection is invalidated.
    * Manual calls are typically not needed - included for test cleanup.
    */
+  @RequiresTable([])
   static resetPreparedStatements(): void {
     resetPreparedStatementCaches()
   }
