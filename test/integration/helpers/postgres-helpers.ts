@@ -15,8 +15,6 @@ import {devices, files, userDevices, userFiles, users} from '#db/schema'
 import type {Device, File, User} from '#types/domainModels'
 import {FileStatus} from '#types/enums'
 import {createMockDevice, createMockFile, createMockUser} from './test-data'
-import {waitFor} from './wait-utils'
-import {POLLING, TIMEOUTS} from './timeout-config'
 
 // Test database connection configuration
 const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
@@ -138,30 +136,37 @@ export async function createAllTables(): Promise<void> {
   const db = getTestDb()
   const schema = getWorkerSchema()
 
-  // Wait for schema to be available (handles race conditions with globalSetup)
-  // Uses exponential backoff with jitter for resilient waiting in CI
-  await waitFor(async () => {
-    const result = await db.execute(sql.raw(`
-        SELECT EXISTS (
-          SELECT 1 FROM information_schema.tables
-          WHERE table_schema = '${schema}' AND table_name = 'users'
-        ) as exists
-      `))
+  // Verify schema exists — globalSetup should have created it before any workers start.
+  // If this fails, it indicates a real configuration error, not a timing issue.
+  const schemaCheck = await db.execute(sql.raw(`
+    SELECT EXISTS (
+      SELECT 1 FROM information_schema.tables
+      WHERE table_schema = '${schema}' AND table_name = 'users'
+    ) as exists
+  `))
 
-    const rows = [...result] as Array<{exists: boolean}>
-    if (rows[0]?.exists) {
-      // Schema and tables exist, set search_path and return
-      await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
-      return true
-    }
-    return null
-  }, {
-    initialDelayMs: POLLING.initialDelay,
-    maxDelayMs: POLLING.maxDelay,
-    maxTotalMs: TIMEOUTS.schemaCreation,
-    jitterFactor: POLLING.jitterFactor,
-    description: `schema '${schema}' to be ready`
-  })
+  const rows = [...schemaCheck] as Array<{exists: boolean}>
+  if (!rows[0]?.exists) {
+    // Schema not found — log available schemas for debugging
+    const allSchemas = await db.execute(
+      sql.raw(`SELECT schema_name FROM information_schema.schemata WHERE schema_name LIKE '%worker%' ORDER BY schema_name`)
+    )
+    const schemaNames = [...allSchemas].map((r: Record<string, unknown>) => r.schema_name)
+
+    // Also check if the connection is actually pointing at the right database
+    const dbCheck = await db.execute(sql.raw(`SELECT current_database(), current_user`))
+    const dbInfo = [...dbCheck][0] as Record<string, unknown> | undefined
+
+    throw new Error(
+      `[createAllTables] Schema '${schema}' not found. ` +
+        `Available worker schemas: [${schemaNames.join(', ')}]. ` +
+        `Database: ${dbInfo?.current_database}, User: ${dbInfo?.current_user}. ` +
+        `VITEST_POOL_ID=${process.env.VITEST_POOL_ID}, GITHUB_RUN_ID=${process.env.GITHUB_RUN_ID}`
+    )
+  }
+
+  // Schema exists — set search_path
+  await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
 }
 
 /**
