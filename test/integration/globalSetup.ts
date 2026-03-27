@@ -192,8 +192,17 @@ export async function setup(): Promise<void> {
       const adaptedSchema = adaptMigrationForSchema(schemaMigration, schemaName)
       validateAdaptations(adaptedSchema)
       const schemaStatements = parseSqlStatements(adaptedSchema)
-      for (const statement of schemaStatements) {
-        await sql.unsafe(statement)
+      for (let i = 0; i < schemaStatements.length; i++) {
+        const statement = schemaStatements[i]!
+        try {
+          await sql.unsafe(statement)
+        } catch (stmtError) {
+          // Log the failing statement for debugging — include first 120 chars
+          const preview = statement.substring(0, 120).replace(/\n/g, ' ')
+          console.error(`[globalSetup] Statement ${i + 1}/${schemaStatements.length} failed in ${schemaName}: ${preview}`)
+          console.error(`[globalSetup] Error:`, stmtError)
+          throw stmtError
+        }
       }
 
       log(`[globalSetup] Schema ${schemaName} ready with ${schemaStatements.length} statements`)
