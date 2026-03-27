@@ -97,7 +97,6 @@ main() {
   PATHS_OK=true
 
   REQUIRED_PATHS=(
-    "src/db"
     "src/entities/queries"
     "src/lambdas"
     "test/helpers"

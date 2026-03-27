@@ -26,7 +26,6 @@
 #   - IAM roles and policies
 #   - CloudFront distributions
 #   - API Gateway REST APIs
-#   - DynamoDB tables
 #   - S3 buckets
 #   - SQS queues
 #   - CloudWatch log groups
@@ -131,7 +130,6 @@ main() {
   # These patterns match resources for the specific environment (stag-* or prod-*)
   LAMBDA_PATTERN="^${RESOURCE_PREFIX}-(ListFiles|LoginUser|RegisterUser|RegisterDevice|WebhookFeedly|S3ObjectCreated|SendPushNotification|StartFileUpload|PruneDevices|ApiGatewayAuthorizer|UserDelete|UserSubscribe|RefreshToken|LogoutUser|CleanupExpiredRecords|DeviceEvent|MigrateDSQL)"
   IAM_PATTERN="^${RESOURCE_PREFIX}-(ListFiles|LoginUser|RegisterUser|RegisterDevice|WebhookFeedly|S3ObjectCreated|SendPushNotification|StartFileUpload|PruneDevices|ApiGatewayAuthorizer|UserDelete|UserSubscribe|RefreshToken|LogoutUser|CleanupExpiredRecords|DeviceEvent|MigrateDSQL|ApiGatewayCloudwatch|SNSLoggingRole|CommonLambdaXRay|LambdaDSQLConnect|LambdaDSQLAdminConnect)"
-  DYNAMODB_PATTERN="^${RESOURCE_PREFIX}-(MediaDownloader|Idempotency)"
   S3_PATTERN="lifegames-${RESOURCE_PREFIX}-media"
   SQS_PATTERN="^${RESOURCE_PREFIX}-(SendPushNotification|DownloadQueue)"
   APIGW_PATTERN="^${RESOURCE_PREFIX}-OfflineMediaDownloader"
@@ -188,8 +186,7 @@ main() {
   tofu state list 2> /dev/null | grep "aws_iam_policy\." | sed 's/aws_iam_policy\.//' > "$TMP_DIR/tf_policies.txt" || true
   tofu state list 2> /dev/null | grep "aws_cloudfront_distribution\." | sed 's/aws_cloudfront_distribution\.//' > "$TMP_DIR/tf_cloudfront.txt" || true
   tofu state list 2> /dev/null | grep "aws_api_gateway_rest_api\." | sed 's/aws_api_gateway_rest_api\.//' > "$TMP_DIR/tf_apigw.txt" || true
-  tofu state list 2> /dev/null | grep "aws_dynamodb_table\." | sed 's/aws_dynamodb_table\.//' > "$TMP_DIR/tf_dynamodb.txt" || true
-  tofu state list 2> /dev/null | grep "aws_s3_bucket\." | sed 's/aws_s3_bucket\.//' > "$TMP_DIR/tf_s3.txt" || true
+  tofu state list 2> /dev/null | grep "aws_s3_bucket\."| sed 's/aws_s3_bucket\.//' > "$TMP_DIR/tf_s3.txt" || true
   tofu state list 2> /dev/null | grep "aws_sqs_queue\." | sed 's/aws_sqs_queue\.//' > "$TMP_DIR/tf_sqs.txt" || true
 
   TF_LAMBDA_COUNT=$(wc -l < "$TMP_DIR/tf_lambdas.txt" | tr -d ' ')
@@ -222,10 +219,6 @@ main() {
   # API Gateway (filter by environment prefix)
   aws apigateway get-rest-apis --query 'items[*].[id,name]' --output text 2> /dev/null > "$TMP_DIR/aws_apigw_all.txt" || true
   grep -E "$APIGW_PATTERN" "$TMP_DIR/aws_apigw_all.txt" > "$TMP_DIR/aws_apigw.txt" 2> /dev/null || true
-
-  # DynamoDB (filter by environment prefix)
-  aws dynamodb list-tables --query 'TableNames' --output text 2> /dev/null | tr '\t' '\n' > "$TMP_DIR/aws_dynamodb_all.txt" || true
-  grep -E "$DYNAMODB_PATTERN" "$TMP_DIR/aws_dynamodb_all.txt" > "$TMP_DIR/aws_dynamodb.txt" 2> /dev/null || true
 
   # S3 buckets (filter by environment prefix)
   aws s3api list-buckets --query 'Buckets[*].Name' --output text 2> /dev/null | tr '\t' '\n' > "$TMP_DIR/aws_s3_all.txt" || true
