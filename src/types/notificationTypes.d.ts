@@ -5,8 +5,9 @@
  * These notifications inform the iOS app about file download progress.
  *
  * @see SendPushNotification Lambda for delivery implementation
- * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/iOS/Push-Notifications | Push Notification Guide}
+ * @see {@link https://github.com/j0nathan-ll0yd/mantle-OfflineMediaDownloader/wiki/iOS/Push-Notifications | Push Notification Guide}
  */
+import type {Result} from '@mantleframework/core'
 
 /**
  * Discriminated union type for file notification payloads.
@@ -81,16 +82,27 @@ export interface FailureNotification {
 }
 
 /**
- * Result of sending a notification to a single device.
- * Used by SendPushNotification handler to track delivery status.
+ * Success payload when a notification is delivered to a device.
  */
-export interface DeviceNotificationResult {
+export interface DeviceNotified {
   /** Device ID that was targeted */
   deviceId: string
-  /** Whether the notification was successfully sent */
-  success: boolean
-  /** Error message if sending failed */
-  error?: string
+}
+
+/**
+ * Error payload when a notification fails to deliver to a device.
+ */
+export interface DeviceNotifyError {
+  /** Device ID that was targeted */
+  deviceId: string
+  /** Error message describing the failure */
+  error: string
   /** Whether the APNS endpoint is disabled (device unregistered) */
   endpointDisabled?: boolean
 }
+
+/**
+ * Result of sending a notification to a single device.
+ * Used by SendPushNotification handler to track delivery status.
+ */
+export type DeviceNotificationResult = Result<DeviceNotified, DeviceNotifyError>

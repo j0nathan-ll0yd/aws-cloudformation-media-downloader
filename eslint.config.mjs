@@ -35,12 +35,12 @@ export default [
       '**/.idea',
       '**/.webpackCache',
       'src/types/terraform.d.ts',
-      'src/types/infrastructure.d.ts',
+
       'eslint.config.mjs',
       '.dependency-cruiser.cjs',
-      'src/mcp/test/fixtures/**/*',
       '**/*.fixture.ts',
-      'eslint-local-rules/**/*'
+      'eslint-local-rules/**/*',
+      'infra/cloudfront-functions/**/*'
     ]
   },
   ...compat.extends('eslint:recommended', 'plugin:@typescript-eslint/eslint-recommended', 'plugin:@typescript-eslint/recommended'),
@@ -81,25 +81,11 @@ export default [
       // NOTE: Formatting rules (quotes, semi, comma-dangle, max-len) removed.
       // dprint handles all formatting via dprint.json
 
-      // Project-specific rules (mirrors MCP validation for in-editor feedback)
-      // Phase 1: CRITICAL
+      // Project-specific rules (rules duplicated in @mantleframework/eslint-rules removed)
       'local-rules/no-direct-aws-sdk-import': 'error',
-      'local-rules/cascade-delete-order': 'warn',
       'local-rules/use-entity-mock-helper': 'error',
-      'local-rules/migrations-safety': 'error',
-      // Phase 2: HIGH
-      'local-rules/response-helpers': 'warn',
-      'local-rules/env-validation': 'error',
-      'local-rules/authenticated-handler-enforcement': 'warn',
-      // Phase 3: STRATEGIC
-      'local-rules/enforce-powertools': 'error',
-      'local-rules/strict-env-vars': 'error',
       'local-rules/no-domain-leakage': 'error',
-      // Phase 4: STYLISTIC (comment conventions)
-      'local-rules/spacing-conventions': 'warn',
-      // Integration testing
       'local-rules/integration-test-localstack': 'error',
-      // Mock patterns
       'local-rules/aws-sdk-mock-pattern': 'warn',
 
       // Drizzle safety rules - prevent accidental bulk operations

@@ -20,20 +20,11 @@
     "description": "Lambda count in trigger table must match src/lambdas/* directories"
   },
 
-  "mcpRuleValidation": {
-    "documentedIn": ["src/mcp/validation/index.ts", "docs/wiki/MCP/Convention-Tools.md"],
-    "sourceDirectory": "src/mcp/validation/rules",
-    "pattern": "*.ts",
-    "excludePatterns": ["*.test.ts", "index.ts", "types.ts"],
-    "assertion": "count-match",
-    "description": "MCP validation rule files must match registered rules in index.ts"
-  },
-
   "pathValidations": [
     {
       "documentedPath": "src/lib/vendor/AWS/",
       "mustExist": true,
-      "documentedIn": ["AGENTS.md", "docs/wiki/Conventions/Vendor-Encapsulation-Policy.md"]
+      "documentedIn": ["AGENTS.md"]
     },
     {
       "documentedPath": "src/lib/vendor/BetterAuth/",
@@ -41,19 +32,9 @@
       "documentedIn": ["AGENTS.md"]
     },
     {
-      "documentedPath": "src/mcp/",
-      "mustExist": true,
-      "documentedIn": ["AGENTS.md"]
-    },
-    {
-      "documentedPath": "src/mcp/validation/",
-      "mustExist": true,
-      "documentedIn": ["AGENTS.md", "docs/wiki/MCP/Convention-Tools.md"]
-    },
-    {
       "documentedPath": "test/helpers/",
       "mustExist": true,
-      "documentedIn": ["AGENTS.md", "docs/wiki/Testing/Vitest-Mocking-Strategy.md"]
+      "documentedIn": ["AGENTS.md"]
     },
     {
       "documentedPath": "graphrag/",
@@ -96,7 +77,7 @@
   "codePathValidation": {
     "directory": "docs/wiki",
     "pattern": "**/*.md",
-    "pathPrefixes": ["src/", "test/", "util/", "types/", "build/", "graphrag/", "terraform/", "bin/", "scripts/"],
+    "pathPrefixes": ["src/", "test/", "util/", "types/", "build/", "graphrag/", "infra/", "bin/", "scripts/"],
     "assertion": "paths-exist",
     "blocking": false,
     "description": "Backtick-wrapped code paths in wiki docs must exist in filesystem"

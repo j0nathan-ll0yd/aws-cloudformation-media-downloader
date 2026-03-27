@@ -14,11 +14,11 @@ import * as fs from 'fs'
 import * as path from 'path'
 import postgres from 'postgres'
 
-// Create more schemas than maxWorkers to handle edge cases where Vitest
-// assigns higher pool IDs (e.g., for the main thread, test shuffling, or
-// internal coordination threads). Vitest may use pool IDs beyond maxWorkers.
-// Set to 20 to safely cover all possible pool IDs with margin.
-const MAX_WORKERS = 20
+// Create 2x the CI maxWorkers (4) to handle edge cases where Vitest
+// assigns pool IDs beyond maxWorkers. In forks mode, VITEST_POOL_ID
+// is 0-indexed from 0 to maxWorkers-1, but we add safety margin.
+// Must match MAX_WORKERS in globalTeardown.ts (currently 8).
+const MAX_WORKERS = 8
 
 /**
  * Get schema prefix for CI isolation.
@@ -62,15 +62,13 @@ function adaptMigrationForSchema(migrationSql: string, schema: string): string {
   for (const table of tables) {
     // Match table name in CREATE TABLE, CREATE INDEX, ON clauses
     // Use word boundaries to avoid partial matches
-    const patterns = [
-      new RegExp(`CREATE TABLE IF NOT EXISTS ${table}`, 'g'),
-      new RegExp(`ON ${table}\\(`, 'g'),
-      new RegExp(`ON ${table} `, 'g')
-    ]
+    const createTablePattern = new RegExp(`CREATE TABLE IF NOT EXISTS ${table}`, 'g')
+    const onParenPattern = new RegExp(`ON ${table}\\(`, 'g')
+    const onSpacePattern = new RegExp(`ON ${table} `, 'g')
 
-    adapted = adapted.replace(patterns[0], `CREATE TABLE IF NOT EXISTS ${schema}.${table}`)
-    adapted = adapted.replace(patterns[1], `ON ${schema}.${table}(`)
-    adapted = adapted.replace(patterns[2], `ON ${schema}.${table} `)
+    adapted = adapted.replace(createTablePattern, `CREATE TABLE IF NOT EXISTS ${schema}.${table}`)
+    adapted = adapted.replace(onParenPattern, `ON ${schema}.${table}(`)
+    adapted = adapted.replace(onSpacePattern, `ON ${schema}.${table} `)
   }
 
   // Convert Aurora DSQL specific syntax for regular PostgreSQL:
@@ -194,17 +192,28 @@ export async function setup(): Promise<void> {
       const adaptedSchema = adaptMigrationForSchema(schemaMigration, schemaName)
       validateAdaptations(adaptedSchema)
       const schemaStatements = parseSqlStatements(adaptedSchema)
-      for (const statement of schemaStatements) {
-        await sql.unsafe(statement)
+      for (let i = 0; i < schemaStatements.length; i++) {
+        const statement = schemaStatements[i]!
+        try {
+          await sql.unsafe(statement)
+        } catch (stmtError) {
+          // Log the failing statement for debugging — include first 120 chars
+          const preview = statement.substring(0, 120).replace(/\n/g, ' ')
+          console.error(`[globalSetup] Statement ${i + 1}/${schemaStatements.length} failed in ${schemaName}: ${preview}`)
+          console.error(`[globalSetup] Error:`, stmtError)
+          throw stmtError
+        }
       }
 
       log(`[globalSetup] Schema ${schemaName} ready with ${schemaStatements.length} statements`)
     }
 
-    // Create all schemas in parallel for faster setup
-    // This ensures all schemas are ready before any tests start
-    const workerIds = Array.from({length: MAX_WORKERS}, (_, i) => i + 1)
-    await Promise.all(workerIds.map(createSchema))
+    // Create schemas sequentially to avoid connection pool contention
+    // and PostgreSQL catalog lock conflicts during parallel CREATE TABLE.
+    // With fsync=off + tmpfs, sequential creation is fast enough (~2-5s total).
+    for (let workerId = 1; workerId <= MAX_WORKERS; workerId++) {
+      await createSchema(workerId)
+    }
 
     log(`[globalSetup] All ${MAX_WORKERS} worker schemas created successfully`)
   } catch (error) {

@@ -2,358 +2,184 @@
 
 | Name | Version |
 |------|---------|
-| <a name="requirement_aws"></a> [aws](#requirement\_aws) | ~> 6.19.0 |
-| <a name="requirement_http"></a> [http](#requirement\_http) | 3.5.0 |
-| <a name="requirement_sops"></a> [sops](#requirement\_sops) | 1.2.1 |
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.6.0 |
+| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 5.0 |
+| <a name="requirement_sops"></a> [sops](#requirement\_sops) | >= 1.0 |
 
 ## Providers
 
 | Name | Version |
 |------|---------|
 | <a name="provider_archive"></a> [archive](#provider\_archive) | 2.7.1 |
-| <a name="provider_aws"></a> [aws](#provider\_aws) | 6.19.0 |
-| <a name="provider_aws.us_east_1"></a> [aws.us\_east\_1](#provider\_aws.us\_east\_1) | 6.19.0 |
-| <a name="provider_http"></a> [http](#provider\_http) | 3.5.0 |
-| <a name="provider_local"></a> [local](#provider\_local) | 2.7.0 |
-| <a name="provider_null"></a> [null](#provider\_null) | 3.2.4 |
-| <a name="provider_sops"></a> [sops](#provider\_sops) | 1.2.1 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | 6.37.0 |
+| <a name="provider_sops"></a> [sops](#provider\_sops) | 1.4.1 |
 | <a name="provider_time"></a> [time](#provider\_time) | 0.13.1 |
 
 ## Modules
 
-No modules.
+| Name | Source | Version |
+|------|--------|---------|
+| <a name="module_api"></a> [api](#module\_api) | ../../mantle/modules/api-gateway | n/a |
+| <a name="module_core"></a> [core](#module\_core) | ../../mantle/modules/core | n/a |
+| <a name="module_database"></a> [database](#module\_database) | ../../mantle/modules/database/aurora-dsql | n/a |
+| <a name="module_dynamodb_idempotency"></a> [dynamodb\_idempotency](#module\_dynamodb\_idempotency) | ../../mantle/modules/dynamodb | n/a |
+| <a name="module_eventbridge"></a> [eventbridge](#module\_eventbridge) | ../../mantle/modules/eventbridge | n/a |
+| <a name="module_lambda_api_gateway_authorizer"></a> [lambda\_api\_gateway\_authorizer](#module\_lambda\_api\_gateway\_authorizer) | ../../mantle/modules/lambda | n/a |
+| <a name="module_lambda_cleanup_expired_records"></a> [lambda\_cleanup\_expired\_records](#module\_lambda\_cleanup\_expired\_records) | ../../mantle/modules/lambda | n/a |
+| <a name="module_lambda_device_event"></a> [lambda\_device\_event](#module\_lambda\_device\_event) | ../../mantle/modules/lambda | n/a |
+| <a name="module_lambda_device_register"></a> [lambda\_device\_register](#module\_lambda\_device\_register) | ../../mantle/modules/lambda | n/a |
+| <a name="module_lambda_feedly_webhook"></a> [lambda\_feedly\_webhook](#module\_lambda\_feedly\_webhook) | ../../mantle/modules/lambda | n/a |
+| <a name="module_lambda_file_helpers"></a> [lambda\_file\_helpers](#module\_lambda\_file\_helpers) | ../../mantle/modules/lambda | n/a |
+| <a name="module_lambda_files_get"></a> [lambda\_files\_get](#module\_lambda\_files\_get) | ../../mantle/modules/lambda | n/a |
+| <a name="module_lambda_migrate_dsql"></a> [lambda\_migrate\_dsql](#module\_lambda\_migrate\_dsql) | ../../mantle/modules/lambda | n/a |
+| <a name="module_lambda_prune_devices"></a> [lambda\_prune\_devices](#module\_lambda\_prune\_devices) | ../../mantle/modules/lambda | n/a |
+| <a name="module_lambda_s3object_created"></a> [lambda\_s3object\_created](#module\_lambda\_s3object\_created) | ../../mantle/modules/lambda | n/a |
+| <a name="module_lambda_send_push_notification"></a> [lambda\_send\_push\_notification](#module\_lambda\_send\_push\_notification) | ../../mantle/modules/lambda | n/a |
+| <a name="module_lambda_start_file_upload"></a> [lambda\_start\_file\_upload](#module\_lambda\_start\_file\_upload) | ../../mantle/modules/lambda | n/a |
+| <a name="module_lambda_user_delete"></a> [lambda\_user\_delete](#module\_lambda\_user\_delete) | ../../mantle/modules/lambda | n/a |
+| <a name="module_lambda_user_login"></a> [lambda\_user\_login](#module\_lambda\_user\_login) | ../../mantle/modules/lambda | n/a |
+| <a name="module_lambda_user_logout"></a> [lambda\_user\_logout](#module\_lambda\_user\_logout) | ../../mantle/modules/lambda | n/a |
+| <a name="module_lambda_user_refresh"></a> [lambda\_user\_refresh](#module\_lambda\_user\_refresh) | ../../mantle/modules/lambda | n/a |
+| <a name="module_lambda_user_register"></a> [lambda\_user\_register](#module\_lambda\_user\_register) | ../../mantle/modules/lambda | n/a |
+| <a name="module_lambda_user_subscribe"></a> [lambda\_user\_subscribe](#module\_lambda\_user\_subscribe) | ../../mantle/modules/lambda | n/a |
+| <a name="module_queue_DownloadQueue"></a> [queue\_DownloadQueue](#module\_queue\_DownloadQueue) | ../../mantle/modules/queue | n/a |
+| <a name="module_queue_SendPushNotification"></a> [queue\_SendPushNotification](#module\_queue\_SendPushNotification) | ../../mantle/modules/queue | n/a |
+| <a name="module_storage_files"></a> [storage\_files](#module\_storage\_files) | ../../mantle/modules/storage | n/a |
 
 ## Resources
 
 | Name | Type |
 |------|------|
-| [aws_api_gateway_account.Main](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_account) | resource |
-| [aws_api_gateway_api_key.iOSApp](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_api_key) | resource |
-| [aws_api_gateway_authorizer.ApiGatewayAuthorizer](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_authorizer) | resource |
-| [aws_api_gateway_deployment.Main](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_deployment) | resource |
-| [aws_api_gateway_gateway_response.Default400GatewayResponse](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_gateway_response) | resource |
-| [aws_api_gateway_gateway_response.Default500GatewayResponse](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_gateway_response) | resource |
-| [aws_api_gateway_integration.DeviceEventPost](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_integration) | resource |
-| [aws_api_gateway_integration.ListFilesGet](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_integration) | resource |
-| [aws_api_gateway_integration.LoginUserPost](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_integration) | resource |
-| [aws_api_gateway_integration.LogoutUserPost](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_integration) | resource |
-| [aws_api_gateway_integration.RefreshTokenPost](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_integration) | resource |
-| [aws_api_gateway_integration.RegisterDevicePost](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_integration) | resource |
-| [aws_api_gateway_integration.RegisterUserPost](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_integration) | resource |
-| [aws_api_gateway_integration.UserDelete](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_integration) | resource |
-| [aws_api_gateway_integration.UserSubscribePost](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_integration) | resource |
-| [aws_api_gateway_integration.WebhookFeedlyPost](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_integration) | resource |
-| [aws_api_gateway_method.DeviceEventPost](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_method) | resource |
-| [aws_api_gateway_method.ListFilesGet](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_method) | resource |
-| [aws_api_gateway_method.LoginUserPost](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_method) | resource |
-| [aws_api_gateway_method.LogoutUserPost](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_method) | resource |
-| [aws_api_gateway_method.RefreshTokenPost](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_method) | resource |
-| [aws_api_gateway_method.RegisterDevicePost](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_method) | resource |
-| [aws_api_gateway_method.RegisterUserPost](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_method) | resource |
-| [aws_api_gateway_method.UserDelete](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_method) | resource |
-| [aws_api_gateway_method.UserSubscribePost](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_method) | resource |
-| [aws_api_gateway_method.WebhookFeedlyPost](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_method) | resource |
-| [aws_api_gateway_method_settings.Production](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_method_settings) | resource |
-| [aws_api_gateway_resource.Device](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_resource) | resource |
-| [aws_api_gateway_resource.DeviceEvent](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_resource) | resource |
-| [aws_api_gateway_resource.DeviceRegister](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_resource) | resource |
-| [aws_api_gateway_resource.Feedly](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_resource) | resource |
-| [aws_api_gateway_resource.Files](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_resource) | resource |
-| [aws_api_gateway_resource.User](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_resource) | resource |
-| [aws_api_gateway_resource.UserLogin](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_resource) | resource |
-| [aws_api_gateway_resource.UserLogout](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_resource) | resource |
-| [aws_api_gateway_resource.UserRefresh](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_resource) | resource |
-| [aws_api_gateway_resource.UserRegister](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_resource) | resource |
-| [aws_api_gateway_resource.UserSubscribe](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_resource) | resource |
-| [aws_api_gateway_rest_api.Main](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_rest_api) | resource |
-| [aws_api_gateway_stage.Production](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_stage) | resource |
-| [aws_api_gateway_usage_plan.iOSApp](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_usage_plan) | resource |
-| [aws_api_gateway_usage_plan_key.iOSApp](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_usage_plan_key) | resource |
-| [aws_cloudfront_distribution.MediaFiles](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudfront_distribution) | resource |
-| [aws_cloudfront_distribution.Production](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudfront_distribution) | resource |
-| [aws_cloudfront_origin_access_control.MediaFilesOAC](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudfront_origin_access_control) | resource |
-| [aws_cloudfront_response_headers_policy.MediaFilesCors](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudfront_response_headers_policy) | resource |
-| [aws_cloudwatch_dashboard.Main](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_dashboard) | resource |
-| [aws_cloudwatch_event_bus.MediaDownloader](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_event_bus) | resource |
-| [aws_cloudwatch_event_rule.CleanupExpiredRecords](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_event_rule) | resource |
-| [aws_cloudwatch_event_rule.DownloadRequested](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_event_rule) | resource |
-| [aws_cloudwatch_event_rule.PruneDevices](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_event_rule) | resource |
-| [aws_cloudwatch_event_target.CleanupExpiredRecords](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_event_target) | resource |
-| [aws_cloudwatch_event_target.DownloadRequestedToSQS](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_event_target) | resource |
-| [aws_cloudwatch_event_target.PruneDevices](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_event_target) | resource |
-| [aws_cloudwatch_log_group.ApiGatewayAuthorizer](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_group) | resource |
-| [aws_cloudwatch_log_group.CleanupExpiredRecords](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_group) | resource |
-| [aws_cloudwatch_log_group.DeviceEvent](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_group) | resource |
-| [aws_cloudwatch_log_group.ListFiles](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_group) | resource |
-| [aws_cloudwatch_log_group.LoginUser](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_group) | resource |
-| [aws_cloudwatch_log_group.LogoutUser](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_group) | resource |
-| [aws_cloudwatch_log_group.MigrateDSQL](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_group) | resource |
-| [aws_cloudwatch_log_group.PruneDevices](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_group) | resource |
-| [aws_cloudwatch_log_group.RefreshToken](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_group) | resource |
-| [aws_cloudwatch_log_group.RegisterDevice](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_group) | resource |
-| [aws_cloudwatch_log_group.RegisterUser](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_group) | resource |
-| [aws_cloudwatch_log_group.S3ObjectCreated](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_group) | resource |
-| [aws_cloudwatch_log_group.SendPushNotification](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_group) | resource |
-| [aws_cloudwatch_log_group.StartFileUpload](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_group) | resource |
-| [aws_cloudwatch_log_group.UserDelete](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_group) | resource |
-| [aws_cloudwatch_log_group.UserSubscribe](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_group) | resource |
-| [aws_cloudwatch_log_group.WebhookFeedly](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_group) | resource |
-| [aws_cloudwatch_metric_alarm.ApiGateway5xxErrors](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_metric_alarm) | resource |
-| [aws_cloudwatch_metric_alarm.DownloadDLQMessages](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_metric_alarm) | resource |
-| [aws_cloudwatch_metric_alarm.EventBridgeFailedInvocations](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_metric_alarm) | resource |
-| [aws_cloudwatch_metric_alarm.EventBridgeThrottled](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_metric_alarm) | resource |
-| [aws_cloudwatch_metric_alarm.LambdaErrorsApi](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_metric_alarm) | resource |
-| [aws_cloudwatch_metric_alarm.LambdaErrorsBackground](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_metric_alarm) | resource |
-| [aws_cloudwatch_metric_alarm.LambdaThrottlesApi](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_metric_alarm) | resource |
-| [aws_cloudwatch_metric_alarm.LambdaThrottlesBackground](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_metric_alarm) | resource |
-| [aws_cloudwatch_metric_alarm.SqsDlqMessages](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_metric_alarm) | resource |
-| [aws_cloudwatch_metric_alarm.SqsQueueAge](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_metric_alarm) | resource |
-| [aws_cloudwatch_metric_alarm.YouTubeAuthFailureBotDetection](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_metric_alarm) | resource |
-| [aws_cloudwatch_metric_alarm.YouTubeAuthFailureCookieExpired](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_metric_alarm) | resource |
-| [aws_cloudwatch_metric_alarm.YouTubeAuthFailureRateLimited](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_metric_alarm) | resource |
-| [aws_dsql_cluster.media_downloader](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/dsql_cluster) | resource |
-| [aws_dynamodb_table.IdempotencyTable](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/dynamodb_table) | resource |
-| [aws_iam_policy.ApiGatewayAuthorizer](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
-| [aws_iam_policy.ApiGatewayAuthorizer_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
-| [aws_iam_policy.CommonLambdaXRay](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
-| [aws_iam_policy.LambdaDSQLAdminConnect](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
-| [aws_iam_policy.LambdaDSQLConnect](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
-| [aws_iam_policy.PruneDevices](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
-| [aws_iam_policy.PruneDevices_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
-| [aws_iam_policy.RegisterDevice_infrastructure](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
-| [aws_iam_policy.RegisterDevice_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
-| [aws_iam_policy.S3ObjectCreated_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
-| [aws_iam_policy.SendPushNotification_infrastructure](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
-| [aws_iam_policy.SendPushNotification_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
-| [aws_iam_policy.StartFileUpload_infrastructure](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
-| [aws_iam_policy.StartFileUpload_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
-| [aws_iam_policy.UserDelete](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
-| [aws_iam_policy.UserDelete_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
-| [aws_iam_policy.UserSubscribe](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
-| [aws_iam_policy.UserSubscribe_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
-| [aws_iam_policy.WebhookFeedly_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
-| [aws_iam_role.ApiGatewayAuthorizer](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
-| [aws_iam_role.ApiGatewayCloudwatch](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
-| [aws_iam_role.CleanupExpiredRecords](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
-| [aws_iam_role.CloudfrontMiddleware](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
-| [aws_iam_role.DeviceEvent](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
-| [aws_iam_role.ListFiles](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
-| [aws_iam_role.LoginUser](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
-| [aws_iam_role.LogoutUser](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
-| [aws_iam_role.MigrateDSQL](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
-| [aws_iam_role.PruneDevices](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
-| [aws_iam_role.RefreshToken](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
-| [aws_iam_role.RegisterDevice](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
-| [aws_iam_role.RegisterUser](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
-| [aws_iam_role.S3ObjectCreated](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
-| [aws_iam_role.SNSLoggingRole](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
-| [aws_iam_role.SendPushNotification](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
-| [aws_iam_role.StartFileUpload](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
-| [aws_iam_role.UserDelete](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
-| [aws_iam_role.UserSubscribe](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
-| [aws_iam_role.WebhookFeedly](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
-| [aws_iam_role_policy.ApiGatewayAuthorizerInvocation](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
-| [aws_iam_role_policy.ApiGatewayAuthorizerLogging](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
-| [aws_iam_role_policy.CleanupExpiredRecordsLogging](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
-| [aws_iam_role_policy.CloudfrontMiddlewareLogging](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
-| [aws_iam_role_policy.DeviceEventLogging](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
-| [aws_iam_role_policy.ListFilesLogging](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
-| [aws_iam_role_policy.LoginUserLogging](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
-| [aws_iam_role_policy.LogoutUserLogging](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
-| [aws_iam_role_policy.MigrateDSQLLogging](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
-| [aws_iam_role_policy.PruneDevicesLogging](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
-| [aws_iam_role_policy.RefreshTokenLogging](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
-| [aws_iam_role_policy.RegisterDeviceLogging](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
-| [aws_iam_role_policy.RegisterUserLogging](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
-| [aws_iam_role_policy.S3ObjectCreatedLogging](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
-| [aws_iam_role_policy.SNSLoggingRolePolicy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
-| [aws_iam_role_policy.SendPushNotificationLogging](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
-| [aws_iam_role_policy.StartFileUploadLogging](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
-| [aws_iam_role_policy.UserDeleteLogging](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
-| [aws_iam_role_policy.UserSubscribeLogging](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
-| [aws_iam_role_policy.WebhookFeedlyLogging](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
-| [aws_iam_role_policy_attachment.ApiGatewayAuthorizer](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
-| [aws_iam_role_policy_attachment.ApiGatewayAuthorizerXRay](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
-| [aws_iam_role_policy_attachment.ApiGatewayAuthorizer_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
-| [aws_iam_role_policy_attachment.ApiGatewayCloudwatchLogging](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
-| [aws_iam_role_policy_attachment.CleanupExpiredRecordsXRay](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
-| [aws_iam_role_policy_attachment.DeviceEventXRay](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
-| [aws_iam_role_policy_attachment.ListFilesXRay](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
-| [aws_iam_role_policy_attachment.LoginUserXRay](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
-| [aws_iam_role_policy_attachment.LogoutUserXRay](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
-| [aws_iam_role_policy_attachment.MigrateDSQLXRay](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
-| [aws_iam_role_policy_attachment.PruneDevices](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
-| [aws_iam_role_policy_attachment.PruneDevicesXRay](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
-| [aws_iam_role_policy_attachment.PruneDevices_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
-| [aws_iam_role_policy_attachment.RefreshTokenXRay](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
-| [aws_iam_role_policy_attachment.RegisterDeviceXRay](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
-| [aws_iam_role_policy_attachment.RegisterDevice_infrastructure](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
-| [aws_iam_role_policy_attachment.RegisterDevice_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
-| [aws_iam_role_policy_attachment.RegisterUserXRay](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
-| [aws_iam_role_policy_attachment.S3ObjectCreatedXRay](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
-| [aws_iam_role_policy_attachment.S3ObjectCreated_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
-| [aws_iam_role_policy_attachment.SendPushNotificationXRay](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
-| [aws_iam_role_policy_attachment.SendPushNotification_infrastructure](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
-| [aws_iam_role_policy_attachment.SendPushNotification_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
-| [aws_iam_role_policy_attachment.StartFileUploadXRay](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
-| [aws_iam_role_policy_attachment.StartFileUpload_infrastructure](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
-| [aws_iam_role_policy_attachment.StartFileUpload_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
-| [aws_iam_role_policy_attachment.UserDelete](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
-| [aws_iam_role_policy_attachment.UserDeleteXRay](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
-| [aws_iam_role_policy_attachment.UserDelete_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
-| [aws_iam_role_policy_attachment.UserSubscribe](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
-| [aws_iam_role_policy_attachment.UserSubscribeXRay](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
-| [aws_iam_role_policy_attachment.UserSubscribe_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
-| [aws_iam_role_policy_attachment.WebhookFeedlyXRay](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
-| [aws_iam_role_policy_attachment.WebhookFeedly_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
-| [aws_iam_role_policy_attachment.lambda_dsql_admin](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
-| [aws_iam_role_policy_attachment.lambda_dsql_connect](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
-| [aws_lambda_event_source_mapping.SendPushNotification](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_event_source_mapping) | resource |
-| [aws_lambda_event_source_mapping.StartFileUploadSQS](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_event_source_mapping) | resource |
-| [aws_lambda_function.ApiGatewayAuthorizer](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_function) | resource |
-| [aws_lambda_function.CleanupExpiredRecords](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_function) | resource |
-| [aws_lambda_function.CloudfrontMiddleware](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_function) | resource |
-| [aws_lambda_function.DeviceEvent](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_function) | resource |
-| [aws_lambda_function.ListFiles](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_function) | resource |
-| [aws_lambda_function.LoginUser](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_function) | resource |
-| [aws_lambda_function.LogoutUser](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_function) | resource |
-| [aws_lambda_function.MigrateDSQL](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_function) | resource |
-| [aws_lambda_function.PruneDevices](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_function) | resource |
-| [aws_lambda_function.RefreshToken](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_function) | resource |
-| [aws_lambda_function.RegisterDevice](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_function) | resource |
-| [aws_lambda_function.RegisterUser](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_function) | resource |
-| [aws_lambda_function.S3ObjectCreated](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_function) | resource |
-| [aws_lambda_function.SendPushNotification](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_function) | resource |
-| [aws_lambda_function.StartFileUpload](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_function) | resource |
-| [aws_lambda_function.UserDelete](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_function) | resource |
-| [aws_lambda_function.UserSubscribe](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_function) | resource |
-| [aws_lambda_function.WebhookFeedly](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_function) | resource |
-| [aws_lambda_layer_version.Bgutil](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_layer_version) | resource |
-| [aws_lambda_layer_version.Deno](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_layer_version) | resource |
-| [aws_lambda_layer_version.Ffmpeg](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_layer_version) | resource |
-| [aws_lambda_layer_version.YtDlp](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_layer_version) | resource |
-| [aws_lambda_permission.ApiGatewayAuthorizer](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_permission) | resource |
-| [aws_lambda_permission.CleanupExpiredRecords](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_permission) | resource |
-| [aws_lambda_permission.DeviceEvent](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_permission) | resource |
-| [aws_lambda_permission.ListFiles](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_permission) | resource |
-| [aws_lambda_permission.LoginUser](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_permission) | resource |
-| [aws_lambda_permission.LogoutUser](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_permission) | resource |
-| [aws_lambda_permission.PruneDevices](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_permission) | resource |
-| [aws_lambda_permission.RefreshToken](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_permission) | resource |
-| [aws_lambda_permission.RegisterDevice](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_permission) | resource |
-| [aws_lambda_permission.RegisterUser](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_permission) | resource |
-| [aws_lambda_permission.S3ObjectCreated](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_permission) | resource |
-| [aws_lambda_permission.SendPushNotification](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_permission) | resource |
-| [aws_lambda_permission.UserDelete](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_permission) | resource |
-| [aws_lambda_permission.UserSubscribe](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_permission) | resource |
-| [aws_lambda_permission.WebhookFeedly](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_permission) | resource |
-| [aws_s3_bucket.Files](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket) | resource |
-| [aws_s3_bucket_intelligent_tiering_configuration.FilesTiering](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_intelligent_tiering_configuration) | resource |
-| [aws_s3_bucket_notification.Files](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_notification) | resource |
-| [aws_s3_bucket_policy.CloudfrontAccess](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_policy) | resource |
-| [aws_s3_object.DefaultFile](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_object) | resource |
-| [aws_sns_platform_application.OfflineMediaDownloader](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sns_platform_application) | resource |
-| [aws_sns_topic.OperationsAlerts](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sns_topic) | resource |
-| [aws_sns_topic.PushNotifications](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sns_topic) | resource |
-| [aws_sqs_queue.DownloadDLQ](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sqs_queue) | resource |
-| [aws_sqs_queue.DownloadQueue](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sqs_queue) | resource |
-| [aws_sqs_queue.SendPushNotification](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sqs_queue) | resource |
-| [aws_sqs_queue.SendPushNotificationDLQ](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sqs_queue) | resource |
-| [aws_sqs_queue_policy.DownloadQueueEventBridge](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sqs_queue_policy) | resource |
-| [null_resource.DownloadDenoBinary](https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource) | resource |
-| [null_resource.DownloadFfmpegBinary](https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource) | resource |
-| [null_resource.DownloadYtDlpBinary](https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource) | resource |
+| [aws_api_gateway_integration.device_event](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_integration) | resource |
+| [aws_api_gateway_integration.device_register](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_integration) | resource |
+| [aws_api_gateway_integration.feedly_webhook](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_integration) | resource |
+| [aws_api_gateway_integration.files_get](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_integration) | resource |
+| [aws_api_gateway_integration.user_delete](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_integration) | resource |
+| [aws_api_gateway_integration.user_login](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_integration) | resource |
+| [aws_api_gateway_integration.user_logout](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_integration) | resource |
+| [aws_api_gateway_integration.user_refresh](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_integration) | resource |
+| [aws_api_gateway_integration.user_register](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_integration) | resource |
+| [aws_api_gateway_integration.user_subscribe](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_integration) | resource |
+| [aws_api_gateway_method.device_event](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_method) | resource |
+| [aws_api_gateway_method.device_register](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_method) | resource |
+| [aws_api_gateway_method.feedly_webhook](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_method) | resource |
+| [aws_api_gateway_method.files_get](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_method) | resource |
+| [aws_api_gateway_method.user_delete](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_method) | resource |
+| [aws_api_gateway_method.user_login](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_method) | resource |
+| [aws_api_gateway_method.user_logout](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_method) | resource |
+| [aws_api_gateway_method.user_refresh](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_method) | resource |
+| [aws_api_gateway_method.user_register](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_method) | resource |
+| [aws_api_gateway_method.user_subscribe](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_method) | resource |
+| [aws_api_gateway_resource.device_event](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_resource) | resource |
+| [aws_api_gateway_resource.device_register](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_resource) | resource |
+| [aws_api_gateway_resource.feedly_webhook](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_resource) | resource |
+| [aws_api_gateway_resource.files_get](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_resource) | resource |
+| [aws_api_gateway_resource.path_device](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_resource) | resource |
+| [aws_api_gateway_resource.path_feedly](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_resource) | resource |
+| [aws_api_gateway_resource.path_user](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_resource) | resource |
+| [aws_api_gateway_resource.user_login](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_resource) | resource |
+| [aws_api_gateway_resource.user_logout](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_resource) | resource |
+| [aws_api_gateway_resource.user_refresh](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_resource) | resource |
+| [aws_api_gateway_resource.user_register](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_resource) | resource |
+| [aws_api_gateway_resource.user_subscribe](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_resource) | resource |
+| [aws_cloudfront_distribution.api](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudfront_distribution) | resource |
+| [aws_cloudfront_function.api_key_promotion](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudfront_function) | resource |
+| [aws_cloudwatch_event_rule.download_requested](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_event_rule) | resource |
+| [aws_cloudwatch_event_target.download_requested_to_sqs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_event_target) | resource |
+| [aws_ecr_lifecycle_policy.start_file_upload](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ecr_lifecycle_policy) | resource |
+| [aws_ecr_repository.start_file_upload](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ecr_repository) | resource |
+| [aws_iam_role.sns_logging](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
+| [aws_iam_role_policy.sns_logging](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
+| [aws_lambda_layer_version.bgutil](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_layer_version) | resource |
+| [aws_lambda_layer_version.ffmpeg](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_layer_version) | resource |
+| [aws_lambda_layer_version.quickjs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_layer_version) | resource |
+| [aws_lambda_layer_version.yt_dlp](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_layer_version) | resource |
+| [aws_s3_object.asset_videos_default_file](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_object) | resource |
+| [aws_sns_platform_application.apns](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sns_platform_application) | resource |
+| [aws_sns_topic.operations_alerts](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sns_topic) | resource |
+| [aws_sns_topic.push_notifications](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sns_topic) | resource |
+| [aws_sqs_queue_policy.download_queue_eventbridge](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sqs_queue_policy) | resource |
 | [time_sleep.wait_for_dsql](https://registry.terraform.io/providers/hashicorp/time/latest/docs/resources/sleep) | resource |
-| [archive_file.ApiGatewayAuthorizer](https://registry.terraform.io/providers/hashicorp/archive/latest/docs/data-sources/file) | data source |
-| [archive_file.BgutilLayer](https://registry.terraform.io/providers/hashicorp/archive/latest/docs/data-sources/file) | data source |
-| [archive_file.CleanupExpiredRecords](https://registry.terraform.io/providers/hashicorp/archive/latest/docs/data-sources/file) | data source |
-| [archive_file.CloudfrontMiddleware](https://registry.terraform.io/providers/hashicorp/archive/latest/docs/data-sources/file) | data source |
-| [archive_file.DenoLayer](https://registry.terraform.io/providers/hashicorp/archive/latest/docs/data-sources/file) | data source |
-| [archive_file.DeviceEvent](https://registry.terraform.io/providers/hashicorp/archive/latest/docs/data-sources/file) | data source |
-| [archive_file.FfmpegLayer](https://registry.terraform.io/providers/hashicorp/archive/latest/docs/data-sources/file) | data source |
-| [archive_file.ListFiles](https://registry.terraform.io/providers/hashicorp/archive/latest/docs/data-sources/file) | data source |
-| [archive_file.LoginUser](https://registry.terraform.io/providers/hashicorp/archive/latest/docs/data-sources/file) | data source |
-| [archive_file.LogoutUser](https://registry.terraform.io/providers/hashicorp/archive/latest/docs/data-sources/file) | data source |
-| [archive_file.MigrateDSQL](https://registry.terraform.io/providers/hashicorp/archive/latest/docs/data-sources/file) | data source |
-| [archive_file.PruneDevices](https://registry.terraform.io/providers/hashicorp/archive/latest/docs/data-sources/file) | data source |
-| [archive_file.RefreshToken](https://registry.terraform.io/providers/hashicorp/archive/latest/docs/data-sources/file) | data source |
-| [archive_file.RegisterDevice](https://registry.terraform.io/providers/hashicorp/archive/latest/docs/data-sources/file) | data source |
-| [archive_file.RegisterUser](https://registry.terraform.io/providers/hashicorp/archive/latest/docs/data-sources/file) | data source |
-| [archive_file.S3ObjectCreated](https://registry.terraform.io/providers/hashicorp/archive/latest/docs/data-sources/file) | data source |
-| [archive_file.SendPushNotification](https://registry.terraform.io/providers/hashicorp/archive/latest/docs/data-sources/file) | data source |
-| [archive_file.StartFileUpload](https://registry.terraform.io/providers/hashicorp/archive/latest/docs/data-sources/file) | data source |
-| [archive_file.UserDelete](https://registry.terraform.io/providers/hashicorp/archive/latest/docs/data-sources/file) | data source |
-| [archive_file.UserSubscribe](https://registry.terraform.io/providers/hashicorp/archive/latest/docs/data-sources/file) | data source |
-| [archive_file.WebhookFeedly](https://registry.terraform.io/providers/hashicorp/archive/latest/docs/data-sources/file) | data source |
-| [archive_file.YtDlpLayer](https://registry.terraform.io/providers/hashicorp/archive/latest/docs/data-sources/file) | data source |
-| [aws_caller_identity.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
-| [aws_iam_policy_document.ApiGatewayAuthorizer](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
-| [aws_iam_policy_document.ApiGatewayAuthorizerInvocation](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
-| [aws_iam_policy_document.ApiGatewayAuthorizer_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
-| [aws_iam_policy_document.ApiGatewayCloudwatch](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
-| [aws_iam_policy_document.CommonLambdaXRay](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
-| [aws_iam_policy_document.LambdaAssumeRole](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
-| [aws_iam_policy_document.LambdaGatewayAssumeRole](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
-| [aws_iam_policy_document.LamdbaEdgeAssumeRole](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
-| [aws_iam_policy_document.PruneDevices](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
-| [aws_iam_policy_document.PruneDevices_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
-| [aws_iam_policy_document.RegisterDevice_infrastructure](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
-| [aws_iam_policy_document.RegisterDevice_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
-| [aws_iam_policy_document.S3ObjectCreated_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
-| [aws_iam_policy_document.SNSAssumeRole](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
-| [aws_iam_policy_document.SendPushNotification_infrastructure](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
-| [aws_iam_policy_document.SendPushNotification_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
-| [aws_iam_policy_document.StartFileUpload_infrastructure](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
-| [aws_iam_policy_document.StartFileUpload_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
-| [aws_iam_policy_document.StatesAssumeRole](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
-| [aws_iam_policy_document.UserDelete](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
-| [aws_iam_policy_document.UserDelete_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
-| [aws_iam_policy_document.UserSubscribe](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
-| [aws_iam_policy_document.UserSubscribe_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
-| [aws_iam_policy_document.WebhookFeedly_services](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
-| [aws_iam_policy_document.dsql_admin_connect](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
-| [aws_iam_policy_document.dsql_connect](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
+| [archive_file.layer_bgutil](https://registry.terraform.io/providers/hashicorp/archive/latest/docs/data-sources/file) | data source |
+| [archive_file.layer_ffmpeg](https://registry.terraform.io/providers/hashicorp/archive/latest/docs/data-sources/file) | data source |
+| [archive_file.layer_quickjs](https://registry.terraform.io/providers/hashicorp/archive/latest/docs/data-sources/file) | data source |
+| [archive_file.layer_yt_dlp](https://registry.terraform.io/providers/hashicorp/archive/latest/docs/data-sources/file) | data source |
 | [aws_lambda_invocation.run_migration](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/lambda_invocation) | data source |
-| [aws_region.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/region) | data source |
-| [http_http.icanhazip](https://registry.terraform.io/providers/hashicorp/http/3.5.0/docs/data-sources/http) | data source |
-| [local_file.DefaultFile](https://registry.terraform.io/providers/hashicorp/local/latest/docs/data-sources/file) | data source |
-| [sops_file.secrets](https://registry.terraform.io/providers/carlpett/sops/1.2.1/docs/data-sources/file) | data source |
+| [sops_file.secrets](https://registry.terraform.io/providers/carlpett/sops/latest/docs/data-sources/file) | data source |
 
 ## Inputs
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
+| <a name="input_api_bearer_token"></a> [api\_bearer\_token](#input\_api\_bearer\_token) | Bearer token for API authentication | `string` | `""` | no |
 | <a name="input_api_quota_limit"></a> [api\_quota\_limit](#input\_api\_quota\_limit) | API Gateway daily quota limit | `number` | `10000` | no |
 | <a name="input_api_throttle_burst_limit"></a> [api\_throttle\_burst\_limit](#input\_api\_throttle\_burst\_limit) | API Gateway throttle burst limit | `number` | `100` | no |
 | <a name="input_api_throttle_rate_limit"></a> [api\_throttle\_rate\_limit](#input\_api\_throttle\_rate\_limit) | API Gateway throttle rate limit | `number` | `50` | no |
+| <a name="input_apns_default_topic"></a> [apns\_default\_topic](#input\_apns\_default\_topic) | apns default topic | `string` | `""` | no |
+| <a name="input_apns_host"></a> [apns\_host](#input\_apns\_host) | apns host | `string` | `""` | no |
+| <a name="input_apns_key_id"></a> [apns\_key\_id](#input\_apns\_key\_id) | apns key id | `string` | `""` | no |
+| <a name="input_apns_signing_key"></a> [apns\_signing\_key](#input\_apns\_signing\_key) | apns signing key | `string` | `""` | no |
+| <a name="input_apns_team"></a> [apns\_team](#input\_apns\_team) | apns team | `string` | `""` | no |
+| <a name="input_apple_app_bundle_identifier"></a> [apple\_app\_bundle\_identifier](#input\_apple\_app\_bundle\_identifier) | apple app bundle identifier | `string` | `""` | no |
+| <a name="input_apple_client_id"></a> [apple\_client\_id](#input\_apple\_client\_id) | apple client id | `string` | `""` | no |
+| <a name="input_apple_client_secret"></a> [apple\_client\_secret](#input\_apple\_client\_secret) | apple client secret | `string` | `""` | no |
+| <a name="input_auth_secret"></a> [auth\_secret](#input\_auth\_secret) | auth secret | `string` | `""` | no |
+| <a name="input_aws_region"></a> [aws\_region](#input\_aws\_region) | AWS region | `string` | `"us-west-2"` | no |
 | <a name="input_cors_allowed_origins"></a> [cors\_allowed\_origins](#input\_cors\_allowed\_origins) | Origins allowed to fetch media files via CORS (empty list disables CORS) | `list(string)` | `[]` | no |
-| <a name="input_download_reserved_concurrency"></a> [download\_reserved\_concurrency](#input\_download\_reserved\_concurrency) | Reserved concurrency for StartFileUpload Lambda | `number` | `10` | no |
 | <a name="input_dsql_deletion_protection"></a> [dsql\_deletion\_protection](#input\_dsql\_deletion\_protection) | Enable deletion protection for DSQL cluster | `bool` | `true` | no |
+| <a name="input_dsql_endpoint"></a> [dsql\_endpoint](#input\_dsql\_endpoint) | Aurora DSQL cluster endpoint (set after initial provisioning or pass from database module) | `string` | `""` | no |
 | <a name="input_enable_cloudwatch_alarms"></a> [enable\_cloudwatch\_alarms](#input\_enable\_cloudwatch\_alarms) | Enable CloudWatch alarms (first 10 free, then $0.10/alarm) | `bool` | `false` | no |
 | <a name="input_enable_cloudwatch_dashboard"></a> [enable\_cloudwatch\_dashboard](#input\_enable\_cloudwatch\_dashboard) | Enable CloudWatch dashboard (costs $3/month per environment) | `bool` | `false` | no |
-| <a name="input_environment"></a> [environment](#input\_environment) | Environment name (staging, production) | `string` | n/a | yes |
-| <a name="input_log_level"></a> [log\_level](#input\_log\_level) | Lambda log level | `string` | `"INFO"` | no |
-| <a name="input_log_retention_days"></a> [log\_retention\_days](#input\_log\_retention\_days) | CloudWatch log retention in days | `number` | `7` | no |
-| <a name="input_resource_prefix"></a> [resource\_prefix](#input\_resource\_prefix) | Prefix for all resource names (stag, prod) | `string` | n/a | yes |
+| <a name="input_environment"></a> [environment](#input\_environment) | Deployment environment | `string` | `"dev"` | no |
+| <a name="input_github_personal_token"></a> [github\_personal\_token](#input\_github\_personal\_token) | github personal token | `string` | `""` | no |
+| <a name="input_image_uri_start_file_upload"></a> [image\_uri\_start\_file\_upload](#input\_image\_uri\_start\_file\_upload) | ECR image URI for StartFileUpload container Lambda | `string` | `""` | no |
+| <a name="input_log_level"></a> [log\_level](#input\_log\_level) | Application log level (DEBUG, INFO, WARN, ERROR) | `string` | `"INFO"` | no |
+| <a name="input_log_retention_days"></a> [log\_retention\_days](#input\_log\_retention\_days) | CloudWatch log retention in days | `number` | `14` | no |
+| <a name="input_multi_authentication_path_parts"></a> [multi\_authentication\_path\_parts](#input\_multi\_authentication\_path\_parts) | multi authentication path parts | `string` | `""` | no |
+| <a name="input_node_env"></a> [node\_env](#input\_node\_env) | node env | `string` | `""` | no |
+| <a name="input_project_name"></a> [project\_name](#input\_project\_name) | Project name | `string` | `"media-downloader"` | no |
+| <a name="input_reserved_client_ip"></a> [reserved\_client\_ip](#input\_reserved\_client\_ip) | reserved client ip | `string` | `""` | no |
+| <a name="input_reserved_concurrency_start_file_upload"></a> [reserved\_concurrency\_start\_file\_upload](#input\_reserved\_concurrency\_start\_file\_upload) | Reserved concurrent executions for StartFileUpload Lambda (-1 for unreserved) | `number` | `1` | no |
+| <a name="input_resource_prefix"></a> [resource\_prefix](#input\_resource\_prefix) | DEPRECATED: Legacy prefix for S3 bucket names only. New resources use module.core.name\_prefix. Do not replicate in new instances. See ADR 0001. | `string` | n/a | yes |
+| <a name="input_ytdlp_binary_path"></a> [ytdlp\_binary\_path](#input\_ytdlp\_binary\_path) | ytdlp binary path | `string` | `""` | no |
+| <a name="input_ytdlp_max_sleep_interval"></a> [ytdlp\_max\_sleep\_interval](#input\_ytdlp\_max\_sleep\_interval) | ytdlp max sleep interval | `string` | `""` | no |
+| <a name="input_ytdlp_sleep_interval"></a> [ytdlp\_sleep\_interval](#input\_ytdlp\_sleep\_interval) | ytdlp sleep interval | `string` | `""` | no |
+| <a name="input_ytdlp_sleep_requests"></a> [ytdlp\_sleep\_requests](#input\_ytdlp\_sleep\_requests) | ytdlp sleep requests | `string` | `""` | no |
 
 ## Outputs
 
 | Name | Description |
 |------|-------------|
-| <a name="output_api_gateway_api_key"></a> [api\_gateway\_api\_key](#output\_api\_gateway\_api\_key) | The API key for the API Gateway |
-| <a name="output_api_gateway_stage"></a> [api\_gateway\_stage](#output\_api\_gateway\_stage) | The stage of the API Gateway (e.g. prod, staging) |
-| <a name="output_api_gateway_subdomain"></a> [api\_gateway\_subdomain](#output\_api\_gateway\_subdomain) | The subdomain of the API Gateway (e.g. ow9mzeewuf) |
-| <a name="output_cloudfront_distribution_domain"></a> [cloudfront\_distribution\_domain](#output\_cloudfront\_distribution\_domain) | The CloudFront distribution domain. The URL to make requests (e.g. d3q75k9ayjjukw.cloudfront.net) |
-| <a name="output_cloudfront_media_files_domain"></a> [cloudfront\_media\_files\_domain](#output\_cloudfront\_media\_files\_domain) | CloudFront domain for media files (use this in iOS app) |
-| <a name="output_cloudwatch_dashboard_url"></a> [cloudwatch\_dashboard\_url](#output\_cloudwatch\_dashboard\_url) | URL to the CloudWatch dashboard (empty if dashboard disabled) |
-| <a name="output_download_queue_arn"></a> [download\_queue\_arn](#output\_download\_queue\_arn) | Download Queue ARN |
-| <a name="output_download_queue_url"></a> [download\_queue\_url](#output\_download\_queue\_url) | Download Queue URL |
-| <a name="output_dsql_cluster_arn"></a> [dsql\_cluster\_arn](#output\_dsql\_cluster\_arn) | Aurora DSQL cluster ARN |
-| <a name="output_dsql_cluster_endpoint"></a> [dsql\_cluster\_endpoint](#output\_dsql\_cluster\_endpoint) | Aurora DSQL cluster endpoint |
-| <a name="output_event_bus_arn"></a> [event\_bus\_arn](#output\_event\_bus\_arn) | EventBridge event bus ARN |
-| <a name="output_event_bus_name"></a> [event\_bus\_name](#output\_event\_bus\_name) | EventBridge event bus name for media-downloader |
-| <a name="output_idempotency_table_arn"></a> [idempotency\_table\_arn](#output\_idempotency\_table\_arn) | ARN of the Idempotency DynamoDB table |
-| <a name="output_idempotency_table_name"></a> [idempotency\_table\_name](#output\_idempotency\_table\_name) | Name of the Idempotency DynamoDB table |
-| <a name="output_migration_result"></a> [migration\_result](#output\_migration\_result) | Result of database migration |
-| <a name="output_operations_alerts_sns_topic_arn"></a> [operations\_alerts\_sns\_topic\_arn](#output\_operations\_alerts\_sns\_topic\_arn) | SNS topic ARN for operations alerts (empty if alarms disabled) |
-| <a name="output_public_ip"></a> [public\_ip](#output\_public\_ip) | Your public IP address (used for local development/testing) |
+| <a name="output_api_gateway_authorizer_function_arn"></a> [api\_gateway\_authorizer\_function\_arn](#output\_api\_gateway\_authorizer\_function\_arn) | ARN of the ApiGatewayAuthorizer Lambda function |
+| <a name="output_api_key"></a> [api\_key](#output\_api\_key) | API key value |
+| <a name="output_api_url"></a> [api\_url](#output\_api\_url) | API Gateway invoke URL |
+| <a name="output_cleanup_expired_records_function_arn"></a> [cleanup\_expired\_records\_function\_arn](#output\_cleanup\_expired\_records\_function\_arn) | ARN of the CleanupExpiredRecords Lambda function |
+| <a name="output_cloudfront_api_key_promotion_function_arn"></a> [cloudfront\_api\_key\_promotion\_function\_arn](#output\_cloudfront\_api\_key\_promotion\_function\_arn) | ARN of the API key promotion CloudFront Function |
+| <a name="output_database_endpoint"></a> [database\_endpoint](#output\_database\_endpoint) | Database cluster endpoint |
+| <a name="output_device_event_function_arn"></a> [device\_event\_function\_arn](#output\_device\_event\_function\_arn) | ARN of the DeviceEvent Lambda function |
+| <a name="output_device_register_function_arn"></a> [device\_register\_function\_arn](#output\_device\_register\_function\_arn) | ARN of the DeviceRegister Lambda function |
+| <a name="output_dynamodb_idempotency_table_arn"></a> [dynamodb\_idempotency\_table\_arn](#output\_dynamodb\_idempotency\_table\_arn) | DynamoDB table ARN for idempotency |
+| <a name="output_dynamodb_idempotency_table_name"></a> [dynamodb\_idempotency\_table\_name](#output\_dynamodb\_idempotency\_table\_name) | DynamoDB table name for idempotency |
+| <a name="output_eventbridge_bus_arn"></a> [eventbridge\_bus\_arn](#output\_eventbridge\_bus\_arn) | EventBridge bus ARN |
+| <a name="output_eventbridge_bus_name"></a> [eventbridge\_bus\_name](#output\_eventbridge\_bus\_name) | EventBridge bus name |
+| <a name="output_feedly_webhook_function_arn"></a> [feedly\_webhook\_function\_arn](#output\_feedly\_webhook\_function\_arn) | ARN of the FeedlyWebhook Lambda function |
+| <a name="output_file_helpers_function_arn"></a> [file\_helpers\_function\_arn](#output\_file\_helpers\_function\_arn) | ARN of the FileHelpers Lambda function |
+| <a name="output_files_get_function_arn"></a> [files\_get\_function\_arn](#output\_files\_get\_function\_arn) | ARN of the FilesGet Lambda function |
+| <a name="output_migrate_dsql_function_arn"></a> [migrate\_dsql\_function\_arn](#output\_migrate\_dsql\_function\_arn) | ARN of the MigrateDSQL Lambda function |
+| <a name="output_migration_result"></a> [migration\_result](#output\_migration\_result) | n/a |
+| <a name="output_prune_devices_function_arn"></a> [prune\_devices\_function\_arn](#output\_prune\_devices\_function\_arn) | ARN of the PruneDevices Lambda function |
+| <a name="output_queue_DownloadQueue_arn"></a> [queue\_DownloadQueue\_arn](#output\_queue\_DownloadQueue\_arn) | SQS queue ARN for DownloadQueue |
+| <a name="output_queue_DownloadQueue_url"></a> [queue\_DownloadQueue\_url](#output\_queue\_DownloadQueue\_url) | SQS queue URL for DownloadQueue |
+| <a name="output_queue_SendPushNotification_arn"></a> [queue\_SendPushNotification\_arn](#output\_queue\_SendPushNotification\_arn) | SQS queue ARN for SendPushNotification |
+| <a name="output_queue_SendPushNotification_url"></a> [queue\_SendPushNotification\_url](#output\_queue\_SendPushNotification\_url) | SQS queue URL for SendPushNotification |
+| <a name="output_s3object_created_function_arn"></a> [s3object\_created\_function\_arn](#output\_s3object\_created\_function\_arn) | ARN of the S3ObjectCreated Lambda function |
+| <a name="output_send_push_notification_function_arn"></a> [send\_push\_notification\_function\_arn](#output\_send\_push\_notification\_function\_arn) | ARN of the SendPushNotification Lambda function |
+| <a name="output_start_file_upload_function_arn"></a> [start\_file\_upload\_function\_arn](#output\_start\_file\_upload\_function\_arn) | ARN of the StartFileUpload Lambda function |
+| <a name="output_storage_files_bucket_arn"></a> [storage\_files\_bucket\_arn](#output\_storage\_files\_bucket\_arn) | ARN of the files S3 bucket |
+| <a name="output_storage_files_cloudfront_domain"></a> [storage\_files\_cloudfront\_domain](#output\_storage\_files\_cloudfront\_domain) | CloudFront domain for files |
+| <a name="output_user_delete_function_arn"></a> [user\_delete\_function\_arn](#output\_user\_delete\_function\_arn) | ARN of the UserDelete Lambda function |
+| <a name="output_user_login_function_arn"></a> [user\_login\_function\_arn](#output\_user\_login\_function\_arn) | ARN of the UserLogin Lambda function |
+| <a name="output_user_logout_function_arn"></a> [user\_logout\_function\_arn](#output\_user\_logout\_function\_arn) | ARN of the UserLogout Lambda function |
+| <a name="output_user_refresh_function_arn"></a> [user\_refresh\_function\_arn](#output\_user\_refresh\_function\_arn) | ARN of the UserRefresh Lambda function |
+| <a name="output_user_register_function_arn"></a> [user\_register\_function\_arn](#output\_user\_register\_function\_arn) | ARN of the UserRegister Lambda function |
+| <a name="output_user_subscribe_function_arn"></a> [user\_subscribe\_function\_arn](#output\_user\_subscribe\_function\_arn) | ARN of the UserSubscribe Lambda function |

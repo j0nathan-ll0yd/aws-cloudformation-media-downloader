@@ -68,37 +68,27 @@ main() {
   # Check 2: Lambda count matches documentation
   # =============================================================================
   echo -n "  [2/11] Checking Lambda count... "
-  LAMBDA_COUNT=$(find src/lambdas -mindepth 1 -maxdepth 1 -type d 2> /dev/null | wc -l | tr -d ' ')
+  # Count Lambda entry points: file-based routing (*.post.ts, *.get.ts, *.delete.ts)
+  # and directory-based (index.ts inside named folders, excluding test files)
+  LAMBDA_COUNT=$(find src/lambdas \( -name "*.post.ts" -o -name "*.get.ts" -o -name "*.delete.ts" -o -name "*.put.ts" -o -name "*.patch.ts" -o -name "index.ts" \) ! -name "*.test.ts" 2> /dev/null | wc -l | tr -d ' ')
 
-  # Count rows in Lambda Trigger Patterns table (lines starting with | and uppercase letter, excluding header)
+  # Count rows in Lambda Trigger Patterns table (lines starting with | and a word char, excluding header)
   # Skip lines containing "Trigger Type" or "---" (header/separator rows)
   # Table is in docs/wiki/Architecture/System-Diagrams.md
-  TRIGGER_TABLE_COUNT=$(awk '/## Lambda Trigger Patterns/,/## Data Access/' docs/wiki/Architecture/System-Diagrams.md 2> /dev/null | grep -E '^\| [A-Z]' | grep -v 'Trigger Type' | grep -vc '\-\-\-' || echo 0)
+  TRIGGER_TABLE_COUNT=$(awk '/## Lambda Trigger Patterns/,/## Data Access/' docs/wiki/Architecture/System-Diagrams.md 2> /dev/null | grep -E '^\| [A-Za-z]' | grep -v 'Trigger Type' | grep -vc '\-\-\-' || echo 0)
 
   if [ "$LAMBDA_COUNT" -ne "$TRIGGER_TABLE_COUNT" ]; then
     echo -e "${RED}MISMATCH${NC}"
-    ERRORS="$ERRORS\n  - Lambda count: found $LAMBDA_COUNT directories in src/lambdas/, documented $TRIGGER_TABLE_COUNT in trigger table"
+    ERRORS="$ERRORS\n  - Lambda count: found $LAMBDA_COUNT entry points in src/lambdas/, documented $TRIGGER_TABLE_COUNT in trigger table"
   else
     echo -e "${GREEN}OK${NC} ($LAMBDA_COUNT Lambdas)"
   fi
 
   # =============================================================================
-  # Check 3: MCP validation rule count
+  # Check 3: Convention validation (managed by Mantle)
   # =============================================================================
-  echo -n "  [3/11] Checking MCP rule count... "
-  # Exclude cicd-conventions.ts as it's a YAML validator, not a TypeScript AST rule
-  MCP_RULE_COUNT=$(find src/mcp/validation/rules -name "*.ts" ! -name "*.test.ts" ! -name "index.ts" ! -name "types.ts" ! -name "cicd-conventions.ts" 2> /dev/null | wc -l | tr -d ' ')
-
-  # Count rules in the allRules array by counting lines ending with "Rule" or "Rule,"
-  # This counts the actual rule references in the array
-  REGISTERED_RULE_COUNT=$(sed -n '/export const allRules/,/^]/p' src/mcp/validation/index.ts 2> /dev/null | grep -cE '[a-z]Rule,?$' || echo "0")
-
-  if [ "$MCP_RULE_COUNT" -ne "$REGISTERED_RULE_COUNT" ]; then
-    echo -e "${RED}MISMATCH${NC}"
-    ERRORS="$ERRORS\n  - MCP rules: found $MCP_RULE_COUNT rule files, $REGISTERED_RULE_COUNT registered in index.ts"
-  else
-    echo -e "${GREEN}OK${NC} ($MCP_RULE_COUNT rules)"
-  fi
+  echo -n "  [3/11] Convention validation... "
+  echo -e "${GREEN}SKIP${NC} (managed by mantle check)"
 
   # =============================================================================
   # Check 4: Critical paths exist
@@ -107,11 +97,8 @@ main() {
   PATHS_OK=true
 
   REQUIRED_PATHS=(
-    "src/lib/vendor/AWS"
-    "src/lib/vendor/BetterAuth"
-    "src/lib/vendor/Drizzle"
-    "src/mcp"
-    "src/mcp/validation"
+    "src/entities/queries"
+    "src/lambdas"
     "test/helpers"
     "graphrag"
   )
@@ -331,7 +318,7 @@ main() {
       [[ "$path" == "lib/" ]] && continue
 
       # Only check paths that look like file/directory references
-      if [[ "$path" =~ ^(src|test|util|types|build|graphrag|terraform|bin|scripts)/ ]]; then
+      if [[ "$path" =~ ^(src|test|util|types|build|graphrag|infra|bin|scripts)/ ]]; then
         # Skip glob patterns (*, **, etc.)
         [[ "$path" == *"*"* ]] && continue
         # Skip template patterns ([name], {name}, etc.)

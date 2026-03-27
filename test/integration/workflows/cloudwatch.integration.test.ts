@@ -9,7 +9,6 @@
  */
 
 // Set environment variables before imports
-process.env.USE_LOCALSTACK = 'true'
 process.env.AWS_REGION = 'us-west-2'
 
 import {afterAll, beforeAll, describe, expect, test} from 'vitest'
@@ -65,7 +64,7 @@ describe('CloudWatch Logs Integration Tests', () => {
     const events = await getTestLogEvents(groupName, streamName)
 
     expect(events.length).toBeGreaterThanOrEqual(1)
-    expect(events[0].message).toBe('test message')
+    expect(events[0]!.message).toBe('test message')
 
     // Clean up
     await deleteTestLogGroup(groupName)

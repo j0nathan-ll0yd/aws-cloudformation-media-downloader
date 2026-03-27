@@ -6,7 +6,7 @@ Validate code against project conventions using the MCP AST-based validation rul
 
 ```bash
 # Validate all files
-pnpm run validate:conventions
+pnpm run check:conventions
 
 # Validate specific file
 # Use MCP: validate_pattern with file parameter
@@ -125,7 +125,7 @@ Add to `.husky/pre-commit`:
 # Run convention validation on staged TypeScript files
 STAGED_TS=$(git diff --cached --name-only --diff-filter=ACM | grep '\.ts$' || true)
 if [ -n "$STAGED_TS" ]; then
-  pnpm run validate:conventions
+  pnpm run check:conventions
 fi
 ```
 

@@ -31,7 +31,7 @@
  * ```
  */
 
-import {type AwsClientStub, mockClient} from 'aws-sdk-client-mock'
+import {type AwsClientStub, mockClient as rawMockClient} from 'aws-sdk-client-mock'
 import {SQSClient} from '@aws-sdk/client-sqs'
 import {SNSClient} from '@aws-sdk/client-sns'
 import {EventBridgeClient} from '@aws-sdk/client-eventbridge'
@@ -45,7 +45,19 @@ import {
   setTestS3Client,
   setTestSNSClient,
   setTestSQSClient
-} from '#lib/vendor/AWS/clients'
+} from '@mantleframework/aws'
+
+/**
+ * Version-safe wrapper around mockClient.
+ *
+ * The AWS SDK Client classes resolve through \@mantleframework/aws (linked package),
+ * while aws-sdk-client-mock resolves \@smithy/types from pnpm store. This creates
+ * a nominal type mismatch even though the types are structurally identical.
+ * This wrapper bridges the gap by accepting any Client constructor.
+ */
+function mockClient<TClient>(client: {prototype: TClient}): AwsClientStub<TClient> {
+  return rawMockClient(client as Parameters<typeof rawMockClient>[0]) as AwsClientStub<TClient>
+}
 
 // Base interface for mock instances with reset/restore methods
 interface MockInstance {

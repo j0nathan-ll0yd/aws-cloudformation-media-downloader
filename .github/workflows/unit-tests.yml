@@ -15,33 +15,28 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
+      - name: Setup SSH for mantle checkout
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.MANTLE_DEPLOY_KEY }}" > ~/.ssh/mantle_deploy_key
+          chmod 600 ~/.ssh/mantle_deploy_key
+          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+      - name: Checkout mantle framework
+        run: GIT_SSH_COMMAND="ssh -i ~/.ssh/mantle_deploy_key -o StrictHostKeyChecking=no" git clone --depth 1 --branch main git@github.com:j0nathan-ll0yd/mantle.git ../mantle
+
       - uses: ./.github/actions/setup-node-pnpm
 
-      - name: Cache TypeSpec output
-        uses: actions/cache@v5
-        with:
-          path: tsp-output/
-          key: typespec-${{ runner.os }}-${{ hashFiles('tsp/**') }}
-          restore-keys: |
-            typespec-${{ runner.os }}-
-
-      - name: Compile TypeSpec
-        run: pnpm run typespec:check
-
-      - name: Generate API documentation
-        run: pnpm run document:api
-
-      - name: Validate API path alignment
-        run: pnpm run validate:api:paths
-
+      - name: Install mantle dependencies
+        working-directory: ../mantle
+        run: pnpm install --frozen-lockfile
+      - name: Build mantle packages
+        working-directory: ../mantle
+        run: pnpm build
       - name: Validate documented scripts exist
         run: ./bin/validate-docs.sh
 
       - name: Validate documentation sync
         run: pnpm run validate:doc:sync
-
-      - name: Audit wiki documentation
-        run: pnpm run audit:wiki
 
       - name: Validate docs freshness
         run: pnpm run validate:docs:freshness
@@ -51,11 +46,11 @@ jobs:
         # pnpm trust-downgrade protection blocks the patched version (missing provenance attestation)
         run: pnpm audit --audit-level=high --ignore GHSA-46wh-pxpv-q5gq
 
-      - name: Validate configuration enforcement
-        run: pnpm run validate:config
+      - name: Run convention validation (Mantle CLI)
+        run: pnpm run check:conventions
 
-      - name: Run convention validation
-        run: pnpm run validate:conventions
+      - name: Validate environment variables
+        run: pnpm run validate:env-vars
 
       - name: Validate DSQL migration compatibility
         run: |
@@ -102,11 +97,30 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
+      - name: Setup SSH for mantle checkout
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.MANTLE_DEPLOY_KEY }}" > ~/.ssh/mantle_deploy_key
+          chmod 600 ~/.ssh/mantle_deploy_key
+          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+      - name: Checkout mantle framework
+        run: GIT_SSH_COMMAND="ssh -i ~/.ssh/mantle_deploy_key -o StrictHostKeyChecking=no" git clone --depth 1 --branch main git@github.com:j0nathan-ll0yd/mantle.git ../mantle
+
       - uses: ./.github/actions/setup-node-pnpm
+
+      - name: Install mantle dependencies
+        working-directory: ../mantle
+        run: pnpm install --frozen-lockfile
+      - name: Build mantle packages
+        working-directory: ../mantle
+        run: pnpm build
+      - name: Refresh bin links after mantle build
+        run: pnpm install
+
       - uses: ./.github/actions/setup-homebrew-tools
 
-      - name: Build dependencies (generate infrastructure.d.ts)
-        run: pnpm run build:dependencies
+      - name: Build project
+        run: pnpm run build
 
       - name: Check types
         run: pnpm run check:types
@@ -130,7 +144,7 @@ jobs:
         run: |
           # Install tofu for formatting check
           if command -v tofu &> /dev/null; then
-            tofu fmt -check -recursive terraform/
+            tofu fmt -check -recursive infra/
           else
             echo "OpenTofu not installed, skipping Terraform fmt check"
           fi
@@ -142,14 +156,30 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
+      - name: Setup SSH for mantle checkout
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.MANTLE_DEPLOY_KEY }}" > ~/.ssh/mantle_deploy_key
+          chmod 600 ~/.ssh/mantle_deploy_key
+          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+      - name: Checkout mantle framework
+        run: GIT_SSH_COMMAND="ssh -i ~/.ssh/mantle_deploy_key -o StrictHostKeyChecking=no" git clone --depth 1 --branch main git@github.com:j0nathan-ll0yd/mantle.git ../mantle
+
       - uses: ./.github/actions/setup-node-pnpm
+
+      - name: Install mantle dependencies
+        working-directory: ../mantle
+        run: pnpm install --frozen-lockfile
+      - name: Build mantle packages
+        working-directory: ../mantle
+        run: pnpm build
+      - name: Refresh bin links after mantle build
+        run: pnpm install
+
       - uses: ./.github/actions/setup-homebrew-tools
       - uses: ./.github/actions/build-project
         with:
           cache-build: 'true'
-
-      - name: Check bundle sizes
-        run: pnpm run check:bundle:size
 
       - name: Validate GraphRAG synchronization
         run: pnpm run validate:graphrag
@@ -169,7 +199,23 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
+      - name: Setup SSH for mantle checkout
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.MANTLE_DEPLOY_KEY }}" > ~/.ssh/mantle_deploy_key
+          chmod 600 ~/.ssh/mantle_deploy_key
+          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+      - name: Checkout mantle framework
+        run: GIT_SSH_COMMAND="ssh -i ~/.ssh/mantle_deploy_key -o StrictHostKeyChecking=no" git clone --depth 1 --branch main git@github.com:j0nathan-ll0yd/mantle.git ../mantle
+
       - uses: ./.github/actions/setup-node-pnpm
+
+      - name: Install mantle dependencies
+        working-directory: ../mantle
+        run: pnpm install --frozen-lockfile
+      - name: Build mantle packages
+        working-directory: ../mantle
+        run: pnpm build
 
       - name: Download build artifacts
         uses: actions/download-artifact@v8

@@ -49,9 +49,8 @@ Based on the changed files, categorize the PR:
 | `src/lambdas/*/src/*.ts` | Lambda implementation |
 | `src/lambdas/*/test/*.ts` | Lambda tests |
 | `src/entities/*.ts` | Database schema |
-| `terraform/*.tf` | Infrastructure |
+| `infra/*.tf` | Infrastructure |
 | `docs/**/*.md` | Documentation |
-| `src/mcp/**/*.ts` | MCP tools |
 | `package.json`, `pnpm-lock.yaml` | Dependencies |
 | `src/types/**/*.ts` | Type definitions |
 

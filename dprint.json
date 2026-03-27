@@ -82,8 +82,7 @@
     "**/coverage",
     "**/.git",
     ".omc/**",
-    "terraform/**",
-    "src/mcp/test/fixtures/**/config-*.fixture.ts"
+    "infra/**"
   ],
 
   "plugins": [

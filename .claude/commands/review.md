@@ -248,7 +248,7 @@ jobs:
       - name: Run Code Review Agent
         run: |
           # Run MCP validation
-          pnpm run validate:conventions
+          pnpm run check:conventions
 
       - name: Post Review Comments
         if: failure()
@@ -265,7 +265,7 @@ jobs:
 #!/bin/sh
 
 # Run lightweight review before push
-pnpm run validate:conventions
+pnpm run check:conventions
 if [ $? -ne 0 ]; then
   echo "Convention violations detected. Fix before pushing."
   exit 1

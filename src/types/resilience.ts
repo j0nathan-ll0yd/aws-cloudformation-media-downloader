@@ -7,6 +7,7 @@
  * @see src/lib/system/circuitBreaker.ts for circuit breaker implementation
  * @see src/lib/system/retry.ts for retry utilities
  */
+import type {Result} from '@mantleframework/core'
 
 /**
  * Circuit breaker states
@@ -32,15 +33,28 @@ export interface CircuitBreakerConfig {
 }
 
 /**
- * Result of cleaning up a disabled APNS endpoint
+ * Success payload when an APNS endpoint is cleaned up
  */
-export interface EndpointCleanupResult {
+export interface EndpointCleaned {
   /** The device ID that was cleaned up */
   deviceId: string
   /** The SNS endpoint ARN that was cleaned up */
   endpointArn: string
-  /** Whether the cleanup was successful */
-  cleaned: boolean
-  /** Error message if cleanup failed */
-  error?: string
 }
+
+/**
+ * Error payload when an APNS endpoint cleanup fails
+ */
+export interface EndpointCleanupError {
+  /** The device ID that failed cleanup */
+  deviceId: string
+  /** The SNS endpoint ARN that failed cleanup */
+  endpointArn: string
+  /** Error message describing the failure */
+  error: string
+}
+
+/**
+ * Result of cleaning up a disabled APNS endpoint
+ */
+export type EndpointCleanupResult = Result<EndpointCleaned, EndpointCleanupError>

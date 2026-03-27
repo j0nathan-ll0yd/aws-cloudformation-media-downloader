@@ -1,5 +1,5 @@
 name: 'Build Project'
-description: 'Run full project build with optional caching'
+description: 'Run full project build with dependency graph generation'
 
 inputs:
   cache-build:
@@ -20,14 +20,14 @@ runs:
       with:
         path: |
           build
-        key: build-${{ runner.os }}-${{ hashFiles('src/**', 'config/esbuild.config.ts', 'scripts/generateDependencyGraph.ts') }}
+        key: build-${{ runner.os }}-${{ hashFiles('src/**') }}
         restore-keys: |
           build-${{ runner.os }}-
 
-    - name: Build dependencies
+    - name: Generate dependency graph
       shell: bash
-      run: pnpm run build:dependencies
+      run: node ../mantle/packages/cli/dist/index.mjs generate graph
 
-    - name: Webpack Build
+    - name: Build
       shell: bash
       run: pnpm run build

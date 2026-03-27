@@ -11,10 +11,10 @@
  *
  * @see {@link https://orm.drizzle.team/docs/perf-queries | Drizzle Prepared Statements}
  */
-import {getDrizzleClient, onConnectionInvalidated} from '#lib/vendor/Drizzle/client'
-import {files, sessions, userFiles} from '#lib/vendor/Drizzle/schema'
-import {eq, sql} from '#lib/vendor/Drizzle/types'
-import {DatabaseOperation, DatabaseTable, RequiresTable} from '../decorators'
+import {DatabaseOperation, RequiresTable} from '@mantleframework/database'
+import {getDrizzleClient, onConnectionInvalidated} from '#db/client'
+import {eq, sql} from '@mantleframework/database/orm'
+import {files, sessions, userFiles} from '#db/schema'
 import type {FileRow} from './fileQueries'
 import type {SessionRow} from './sessionQueries'
 
@@ -66,7 +66,7 @@ class PreparedQueries {
    * @param key - The S3 object key
    * @returns The file row or null if not found
    */
-  @RequiresTable([{table: DatabaseTable.Files, operations: [DatabaseOperation.Select]}])
+  @RequiresTable([{table: 'files', operations: [DatabaseOperation.Select]}])
   static async getFileByKeyPrepared(key: string): Promise<FileRow | null> {
     const db = await getDrizzleClient()
     if (!preparedGetFileByKey) {
@@ -83,8 +83,8 @@ class PreparedQueries {
    * @returns Array of file rows
    */
   @RequiresTable([
-    {table: DatabaseTable.UserFiles, operations: [DatabaseOperation.Select]},
-    {table: DatabaseTable.Files, operations: [DatabaseOperation.Select]}
+    {table: 'user_files', operations: [DatabaseOperation.Select]},
+    {table: 'files', operations: [DatabaseOperation.Select]}
   ])
   static async getUserFilesPrepared(userId: string): Promise<FileRow[]> {
     const db = await getDrizzleClient()
@@ -101,7 +101,7 @@ class PreparedQueries {
    * @param token - The session token
    * @returns The session row or null if not found
    */
-  @RequiresTable([{table: DatabaseTable.Sessions, operations: [DatabaseOperation.Select]}])
+  @RequiresTable([{table: 'sessions', operations: [DatabaseOperation.Select]}])
   static async getSessionByTokenPrepared(token: string): Promise<SessionRow | null> {
     const db = await getDrizzleClient()
     if (!preparedGetSessionByToken) {
@@ -116,12 +116,13 @@ class PreparedQueries {
    * This is called automatically when the database connection is invalidated.
    * Manual calls are typically not needed - included for test cleanup.
    */
+  @RequiresTable([])
   static resetPreparedStatements(): void {
     resetPreparedStatementCaches()
   }
 }
 
-// Re-export static methods as named exports for backwards compatibility
+// Bound function exports for direct import by consumers
 export const getFileByKeyPrepared = PreparedQueries.getFileByKeyPrepared.bind(PreparedQueries)
 export const getUserFilesPrepared = PreparedQueries.getUserFilesPrepared.bind(PreparedQueries)
 export const getSessionByTokenPrepared = PreparedQueries.getSessionByTokenPrepared.bind(PreparedQueries)

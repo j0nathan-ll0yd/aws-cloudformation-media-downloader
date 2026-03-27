@@ -2,15 +2,16 @@
   "compilerOptions": {
     "allowSyntheticDefaultImports": true,
     "module": "esnext",
-    "target": "ES2024",
+    "target": "ES2025",
+    "lib": ["ES2025"],
     "outDir": "./dist",
     "rootDir": ".",
     "strict": true,
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
     "verbatimModuleSyntax": true,
+    "noUncheckedIndexedAccess": true,
     "types": ["node"],
     "moduleResolution": "bundler",
+    "ignoreDeprecations": "6.0",
     "baseUrl": ".",
     "paths": {
       "#entities/*": ["src/entities/*"],
@@ -19,7 +20,17 @@
       "#util/*": ["src/util/*"],
       "#config/*": ["src/config/*"],
       "#types/*": ["src/types/*"],
-      "#test/*": ["test/*"]
+      "#test/*": ["test/*"],
+      "#db/*": ["src/db/*"],
+      "#domain/*": ["src/domain/*"],
+      "#services/*": ["src/services/*"],
+      "#integrations/*": ["src/integrations/*"],
+      "#errors/*": ["src/errors/*"],
+      "#utils/*": ["src/utils/*"],
+      "drizzle-orm": ["./node_modules/@mantleframework/database/node_modules/drizzle-orm"],
+      "drizzle-orm/*": ["./node_modules/@mantleframework/database/node_modules/drizzle-orm/*"],
+      "zod": ["./node_modules/@mantleframework/validation/node_modules/zod"],
+      "aws-lambda": ["./node_modules/@mantleframework/core/node_modules/@types/aws-lambda"]
     },
     "noUnusedLocals": true,
     "noUnusedParameters": true,
@@ -38,6 +49,6 @@
     "**/*.fixture.ts",
     "test/**/*",
     "./src/types/terraform.d.ts",
-    "src/mcp/test/fixtures/**/*"
+    "src/lib/**/*"
   ]
 }

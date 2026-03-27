@@ -14,11 +14,10 @@
  * @see docs/wiki/TypeScript/Entity-Query-Patterns.md for usage examples
  * @see src/lib/vendor/Drizzle/instrumentation.ts for query metrics
  */
-import {withTransaction} from '#lib/vendor/Drizzle/client'
-import {withQueryMetrics} from '#lib/vendor/Drizzle/instrumentation'
-import {accounts, sessions, userDevices, userFiles, users} from '#lib/vendor/Drizzle/schema'
-import {eq} from '#lib/vendor/Drizzle/types'
-import {DatabaseOperation, DatabaseTable, RequiresTable} from '../decorators'
+import {DatabaseOperation, RequiresTable, withQueryMetrics} from '@mantleframework/database'
+import {withTransaction} from '#db/client'
+import {eq} from '@mantleframework/database/orm'
+import {accounts, sessions, userDevices, userFiles, users} from '#db/schema'
 
 /**
  * Cascade entity operations with declarative permission metadata.
@@ -36,11 +35,11 @@ class CascadeOperations {
    * @param userId - The user's unique identifier
    */
   @RequiresTable([
-    {table: DatabaseTable.UserFiles, operations: [DatabaseOperation.Delete]},
-    {table: DatabaseTable.UserDevices, operations: [DatabaseOperation.Delete]},
-    {table: DatabaseTable.Sessions, operations: [DatabaseOperation.Delete]},
-    {table: DatabaseTable.Accounts, operations: [DatabaseOperation.Delete]},
-    {table: DatabaseTable.Users, operations: [DatabaseOperation.Delete]}
+    {table: 'user_files', operations: [DatabaseOperation.Delete]},
+    {table: 'user_devices', operations: [DatabaseOperation.Delete]},
+    {table: 'sessions', operations: [DatabaseOperation.Delete]},
+    {table: 'accounts', operations: [DatabaseOperation.Delete]},
+    {table: 'users', operations: [DatabaseOperation.Delete]}
   ])
   static deleteUserCascade(userId: string): Promise<void> {
     return withQueryMetrics('Cascade.deleteUser', async () => {
@@ -64,8 +63,8 @@ class CascadeOperations {
    * @param userId - The user's unique identifier
    */
   @RequiresTable([
-    {table: DatabaseTable.UserFiles, operations: [DatabaseOperation.Delete]},
-    {table: DatabaseTable.UserDevices, operations: [DatabaseOperation.Delete]}
+    {table: 'user_files', operations: [DatabaseOperation.Delete]},
+    {table: 'user_devices', operations: [DatabaseOperation.Delete]}
   ])
   static deleteUserRelationships(userId: string): Promise<void> {
     return withQueryMetrics('Cascade.deleteUserRelationships', async () => {
@@ -83,8 +82,8 @@ class CascadeOperations {
    * @param userId - The user's unique identifier
    */
   @RequiresTable([
-    {table: DatabaseTable.Sessions, operations: [DatabaseOperation.Delete]},
-    {table: DatabaseTable.Accounts, operations: [DatabaseOperation.Delete]}
+    {table: 'sessions', operations: [DatabaseOperation.Delete]},
+    {table: 'accounts', operations: [DatabaseOperation.Delete]}
   ])
   static deleteUserAuthRecords(userId: string): Promise<void> {
     return withQueryMetrics('Cascade.deleteUserAuthRecords', async () => {
@@ -96,7 +95,7 @@ class CascadeOperations {
   }
 }
 
-// Re-export static methods as named exports for backwards compatibility
+// Bound function exports for direct import by consumers
 export const deleteUserCascade = CascadeOperations.deleteUserCascade.bind(CascadeOperations)
 export const deleteUserRelationships = CascadeOperations.deleteUserRelationships.bind(CascadeOperations)
 export const deleteUserAuthRecords = CascadeOperations.deleteUserAuthRecords.bind(CascadeOperations)

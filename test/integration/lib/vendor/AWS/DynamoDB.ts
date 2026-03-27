@@ -7,7 +7,7 @@
 
 import {CreateTableCommand, DeleteTableCommand} from '@aws-sdk/client-dynamodb'
 import type {CreateTableCommandInput} from '@aws-sdk/client-dynamodb'
-import {createDynamoDBClient} from '#lib/vendor/AWS/clients'
+import {createDynamoDBClient} from '@mantleframework/aws'
 
 const dynamoDBClient = createDynamoDBClient()
 

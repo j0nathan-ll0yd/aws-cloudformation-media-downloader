@@ -1,7 +1,0 @@
-// {{entityName}} query function mocks
-vi.mock('#entities/queries', () => ({
-  get{{entityName}}: vi.fn(),
-  create{{entityName}}: vi.fn(),
-  update{{entityName}}: vi.fn(),
-  delete{{entityName}}: vi.fn()
-}))

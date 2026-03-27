@@ -1,4 +1,0 @@
-// {{vendorName}} vendor mock
-jest.unstable_mockModule('#lib/vendor/{{vendorName}}', () => ({
-  // Add mock functions as needed
-}))

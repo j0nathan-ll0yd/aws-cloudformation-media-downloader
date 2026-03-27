@@ -6,7 +6,7 @@
  * and generateDbRolesMigration.ts with a unified approach.
  *
  * Generates from build/entity-permissions.json:
- * 1. terraform/dsql_permissions.tf - Terraform locals and for_each resources
+ * 1. infra/dsql_permissions.tf - Terraform locals and for_each resources
  * 2. migrations/0002_lambda_roles.sql - Per-Lambda PostgreSQL roles with GRANTs
  * 3. build/dsql-permissions-report.md - Human-readable report
  *
@@ -381,9 +381,9 @@ async function main(): Promise<void> {
   console.log(`  admin:     ${counts.admin} Lambdas`)
   console.log('')
   console.log('Next steps:')
-  console.log('  1. Update terraform/aurora_dsql.tf with new IAM policies')
+  console.log('  1. Update infra/aurora_dsql.tf with new IAM policies')
   console.log('  2. Remove hardcoded DSQL config from Lambda .tf files')
-  console.log('  3. Run: cd terraform && tofu validate')
+  console.log('  3. Run: cd infra && tofu validate')
 }
 
 main().catch(error => {

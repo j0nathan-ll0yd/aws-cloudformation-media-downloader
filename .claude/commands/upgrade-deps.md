@@ -30,8 +30,8 @@ pnpm outdated
 Create an isolated worktree for the upgrade work:
 
 ```bash
-git worktree add -b chore/upgrade-dependencies ../aws-cloudformation-media-downloader-upgrade HEAD
-cd ../aws-cloudformation-media-downloader-upgrade
+git worktree add -b chore/upgrade-dependencies ../mantle-OfflineMediaDownloader-upgrade HEAD
+cd ../mantle-OfflineMediaDownloader-upgrade
 mkdir -p build
 pnpm install --frozen-lockfile
 ```
@@ -142,13 +142,13 @@ unset GITHUB_TOKEN && gh pr close <PR_NUMBER> --comment "Superseded by comprehen
 
 ```bash
 # Return to main repo
-cd /Users/jlloyd/Repositories/aws-cloudformation-media-downloader
+cd /Users/jlloyd/Repositories/mantle-OfflineMediaDownloader
 
 # Pull merged changes
 git fetch origin && git pull origin master
 
 # Remove worktree
-git worktree remove ../aws-cloudformation-media-downloader-upgrade --force
+git worktree remove ../mantle-OfflineMediaDownloader-upgrade --force
 
 # Delete local branch if still exists
 git branch -D chore/upgrade-dependencies 2>/dev/null || true
@@ -250,7 +250,7 @@ unset GITHUB_TOKEN && gh run view --log-failed
 
 ```bash
 # Return to worktree
-cd ~/wt/aws-cloudformation-media-downloader-upgrade
+cd ~/wt/mantle-OfflineMediaDownloader-upgrade
 
 # Make fixes
 # ... edit files ...
@@ -270,8 +270,8 @@ git push
 unset GITHUB_TOKEN && gh pr close --comment "Dependency upgrade caused unfixable CI failure. Rolling back."
 
 # Clean up worktree
-cd /Users/jlloyd/Repositories/aws-cloudformation-media-downloader
-git worktree remove ~/wt/aws-cloudformation-media-downloader-upgrade --force
+cd /Users/jlloyd/Repositories/mantle-OfflineMediaDownloader
+git worktree remove ~/wt/mantle-OfflineMediaDownloader-upgrade --force
 
 # Delete remote branch
 git push origin --delete chore/upgrade-dependencies
@@ -283,13 +283,13 @@ After successful merge OR rollback:
 
 ```bash
 # Return to main repo
-cd /Users/jlloyd/Repositories/aws-cloudformation-media-downloader
+cd /Users/jlloyd/Repositories/mantle-OfflineMediaDownloader
 
 # Pull merged changes (if merged)
 git fetch origin && git pull origin master
 
 # Remove worktree
-git worktree remove ~/wt/aws-cloudformation-media-downloader-upgrade --force
+git worktree remove ~/wt/mantle-OfflineMediaDownloader-upgrade --force
 
 # Delete local branch
 git branch -D chore/upgrade-dependencies 2>/dev/null || true

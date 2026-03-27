@@ -6,7 +6,6 @@
  */
 
 // Set environment variables before imports
-process.env.USE_LOCALSTACK = 'true'
 process.env.AWS_REGION = 'us-west-2'
 process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
 process.env.APNS_SIGNING_KEY = `-----BEGIN EC PRIVATE KEY-----
@@ -42,7 +41,7 @@ vi.mock('apns2', () => ({
   PushType: {background: 'background'}
 }))
 
-const {handler} = await import('#lambdas/PruneDevices/src/index')
+const {handler} = await import('#lambdas/scheduled/PruneDevices/index')
 
 describe('PruneDevices Workflow Integration Tests', () => {
   let mockContext: Context

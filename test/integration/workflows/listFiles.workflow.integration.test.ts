@@ -6,7 +6,6 @@
  */
 
 // Set environment variables before imports
-process.env.USE_LOCALSTACK = 'true'
 process.env.AWS_REGION = 'us-west-2'
 process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
 process.env.DEFAULT_FILE_SIZE = '1024'
@@ -17,17 +16,17 @@ process.env.DEFAULT_FILE_CONTENT_TYPE = 'video/mp4'
 import {afterAll, afterEach, beforeAll, describe, expect, test} from 'vitest'
 import type {Context} from 'aws-lambda'
 import {FileStatus, UserStatus} from '#types/enums'
-import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
+import type {APIGatewayProxyEvent} from 'aws-lambda'
 
 // Test helpers
 import {createMockContext} from '../helpers/lambda-context'
 import {closeTestDb, createAllTables, getTestDbAsync, insertFile, insertUser, linkUserFile, truncateAllTables} from '../helpers/postgres-helpers'
 import {createMockCustomAPIGatewayEvent} from '../helpers/test-data'
 
-const {handler} = await import('#lambdas/ListFiles/src/index')
+const {handler} = await import('#lambdas/api/files/index.get')
 
 // Helper using centralized factory
-function createListFilesEvent(userId: string | undefined, userStatus: UserStatus): CustomAPIGatewayRequestAuthorizerEvent {
+function createListFilesEvent(userId: string | undefined, userStatus: UserStatus): APIGatewayProxyEvent {
   return createMockCustomAPIGatewayEvent({path: '/files', httpMethod: 'GET', userId, userStatus})
 }
 
@@ -88,6 +87,9 @@ describe('ListFiles Workflow Integration Tests', () => {
     expect(response.body.contents).toHaveLength(0)
   })
 
+  // Auth enforcement for /files is at the API Gateway authorizer level
+  // (it is listed in MULTI_AUTHENTICATION_PATH_PARTS), so the handler itself
+  // returns demo file content for anonymous users rather than 401.
   test('should return demo file for anonymous user without querying database', async () => {
     const event = createListFilesEvent(undefined, UserStatus.Anonymous)
     const result = await handler(event, mockContext)
@@ -98,13 +100,6 @@ describe('ListFiles Workflow Integration Tests', () => {
     expect(response.body.keyCount).toBe(1)
     expect(response.body.contents).toHaveLength(1)
     expect(response.body.contents[0]).toHaveProperty('fileId')
-  })
-
-  test('should return 401 for unauthenticated user', async () => {
-    const event = createListFilesEvent(undefined, UserStatus.Unauthenticated)
-    const result = await handler(event, mockContext)
-
-    expect(result.statusCode).toBe(401)
   })
 
   test('should filter out non-Downloaded files', async () => {

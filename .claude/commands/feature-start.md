@@ -38,7 +38,7 @@ git fetch origin
 ```bash
 FEATURE_NAME="<feature-name>"
 BRANCH_NAME="feat/${FEATURE_NAME}"
-WORKTREE_PATH="$HOME/wt/aws-cloudformation-media-downloader-${FEATURE_NAME}"
+WORKTREE_PATH="$HOME/wt/mantle-OfflineMediaDownloader-${FEATURE_NAME}"
 
 # Create worktree with new branch from master
 git worktree add -b "$BRANCH_NAME" "$WORKTREE_PATH" origin/master
@@ -64,7 +64,7 @@ cd "$WORKTREE_PATH"
 pnpm list --depth=0
 
 # Verify terraform initialized
-cd terraform && tofu state list | wc -l
+cd infra && tofu state list | wc -l
 
 # Verify build works
 pnpm run build
@@ -83,7 +83,7 @@ Present the completed setup.
 
 ### Branch Information
 - **Branch**: feat/add-user-preferences
-- **Worktree**: ~/wt/aws-cloudformation-media-downloader-add-user-preferences
+- **Worktree**: ~/wt/mantle-OfflineMediaDownloader-add-user-preferences
 - **Base**: origin/master (commit abc1234)
 
 ### Setup Complete
@@ -100,10 +100,10 @@ Present the completed setup.
 
 ```bash
 # Navigate to worktree
-cd ~/wt/aws-cloudformation-media-downloader-add-user-preferences
+cd ~/wt/mantle-OfflineMediaDownloader-add-user-preferences
 
 # If using Claude Code, add the directory
-/add-dir ~/wt/aws-cloudformation-media-downloader-add-user-preferences
+/add-dir ~/wt/mantle-OfflineMediaDownloader-add-user-preferences
 
 # Start development
 code .  # or your preferred editor

@@ -1,4 +1,4 @@
-import {z} from 'zod'
+import {z} from '@mantleframework/validation'
 
 // YouTube URL regex pattern
 const youtubeUrlPattern = /^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube(?:-nocookie)?\.com|youtu.be))(\/(?:[\w-]+\?v=|embed\/|live\/|v\/)?)([\w-]+)(\S+)?$/

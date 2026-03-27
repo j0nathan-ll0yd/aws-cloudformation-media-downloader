@@ -146,7 +146,7 @@ const user = await getUserById(userId)
 
 ## Pre-Commit Checklist
 
-1. `pnpm run validate:conventions` - Check convention compliance
+1. `pnpm run check:conventions` - Check convention compliance
 2. `pnpm run precheck` - TypeScript type checking and lint
 3. `pnpm run format` - Auto-format with dprint
 4. `pnpm run test` - Run unit tests

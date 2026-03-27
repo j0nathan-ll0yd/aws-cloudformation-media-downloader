@@ -1,6 +1,6 @@
 import type {File} from '#types/domainModels'
 import {FileStatus} from '#types/enums'
-import {getRequiredEnv, getRequiredEnvNumber} from '#lib/system/env'
+import {getStaticAsset} from '@mantleframework/core'
 
 /**
  * Cached default file to avoid repeated env var lookups
@@ -14,16 +14,17 @@ let _defaultFile: File | undefined
  */
 export function getDefaultFile(): File {
   if (!_defaultFile) {
+    const asset = getStaticAsset('videos/default-file.mp4')
     _defaultFile = {
       fileId: 'default',
-      size: getRequiredEnvNumber('DEFAULT_FILE_SIZE'),
+      size: asset.size,
       authorName: 'Lifegames',
       authorUser: 'sxephil',
       publishDate: new Date().toISOString(),
       description: 'Description',
-      key: getRequiredEnv('DEFAULT_FILE_NAME'),
-      url: getRequiredEnv('DEFAULT_FILE_URL'),
-      contentType: getRequiredEnv('DEFAULT_FILE_CONTENT_TYPE'),
+      key: asset.key,
+      url: asset.url,
+      contentType: asset.contentType,
       title: 'Welcome! Tap to download.',
       status: FileStatus.Downloaded
     }

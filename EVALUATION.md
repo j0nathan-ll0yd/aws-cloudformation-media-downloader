@@ -6,7 +6,7 @@
 
 ## 1. Executive Summary
 
-This project (`aws-cloudformation-media-downloader`) represents a highly mature, production-grade serverless application. Far exceeding typical "hobbyist" implementation of media downloaders, it exhibits architectural patterns usually reserved for enterprise-scale distributed systems.
+This project (`mantle-OfflineMediaDownloader`) represents a highly mature, production-grade serverless application. Far exceeding typical "hobbyist" implementation of media downloaders, it exhibits architectural patterns usually reserved for enterprise-scale distributed systems.
 
 The codebase uses a cutting-edge Serverless Aurora DSQL (Drizzle ORM) architecture. The architecture is implemented with remarkable discipline regarding vendor encapsulation and type safety.
 
@@ -15,7 +15,7 @@ A standout feature is the project's **"AI-First" design philosophy**. The inclus
 ## 2. Architecture Assessment
 
 ### 2.1 Infrastructure & Services
-- **Compute**: AWS Lambda (Node.js 22.x, arm64) offers optimal cost/performance. The use of layers for `ffmpeg` and `yt-dlp` is the correct approach for runtime dependencies.
+- **Compute**: AWS Lambda (Node.js 24.x, arm64) offers optimal cost/performance. The use of layers for `ffmpeg` and `yt-dlp` is the correct approach for runtime dependencies.
 - **Storage**: S3 with Transfer Acceleration ensures global performance for large media files.
 - **Database**: The shift to **Aurora DSQL** is a forward-looking choice, eliminating VPC management overhead while providing SQL relational capabilities that NoSQL solutions lack for complex user-file-device relationships.
 - **Messaging**: EventBridge -> SQS fan-out pattern for downloads is robust, handling retries and backpressure effectively.
@@ -62,7 +62,7 @@ Compared to top GitHub repositories for "serverless video downloader" and "aws l
 -   **Edge Optimization**: Move read-heavy, low-latency logic (like serving the file list) closer to the edge using CloudFront Functions or Lambda@Edge, caching the API responses.
 
 ### Phase 3: AI-Agent Capabilities (Medium Term)
--   **Agentic CI/CD**: Integrate the `validate:conventions` and `repomix` context packing directly into the GitHub Actions pipeline to automatically "groom" the codebase for AI contributors.
+-   **Agentic CI/CD**: Integrate the `check:conventions` and `repomix` context packing directly into the GitHub Actions pipeline to automatically "groom" the codebase for AI contributors.
 -   **Self-Healing**: Implement a "Codebase Doctor" agent that runs on a schedule to check for convention drift (using AST analysis) and auto-generates PRs to fix minor issues.
 
 ### Phase 4: Feature Expansion (Long Term)

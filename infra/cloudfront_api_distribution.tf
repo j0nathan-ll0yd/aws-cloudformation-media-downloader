@@ -1,0 +1,56 @@
+# CloudFront Function for API key promotion
+resource "aws_cloudfront_function" "api_key_promotion" {
+  name    = "${module.core.name_prefix}-ApiKeyPromotion"
+  runtime = "cloudfront-js-2.0"
+  comment = "Promotes ApiKey query parameter to x-api-key header"
+  publish = true
+  code    = file("${path.module}/cloudfront-functions/api-key-promotion.js")
+}
+
+# CloudFront Distribution for API Gateway
+resource "aws_cloudfront_distribution" "api" {
+  comment = "${module.core.name_prefix}-API"
+  origin {
+    domain_name = "${module.api.rest_api_id}.execute-api.${module.core.region}.amazonaws.com"
+    origin_path = "/${module.api.stage_name}"
+    origin_id   = "ApiGateway"
+    custom_origin_config {
+      origin_protocol_policy = "https-only"
+      origin_ssl_protocols   = ["TLSv1.2"]
+      http_port              = 80
+      https_port             = 443
+    }
+  }
+  enabled = true
+  default_cache_behavior {
+    function_association {
+      event_type   = "viewer-request"
+      function_arn = aws_cloudfront_function.api_key_promotion.arn
+    }
+    viewer_protocol_policy = "https-only"
+    allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    cached_methods         = ["GET", "HEAD"]
+    target_origin_id       = "ApiGateway"
+    forwarded_values {
+      query_string = true
+      headers      = ["X-API-Key", "Authorization", "User-Agent"]
+      cookies {
+        forward = "none"
+      }
+    }
+    default_ttl = 0
+    min_ttl     = 0
+    max_ttl     = 0
+  }
+  restrictions {
+    geo_restriction {
+      restriction_type = "whitelist"
+      locations        = ["US"]
+    }
+  }
+  viewer_certificate {
+    cloudfront_default_certificate = true
+  }
+
+  tags = module.core.common_tags
+}

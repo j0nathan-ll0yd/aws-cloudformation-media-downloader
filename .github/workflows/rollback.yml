@@ -21,6 +21,8 @@ env:
 
 jobs:
   rollback:
+    # TEMPORARILY DISABLED: Re-enable after AWS environment setup is complete
+    if: false
     name: Rollback ${{ inputs.environment }}
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
@@ -58,9 +60,7 @@ jobs:
       - uses: ./.github/actions/setup-homebrew-tools
 
       - name: Build
-        run: |
-          pnpm run build:dependencies
-          pnpm run build
+        run: pnpm run build
 
       - name: Setup OpenTofu
         uses: opentofu/setup-opentofu@v1
@@ -89,7 +89,7 @@ jobs:
           ./bin/build-bgutil-layer.sh
 
       - name: Rollback deployment
-        working-directory: terraform
+        working-directory: infra
         env:
           SOPS_AGE_KEY_FILE: /tmp/age-key.txt
         run: |

@@ -35,7 +35,6 @@ done
 
 Similarly check for:
 - New entities in `src/entities/`
-- New MCP handlers in `src/mcp/handlers/`
 - New utility modules in `util/`
 
 ### Step 2: Compare TSDoc with Wiki

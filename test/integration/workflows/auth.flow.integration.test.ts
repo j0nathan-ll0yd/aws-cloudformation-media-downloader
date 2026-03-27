@@ -7,7 +7,6 @@
 
 // Set environment variables BEFORE any imports
 // These must be set before Better Auth config is loaded
-process.env.USE_LOCALSTACK = 'true'
 process.env.AWS_REGION = 'us-west-2'
 process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
 
@@ -18,13 +17,16 @@ process.env.DEFAULT_FILE_URL = 'https://example.com/test-default-file.mp4'
 process.env.DEFAULT_FILE_CONTENT_TYPE = 'video/mp4'
 
 // Better Auth configuration
-process.env.BETTER_AUTH_SECRET = 'test-secret-key-for-better-auth-32-chars'
-process.env.APPLICATION_URL = 'https://api.example.com' // Used by getAuth() config
-process.env.SIGN_IN_WITH_APPLE_CONFIG = JSON.stringify({client_id: 'com.example.service', bundle_id: 'com.example.app'})
+process.env.AUTH_SECRET = 'test-secret-key-for-integration-tests-minimum-32-chars'
+process.env.AUTH_BASE_URL = 'http://localhost:3000' // Used by getAuth() config
+process.env.SIGN_IN_WITH_APPLE_CONFIG = JSON.stringify({client_id: 'com.example.service', bundle_id: 'lifegames.OfflineMediaDownloader'})
 
-import {afterAll, afterEach, beforeAll, describe, expect, test} from 'vitest'
+import {afterAll, afterEach, beforeAll, describe, expect, test, vi} from 'vitest'
 import type {Context} from 'aws-lambda'
 import {sql} from 'drizzle-orm'
+import {createObservabilityMock} from '@mantleframework/testing/lambda-mocks'
+
+vi.mock('@mantleframework/observability', () => createObservabilityMock())
 
 // Test helpers
 import {closeTestDb, createAllTables, getTestDbAsync, truncateAllTables} from '../helpers/postgres-helpers'
@@ -32,8 +34,8 @@ import {createMockContext} from '../helpers/lambda-context'
 import {generateAppleIdToken, startAppleJWKSMock, stopAppleJWKSMock} from '../helpers/apple-jwks-mock'
 import {createMockAPIGatewayProxyEvent} from '../helpers/test-data'
 
-const {handler: loginHandler} = await import('#lambdas/LoginUser/src/index')
-const {handler: registerHandler} = await import('#lambdas/RegisterUser/src/index')
+const {handler: loginHandler} = await import('#lambdas/api/user/login.post')
+const {handler: registerHandler} = await import('#lambdas/api/user/register.post')
 
 interface AuthRequestBody {
   idToken: string
@@ -86,7 +88,7 @@ describe('Auth Flow Integration Tests', () => {
       const idToken = generateAppleIdToken({
         sub: appleUserId,
         email: testEmail,
-        aud: 'com.example.app' // Must match bundle_id in config
+        aud: 'lifegames.OfflineMediaDownloader' // Must match bundle_id in config
       })
 
       const body: AuthRequestBody = {idToken}
@@ -114,10 +116,10 @@ describe('Auth Flow Integration Tests', () => {
       const users = await db.execute(sql`SELECT * FROM users WHERE email = ${testEmail}`)
       const userRows = [...users] as Array<{id: string; email: string}>
       expect(userRows).toHaveLength(1)
-      expect(userRows[0].email).toBe(testEmail)
+      expect(userRows[0]!.email).toBe(testEmail)
 
       // Verify session was created in database
-      const sessions = await db.execute(sql`SELECT * FROM sessions WHERE user_id = ${userRows[0].id}`)
+      const sessions = await db.execute(sql`SELECT * FROM sessions WHERE user_id = ${userRows[0]!.id}`)
       const sessionRows = [...sessions] as Array<{id: string; user_id: string; token: string}>
       expect(sessionRows.length).toBeGreaterThanOrEqual(1)
     })
@@ -147,7 +149,7 @@ describe('Auth Flow Integration Tests', () => {
       const appleUserId = 'apple-new-user-' + Date.now()
       const testEmail = `newuser-${Date.now()}@example.com`
 
-      const idToken = generateAppleIdToken({sub: appleUserId, email: testEmail, aud: 'com.example.app'})
+      const idToken = generateAppleIdToken({sub: appleUserId, email: testEmail, aud: 'lifegames.OfflineMediaDownloader'})
 
       const body: AuthRequestBody = {idToken, firstName: 'John', lastName: 'Doe'}
       const event = createAuthEvent(body, '/auth/register')
@@ -165,14 +167,14 @@ describe('Auth Flow Integration Tests', () => {
       const users = await db.execute(sql`SELECT * FROM users WHERE email = ${testEmail}`)
       const userRows = [...users] as Array<{id: string; email: string; first_name: string | null; last_name: string | null}>
       expect(userRows).toHaveLength(1)
-      expect(userRows[0].first_name).toBe('John')
-      expect(userRows[0].last_name).toBe('Doe')
+      expect(userRows[0]!.first_name).toBe('John')
+      expect(userRows[0]!.last_name).toBe('Doe')
 
       // Verify account was created (Better Auth creates this for OAuth)
-      const accounts = await db.execute(sql`SELECT * FROM accounts WHERE user_id = ${userRows[0].id}`)
+      const accounts = await db.execute(sql`SELECT * FROM accounts WHERE user_id = ${userRows[0]!.id}`)
       const accountRows = [...accounts] as Array<{id: string; provider_id: string}>
       expect(accountRows.length).toBeGreaterThanOrEqual(1)
-      expect(accountRows[0].provider_id).toBe('apple')
+      expect(accountRows[0]!.provider_id).toBe('apple')
     })
 
     test('should not update name for existing user', async () => {
@@ -180,7 +182,7 @@ describe('Auth Flow Integration Tests', () => {
       const appleUserId = 'apple-existing-' + Date.now()
       const testEmail = `existing-${Date.now()}@example.com`
 
-      const idToken = generateAppleIdToken({sub: appleUserId, email: testEmail, aud: 'com.example.app'})
+      const idToken = generateAppleIdToken({sub: appleUserId, email: testEmail, aud: 'lifegames.OfflineMediaDownloader'})
 
       // First registration - sets the name
       const firstBody: AuthRequestBody = {idToken, firstName: 'Original', lastName: 'Name'}
@@ -203,15 +205,15 @@ describe('Auth Flow Integration Tests', () => {
       // Verify name was NOT updated (reusing db from earlier in test)
       const users = await db.execute(sql`SELECT * FROM users WHERE email = ${testEmail}`)
       const userRows = [...users] as Array<{first_name: string | null; last_name: string | null}>
-      expect(userRows[0].first_name).toBe('Original')
-      expect(userRows[0].last_name).toBe('Name')
+      expect(userRows[0]!.first_name).toBe('Original')
+      expect(userRows[0]!.last_name).toBe('Name')
     })
 
     test('should allow registration without optional name fields', async () => {
       const appleUserId = 'apple-noname-' + Date.now()
       const testEmail = `noname-${Date.now()}@example.com`
 
-      const idToken = generateAppleIdToken({sub: appleUserId, email: testEmail, aud: 'com.example.app'})
+      const idToken = generateAppleIdToken({sub: appleUserId, email: testEmail, aud: 'lifegames.OfflineMediaDownloader'})
 
       // Register without firstName/lastName
       const body: AuthRequestBody = {idToken}
@@ -252,7 +254,7 @@ describe('Auth Flow Integration Tests', () => {
       const appleUserId = 'apple-headers-' + Date.now()
       const testEmail = `headers-${Date.now()}@example.com`
 
-      const idToken = generateAppleIdToken({sub: appleUserId, email: testEmail, aud: 'com.example.app'})
+      const idToken = generateAppleIdToken({sub: appleUserId, email: testEmail, aud: 'lifegames.OfflineMediaDownloader'})
 
       const body: AuthRequestBody = {idToken}
       const event = createAuthEvent(body, '/auth/login')
@@ -274,7 +276,7 @@ describe('Auth Flow Integration Tests', () => {
       const appleUserId = 'apple-expiry-' + Date.now()
       const testEmail = `expiry-${Date.now()}@example.com`
 
-      const idToken = generateAppleIdToken({sub: appleUserId, email: testEmail, aud: 'com.example.app'})
+      const idToken = generateAppleIdToken({sub: appleUserId, email: testEmail, aud: 'lifegames.OfflineMediaDownloader'})
 
       const body: AuthRequestBody = {idToken}
       const event = createAuthEvent(body, '/auth/login')

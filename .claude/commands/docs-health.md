@@ -44,7 +44,7 @@ fi
 
 ```bash
 # Verify terraform-docs output is current
-cd terraform
+cd infra
 terraform-docs markdown . > /tmp/tf-docs-current.md
 diff -q /tmp/tf-docs-current.md README.md || echo "WARNING: Terraform docs outdated"
 ```
@@ -86,7 +86,6 @@ Verify all documented conventions have corresponding wiki pages.
 Cross-reference AGENTS.md with actual codebase:
 - Lambda list matches `src/lambdas/`
 - Entity list matches `src/entities/`
-- MCP tools match `src/mcp/handlers/`
 
 ---
 
@@ -227,7 +226,7 @@ on:
     paths:
       - 'docs/**'
       - 'src/**/*.ts'
-      - 'terraform/*.tf'
+      - 'infra/*.tf'
 
 jobs:
   check:
@@ -242,7 +241,7 @@ jobs:
 
       - name: Check Terraform Docs
         run: |
-          cd terraform
+          cd infra
           terraform-docs markdown . > /tmp/tf-docs.md
           diff -q /tmp/tf-docs.md README.md
 

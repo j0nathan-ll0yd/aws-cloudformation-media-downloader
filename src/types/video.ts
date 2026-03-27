@@ -7,6 +7,7 @@
  * @see src/lib/vendor/YouTube.ts - YouTube/yt-dlp integration
  */
 
+import type {Result} from '@mantleframework/core'
 import type {BaseErrorClassification} from './errorClassification'
 import type {YtDlpVideoInfo} from './youtube'
 
@@ -43,11 +44,14 @@ export interface SchedulingVideoInfo {
 }
 
 /**
+ * Error details for a failed video info fetch
+ */
+export interface VideoInfoError {
+  error: Error
+  isCookieError: boolean
+}
+
+/**
  * Result of fetching video info - either success with info or failure with error details
  */
-export interface FetchVideoInfoResult {
-  success: boolean
-  info?: YtDlpVideoInfo
-  error?: Error
-  isCookieError?: boolean
-}
+export type FetchVideoInfoResult = Result<YtDlpVideoInfo, VideoInfoError>

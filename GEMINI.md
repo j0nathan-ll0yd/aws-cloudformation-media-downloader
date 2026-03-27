@@ -8,6 +8,6 @@ Please see AGENTS.md in the repository root for comprehensive project documentat
 
 - **Conventions**: `docs/wiki/` (Source of Truth) & `docs/wiki/Meta/Conventions-Tracking.md` (Recent)
 - **Pack Context**: `pnpm run pack:context` (Updates `repomix-output.xml`)
-- **Validate**: `pnpm run validate:conventions` (Checks against rules)
+- **Validate**: `pnpm run check:conventions` (Checks against rules)
 - **Test**: `pnpm run test` (Unit)
 - **Check**: `pnpm run precheck` (Lint + Type Check)

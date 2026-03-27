@@ -1,5 +1,6 @@
 .DS_Store
 .env
+.envrc
 .idea
 .omc
 .nyc_output
@@ -21,19 +22,20 @@ secrets.prod.yaml
 secrets.enc.yaml
 youtube-cookies.txt
 cloudformation.json
-src/types/infrastructure.d.ts
-terraform/tfplan
-terraform/terraform.tfstate*
-terraform/.terraform.tfstate.lock.info
-terraform/.terraform.lock.hcl
-terraform/.terraform
+
+terraform/
+infra/.terraform/
+infra/.terraform.lock.hcl
+infra/.terraform.tfstate.lock.info
 .webpackCache
 .python-version
 layers/yt-dlp/bin/ffmpeg
 layers/yt-dlp/cookies
 layers/ffmpeg/bin/ffmpeg
+layers/quickjs/bin/qjs
 layers/bgutil/build/
 layers/bgutil/bgutil-layer.zip
+layers/deno/build/
 
 # Playwright browser state (contains session data)
 playwright-state/

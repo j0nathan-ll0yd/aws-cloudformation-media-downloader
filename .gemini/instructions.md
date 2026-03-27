@@ -35,7 +35,7 @@ vi.mock('#entities/queries', () => ({
 
 ```bash
 pnpm run precheck           # TypeScript + ESLint (run before commits)
-pnpm run validate:conventions  # AST-based convention checks
+pnpm run check:conventions  # AST-based convention checks
 pnpm run test               # Run unit tests
 pnpm run format             # Auto-format with dprint
 pnpm run ci:local           # Fast local CI (~2-3 min)

@@ -23,7 +23,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-TERRAFORM_DIR="${PROJECT_ROOT}/terraform"
+TERRAFORM_DIR="${PROJECT_ROOT}/infra"
 
 # Colors
 RED='\033[0;31m'
@@ -183,7 +183,7 @@ main() {
       echo ""
 
       echo "Run the following for details:"
-      echo "  cd terraform && tofu workspace select ${WORKSPACE} && tofu plan -var-file=${TFVARS_FILE}"
+      echo "  cd infra && tofu workspace select ${WORKSPACE} && tofu plan -var-file=${TFVARS_FILE}"
       echo ""
       echo "Or deploy to reconcile:"
       echo "  pnpm run deploy:${ENVIRONMENT}"

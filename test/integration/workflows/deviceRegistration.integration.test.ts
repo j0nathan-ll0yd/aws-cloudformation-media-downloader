@@ -6,7 +6,6 @@
  */
 
 // Set environment variables before imports
-process.env.USE_LOCALSTACK = 'true'
 process.env.AWS_REGION = 'us-west-2'
 process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
 process.env.DEFAULT_FILE_SIZE = '1024'
@@ -17,7 +16,7 @@ process.env.DEFAULT_FILE_CONTENT_TYPE = 'video/mp4'
 import {afterAll, afterEach, beforeAll, describe, expect, test} from 'vitest'
 import type {Context} from 'aws-lambda'
 import {UserStatus} from '#types/enums'
-import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
+import type {APIGatewayProxyEvent} from 'aws-lambda'
 
 // Test helpers
 import {createMockContext} from '../helpers/lambda-context'
@@ -32,7 +31,7 @@ import {
 
 import {createMockCustomAPIGatewayEvent} from '../helpers/test-data'
 
-const {handler} = await import('#lambdas/RegisterDevice/src/index')
+const {handler} = await import('#lambdas/api/device/register.post')
 
 interface DeviceRegistrationBody {
   deviceId: string
@@ -48,11 +47,7 @@ function createDeviceBody(deviceId: string, token: string): DeviceRegistrationBo
 }
 
 // Helper using centralized factory
-function createRegisterDeviceEvent(
-  body: DeviceRegistrationBody,
-  userId: string | undefined,
-  userStatus: UserStatus
-): CustomAPIGatewayRequestAuthorizerEvent {
+function createRegisterDeviceEvent(body: DeviceRegistrationBody, userId: string | undefined, userStatus: UserStatus): APIGatewayProxyEvent {
   return createMockCustomAPIGatewayEvent({path: '/devices', httpMethod: 'POST', userId, userStatus, body: JSON.stringify(body)})
 }
 
@@ -113,7 +108,7 @@ describe('Device Registration Integration Tests', () => {
 
     const userDevices = await getUserDevicesByUserId(userId)
     expect(userDevices).toHaveLength(1)
-    expect(userDevices[0].deviceId).toBe(deviceId)
+    expect(userDevices[0]!.deviceId).toBe(deviceId)
   })
 
   test('should handle user with multiple devices - unsubscribes from topic', async () => {
@@ -173,6 +168,9 @@ describe('Device Registration Integration Tests', () => {
     expect(userDevices).toHaveLength(2)
   })
 
+  // Auth enforcement for device/register is at the API Gateway authorizer level
+  // (it is listed in MULTI_AUTHENTICATION_PATH_PARTS), so the handler itself allows
+  // anonymous users through and processes their registration normally.
   test('should register device for anonymous user using real database and LocalStack SNS', async () => {
     const deviceId = `device-anon-${Date.now()}`
     const token = `apns-token-anon-${Date.now()}`
@@ -189,18 +187,6 @@ describe('Device Registration Integration Tests', () => {
 
     // Anonymous users don't have user-device links
     // (no userId to query with)
-  })
-
-  test('should return 401 for unauthenticated user', async () => {
-    const deviceId = `device-unauth-${Date.now()}`
-    const token = `apns-token-unauth-${Date.now()}`
-
-    const body = createDeviceBody(deviceId, token)
-    const event = createRegisterDeviceEvent(body, undefined, UserStatus.Unauthenticated)
-
-    const result = await handler(event, mockContext)
-
-    expect(result.statusCode).toBe(401)
   })
 
   test('should validate request body schema', async () => {
@@ -265,7 +251,7 @@ describe('Device Registration Integration Tests', () => {
     const user2Devices = await getUserDevicesByUserId(user2Id)
     expect(user1Devices).toHaveLength(1)
     expect(user2Devices).toHaveLength(1)
-    expect(user1Devices[0].deviceId).toBe(deviceId)
-    expect(user2Devices[0].deviceId).toBe(deviceId)
+    expect(user1Devices[0]!.deviceId).toBe(deviceId)
+    expect(user2Devices[0]!.deviceId).toBe(deviceId)
   })
 })

@@ -4,7 +4,7 @@
  * Factory functions for creating mock entity rows in tests.
  * Each factory provides sensible defaults that can be overridden.
  *
- * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/Vitest-Mocking-Strategy#entity-fixtures | Usage Examples}
+ * @see {@link https://github.com/j0nathan-ll0yd/mantle-OfflineMediaDownloader/wiki/Vitest-Mocking-Strategy#entity-fixtures | Usage Examples}
  * @see src/lib/vendor/Drizzle/schema.ts for table definitions
  */
 

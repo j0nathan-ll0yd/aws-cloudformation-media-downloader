@@ -29,7 +29,7 @@ AWS Serverless media downloader service built with OpenTofu and TypeScript. Down
 
 ### Architecture
 - **Infrastructure**: OpenTofu (IaC)
-- **Runtime**: AWS Lambda (Node.js 22.x)
+- **Runtime**: AWS Lambda (Node.js 24.x)
 - **Language**: TypeScript
 - **Storage**: Amazon S3
 - **API**: AWS API Gateway with custom authorizer
@@ -40,7 +40,7 @@ AWS Serverless media downloader service built with OpenTofu and TypeScript. Down
 ### Project Structure
 ```
 .
-├── terraform/             # AWS Infrastructure definitions (OpenTofu)
+├── infra/                 # AWS Infrastructure definitions (OpenTofu)
 ├── src/
 │   ├── entities/          # Entity query functions (Drizzle ORM with Aurora DSQL)
 │   │   └── queries/       # Native Drizzle query modules
@@ -111,9 +111,9 @@ cat build/graph.json | jq '.files | keys[] | select(contains("src/lambdas") and 
 cat build/graph.json | jq '.files | to_entries | map({file: .key, importCount: (.value.imports | length)}) | sort_by(.importCount) | reverse[:10]'
 ```
 
-### Keeping MCP & GraphRAG in Sync
+### Keeping GraphRAG in Sync
 
-The MCP server (`src/mcp/`) and GraphRAG (`graphrag/`) use shared data sources for accuracy:
+The GraphRAG system (`graphrag/`) uses shared data sources for accuracy:
 
 | Data Source | Purpose | Auto-Updated |
 |-------------|---------|--------------|
@@ -251,8 +251,8 @@ Queued | Downloading | Downloaded | Failed
 ```bash
 pnpm run precheck              # Type check + lint (run before commits)
 pnpm run test                  # Unit tests
-pnpm run validate:conventions  # MCP rule validation
-pnpm run ci:local              # Full local CI
+pnpm run check:conventions  # MCP rule validation
+npx mantle ci                  # Full local CI
 ```
 
 ### Deployment Commands
@@ -276,7 +276,7 @@ pnpm run plan:production         # Preview production changes
 ```
 
 ### Pre-Commit Checklist
-1. `pnpm run validate:conventions` - No rule violations
+1. `pnpm run check:conventions` - No rule violations
 2. `pnpm run precheck` - TypeScript + ESLint clean
 3. `pnpm run test` - All tests pass
 4. Verify NO AI references in commit message
@@ -355,6 +355,21 @@ See `package.json` for complete command list (cleanup, integration tests, deploy
 
 ---
 
+## Mantle Spec Conformance — Acknowledged Exceptions
+
+This project passes all Mantle spec checks (C1–C21) with three documented exceptions:
+
+### C6: MigrateDSQL dynamic env var substitution
+`src/lambdas/standalone/MigrateDSQL/index.ts:44` uses `process.env[varName]` for dynamic variable substitution in SQL migration files. This is intentional because the variable name is not known at compile time (comes from `${VAR_NAME}` patterns in SQL files), and `getOptionalEnv`/`getRequiredEnv` require a static string key. The eslint-disable comment documents the reason. The access is inside a function body (not module-level).
+
+### C9: buildErrorResponse handled by defineApiHandler
+`buildErrorResponse()` is not called directly in application code. This is not a violation — `defineApiHandler` (from `@mantleframework/validation`) calls `buildErrorResponse` internally at its catch boundary. All API handlers use `defineApiHandler`, so errors are formatted through `buildErrorResponse` automatically.
+
+### C20: x86_64 for StartFileUpload
+`infra/lambda_start_file_upload.tf` sets `architecture = "x86_64"`. This is intentional — the Lambda uses yt-dlp which requires a native x86_64 Linux binary distributed in a Lambda layer. The `.tf` file is CLI-generated (has header comment), configured via `mantle.config.ts`.
+
+---
+
 ## Changelog
 
 Track major changes to AI agent configuration.
@@ -383,7 +398,7 @@ When making significant changes to AGENTS.md:
 3. Update `.gemini/instructions.md` if critical rules changed
 4. Update `.cursorrules` if patterns changed
 5. Update `.github/copilot-instructions.md` if patterns changed
-6. Run `pnpm run validate:conventions` to verify consistency
+6. Run `pnpm run check:conventions` to verify consistency
 
 ### Version Compatibility
 

@@ -6,7 +6,6 @@
  */
 
 // Set environment variables before imports
-process.env.USE_LOCALSTACK = 'true'
 process.env.AWS_REGION = 'us-west-2'
 process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
 
@@ -18,7 +17,7 @@ import {closeTestDb, createAllTables, getSessionById, getTestDbAsync, insertSess
 import {createMockContext} from '../helpers/lambda-context'
 import {createMockAPIGatewayProxyEvent} from '../helpers/test-data'
 
-const {handler} = await import('#lambdas/LogoutUser/src/index')
+const {handler} = await import('#lambdas/api/user/logout.post')
 
 describe('LogoutUser Workflow Integration Tests', () => {
   let mockContext: Context

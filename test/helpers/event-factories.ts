@@ -4,7 +4,7 @@
  * Provides composable, type-safe factories for AWS Lambda events.
  * Replaces JSON fixture imports with programmatic event creation.
  *
- * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/Vitest-Mocking-Strategy#typed-event-factories | Usage Examples}
+ * @see {@link https://github.com/j0nathan-ll0yd/mantle-OfflineMediaDownloader/wiki/Vitest-Mocking-Strategy#typed-event-factories | Usage Examples}
  * @see test/integration/helpers/test-data.ts for integration test factories
  */
 

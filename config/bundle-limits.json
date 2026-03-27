@@ -4,25 +4,24 @@
   "globalLimit": 5242880,
   "warningThreshold": 0.9,
   "notes": {
-    "PruneDevices": "At 91.5% capacity (2026-01). Monitor growth. If near limit, profile with 'pnpm run analyze'."
+    "2026-03": "Limits increased for Mantle framework migration — observability/core imports add ~1MB to most bundles."
   },
   "limits": {
-    "ApiGatewayAuthorizer": 1048576,
-    "CleanupExpiredRecords": 1048576,
-    "CloudfrontMiddleware": 524288,
-    "DeviceEvent": 1048576,
+    "ApiGatewayAuthorizer": 2097152,
+    "CleanupExpiredRecords": 1153434,
+    "DeviceEvent": 1572864,
     "ListFiles": 1048576,
     "LoginUser": 2097152,
     "MigrateDSQL": 2097152,
-    "PruneDevices": 1153434,
+    "PruneDevices": 2831155,
     "RefreshToken": 1048576,
     "RegisterDevice": 1048576,
     "RegisterUser": 2097152,
-    "S3ObjectCreated": 1048576,
-    "SendPushNotification": 1048576,
+    "S3ObjectCreated": 2097152,
+    "SendPushNotification": 2097152,
     "StartFileUpload": 3145728,
-    "UserDelete": 1048576,
-    "UserSubscribe": 1048576,
+    "UserDelete": 2359296,
+    "UserSubscribe": 1572864,
     "WebhookFeedly": 2097152
   }
 }

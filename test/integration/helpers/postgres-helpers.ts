@@ -4,21 +4,17 @@
  * Utilities for setting up and querying test data in PostgreSQL
  * for Drizzle/Aurora DSQL integration tests.
  *
- * Each Jest worker gets its own PostgreSQL schema for complete isolation
- * during parallel test execution. Schema is determined by JEST_WORKER_ID.
- *
- * Requires: docker-compose -f docker-compose.test.yml up -d
+ * Each Vitest worker gets its own PostgreSQL schema for complete isolation
+ * during parallel test execution. Schema is determined by VITEST_POOL_ID.
  */
 
 import {drizzle} from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import {eq, sql} from 'drizzle-orm'
-import {devices, files, userDevices, userFiles, users} from '#lib/vendor/Drizzle/schema'
+import {devices, files, userDevices, userFiles, users} from '#db/schema'
 import type {Device, File, User} from '#types/domainModels'
 import {FileStatus} from '#types/enums'
 import {createMockDevice, createMockFile, createMockUser} from './test-data'
-import {waitFor} from './wait-utils'
-import {POLLING, TIMEOUTS} from './timeout-config'
 
 // Test database connection configuration
 const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
@@ -140,30 +136,43 @@ export async function createAllTables(): Promise<void> {
   const db = getTestDb()
   const schema = getWorkerSchema()
 
-  // Wait for schema to be available (handles race conditions with globalSetup)
-  // Uses exponential backoff with jitter for resilient waiting in CI
-  await waitFor(async () => {
-    const result = await db.execute(sql.raw(`
-        SELECT EXISTS (
-          SELECT 1 FROM information_schema.tables
-          WHERE table_schema = '${schema}' AND table_name = 'users'
-        ) as exists
-      `))
+  // Verify schema exists — globalSetup should have created it before any workers start.
+  // If this fails, it indicates a real configuration error, not a timing issue.
+  const schemaCheck = await db.execute(sql.raw(`
+    SELECT EXISTS (
+      SELECT 1 FROM information_schema.tables
+      WHERE table_schema = '${schema}' AND table_name = 'users'
+    ) as exists
+  `))
 
-    const rows = [...result] as Array<{exists: boolean}>
-    if (rows[0]?.exists) {
-      // Schema and tables exist, set search_path and return
-      await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
-      return true
-    }
-    return null
-  }, {
-    initialDelayMs: POLLING.initialDelay,
-    maxDelayMs: POLLING.maxDelay,
-    maxTotalMs: TIMEOUTS.schemaCreation,
-    jitterFactor: POLLING.jitterFactor,
-    description: `schema '${schema}' to be ready`
-  })
+  const rows = [...schemaCheck] as Array<{exists: boolean}>
+  if (!rows[0]?.exists) {
+    // Schema tables not found — gather diagnostics
+    const allSchemas = await db.execute(
+      sql.raw(`SELECT schema_name FROM information_schema.schemata WHERE schema_name LIKE '%worker%' ORDER BY schema_name`)
+    )
+    const schemaNames = [...allSchemas].map((r: Record<string, unknown>) => r.schema_name)
+
+    // Check what tables DO exist in this schema
+    const tablesInSchema = await db.execute(sql.raw(`SELECT table_name FROM information_schema.tables WHERE table_schema = '${schema}' ORDER BY table_name`))
+    const tableNames = [...tablesInSchema].map((r: Record<string, unknown>) => r.table_name)
+
+    // Check current search_path and connection state
+    const connCheck = await db.execute(sql.raw(`SELECT current_database(), current_user, current_schema(), current_setting('search_path') as search_path`))
+    const connInfo = [...connCheck][0] as Record<string, unknown> | undefined
+
+    throw new Error(
+      `[createAllTables] Table 'users' not found in schema '${schema}'. ` +
+        `Tables in schema: [${tableNames.join(', ') || 'NONE'}]. ` +
+        `Worker schemas exist: [${schemaNames.join(', ')}]. ` +
+        `Connection: db=${connInfo?.current_database}, user=${connInfo?.current_user}, ` +
+        `schema=${connInfo?.current_schema}, search_path=${connInfo?.search_path}. ` +
+        `VITEST_POOL_ID=${process.env.VITEST_POOL_ID}, GITHUB_RUN_ID=${process.env.GITHUB_RUN_ID}`
+    )
+  }
+
+  // Schema exists — set search_path
+  await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
 }
 
 /**
@@ -745,7 +754,7 @@ export async function getSessionByToken(token: string): Promise<{id: string; use
   if (rows.length === 0) {
     return null
   }
-  const row = rows[0]
+  const row = rows[0]!
   return {id: row.id, userId: row.user_id, expiresAt: new Date(row.expires_at), updatedAt: new Date(row.updated_at)}
 }
 
@@ -762,7 +771,7 @@ export async function getSessionById(sessionId: string): Promise<{id: string; us
   if (rows.length === 0) {
     return null
   }
-  const row = rows[0]
+  const row = rows[0]!
   return {id: row.id, userId: row.user_id, token: row.token, expiresAt: new Date(row.expires_at), updatedAt: new Date(row.updated_at)}
 }
 

@@ -14,7 +14,6 @@
  */
 
 // Set environment variables before imports
-process.env.USE_LOCALSTACK = 'true'
 process.env.AWS_REGION = 'us-west-2'
 process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
 
@@ -95,7 +94,7 @@ describe('Event Chain E2E Integration Tests', () => {
       expect(messages.length).toBe(1)
 
       // Verify message structure
-      const message = messages[0]
+      const message = messages[0]!
       expect(message.Body).toBeDefined()
 
       const body = JSON.parse(message.Body!)
@@ -139,7 +138,7 @@ describe('Event Chain E2E Integration Tests', () => {
       const messages = await waitForMessages(queueUrl, 1, TIMEOUTS.sqsMessage)
       expect(messages.length).toBe(1)
 
-      const body = JSON.parse(messages[0].Body!)
+      const body = JSON.parse(messages[0]!.Body!)
       expect(body.detail.correlationId).toBe(correlationId)
     })
   })
@@ -192,7 +191,7 @@ describe('Event Chain E2E Integration Tests', () => {
       expect(messages.length).toBe(1)
 
       // 4. Verify message contains correct file data
-      const body = JSON.parse(messages[0].Body!)
+      const body = JSON.parse(messages[0]!.Body!)
       expect(body.detail.fileId).toBe(fileId)
       expect(body.detail.fileUrl).toBe(fileUrl)
       expect(body.detail.correlationId).toBe(correlationId)
@@ -223,7 +222,7 @@ describe('Event Chain E2E Integration Tests', () => {
       const messages = await waitForMessages(queueUrl, 1, TIMEOUTS.sqsMessage)
       expect(messages.length).toBe(1)
 
-      const body = JSON.parse(messages[0].Body!)
+      const body = JSON.parse(messages[0]!.Body!)
       expect(body.detail.correlationId).toBe(correlationId)
 
       // 4. Verify database state is ready for processing

@@ -19,7 +19,7 @@ export async function createZipBuffer(files: Record<string, string>): Promise<Ui
     throw new Error('createZipBuffer currently only supports single file')
   }
 
-  const [filename, content] = entries[0]
+  const [filename, content] = entries[0]!
 
   // Create a valid ZIP file structure
   // ZIP file format: local file header + data + central directory + end of central directory
@@ -97,7 +97,7 @@ function crc32(data: Buffer): number {
   const table = getCrc32Table()
 
   for (let i = 0; i < data.length; i++) {
-    crc = (crc >>> 8) ^ table[(crc ^ data[i]) & 0xff]
+    crc = (crc >>> 8) ^ table[(crc ^ data[i]!) & 0xff]!
   }
 
   return (crc ^ 0xffffffff) >>> 0

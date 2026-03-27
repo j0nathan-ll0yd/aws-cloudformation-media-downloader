@@ -12,26 +12,57 @@ export default defineConfig({
   test: {
     globals: false,
     environment: 'node',
-    include: ['**/*.test.ts', '**/*.spec.ts'],
+    include: ['test/**/*.test.ts'],
     exclude: ['node_modules/**', 'dist/**', 'build/**', 'test/integration/**', 'layers/**'],
     clearMocks: true,
     testTimeout: 10000,
     pool: 'threads',
     maxWorkers,
+    env: {
+      ENVIRONMENT: 'test',
+      METRICS_NAMESPACE: 'MediaDownloaderTest'
+    },
     coverage: {
       enabled: true,
       include: ['src/**/*.ts'],
-      exclude: ['src/**/*.test.ts', 'src/**/test/**', 'src/mcp/**', '**/*.json'],
-      provider: 'custom',
-      customProviderModule: 'vitest-monocart-coverage',
+      exclude: ['src/**/*.test.ts', 'src/**/test/**', '**/*.json'],
+      provider: 'v8',
       reportsDirectory: './coverage/unit'
     },
+    resolve: {
+      alias: {
+        '#entities': resolve(__dirname, 'src/entities'),
+        '#db': resolve(__dirname, 'src/db'),
+        '#domain': resolve(__dirname, 'src/domain'),
+        '#services': resolve(__dirname, 'src/services'),
+        '#integrations': resolve(__dirname, 'src/integrations'),
+        '#errors': resolve(__dirname, 'src/errors'),
+        '#utils': resolve(__dirname, 'src/utils'),
+        '#lib': resolve(__dirname, 'src/lib'),
+        '#util': resolve(__dirname, 'src/util'),
+        '#config': resolve(__dirname, 'src/config'),
+        '#types': resolve(__dirname, 'src/types'),
+        '#test': resolve(__dirname, 'test'),
+        '#lambdas': resolve(__dirname, 'src/lambdas')
+      },
+      dedupe: [
+        '@mantleframework/core',
+        '@mantleframework/aws',
+        '@mantleframework/database',
+        '@mantleframework/errors',
+        '@mantleframework/env',
+        '@mantleframework/observability',
+        '@mantleframework/resilience',
+        '@mantleframework/validation',
+        '@mantleframework/auth',
+        '@mantleframework/security',
+        'drizzle-orm',
+        'zod'
+      ]
+    },
     alias: {
-      '#entities': resolve(__dirname, 'src/entities'),
-      '#lib': resolve(__dirname, 'src/lib'),
-      '#util': resolve(__dirname, 'src/util'),
-      '#types': resolve(__dirname, 'src/types'),
-      '#test': resolve(__dirname, 'test')
+      'drizzle-orm': resolve(__dirname, 'node_modules/@mantleframework/database/node_modules/drizzle-orm'),
+      'zod': resolve(__dirname, 'node_modules/@mantleframework/validation/node_modules/zod')
     },
     setupFiles: ['./test/setup.ts'],
     silent: process.env.LOG_LEVEL === 'SILENT'

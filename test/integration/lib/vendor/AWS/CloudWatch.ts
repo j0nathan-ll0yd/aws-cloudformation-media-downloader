@@ -13,7 +13,14 @@ import {
   PutLogEventsCommand
 } from '@aws-sdk/client-cloudwatch-logs'
 import type {InputLogEvent, OutputLogEvent} from '@aws-sdk/client-cloudwatch-logs'
-import {createCloudWatchLogsClient} from '#lib/vendor/AWS/clients'
+import {CloudWatchLogsClient} from '@aws-sdk/client-cloudwatch-logs'
+
+const USE_LOCALSTACK = process.env.USE_LOCALSTACK === 'true'
+const LOCALSTACK_ENDPOINT = process.env.LOCALSTACK_ENDPOINT || 'http://localhost:4566'
+
+function createCloudWatchLogsClient(): CloudWatchLogsClient {
+  return new CloudWatchLogsClient(USE_LOCALSTACK ? {endpoint: LOCALSTACK_ENDPOINT, region: 'us-east-1'} : {})
+}
 
 const logsClient = createCloudWatchLogsClient()
 

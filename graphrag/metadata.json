@@ -2,75 +2,71 @@
   "$schema": "./metadata.schema.json",
   "description": "Semantic metadata for GraphRAG including Lambda triggers, API contracts, and entity relationships",
   "lambdas": {
-    "ApiGatewayAuthorizer": {
-      "trigger": "API Gateway",
-      "purpose": "Authorize API requests via Better Auth sessions"
-    },
-    "CloudfrontMiddleware": {
-      "trigger": "CloudFront",
-      "purpose": "Edge processing for CDN requests"
-    },
-    "ListFiles": {
-      "trigger": "API Gateway",
-      "purpose": "List files available to authenticated user"
-    },
-    "DeviceEvent": {
+    "api/device/event": {
       "trigger": "API Gateway",
       "purpose": "Log client-side events for analytics"
     },
-    "LoginUser": {
-      "trigger": "API Gateway",
-      "purpose": "Authenticate user via Sign In With Apple"
-    },
-    "PruneDevices": {
-      "trigger": "CloudWatch Events",
-      "purpose": "Scheduled cleanup of inactive devices"
-    },
-    "RefreshToken": {
-      "trigger": "API Gateway",
-      "purpose": "Refresh authentication token"
-    },
-    "LogoutUser": {
-      "trigger": "API Gateway",
-      "purpose": "Invalidate user session and log out"
-    },
-    "RegisterDevice": {
+    "api/device/register": {
       "trigger": "API Gateway",
       "purpose": "Register iOS device for push notifications"
     },
-    "RegisterUser": {
-      "trigger": "API Gateway",
-      "purpose": "Register new user via Sign In With Apple"
-    },
-    "S3ObjectCreated": {
-      "trigger": "S3 Event",
-      "purpose": "Handle uploaded files and notify users"
-    },
-    "SendPushNotification": {
-      "trigger": "SQS",
-      "purpose": "Send push notification to user devices via APNS"
-    },
-    "StartFileUpload": {
-      "trigger": "SQS",
-      "purpose": "Download video from YouTube to S3 (event-driven via DownloadQueue)"
-    },
-    "UserDelete": {
-      "trigger": "API Gateway",
-      "purpose": "Delete user and cascade to related records"
-    },
-    "UserSubscribe": {
-      "trigger": "API Gateway",
-      "purpose": "Manage user topic subscriptions"
-    },
-    "WebhookFeedly": {
+    "api/feedly/webhook": {
       "trigger": "API Gateway",
       "purpose": "Process Feedly webhooks, publish DownloadRequested events to EventBridge"
     },
-    "CleanupExpiredRecords": {
+    "api/files/index": {
+      "trigger": "API Gateway",
+      "purpose": "List files available to authenticated user"
+    },
+    "api/user/index": {
+      "trigger": "API Gateway",
+      "purpose": "Delete user and cascade to related records"
+    },
+    "api/user/login": {
+      "trigger": "API Gateway",
+      "purpose": "Authenticate user via Sign In With Apple"
+    },
+    "api/user/logout": {
+      "trigger": "API Gateway",
+      "purpose": "Invalidate user session and log out"
+    },
+    "api/user/refresh": {
+      "trigger": "API Gateway",
+      "purpose": "Refresh authentication token"
+    },
+    "api/user/register": {
+      "trigger": "API Gateway",
+      "purpose": "Register new user via Sign In With Apple"
+    },
+    "api/user/subscribe": {
+      "trigger": "API Gateway",
+      "purpose": "Manage user topic subscriptions"
+    },
+    "s3/S3ObjectCreated": {
+      "trigger": "S3 Event",
+      "purpose": "Handle uploaded files and notify users"
+    },
+    "scheduled/CleanupExpiredRecords": {
       "trigger": "CloudWatch Events",
       "purpose": "Scheduled cleanup of expired FileDownloads, Sessions, and VerificationTokens"
     },
-    "MigrateDSQL": {
+    "scheduled/PruneDevices": {
+      "trigger": "CloudWatch Events",
+      "purpose": "Scheduled cleanup of inactive devices"
+    },
+    "sqs/SendPushNotification": {
+      "trigger": "SQS",
+      "purpose": "Send push notification to user devices via APNS"
+    },
+    "sqs/StartFileUpload": {
+      "trigger": "SQS",
+      "purpose": "Download video from YouTube to S3 (event-driven via DownloadQueue)"
+    },
+    "standalone/ApiGatewayAuthorizer": {
+      "trigger": "API Gateway",
+      "purpose": "Authorize API requests via Better Auth sessions"
+    },
+    "standalone/MigrateDSQL": {
       "trigger": "Manual",
       "purpose": "Apply Drizzle ORM migrations to Aurora DSQL database"
     }
@@ -116,7 +112,7 @@
     { "from": "VerificationTokens", "to": "Users", "type": "belongs_to" }
   ],
   "lambdaInvocations": [
-    { "from": "S3ObjectCreated", "to": "SendPushNotification", "via": "SQS" }
+    { "from": "s3/S3ObjectCreated", "to": "sqs/SendPushNotification", "via": "SQS" }
   ],
   "serviceToServiceEdges": [
     { "from": "API Gateway", "to": "Lambda", "relationship": "triggers" },

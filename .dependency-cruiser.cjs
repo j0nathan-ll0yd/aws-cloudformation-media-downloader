@@ -69,11 +69,12 @@ module.exports = {
         pathNot: [
           '\\.(test|spec)\\.(ts|js)$',
           '^src/lambdas/[^/]+/src/index\\.ts$',
-          '^src/mcp/server\\.ts$',
+          '^src/lambdas/.+\\.(get|post|put|delete|patch)\\.ts$',
+          '^src/index\\.ts$',
+          '^src/util/vitest-setup\\.ts$',
           '^graphrag/(extract|query)\\.ts$',
           '^scripts/',
           '\\.d\\.ts$',
-          '^src/mcp/test/fixtures/',
           '^src/types/', // Type files imported via #types alias
         ],
       },
@@ -118,7 +119,7 @@ module.exports = {
       comment: 'Allow imports from shared utilities',
       from: {},
       to: {
-        path: '^src/(util|types)/',
+        path: '^src/(util|utils|types)/',
       },
     },
     {
@@ -145,6 +146,50 @@ module.exports = {
       },
     },
     {
+      comment: 'Allow imports from database layer',
+      from: {},
+      to: {
+        path: '^src/db/',
+      },
+    },
+    {
+      comment: 'Allow imports from domain layer',
+      from: {},
+      to: {
+        path: '^src/domain/',
+      },
+    },
+    {
+      comment: 'Allow imports from services layer',
+      from: {},
+      to: {
+        path: '^src/services/',
+      },
+    },
+    {
+      comment: 'Allow imports from integrations layer',
+      from: {},
+      to: {
+        path: '^src/integrations/',
+      },
+    },
+    {
+      comment: 'Allow imports from errors module',
+      from: {},
+      to: {
+        path: '^src/errors/',
+      },
+    },
+    {
+      comment: 'Allow barrel export to import all Lambda handlers',
+      from: {
+        path: '^src/index\\.ts$',
+      },
+      to: {
+        path: '^src/lambdas/',
+      },
+    },
+    {
       comment: 'Allow test files to import test helpers',
       from: {
         path: '\\.(test|spec)\\.(ts|js)$',
@@ -154,75 +199,12 @@ module.exports = {
       },
     },
     {
-      comment: 'Allow MCP server to import handlers and tools',
-      from: {
-        path: '^src/mcp/server\\.ts$',
-      },
-      to: {
-        path: '^src/mcp/(handlers|tools)/',
-      },
-    },
-    {
-      comment: 'Allow MCP handlers to import shared utilities within handlers',
-      from: {
-        path: '^src/mcp/handlers/',
-      },
-      to: {
-        path: '^src/mcp/handlers/',
-      },
-    },
-    {
-      comment: 'Allow MCP validation rules to import validation types and other rules',
-      from: {
-        path: '^src/mcp/validation/',
-      },
-      to: {
-        path: '^src/mcp/validation/',
-      },
-    },
-    {
-      comment: 'Allow MCP parsers to import other parsers (including tests)',
-      from: {
-        path: '^src/mcp/parsers/',
-      },
-      to: {
-        path: '^src/mcp/parsers/',
-      },
-    },
-    {
-      comment: 'Allow MCP handlers to import validation, parsers, and templates',
-      from: {
-        path: '^src/mcp/handlers/',
-      },
-      to: {
-        path: '^src/mcp/(validation|parsers|templates)/',
-      },
-    },
-    {
-      comment: 'Allow MCP test files to import fixtures',
-      from: {
-        path: '^src/mcp/.*\\.test\\.ts$',
-      },
-      to: {
-        path: '^src/mcp/test/fixtures/',
-      },
-    },
-    {
       comment: 'Allow Lambda handlers to import config constants',
       from: {
         path: '^src/lambdas/',
       },
       to: {
         path: '^src/config/',
-      },
-    },
-    {
-      comment: 'Allow MCP tools to import handlers and types',
-      from: {
-        path: '^src/mcp/tools/',
-      },
-      to: {
-        path: '^src/mcp/(handlers|tools)/',
       },
     },
   ],

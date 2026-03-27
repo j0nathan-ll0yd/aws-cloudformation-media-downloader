@@ -10,7 +10,6 @@
  */
 
 // Set environment variables before imports
-process.env.USE_LOCALSTACK = 'true'
 process.env.AWS_REGION = 'us-west-2'
 process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
 
@@ -124,7 +123,7 @@ describe('External Services Failure Scenario Tests', () => {
     })
 
     test('should handle malformed SQS message body gracefully', async () => {
-      const {handler} = await import('#lambdas/SendPushNotification/src/index')
+      const {handler} = await import('#lambdas/sqs/SendPushNotification/index')
 
       const event = {
         Records: [
@@ -146,7 +145,7 @@ describe('External Services Failure Scenario Tests', () => {
     })
 
     test('should handle empty SQS batch gracefully', async () => {
-      const {handler} = await import('#lambdas/SendPushNotification/src/index')
+      const {handler} = await import('#lambdas/sqs/SendPushNotification/index')
 
       const event = {Records: []}
 
@@ -199,7 +198,7 @@ describe('External Services Failure Scenario Tests', () => {
     })
 
     test('should handle invalid ARN format', async () => {
-      const {handler} = await import('#lambdas/UserSubscribe/src/index')
+      const {handler} = await import('#lambdas/api/user/subscribe.post')
 
       const userId = crypto.randomUUID()
       await insertUser({userId, email: 'invalid-arn@example.com'})

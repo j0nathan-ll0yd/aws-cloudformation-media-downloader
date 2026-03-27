@@ -1,0 +1,160 @@
+output "api_url" {
+  description = "API Gateway invoke URL"
+  value       = module.api.invoke_url
+}
+
+output "api_key" {
+  description = "API key value"
+  value       = module.api.api_key_value
+  sensitive   = true
+}
+
+output "api_gateway_authorizer_function_arn" {
+  description = "ARN of the ApiGatewayAuthorizer Lambda function"
+  value       = module.lambda_api_gateway_authorizer.function_arn
+}
+
+output "cleanup_expired_records_function_arn" {
+  description = "ARN of the CleanupExpiredRecords Lambda function"
+  value       = module.lambda_cleanup_expired_records.function_arn
+}
+
+output "cloudfront_api_key_promotion_function_arn" {
+  description = "ARN of the API key promotion CloudFront Function"
+  value       = aws_cloudfront_function.api_key_promotion.arn
+}
+
+output "file_helpers_function_arn" {
+  description = "ARN of the FileHelpers Lambda function"
+  value       = module.lambda_file_helpers.function_arn
+}
+
+output "migrate_dsql_function_arn" {
+  description = "ARN of the MigrateDSQL Lambda function"
+  value       = module.lambda_migrate_dsql.function_arn
+}
+
+output "prune_devices_function_arn" {
+  description = "ARN of the PruneDevices Lambda function"
+  value       = module.lambda_prune_devices.function_arn
+}
+
+output "s3object_created_function_arn" {
+  description = "ARN of the S3ObjectCreated Lambda function"
+  value       = module.lambda_s3object_created.function_arn
+}
+
+output "send_push_notification_function_arn" {
+  description = "ARN of the SendPushNotification Lambda function"
+  value       = module.lambda_send_push_notification.function_arn
+}
+
+output "start_file_upload_function_arn" {
+  description = "ARN of the StartFileUpload Lambda function"
+  value       = module.lambda_start_file_upload.function_arn
+}
+
+output "device_event_function_arn" {
+  description = "ARN of the DeviceEvent Lambda function"
+  value       = module.lambda_device_event.function_arn
+}
+
+output "device_register_function_arn" {
+  description = "ARN of the DeviceRegister Lambda function"
+  value       = module.lambda_device_register.function_arn
+}
+
+output "feedly_webhook_function_arn" {
+  description = "ARN of the FeedlyWebhook Lambda function"
+  value       = module.lambda_feedly_webhook.function_arn
+}
+
+output "files_get_function_arn" {
+  description = "ARN of the FilesGet Lambda function"
+  value       = module.lambda_files_get.function_arn
+}
+
+output "user_delete_function_arn" {
+  description = "ARN of the UserDelete Lambda function"
+  value       = module.lambda_user_delete.function_arn
+}
+
+output "user_login_function_arn" {
+  description = "ARN of the UserLogin Lambda function"
+  value       = module.lambda_user_login.function_arn
+}
+
+output "user_logout_function_arn" {
+  description = "ARN of the UserLogout Lambda function"
+  value       = module.lambda_user_logout.function_arn
+}
+
+output "user_refresh_function_arn" {
+  description = "ARN of the UserRefresh Lambda function"
+  value       = module.lambda_user_refresh.function_arn
+}
+
+output "user_register_function_arn" {
+  description = "ARN of the UserRegister Lambda function"
+  value       = module.lambda_user_register.function_arn
+}
+
+output "user_subscribe_function_arn" {
+  description = "ARN of the UserSubscribe Lambda function"
+  value       = module.lambda_user_subscribe.function_arn
+}
+
+output "database_endpoint" {
+  description = "Database cluster endpoint"
+  value       = module.database.cluster_endpoint
+}
+
+output "storage_files_bucket_arn" {
+  description = "ARN of the files S3 bucket"
+  value       = module.storage_files.bucket_arn
+}
+
+output "storage_files_cloudfront_domain" {
+  description = "CloudFront domain for files"
+  value       = module.storage_files.cloudfront_domain_name
+}
+
+output "eventbridge_bus_name" {
+  description = "EventBridge bus name"
+  value       = module.eventbridge.bus_name
+}
+
+output "eventbridge_bus_arn" {
+  description = "EventBridge bus ARN"
+  value       = module.eventbridge.bus_arn
+}
+
+output "queue_DownloadQueue_url" {
+  description = "SQS queue URL for DownloadQueue"
+  value       = module.queue_DownloadQueue.queue_url
+}
+
+output "queue_DownloadQueue_arn" {
+  description = "SQS queue ARN for DownloadQueue"
+  value       = module.queue_DownloadQueue.queue_arn
+}
+
+output "queue_SendPushNotification_url" {
+  description = "SQS queue URL for SendPushNotification"
+  value       = module.queue_SendPushNotification.queue_url
+}
+
+output "queue_SendPushNotification_arn" {
+  description = "SQS queue ARN for SendPushNotification"
+  value       = module.queue_SendPushNotification.queue_arn
+}
+
+output "dynamodb_idempotency_table_name" {
+  description = "DynamoDB table name for idempotency"
+  value       = module.dynamodb_idempotency.table_name
+}
+
+output "dynamodb_idempotency_table_arn" {
+  description = "DynamoDB table ARN for idempotency"
+  value       = module.dynamodb_idempotency.table_arn
+}

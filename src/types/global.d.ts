@@ -5,7 +5,7 @@
  * All variables are required at runtime and validated by getRequiredEnv().
  *
  * @see getRequiredEnv() in src/lib/system/env.ts for runtime validation
- * @see terraform/*.tf for environment variable configuration
+ * @see infra/*.tf for environment variable configuration
  */
 
 declare global {

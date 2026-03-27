@@ -83,7 +83,7 @@ Create a file change plan:
 | src/lambdas/NewFeature/src/index.ts | CREATE | New handler |
 | src/entities/NewEntity.ts | CREATE | New data model |
 | src/lambdas/ExistingLambda/src/index.ts | MODIFY | Add integration |
-| terraform/lambda-new-feature.tf | CREATE | Infrastructure |
+| infra/lambda-new-feature.tf | CREATE | Infrastructure |
 
 ### Step 5: CHECKPOINT - Plan Approval
 
@@ -100,7 +100,7 @@ Present the implementation plan for human approval:
 #### New Files
 - `src/lambdas/NewFeature/src/index.ts` - Handler implementation
 - `src/lambdas/NewFeature/test/index.test.ts` - Unit tests
-- `terraform/lambda-new-feature.tf` - Infrastructure
+- `infra/lambda-new-feature.tf` - Infrastructure
 
 #### Modified Files
 - `src/entities/index.ts` - Export new entity
@@ -168,7 +168,7 @@ pnpm run check-types
 pnpm run lint
 
 # Convention validation
-pnpm run validate:conventions
+pnpm run check:conventions
 
 # Unit tests
 pnpm test
@@ -276,7 +276,7 @@ On completion:
 |------|--------|-------|
 | src/lambdas/NewFeature/src/index.ts | Created | +120 |
 | src/lambdas/NewFeature/test/index.test.ts | Created | +85 |
-| terraform/lambda-new-feature.tf | Created | +45 |
+| infra/lambda-new-feature.tf | Created | +45 |
 
 ### Test Results
 

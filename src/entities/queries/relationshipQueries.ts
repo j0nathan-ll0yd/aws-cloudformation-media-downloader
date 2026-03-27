@@ -5,14 +5,13 @@
  * @see src/lib/vendor/Drizzle/schema.ts for table definitions
  * @see src/lib/vendor/Drizzle/instrumentation.ts for query metrics
  */
-import {getDrizzleClient, withTransaction} from '#lib/vendor/Drizzle/client'
-import {assertDeviceExists, assertFileExists, assertUserExists} from '#lib/vendor/Drizzle/fkEnforcement'
-import {withQueryMetrics} from '#lib/vendor/Drizzle/instrumentation'
-import {devices, files, userDevices, userFiles} from '#lib/vendor/Drizzle/schema'
-import {and, eq, inArray, or} from '#lib/vendor/Drizzle/types'
-import type {InferInsertModel, InferSelectModel} from '#lib/vendor/Drizzle/types'
-import {userDeviceInsertSchema, userFileInsertSchema} from '#lib/vendor/Drizzle/zodSchemas'
-import {DatabaseOperation, DatabaseTable, RequiresTable} from '../decorators'
+import {DatabaseOperation, RequiresTable, withQueryMetrics} from '@mantleframework/database'
+import {getDrizzleClient, withTransaction} from '#db/client'
+import {and, eq, inArray, or} from '@mantleframework/database/orm'
+import type {InferInsertModel, InferSelectModel} from '@mantleframework/database/orm'
+import {assertDeviceExists, assertFileExists, assertUserExists} from '#db/fkEnforcement'
+import {devices, files, userDevices, userFiles} from '#db/schema'
+import {userDeviceInsertSchema, userFileInsertSchema} from '#db/zodSchemas'
 import type {DeviceRow} from './deviceQueries'
 import type {FileRow} from './fileQueries'
 
@@ -36,12 +35,12 @@ class RelationshipQueries {
    * @param fileId - The file's unique identifier
    * @returns The user-file row or null if not found
    */
-  @RequiresTable([{table: DatabaseTable.UserFiles, operations: [DatabaseOperation.Select]}])
+  @RequiresTable([{table: 'user_files', operations: [DatabaseOperation.Select]}])
   static getUserFile(userId: string, fileId: string): Promise<UserFileRow | null> {
     return withQueryMetrics('UserFiles.get', async () => {
       const db = await getDrizzleClient()
       const result = await db.select().from(userFiles).where(and(eq(userFiles.userId, userId), eq(userFiles.fileId, fileId))).limit(1)
-      return result.length > 0 ? result[0] : null
+      return result[0] ?? null
     })
   }
 
@@ -50,7 +49,7 @@ class RelationshipQueries {
    * @param userId - The user's unique identifier
    * @returns Array of user-file rows
    */
-  @RequiresTable([{table: DatabaseTable.UserFiles, operations: [DatabaseOperation.Select]}])
+  @RequiresTable([{table: 'user_files', operations: [DatabaseOperation.Select]}])
   static getUserFilesByUserId(userId: string): Promise<UserFileRow[]> {
     return withQueryMetrics('UserFiles.getByUserId', async () => {
       const db = await getDrizzleClient()
@@ -64,7 +63,7 @@ class RelationshipQueries {
    * @param userId - The user's unique identifier
    * @returns Array of file IDs
    */
-  @RequiresTable([{table: DatabaseTable.UserFiles, operations: [DatabaseOperation.Select]}])
+  @RequiresTable([{table: 'user_files', operations: [DatabaseOperation.Select]}])
   static getUserFileIdsByUserId(userId: string): Promise<string[]> {
     return withQueryMetrics('UserFiles.getIdsByUserId', async () => {
       const db = await getDrizzleClient()
@@ -78,7 +77,7 @@ class RelationshipQueries {
    * @param fileId - The file's unique identifier
    * @returns Array of user-file rows
    */
-  @RequiresTable([{table: DatabaseTable.UserFiles, operations: [DatabaseOperation.Select]}])
+  @RequiresTable([{table: 'user_files', operations: [DatabaseOperation.Select]}])
   static getUserFilesByFileId(fileId: string): Promise<UserFileRow[]> {
     return withQueryMetrics('UserFiles.getByFileId', async () => {
       const db = await getDrizzleClient()
@@ -92,8 +91,8 @@ class RelationshipQueries {
    * @returns Array of file rows
    */
   @RequiresTable([
-    {table: DatabaseTable.UserFiles, operations: [DatabaseOperation.Select]},
-    {table: DatabaseTable.Files, operations: [DatabaseOperation.Select]}
+    {table: 'user_files', operations: [DatabaseOperation.Select]},
+    {table: 'files', operations: [DatabaseOperation.Select]}
   ])
   static getFilesForUser(userId: string): Promise<FileRow[]> {
     return withQueryMetrics('UserFiles.getFilesForUser', async () => {
@@ -111,9 +110,9 @@ class RelationshipQueries {
    * @throws ForeignKeyViolationError if user or file does not exist
    */
   @RequiresTable([
-    {table: DatabaseTable.Users, operations: [DatabaseOperation.Select]},
-    {table: DatabaseTable.Files, operations: [DatabaseOperation.Select]},
-    {table: DatabaseTable.UserFiles, operations: [DatabaseOperation.Insert]}
+    {table: 'users', operations: [DatabaseOperation.Select]},
+    {table: 'files', operations: [DatabaseOperation.Select]},
+    {table: 'user_files', operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}
   ])
   static createUserFile(input: CreateUserFileInput): Promise<UserFileRow> {
     return withQueryMetrics('UserFiles.create', async () => {
@@ -123,7 +122,7 @@ class RelationshipQueries {
         await assertUserExists(validatedInput.userId)
         await assertFileExists(validatedInput.fileId)
         const [userFile] = await tx.insert(userFiles).values(validatedInput).returning()
-        return userFile
+        return userFile!
       })
     })
   }
@@ -139,7 +138,7 @@ class RelationshipQueries {
    * @returns The existing or created user-file row
    */
   @RequiresTable([
-    {table: DatabaseTable.UserFiles, operations: [DatabaseOperation.Insert, DatabaseOperation.Select]}
+    {table: 'user_files', operations: [DatabaseOperation.Insert, DatabaseOperation.Select]}
   ])
   static upsertUserFile(input: CreateUserFileInput): Promise<UserFileRow> {
     return withQueryMetrics('UserFiles.upsert', async () => {
@@ -150,9 +149,9 @@ class RelationshipQueries {
       // If conflict occurred (no rows returned), fetch existing record
       if (result.length === 0) {
         const [existing] = await db.select().from(userFiles).where(and(eq(userFiles.userId, input.userId), eq(userFiles.fileId, input.fileId))).limit(1)
-        return existing
+        return existing!
       }
-      return result[0]
+      return result[0]!
     })
   }
 
@@ -161,7 +160,7 @@ class RelationshipQueries {
    * @param userId - The user's unique identifier
    * @param fileId - The file's unique identifier
    */
-  @RequiresTable([{table: DatabaseTable.UserFiles, operations: [DatabaseOperation.Delete]}])
+  @RequiresTable([{table: 'user_files', operations: [DatabaseOperation.Delete]}])
   static deleteUserFile(userId: string, fileId: string): Promise<void> {
     return withQueryMetrics('UserFiles.delete', async () => {
       const db = await getDrizzleClient()
@@ -173,7 +172,7 @@ class RelationshipQueries {
    * Deletes all file relationships for a user.
    * @param userId - The user's unique identifier
    */
-  @RequiresTable([{table: DatabaseTable.UserFiles, operations: [DatabaseOperation.Delete]}])
+  @RequiresTable([{table: 'user_files', operations: [DatabaseOperation.Delete]}])
   static deleteUserFilesByUserId(userId: string): Promise<void> {
     return withQueryMetrics('UserFiles.deleteByUserId', async () => {
       const db = await getDrizzleClient()
@@ -186,7 +185,7 @@ class RelationshipQueries {
    * Uses single query with OR conditions instead of N separate queries.
    * @param keys - Array of userId/fileId pairs to delete
    */
-  @RequiresTable([{table: DatabaseTable.UserFiles, operations: [DatabaseOperation.Delete]}])
+  @RequiresTable([{table: 'user_files', operations: [DatabaseOperation.Delete]}])
   static deleteUserFilesBatch(keys: Array<{userId: string; fileId: string}>): Promise<void> {
     return withQueryMetrics('UserFiles.deleteBatch', async () => {
       if (keys.length === 0) {
@@ -210,12 +209,12 @@ class RelationshipQueries {
    * @param deviceId - The device's unique identifier
    * @returns The user-device row or null if not found
    */
-  @RequiresTable([{table: DatabaseTable.UserDevices, operations: [DatabaseOperation.Select]}])
+  @RequiresTable([{table: 'user_devices', operations: [DatabaseOperation.Select]}])
   static getUserDevice(userId: string, deviceId: string): Promise<UserDeviceRow | null> {
     return withQueryMetrics('UserDevices.get', async () => {
       const db = await getDrizzleClient()
       const result = await db.select().from(userDevices).where(and(eq(userDevices.userId, userId), eq(userDevices.deviceId, deviceId))).limit(1)
-      return result.length > 0 ? result[0] : null
+      return result[0] ?? null
     })
   }
 
@@ -224,7 +223,7 @@ class RelationshipQueries {
    * @param userId - The user's unique identifier
    * @returns Array of user-device rows
    */
-  @RequiresTable([{table: DatabaseTable.UserDevices, operations: [DatabaseOperation.Select]}])
+  @RequiresTable([{table: 'user_devices', operations: [DatabaseOperation.Select]}])
   static getUserDevicesByUserId(userId: string): Promise<UserDeviceRow[]> {
     return withQueryMetrics('UserDevices.getByUserId', async () => {
       const db = await getDrizzleClient()
@@ -238,7 +237,7 @@ class RelationshipQueries {
    * @param userId - The user's unique identifier
    * @returns Array of device IDs
    */
-  @RequiresTable([{table: DatabaseTable.UserDevices, operations: [DatabaseOperation.Select]}])
+  @RequiresTable([{table: 'user_devices', operations: [DatabaseOperation.Select]}])
   static getUserDeviceIdsByUserId(userId: string): Promise<string[]> {
     return withQueryMetrics('UserDevices.getIdsByUserId', async () => {
       const db = await getDrizzleClient()
@@ -252,7 +251,7 @@ class RelationshipQueries {
    * @param deviceId - The device's unique identifier
    * @returns Array of user-device rows
    */
-  @RequiresTable([{table: DatabaseTable.UserDevices, operations: [DatabaseOperation.Select]}])
+  @RequiresTable([{table: 'user_devices', operations: [DatabaseOperation.Select]}])
   static getUserDevicesByDeviceId(deviceId: string): Promise<UserDeviceRow[]> {
     return withQueryMetrics('UserDevices.getByDeviceId', async () => {
       const db = await getDrizzleClient()
@@ -266,8 +265,8 @@ class RelationshipQueries {
    * @returns Array of device rows
    */
   @RequiresTable([
-    {table: DatabaseTable.UserDevices, operations: [DatabaseOperation.Select]},
-    {table: DatabaseTable.Devices, operations: [DatabaseOperation.Select]}
+    {table: 'user_devices', operations: [DatabaseOperation.Select]},
+    {table: 'devices', operations: [DatabaseOperation.Select]}
   ])
   static getDevicesForUser(userId: string): Promise<DeviceRow[]> {
     return withQueryMetrics('UserDevices.getDevicesForUser', async () => {
@@ -284,7 +283,7 @@ class RelationshipQueries {
    * @param userIds - Array of user IDs
    * @returns Array of device IDs
    */
-  @RequiresTable([{table: DatabaseTable.UserDevices, operations: [DatabaseOperation.Select]}])
+  @RequiresTable([{table: 'user_devices', operations: [DatabaseOperation.Select]}])
   static getDeviceIdsForUsers(userIds: string[]): Promise<string[]> {
     return withQueryMetrics('UserDevices.getIdsForUsers', async () => {
       if (userIds.length === 0) {
@@ -304,9 +303,9 @@ class RelationshipQueries {
    * @throws ForeignKeyViolationError if user or device does not exist
    */
   @RequiresTable([
-    {table: DatabaseTable.Users, operations: [DatabaseOperation.Select]},
-    {table: DatabaseTable.Devices, operations: [DatabaseOperation.Select]},
-    {table: DatabaseTable.UserDevices, operations: [DatabaseOperation.Insert]}
+    {table: 'users', operations: [DatabaseOperation.Select]},
+    {table: 'devices', operations: [DatabaseOperation.Select]},
+    {table: 'user_devices', operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}
   ])
   static createUserDevice(input: CreateUserDeviceInput): Promise<UserDeviceRow> {
     return withQueryMetrics('UserDevices.create', async () => {
@@ -316,7 +315,7 @@ class RelationshipQueries {
         await assertUserExists(validatedInput.userId)
         await assertDeviceExists(validatedInput.deviceId)
         const [userDevice] = await tx.insert(userDevices).values(validatedInput).returning()
-        return userDevice
+        return userDevice!
       })
     })
   }
@@ -332,7 +331,7 @@ class RelationshipQueries {
    * @returns The existing or created user-device row
    */
   @RequiresTable([
-    {table: DatabaseTable.UserDevices, operations: [DatabaseOperation.Insert, DatabaseOperation.Select]}
+    {table: 'user_devices', operations: [DatabaseOperation.Insert, DatabaseOperation.Select]}
   ])
   static upsertUserDevice(input: CreateUserDeviceInput): Promise<UserDeviceRow> {
     return withQueryMetrics('UserDevices.upsert', async () => {
@@ -345,9 +344,9 @@ class RelationshipQueries {
       if (result.length === 0) {
         const [existing] = await db.select().from(userDevices).where(and(eq(userDevices.userId, input.userId), eq(userDevices.deviceId, input.deviceId)))
           .limit(1)
-        return existing
+        return existing!
       }
-      return result[0]
+      return result[0]!
     })
   }
 
@@ -356,7 +355,7 @@ class RelationshipQueries {
    * @param userId - The user's unique identifier
    * @param deviceId - The device's unique identifier
    */
-  @RequiresTable([{table: DatabaseTable.UserDevices, operations: [DatabaseOperation.Delete]}])
+  @RequiresTable([{table: 'user_devices', operations: [DatabaseOperation.Delete]}])
   static deleteUserDevice(userId: string, deviceId: string): Promise<void> {
     return withQueryMetrics('UserDevices.delete', async () => {
       const db = await getDrizzleClient()
@@ -368,7 +367,7 @@ class RelationshipQueries {
    * Deletes all device relationships for a user.
    * @param userId - The user's unique identifier
    */
-  @RequiresTable([{table: DatabaseTable.UserDevices, operations: [DatabaseOperation.Delete]}])
+  @RequiresTable([{table: 'user_devices', operations: [DatabaseOperation.Delete]}])
   static deleteUserDevicesByUserId(userId: string): Promise<void> {
     return withQueryMetrics('UserDevices.deleteByUserId', async () => {
       const db = await getDrizzleClient()
@@ -380,7 +379,7 @@ class RelationshipQueries {
    * Deletes all user relationships for a device.
    * @param deviceId - The device's unique identifier
    */
-  @RequiresTable([{table: DatabaseTable.UserDevices, operations: [DatabaseOperation.Delete]}])
+  @RequiresTable([{table: 'user_devices', operations: [DatabaseOperation.Delete]}])
   static deleteUserDevicesByDeviceId(deviceId: string): Promise<void> {
     return withQueryMetrics('UserDevices.deleteByDeviceId', async () => {
       const db = await getDrizzleClient()
@@ -389,7 +388,7 @@ class RelationshipQueries {
   }
 }
 
-// Re-export static methods as named exports for backwards compatibility
+// Bound function exports for direct import by consumers
 export const getUserFile = RelationshipQueries.getUserFile.bind(RelationshipQueries)
 export const getUserFilesByUserId = RelationshipQueries.getUserFilesByUserId.bind(RelationshipQueries)
 export const getUserFileIdsByUserId = RelationshipQueries.getUserFileIdsByUserId.bind(RelationshipQueries)

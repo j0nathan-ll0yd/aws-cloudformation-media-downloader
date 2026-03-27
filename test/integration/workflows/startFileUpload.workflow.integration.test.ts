@@ -25,7 +25,7 @@ import {
   updateFile
 } from '../helpers/postgres-helpers'
 import {createMockFile} from '../helpers/test-data'
-import {userFiles} from '#lib/vendor/Drizzle/schema'
+import {userFiles} from '#db/schema'
 import {eq} from 'drizzle-orm'
 
 describe('StartFileUpload Workflow Integration Tests', () => {
@@ -137,7 +137,7 @@ describe('StartFileUpload Workflow Integration Tests', () => {
       const associations = await db.select().from(userFiles).where(eq(userFiles.userId, userId))
 
       expect(associations).toHaveLength(1)
-      expect(associations[0].fileId).toBe(fileId)
+      expect(associations[0]!.fileId).toBe(fileId)
     })
 
     test('should allow multiple files per user', async () => {

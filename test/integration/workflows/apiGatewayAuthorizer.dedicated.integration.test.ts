@@ -11,16 +11,16 @@
  */
 
 // Set environment variables before imports
-process.env.USE_LOCALSTACK = 'true'
 process.env.AWS_REGION = 'us-west-2'
 process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
 process.env.MULTI_AUTHENTICATION_PATH_PARTS = 'auth/login,auth/register,webhooks/feedly'
 
 import {afterAll, afterEach, beforeAll, describe, expect, test, vi} from 'vitest'
 import type {Context} from 'aws-lambda'
+import {createObservabilityMock} from '@mantleframework/testing/lambda-mocks'
 
 // Test helpers
-import {closeTestDb, createAllTables, dropAllTables, getTestDbAsync, insertSession, insertUser, truncateAllTables} from '../helpers/postgres-helpers'
+import {closeTestDb, createAllTables, getTestDbAsync, insertSession, insertUser, truncateAllTables} from '../helpers/postgres-helpers'
 import {createMockContext} from '../helpers/lambda-context'
 import {createMockAPIGatewayRequestAuthorizerEvent} from '../helpers/test-data'
 
@@ -29,9 +29,14 @@ import {createMockAPIGatewayRequestAuthorizerEvent} from '../helpers/test-data'
 // because LocalStack API Gateway emulation has limitations for these features
 const {getApiKeysMock, getUsagePlansMock, getUsageMock} = vi.hoisted(() => ({getApiKeysMock: vi.fn(), getUsagePlansMock: vi.fn(), getUsageMock: vi.fn()}))
 
-vi.mock('#lib/vendor/AWS/ApiGateway', () => ({getApiKeys: getApiKeysMock, getUsagePlans: getUsagePlansMock, getUsage: getUsageMock}))
+vi.mock('@mantleframework/aws', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@mantleframework/aws')>()
+  return {...actual, getApiKeys: getApiKeysMock, getUsagePlans: getUsagePlansMock, getUsage: getUsageMock}
+})
 
-const {handler} = await import('#lambdas/ApiGatewayAuthorizer/src/index')
+vi.mock('@mantleframework/observability', () => createObservabilityMock())
+
+const {handler} = await import('#lambdas/standalone/ApiGatewayAuthorizer/index')
 
 // Helper to set up standard API Gateway mocks
 function setupApiGatewayMocks() {
@@ -55,7 +60,7 @@ describe('ApiGatewayAuthorizer Dedicated Integration Tests', () => {
   })
 
   afterAll(async () => {
-    await dropAllTables()
+    await truncateAllTables()
     await closeTestDb()
   })
 
@@ -73,7 +78,7 @@ describe('ApiGatewayAuthorizer Dedicated Integration Tests', () => {
     const result = await handler(createMockAPIGatewayRequestAuthorizerEvent({token}), mockContext)
 
     expect(result.principalId).toBe(userId)
-    expect(result.policyDocument.Statement[0].Effect).toBe('Allow')
+    expect(result.policyDocument.Statement[0]!.Effect).toBe('Allow')
   })
 
   test('should return unknown principal for expired session', async () => {
@@ -91,11 +96,11 @@ describe('ApiGatewayAuthorizer Dedicated Integration Tests', () => {
 
     const result = await handler(event, mockContext)
 
-    expect(result.principalId).toBe('unknown')
-    expect(result.policyDocument.Statement[0].Effect).toBe('Allow')
+    expect(result.principalId).toBe('anonymous')
+    expect(result.policyDocument.Statement[0]!.Effect).toBe('Allow')
   })
 
-  test('should return unknown principal for missing Authorization header on multi-auth path', async () => {
+  test('should return anonymous principal for missing Authorization header on multi-auth path', async () => {
     setupApiGatewayMocks()
 
     // Use a multi-auth path that doesn't require Authorization header
@@ -104,8 +109,8 @@ describe('ApiGatewayAuthorizer Dedicated Integration Tests', () => {
 
     const result = await handler(event, mockContext)
 
-    expect(result.principalId).toBe('unknown')
-    expect(result.policyDocument.Statement[0].Effect).toBe('Allow')
+    expect(result.principalId).toBe('anonymous')
+    expect(result.policyDocument.Statement[0]!.Effect).toBe('Allow')
   })
 
   test('should throw Unauthorized for malformed token on protected path', async () => {
@@ -141,6 +146,6 @@ describe('ApiGatewayAuthorizer Dedicated Integration Tests', () => {
     const result = await handler(createMockAPIGatewayRequestAuthorizerEvent({token}), mockContext)
 
     expect(result.principalId).toBe(userId)
-    expect(result.policyDocument.Statement[0].Effect).toBe('Allow')
+    expect(result.policyDocument.Statement[0]!.Effect).toBe('Allow')
   })
 })

@@ -65,7 +65,7 @@ export async function receiveAndDeleteMessages(
     const attributes: Record<string, string> = {}
     if (message.MessageAttributes) {
       for (const [key, value] of Object.entries(message.MessageAttributes)) {
-        if (value.StringValue) {
+        if (value?.StringValue) {
           attributes[key] = value.StringValue
         }
       }

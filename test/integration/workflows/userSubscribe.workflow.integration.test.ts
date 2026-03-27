@@ -6,7 +6,6 @@
  */
 
 // Set environment variables before imports
-process.env.USE_LOCALSTACK = 'true'
 process.env.AWS_REGION = 'us-west-2'
 
 import {afterAll, beforeAll, describe, expect, test} from 'vitest'
@@ -25,7 +24,7 @@ import {
   generateIsolatedAppName
 } from '../helpers/sns-helpers'
 
-const {handler} = await import('#lambdas/UserSubscribe/src/index')
+const {handler} = await import('#lambdas/api/user/subscribe.post')
 
 describe('UserSubscribe Workflow Integration Tests', () => {
   let mockContext: Context
@@ -79,7 +78,7 @@ describe('UserSubscribe Workflow Integration Tests', () => {
       createMockCustomAPIGatewayEvent({
         path: '/subscriptions',
         httpMethod: 'POST',
-        userStatus: UserStatus.Unauthenticated,
+        userStatus: UserStatus.Anonymous,
         body: JSON.stringify({endpointArn: testEndpointArn, topicArn})
       }),
       mockContext

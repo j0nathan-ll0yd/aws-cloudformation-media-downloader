@@ -22,12 +22,12 @@
 // Environment Types
 // ============================================================================
 
-export type EnvironmentName = 'staging' | 'production'
+export type EnvironmentName = 'staging' | 'prod'
 
 export interface EnvironmentConfig {
-  /** Environment name (staging, production) */
+  /** Environment name (staging, prod) */
   environment: EnvironmentName
-  /** Resource prefix for AWS resources (stag, prod) */
+  /** DEPRECATED: Legacy resource prefix for S3 bucket names only (stag, prod). New resources use name_prefix from core module. See ADR 0001. */
   resourcePrefix: string
   /** Log level for Lambda functions */
   logLevel: 'DEBUG' | 'INFO' | 'WARN' | 'ERROR'
@@ -53,7 +53,7 @@ export interface EnvironmentConfig {
 
 /**
  * Staging environment configuration.
- * Matches terraform/environments/staging.tfvars
+ * Matches infra/environments/staging.tfvars
  */
 export const STAGING_CONFIG: EnvironmentConfig = {
   environment: 'staging',
@@ -74,10 +74,10 @@ export const STAGING_CONFIG: EnvironmentConfig = {
 
 /**
  * Production environment configuration.
- * Matches terraform/environments/production.tfvars
+ * Matches infra/environments/production.tfvars
  */
 export const PRODUCTION_CONFIG: EnvironmentConfig = {
-  environment: 'production',
+  environment: 'prod',
   resourcePrefix: 'prod',
   logLevel: 'INFO',
   logRetentionDays: 7,
@@ -104,7 +104,7 @@ export function getEnvironmentConfig(environment: EnvironmentName): EnvironmentC
   switch (environment) {
     case 'staging':
       return STAGING_CONFIG
-    case 'production':
+    case 'prod':
       return PRODUCTION_CONFIG
     default:
       throw new Error(`Invalid environment: ${environment}`)
@@ -146,7 +146,6 @@ export function getLambdaFunctionNames(environment: EnvironmentName): string[] {
   return [
     `${prefix}-ApiGatewayAuthorizer`,
     `${prefix}-CleanupExpiredRecords`,
-    `${prefix}-CloudfrontMiddleware`,
     `${prefix}-DeviceEvent`,
     `${prefix}-ListFiles`,
     `${prefix}-LoginUser`,

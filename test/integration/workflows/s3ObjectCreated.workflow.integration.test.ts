@@ -6,7 +6,6 @@
  */
 
 // Set environment variables before imports
-process.env.USE_LOCALSTACK = 'true'
 process.env.AWS_REGION = 'us-west-2'
 process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
 
@@ -21,7 +20,7 @@ import {clearTestQueue, createTestQueue, deleteTestQueue, receiveAndDeleteMessag
 import {closeTestDb, createAllTables, getTestDbAsync, insertFile, insertUser, insertUserFile, truncateAllTables} from '../helpers/postgres-helpers'
 import {generateTestResourceName} from '../helpers/resource-naming'
 
-const {handler} = await import('#lambdas/S3ObjectCreated/src/index')
+const {handler} = await import('#lambdas/s3/S3ObjectCreated/index')
 
 describe('S3ObjectCreated Workflow Integration Tests', () => {
   let mockContext: Context
@@ -71,7 +70,7 @@ describe('S3ObjectCreated Workflow Integration Tests', () => {
 
     const messages = await receiveAndDeleteMessages(queueUrl, 10, 2)
     expect(messages).toHaveLength(1)
-    expect(messages[0].attributes.userId).toBe(userId)
+    expect(messages[0]!.attributes.userId).toBe(userId)
   })
 
   test('should dispatch notifications to multiple users for shared file', async () => {
@@ -123,7 +122,7 @@ describe('S3ObjectCreated Workflow Integration Tests', () => {
 
     const messages = await receiveAndDeleteMessages(queueUrl, 10, 2)
     expect(messages).toHaveLength(1)
-    expect(messages[0].attributes.userId).toBe(userId)
+    expect(messages[0]!.attributes.userId).toBe(userId)
   })
 
   test('should include notification type in message attributes', async () => {
@@ -139,6 +138,6 @@ describe('S3ObjectCreated Workflow Integration Tests', () => {
 
     const messages = await receiveAndDeleteMessages(queueUrl, 10, 2)
     expect(messages).toHaveLength(1)
-    expect(messages[0].attributes.notificationType).toBe('DownloadReadyNotification')
+    expect(messages[0]!.attributes.notificationType).toBe('DownloadReadyNotification')
   })
 })

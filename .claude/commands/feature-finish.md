@@ -22,7 +22,7 @@ CURRENT_DIR=$(pwd)
 WORKTREE_NAME=$(basename "$CURRENT_DIR")
 
 # Extract feature name from worktree directory
-FEATURE_NAME=$(echo "$WORKTREE_NAME" | sed 's/aws-cloudformation-media-downloader-//')
+FEATURE_NAME=$(echo "$WORKTREE_NAME" | sed 's/mantle-OfflineMediaDownloader-//')
 BRANCH_NAME="feat/${FEATURE_NAME}"
 ```
 
@@ -47,7 +47,7 @@ fi
 ### Step 3: Check for Uncommitted Changes
 
 ```bash
-WORKTREE_PATH="$HOME/wt/aws-cloudformation-media-downloader-${FEATURE_NAME}"
+WORKTREE_PATH="$HOME/wt/mantle-OfflineMediaDownloader-${FEATURE_NAME}"
 
 if [ -d "$WORKTREE_PATH" ]; then
   cd "$WORKTREE_PATH"
@@ -63,7 +63,7 @@ fi
 
 ```bash
 # Return to main repository first
-cd /Users/jlloyd/Repositories/aws-cloudformation-media-downloader
+cd /Users/jlloyd/Repositories/mantle-OfflineMediaDownloader
 
 # Remove the worktree
 git worktree remove "$WORKTREE_PATH" --force
@@ -122,7 +122,7 @@ git branch | grep -q "$BRANCH_NAME" && echo "WARNING: Branch still exists" || ec
 
 ### Cleanup Summary
 
-- [x] Worktree removed: ~/wt/aws-cloudformation-media-downloader-add-user-preferences
+- [x] Worktree removed: ~/wt/mantle-OfflineMediaDownloader-add-user-preferences
 - [x] Local branch deleted: feat/add-user-preferences
 - [x] Remote branch deleted: origin/feat/add-user-preferences (by GitHub)
 - [x] Master updated to latest
@@ -133,7 +133,7 @@ git branch | grep -q "$BRANCH_NAME" && echo "WARNING: Branch still exists" || ec
 
 ```
 $ git worktree list
-/Users/jlloyd/Repositories/aws-cloudformation-media-downloader  abc1234 [master]
+/Users/jlloyd/Repositories/mantle-OfflineMediaDownloader  abc1234 [master]
 ```
 
 ### Remaining Worktrees
