@@ -25,7 +25,7 @@ export default defineConfig({
     // Hook timeout: 60s - allows for schema creation (up to 30s) plus retry buffer
     // Aurora DSQL schema operations can take longer during cold starts
     hookTimeout: 60000,
-    pool: 'threads',
+    pool: 'forks',
     maxWorkers,
     globalSetup: './test/integration/globalSetup.ts',
     setupFiles: ['./test/integration/setup.ts'],
