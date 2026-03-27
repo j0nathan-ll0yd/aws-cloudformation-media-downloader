@@ -11,7 +11,6 @@ import {eq, lt} from '@mantleframework/database/orm'
 import type {InferInsertModel, InferSelectModel} from '@mantleframework/database/orm'
 import {accounts, sessions, verification} from '#db/schema'
 import {accountInsertSchema, sessionInsertSchema, sessionUpdateSchema, verificationInsertSchema} from '#db/zodSchemas'
-import {DatabaseTable} from '#types/databasePermissions'
 
 export type SessionRow = InferSelectModel<typeof sessions>
 export type AccountRow = InferSelectModel<typeof accounts>
@@ -38,7 +37,7 @@ class SessionQueries {
    * @param id - The session's unique identifier
    * @returns The session row or null if not found
    */
-  @RequiresTable([{table: DatabaseTable.Sessions, operations: [DatabaseOperation.Select]}])
+  @RequiresTable([{table: 'sessions', operations: [DatabaseOperation.Select]}])
   static getSession(id: string): Promise<SessionRow | null> {
     return withQueryMetrics('Sessions.get', async () => {
       const db = await getDrizzleClient()
@@ -52,7 +51,7 @@ class SessionQueries {
    * @param token - The session token
    * @returns The session row or null if not found
    */
-  @RequiresTable([{table: DatabaseTable.Sessions, operations: [DatabaseOperation.Select]}])
+  @RequiresTable([{table: 'sessions', operations: [DatabaseOperation.Select]}])
   static getSessionByToken(token: string): Promise<SessionRow | null> {
     return withQueryMetrics('Sessions.getByToken', async () => {
       const db = await getDrizzleClient()
@@ -66,7 +65,7 @@ class SessionQueries {
    * @param userId - The user's unique identifier
    * @returns Array of session rows for the user
    */
-  @RequiresTable([{table: DatabaseTable.Sessions, operations: [DatabaseOperation.Select]}])
+  @RequiresTable([{table: 'sessions', operations: [DatabaseOperation.Select]}])
   static getSessionsByUserId(userId: string): Promise<SessionRow[]> {
     return withQueryMetrics('Sessions.getByUserId', async () => {
       const db = await getDrizzleClient()
@@ -79,7 +78,7 @@ class SessionQueries {
    * @param input - The session data to create
    * @returns The created session row
    */
-  @RequiresTable([{table: DatabaseTable.Sessions, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}])
+  @RequiresTable([{table: 'sessions', operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}])
   static createSession(input: CreateSessionInput): Promise<SessionRow> {
     return withQueryMetrics('Sessions.create', async () => {
       // Validate session input against schema
@@ -96,7 +95,7 @@ class SessionQueries {
    * @param data - The fields to update
    * @returns The updated session row
    */
-  @RequiresTable([{table: DatabaseTable.Sessions, operations: [DatabaseOperation.Select, DatabaseOperation.Update]}])
+  @RequiresTable([{table: 'sessions', operations: [DatabaseOperation.Select, DatabaseOperation.Update]}])
   static updateSession(id: string, data: UpdateSessionInput): Promise<SessionRow> {
     return withQueryMetrics('Sessions.update', async () => {
       // Validate partial update data against schema
@@ -111,7 +110,7 @@ class SessionQueries {
    * Deletes a session by ID.
    * @param id - The session's unique identifier
    */
-  @RequiresTable([{table: DatabaseTable.Sessions, operations: [DatabaseOperation.Delete]}])
+  @RequiresTable([{table: 'sessions', operations: [DatabaseOperation.Delete]}])
   static deleteSession(id: string): Promise<void> {
     return withQueryMetrics('Sessions.delete', async () => {
       const db = await getDrizzleClient()
@@ -123,7 +122,7 @@ class SessionQueries {
    * Deletes all sessions for a user.
    * @param userId - The user's unique identifier
    */
-  @RequiresTable([{table: DatabaseTable.Sessions, operations: [DatabaseOperation.Delete]}])
+  @RequiresTable([{table: 'sessions', operations: [DatabaseOperation.Delete]}])
   static deleteSessionsByUserId(userId: string): Promise<void> {
     return withQueryMetrics('Sessions.deleteByUserId', async () => {
       const db = await getDrizzleClient()
@@ -134,7 +133,7 @@ class SessionQueries {
   /**
    * Deletes expired sessions.
    */
-  @RequiresTable([{table: DatabaseTable.Sessions, operations: [DatabaseOperation.Delete]}])
+  @RequiresTable([{table: 'sessions', operations: [DatabaseOperation.Delete]}])
   static deleteExpiredSessions(): Promise<void> {
     return withQueryMetrics('Sessions.deleteExpired', async () => {
       const db = await getDrizzleClient()
@@ -149,7 +148,7 @@ class SessionQueries {
    * @param id - The account's unique identifier
    * @returns The account row or null if not found
    */
-  @RequiresTable([{table: DatabaseTable.Accounts, operations: [DatabaseOperation.Select]}])
+  @RequiresTable([{table: 'accounts', operations: [DatabaseOperation.Select]}])
   static getAccount(id: string): Promise<AccountRow | null> {
     return withQueryMetrics('Accounts.get', async () => {
       const db = await getDrizzleClient()
@@ -163,7 +162,7 @@ class SessionQueries {
    * @param userId - The user's unique identifier
    * @returns Array of account rows for the user
    */
-  @RequiresTable([{table: DatabaseTable.Accounts, operations: [DatabaseOperation.Select]}])
+  @RequiresTable([{table: 'accounts', operations: [DatabaseOperation.Select]}])
   static getAccountsByUserId(userId: string): Promise<AccountRow[]> {
     return withQueryMetrics('Accounts.getByUserId', async () => {
       const db = await getDrizzleClient()
@@ -176,7 +175,7 @@ class SessionQueries {
    * @param input - The account data to create
    * @returns The created account row
    */
-  @RequiresTable([{table: DatabaseTable.Accounts, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}])
+  @RequiresTable([{table: 'accounts', operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}])
   static createAccount(input: CreateAccountInput): Promise<AccountRow> {
     return withQueryMetrics('Accounts.create', async () => {
       // Validate account input against schema
@@ -191,7 +190,7 @@ class SessionQueries {
    * Deletes an account by ID.
    * @param id - The account's unique identifier
    */
-  @RequiresTable([{table: DatabaseTable.Accounts, operations: [DatabaseOperation.Delete]}])
+  @RequiresTable([{table: 'accounts', operations: [DatabaseOperation.Delete]}])
   static deleteAccount(id: string): Promise<void> {
     return withQueryMetrics('Accounts.delete', async () => {
       const db = await getDrizzleClient()
@@ -203,7 +202,7 @@ class SessionQueries {
    * Deletes all accounts for a user.
    * @param userId - The user's unique identifier
    */
-  @RequiresTable([{table: DatabaseTable.Accounts, operations: [DatabaseOperation.Delete]}])
+  @RequiresTable([{table: 'accounts', operations: [DatabaseOperation.Delete]}])
   static deleteAccountsByUserId(userId: string): Promise<void> {
     return withQueryMetrics('Accounts.deleteByUserId', async () => {
       const db = await getDrizzleClient()
@@ -218,7 +217,7 @@ class SessionQueries {
    * @param identifier - The verification identifier
    * @returns The verification row or null if not found
    */
-  @RequiresTable([{table: DatabaseTable.VerificationTokens, operations: [DatabaseOperation.Select]}])
+  @RequiresTable([{table: 'verification_tokens', operations: [DatabaseOperation.Select]}])
   static getVerificationByIdentifier(identifier: string): Promise<VerificationRow | null> {
     return withQueryMetrics('Verifications.getByIdentifier', async () => {
       const db = await getDrizzleClient()
@@ -232,7 +231,7 @@ class SessionQueries {
    * @param input - The verification data to create
    * @returns The created verification row
    */
-  @RequiresTable([{table: DatabaseTable.VerificationTokens, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}])
+  @RequiresTable([{table: 'verification_tokens', operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}])
   static createVerification(input: CreateVerificationInput): Promise<VerificationRow> {
     return withQueryMetrics('Verifications.create', async () => {
       // Validate verification input against schema
@@ -247,7 +246,7 @@ class SessionQueries {
    * Deletes a verification token by ID.
    * @param id - The verification token's unique identifier
    */
-  @RequiresTable([{table: DatabaseTable.VerificationTokens, operations: [DatabaseOperation.Delete]}])
+  @RequiresTable([{table: 'verification_tokens', operations: [DatabaseOperation.Delete]}])
   static deleteVerification(id: string): Promise<void> {
     return withQueryMetrics('Verifications.delete', async () => {
       const db = await getDrizzleClient()
@@ -258,7 +257,7 @@ class SessionQueries {
   /**
    * Deletes expired verification tokens.
    */
-  @RequiresTable([{table: DatabaseTable.VerificationTokens, operations: [DatabaseOperation.Delete]}])
+  @RequiresTable([{table: 'verification_tokens', operations: [DatabaseOperation.Delete]}])
   static deleteExpiredVerifications(): Promise<void> {
     return withQueryMetrics('Verifications.deleteExpired', async () => {
       const db = await getDrizzleClient()

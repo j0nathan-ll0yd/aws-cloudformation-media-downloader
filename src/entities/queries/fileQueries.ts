@@ -11,7 +11,6 @@ import {eq, inArray} from '@mantleframework/database/orm'
 import type {InferInsertModel, InferSelectModel} from '@mantleframework/database/orm'
 import {fileDownloads, files} from '#db/schema'
 import {fileDownloadInsertSchema, fileDownloadUpdateSchema, fileInsertSchema, fileUpdateSchema} from '#db/zodSchemas'
-import {DatabaseTable} from '#types/databasePermissions'
 
 export type FileRow = InferSelectModel<typeof files>
 export type FileDownloadRow = InferSelectModel<typeof fileDownloads>
@@ -35,7 +34,7 @@ class FileQueries {
    * @param fileId - The file's unique identifier
    * @returns The file row or null if not found
    */
-  @RequiresTable([{table: DatabaseTable.Files, operations: [DatabaseOperation.Select]}])
+  @RequiresTable([{table: 'files', operations: [DatabaseOperation.Select]}])
   static getFile(fileId: string): Promise<FileRow | null> {
     return withQueryMetrics('Files.get', async () => {
       const db = await getDrizzleClient()
@@ -50,7 +49,7 @@ class FileQueries {
    * @param fileId - The file's unique identifier
    * @returns The file status or null if not found
    */
-  @RequiresTable([{table: DatabaseTable.Files, operations: [DatabaseOperation.Select]}])
+  @RequiresTable([{table: 'files', operations: [DatabaseOperation.Select]}])
   static getFileStatus(fileId: string): Promise<string | null> {
     return withQueryMetrics('Files.getStatus', async () => {
       const db = await getDrizzleClient()
@@ -64,7 +63,7 @@ class FileQueries {
    * @param fileIds - Array of file IDs to retrieve
    * @returns Array of file rows
    */
-  @RequiresTable([{table: DatabaseTable.Files, operations: [DatabaseOperation.Select]}])
+  @RequiresTable([{table: 'files', operations: [DatabaseOperation.Select]}])
   static getFilesBatch(fileIds: string[]): Promise<FileRow[]> {
     return withQueryMetrics('Files.getBatch', async () => {
       if (fileIds.length === 0) {
@@ -80,7 +79,7 @@ class FileQueries {
    * @param key - The S3 object key to search for
    * @returns Array of files matching the key
    */
-  @RequiresTable([{table: DatabaseTable.Files, operations: [DatabaseOperation.Select]}])
+  @RequiresTable([{table: 'files', operations: [DatabaseOperation.Select]}])
   static getFilesByKey(key: string): Promise<FileRow[]> {
     return withQueryMetrics('Files.getByKey', async () => {
       const db = await getDrizzleClient()
@@ -93,7 +92,7 @@ class FileQueries {
    * @param input - The file data to create
    * @returns The created file row
    */
-  @RequiresTable([{table: DatabaseTable.Files, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}])
+  @RequiresTable([{table: 'files', operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}])
   static createFile(input: CreateFileInput): Promise<FileRow> {
     return withQueryMetrics('Files.create', async () => {
       // Validate file input against schema
@@ -110,7 +109,7 @@ class FileQueries {
    * @param input - The file data to upsert
    * @returns The created or updated file row
    */
-  @RequiresTable([{table: DatabaseTable.Files, operations: [DatabaseOperation.Select, DatabaseOperation.Insert, DatabaseOperation.Update]}])
+  @RequiresTable([{table: 'files', operations: [DatabaseOperation.Select, DatabaseOperation.Insert, DatabaseOperation.Update]}])
   static upsertFile(input: CreateFileInput): Promise<FileRow> {
     return withQueryMetrics('Files.upsert', async () => {
       // Validate file input against schema
@@ -146,7 +145,7 @@ class FileQueries {
    * @param data - The fields to update
    * @returns The updated file row
    */
-  @RequiresTable([{table: DatabaseTable.Files, operations: [DatabaseOperation.Select, DatabaseOperation.Update]}])
+  @RequiresTable([{table: 'files', operations: [DatabaseOperation.Select, DatabaseOperation.Update]}])
   static updateFile(fileId: string, data: UpdateFileInput): Promise<FileRow> {
     return withQueryMetrics('Files.update', async () => {
       // Validate partial update data against schema
@@ -161,7 +160,7 @@ class FileQueries {
    * Deletes a file by ID.
    * @param fileId - The file's unique identifier
    */
-  @RequiresTable([{table: DatabaseTable.Files, operations: [DatabaseOperation.Delete]}])
+  @RequiresTable([{table: 'files', operations: [DatabaseOperation.Delete]}])
   static deleteFile(fileId: string): Promise<void> {
     return withQueryMetrics('Files.delete', async () => {
       const db = await getDrizzleClient()
@@ -176,7 +175,7 @@ class FileQueries {
    * @param fileId - The file's unique identifier
    * @returns The file download row or null if not found
    */
-  @RequiresTable([{table: DatabaseTable.FileDownloads, operations: [DatabaseOperation.Select]}])
+  @RequiresTable([{table: 'file_downloads', operations: [DatabaseOperation.Select]}])
   static getFileDownload(fileId: string): Promise<FileDownloadRow | null> {
     return withQueryMetrics('FileDownloads.get', async () => {
       const db = await getDrizzleClient()
@@ -190,7 +189,7 @@ class FileQueries {
    * @param input - The file download data to create
    * @returns The created file download row
    */
-  @RequiresTable([{table: DatabaseTable.FileDownloads, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}])
+  @RequiresTable([{table: 'file_downloads', operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}])
   static createFileDownload(input: CreateFileDownloadInput): Promise<FileDownloadRow> {
     return withQueryMetrics('FileDownloads.create', async () => {
       // Validate file download input against schema
@@ -207,7 +206,7 @@ class FileQueries {
    * @param input - The file download data to upsert
    * @returns The created or updated file download row
    */
-  @RequiresTable([{table: DatabaseTable.FileDownloads, operations: [DatabaseOperation.Select, DatabaseOperation.Insert, DatabaseOperation.Update]}])
+  @RequiresTable([{table: 'file_downloads', operations: [DatabaseOperation.Select, DatabaseOperation.Insert, DatabaseOperation.Update]}])
   static upsertFileDownload(input: CreateFileDownloadInput): Promise<FileDownloadRow> {
     return withQueryMetrics('FileDownloads.upsert', async () => {
       // Validate file download input against schema
@@ -238,7 +237,7 @@ class FileQueries {
    * @param data - The fields to update
    * @returns The updated file download row
    */
-  @RequiresTable([{table: DatabaseTable.FileDownloads, operations: [DatabaseOperation.Select, DatabaseOperation.Update]}])
+  @RequiresTable([{table: 'file_downloads', operations: [DatabaseOperation.Select, DatabaseOperation.Update]}])
   static updateFileDownload(fileId: string, data: UpdateFileDownloadInput): Promise<FileDownloadRow> {
     return withQueryMetrics('FileDownloads.update', async () => {
       // Validate partial update data against schema
@@ -253,7 +252,7 @@ class FileQueries {
    * Deletes a file download record by file ID.
    * @param fileId - The file's unique identifier
    */
-  @RequiresTable([{table: DatabaseTable.FileDownloads, operations: [DatabaseOperation.Delete]}])
+  @RequiresTable([{table: 'file_downloads', operations: [DatabaseOperation.Delete]}])
   static deleteFileDownload(fileId: string): Promise<void> {
     return withQueryMetrics('FileDownloads.delete', async () => {
       const db = await getDrizzleClient()

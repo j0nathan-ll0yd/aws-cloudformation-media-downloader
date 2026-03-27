@@ -13,7 +13,6 @@ import {eq} from '@mantleframework/database/orm'
 import type {InferInsertModel, InferSelectModel} from '@mantleframework/database/orm'
 import {users} from '#db/schema'
 import {userInsertSchema, userUpdateSchema} from '#db/zodSchemas'
-import {DatabaseTable} from '#types/databasePermissions'
 
 export type UserRow = InferSelectModel<typeof users>
 
@@ -34,7 +33,7 @@ class UserQueries {
    * @param id - The user's UUID
    * @returns The user, or null if not found
    */
-  @RequiresTable([{table: DatabaseTable.Users, operations: [DatabaseOperation.Select]}])
+  @RequiresTable([{table: 'users', operations: [DatabaseOperation.Select]}])
   static getUser(id: string): Promise<UserItem | null> {
     return withQueryMetrics('Users.get', async () => {
       const db = await getDrizzleClient()
@@ -48,7 +47,7 @@ class UserQueries {
    * @param email - The email address to search for
    * @returns Array of users matching the email
    */
-  @RequiresTable([{table: DatabaseTable.Users, operations: [DatabaseOperation.Select]}])
+  @RequiresTable([{table: 'users', operations: [DatabaseOperation.Select]}])
   static getUsersByEmail(email: string): Promise<UserItem[]> {
     return withQueryMetrics('Users.getByEmail', async () => {
       const db = await getDrizzleClient()
@@ -61,7 +60,7 @@ class UserQueries {
    * @param input - The user data
    * @returns The created user
    */
-  @RequiresTable([{table: DatabaseTable.Users, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}])
+  @RequiresTable([{table: 'users', operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}])
   static createUser(input: CreateUserInput): Promise<UserItem> {
     return withQueryMetrics('Users.create', async () => {
       const validatedUser = userInsertSchema.parse(input)
@@ -77,7 +76,7 @@ class UserQueries {
    * @param data - The fields to update
    * @returns The updated user
    */
-  @RequiresTable([{table: DatabaseTable.Users, operations: [DatabaseOperation.Select, DatabaseOperation.Update]}])
+  @RequiresTable([{table: 'users', operations: [DatabaseOperation.Select, DatabaseOperation.Update]}])
   static updateUser(id: string, data: UpdateUserInput): Promise<UserItem> {
     return withQueryMetrics('Users.update', async () => {
       const validatedData = userUpdateSchema.partial().parse(data)
@@ -92,7 +91,7 @@ class UserQueries {
    * Note: Does NOT cascade - call deleteUserCascade for full cleanup.
    * @param id - The user's UUID
    */
-  @RequiresTable([{table: DatabaseTable.Users, operations: [DatabaseOperation.Delete]}])
+  @RequiresTable([{table: 'users', operations: [DatabaseOperation.Delete]}])
   static deleteUser(id: string): Promise<void> {
     return withQueryMetrics('Users.delete', async () => {
       const db = await getDrizzleClient()

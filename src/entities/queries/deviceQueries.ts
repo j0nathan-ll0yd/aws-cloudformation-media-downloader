@@ -11,7 +11,6 @@ import {eq, inArray} from '@mantleframework/database/orm'
 import type {InferInsertModel, InferSelectModel} from '@mantleframework/database/orm'
 import {devices} from '#db/schema'
 import {deviceInsertSchema, deviceUpdateSchema} from '#db/zodSchemas'
-import {DatabaseTable} from '#types/databasePermissions'
 
 export type DeviceRow = InferSelectModel<typeof devices>
 
@@ -29,7 +28,7 @@ class DeviceQueries {
    * @param deviceId - The device's unique identifier
    * @returns The device row or null if not found
    */
-  @RequiresTable([{table: DatabaseTable.Devices, operations: [DatabaseOperation.Select]}])
+  @RequiresTable([{table: 'devices', operations: [DatabaseOperation.Select]}])
   static getDevice(deviceId: string): Promise<DeviceRow | null> {
     return withQueryMetrics('Devices.get', async () => {
       const db = await getDrizzleClient()
@@ -43,7 +42,7 @@ class DeviceQueries {
    * @param deviceIds - Array of device IDs to retrieve
    * @returns Array of device rows
    */
-  @RequiresTable([{table: DatabaseTable.Devices, operations: [DatabaseOperation.Select]}])
+  @RequiresTable([{table: 'devices', operations: [DatabaseOperation.Select]}])
   static getDevicesBatch(deviceIds: string[]): Promise<DeviceRow[]> {
     return withQueryMetrics('Devices.getBatch', async () => {
       if (deviceIds.length === 0) {
@@ -59,7 +58,7 @@ class DeviceQueries {
    * @param input - The device data to create
    * @returns The created device row
    */
-  @RequiresTable([{table: DatabaseTable.Devices, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}])
+  @RequiresTable([{table: 'devices', operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}])
   static createDevice(input: CreateDeviceInput): Promise<DeviceRow> {
     return withQueryMetrics('Devices.create', async () => {
       // Validate device input against schema
@@ -76,7 +75,7 @@ class DeviceQueries {
    * @param input - The device data to upsert
    * @returns The created or updated device row
    */
-  @RequiresTable([{table: DatabaseTable.Devices, operations: [DatabaseOperation.Select, DatabaseOperation.Insert, DatabaseOperation.Update]}])
+  @RequiresTable([{table: 'devices', operations: [DatabaseOperation.Select, DatabaseOperation.Insert, DatabaseOperation.Update]}])
   static upsertDevice(input: CreateDeviceInput): Promise<DeviceRow> {
     return withQueryMetrics('Devices.upsert', async () => {
       // Validate device input against schema
@@ -96,7 +95,7 @@ class DeviceQueries {
    * @param data - The fields to update
    * @returns The updated device row
    */
-  @RequiresTable([{table: DatabaseTable.Devices, operations: [DatabaseOperation.Select, DatabaseOperation.Update]}])
+  @RequiresTable([{table: 'devices', operations: [DatabaseOperation.Select, DatabaseOperation.Update]}])
   static updateDevice(deviceId: string, data: UpdateDeviceInput): Promise<DeviceRow> {
     return withQueryMetrics('Devices.update', async () => {
       // Validate partial update data against schema
@@ -111,7 +110,7 @@ class DeviceQueries {
    * Deletes a device by ID.
    * @param deviceId - The device's unique identifier
    */
-  @RequiresTable([{table: DatabaseTable.Devices, operations: [DatabaseOperation.Delete]}])
+  @RequiresTable([{table: 'devices', operations: [DatabaseOperation.Delete]}])
   static deleteDevice(deviceId: string): Promise<void> {
     return withQueryMetrics('Devices.delete', async () => {
       const db = await getDrizzleClient()
@@ -123,7 +122,7 @@ class DeviceQueries {
    * Gets all devices (for scheduled jobs like PruneDevices).
    * @returns Array of all device rows
    */
-  @RequiresTable([{table: DatabaseTable.Devices, operations: [DatabaseOperation.Select]}])
+  @RequiresTable([{table: 'devices', operations: [DatabaseOperation.Select]}])
   static getAllDevices(): Promise<DeviceRow[]> {
     return withQueryMetrics('Devices.getAll', async () => {
       const db = await getDrizzleClient()
