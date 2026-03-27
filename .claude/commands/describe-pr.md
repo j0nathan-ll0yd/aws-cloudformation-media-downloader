@@ -51,7 +51,6 @@ Based on the changed files, categorize the PR:
 | `src/entities/*.ts` | Database schema |
 | `infra/*.tf` | Infrastructure |
 | `docs/**/*.md` | Documentation |
-| `src/mcp/**/*.ts` | MCP tools |
 | `package.json`, `pnpm-lock.yaml` | Dependencies |
 | `src/types/**/*.ts` | Type definitions |
 

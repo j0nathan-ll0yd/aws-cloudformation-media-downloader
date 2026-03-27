@@ -69,11 +69,9 @@ module.exports = {
         pathNot: [
           '\\.(test|spec)\\.(ts|js)$',
           '^src/lambdas/[^/]+/src/index\\.ts$',
-          '^src/mcp/server\\.ts$',
           '^graphrag/(extract|query)\\.ts$',
           '^scripts/',
           '\\.d\\.ts$',
-          '^src/mcp/test/fixtures/',
           '^src/types/', // Type files imported via #types alias
         ],
       },
@@ -154,75 +152,12 @@ module.exports = {
       },
     },
     {
-      comment: 'Allow MCP server to import handlers and tools',
-      from: {
-        path: '^src/mcp/server\\.ts$',
-      },
-      to: {
-        path: '^src/mcp/(handlers|tools)/',
-      },
-    },
-    {
-      comment: 'Allow MCP handlers to import shared utilities within handlers',
-      from: {
-        path: '^src/mcp/handlers/',
-      },
-      to: {
-        path: '^src/mcp/handlers/',
-      },
-    },
-    {
-      comment: 'Allow MCP validation rules to import validation types and other rules',
-      from: {
-        path: '^src/mcp/validation/',
-      },
-      to: {
-        path: '^src/mcp/validation/',
-      },
-    },
-    {
-      comment: 'Allow MCP parsers to import other parsers (including tests)',
-      from: {
-        path: '^src/mcp/parsers/',
-      },
-      to: {
-        path: '^src/mcp/parsers/',
-      },
-    },
-    {
-      comment: 'Allow MCP handlers to import validation, parsers, and templates',
-      from: {
-        path: '^src/mcp/handlers/',
-      },
-      to: {
-        path: '^src/mcp/(validation|parsers|templates)/',
-      },
-    },
-    {
-      comment: 'Allow MCP test files to import fixtures',
-      from: {
-        path: '^src/mcp/.*\\.test\\.ts$',
-      },
-      to: {
-        path: '^src/mcp/test/fixtures/',
-      },
-    },
-    {
       comment: 'Allow Lambda handlers to import config constants',
       from: {
         path: '^src/lambdas/',
       },
       to: {
         path: '^src/config/',
-      },
-    },
-    {
-      comment: 'Allow MCP tools to import handlers and types',
-      from: {
-        path: '^src/mcp/tools/',
-      },
-      to: {
-        path: '^src/mcp/(handlers|tools)/',
       },
     },
   ],

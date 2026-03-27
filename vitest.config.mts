@@ -25,7 +25,7 @@ export default defineConfig({
     coverage: {
       enabled: true,
       include: ['src/**/*.ts'],
-      exclude: ['src/**/*.test.ts', 'src/**/test/**', 'src/mcp/**', '**/*.json'],
+      exclude: ['src/**/*.test.ts', 'src/**/test/**', '**/*.json'],
       provider: 'v8',
       reportsDirectory: './coverage/unit'
     },

@@ -111,9 +111,9 @@ cat build/graph.json | jq '.files | keys[] | select(contains("src/lambdas") and 
 cat build/graph.json | jq '.files | to_entries | map({file: .key, importCount: (.value.imports | length)}) | sort_by(.importCount) | reverse[:10]'
 ```
 
-### Keeping MCP & GraphRAG in Sync
+### Keeping GraphRAG in Sync
 
-The MCP server (`src/mcp/`) and GraphRAG (`graphrag/`) use shared data sources for accuracy:
+The GraphRAG system (`graphrag/`) uses shared data sources for accuracy:
 
 | Data Source | Purpose | Auto-Updated |
 |-------------|---------|--------------|

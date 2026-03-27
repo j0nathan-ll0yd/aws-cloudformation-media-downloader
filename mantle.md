@@ -832,9 +832,8 @@ Always run `pnpm build` in `mantle/` after making framework changes to propagate
 Instance repos run `mantle check --severity HIGH` to validate conventions. This is enforced in CI as a required job.
 - Evidence: `@mantleframework/cli` check command, Lifegames Portal `.github/workflows/ci.yml`
 
-### MCP validation server — INFORMATIONAL
+### Convention validation — INFORMATIONAL
 
-Media-downloader has an MCP validation server with 29 convention rules (7 CRITICAL, 17 HIGH, 5 MEDIUM) using ts-morph AST analysis. These rules serve as the reference implementation for what `mantle check` enforces across all repos.
-- Evidence: `mantle-OfflineMediaDownloader/src/mcp/validation/`
+Convention validation is handled by `mantle check` which enforces rules across all repos using ts-morph AST analysis.
 
-This section does not duplicate individual rules. See per-project CLAUDE.md files for project-specific rule lists.
+See per-project CLAUDE.md files for project-specific rule lists.

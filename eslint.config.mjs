@@ -38,7 +38,6 @@ export default [
 
       'eslint.config.mjs',
       '.dependency-cruiser.cjs',
-      'src/mcp/test/fixtures/**/*',
       '**/*.fixture.ts',
       'eslint-local-rules/**/*',
       'infra/cloudfront-functions/**/*'

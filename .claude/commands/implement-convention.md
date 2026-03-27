@@ -26,26 +26,18 @@ Based on the convention type:
 
 | Pattern Type | Enforcement Method | Location |
 |--------------|-------------------|----------|
-| Import patterns | MCP rule (ts-morph) | `src/mcp/validation/rules/` |
-| Code structure | MCP rule (ts-morph) | `src/mcp/validation/rules/` |
-| Naming patterns | MCP rule (ts-morph) | `src/mcp/validation/rules/` |
+| Import patterns | `mantle check` rule | `mantle.config.ts` |
+| Code structure | `mantle check` rule | `mantle.config.ts` |
+| Naming patterns | `mantle check` rule | `mantle.config.ts` |
 | Test patterns | ESLint rule | `eslint-local-rules/rules/` |
-| SQL/migration patterns | MCP rule (file parsing) | `src/mcp/validation/rules/` |
+| SQL/migration patterns | `mantle check` rule | `mantle.config.ts` |
 | Build-time checks | Script | `bin/` or `scripts/` |
 
 ### Step 3: Research Existing Patterns
 
-**For MCP rules:**
-```
-MCP Tool: validate_pattern
-Query: rules
-```
+**For `mantle check` rules:**
 
-Find similar rules in `src/mcp/validation/rules/` to use as templates:
-- `aws-sdk-encapsulation.ts` - Import pattern detection
-- `cascade-safety.ts` - Code structure validation
-- `naming-conventions.ts` - Naming pattern enforcement
-- `comment-conventions.ts` - File content analysis
+Review `mantle.config.ts` for existing rule patterns to use as templates. Run `pnpm run validate:conventions` to see all currently enforced rules and their structure.
 
 **For ESLint rules:**
 Review `eslint-local-rules/rules/` for patterns:
@@ -55,44 +47,9 @@ Review `eslint-local-rules/rules/` for patterns:
 
 ### Step 4: Implement the Rule
 
-#### MCP Rule Structure
+#### Mantle Check Rule Structure
 
-1. **Create rule file**: `src/mcp/validation/rules/{rule-name}.ts`
-
-```typescript
-import type {SourceFile} from 'ts-morph'
-import {SyntaxKind} from 'ts-morph'
-import {createViolation} from '../types'
-import type {ValidationRule, Violation} from '../types'
-
-const RULE_NAME = 'rule-name'
-const SEVERITY = 'CRITICAL' as const  // 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW'
-
-export const ruleNameRule: ValidationRule = {
-  name: RULE_NAME,
-  description: 'Clear description of what this rule enforces',
-  severity: SEVERITY,
-  appliesTo: ['src/**/*.ts'],  // Glob patterns
-  excludes: ['**/*.test.ts'],   // Optional exclusions
-
-  validate(sourceFile: SourceFile, filePath: string): Violation[] {
-    const violations: Violation[] = []
-
-    // Use ts-morph to analyze the AST
-    // Return violations with line numbers and suggestions
-
-    return violations
-  }
-}
-```
-
-2. **Create test file**: `src/mcp/validation/rules/{rule-name}.test.ts`
-
-3. **Register in index**: `src/mcp/validation/index.ts`
-   - Import the rule
-   - Add to `allRules` array (grouped by severity)
-   - Add to `rulesByName` with aliases
-   - Export individually
+Convention enforcement is done via the Mantle CLI's convention validation engine. Add rules to `mantle.config.ts` following the existing rule patterns. Run `pnpm run validate:conventions` to execute all rules.
 
 #### ESLint Rule Structure
 
@@ -140,8 +97,7 @@ module.exports = {
 ### Step 6: Validate Implementation
 
 ```bash
-# For MCP rules
-pnpm test src/mcp/validation/rules/{rule-name}.test.ts
+# For mantle check rules
 pnpm run validate:conventions
 
 # For ESLint rules
@@ -162,11 +118,11 @@ pnpm test
 
 ### Rule Created
 - **Name**: {rule-name}
-- **Type**: MCP / ESLint
+- **Type**: mantle check / ESLint
 - **Severity**: CRITICAL / HIGH / MEDIUM / LOW
 - **Files**:
-  - `src/mcp/validation/rules/{rule-name}.ts`
-  - `src/mcp/validation/rules/{rule-name}.test.ts`
+  - `mantle.config.ts` (updated with new rule)
+  - `eslint-local-rules/rules/{rule-name}.cjs` (if ESLint rule)
 
 ### Documentation Updated
 - [x] Conventions-Tracking.md updated
@@ -239,7 +195,6 @@ if (filePath.endsWith('.sql')) {
 ## References
 
 - Conventions Tracking: `docs/wiki/Meta/Conventions-Tracking.md`
-- MCP Validation: `src/mcp/validation/`
+- Mantle Convention Validation: `mantle.config.ts` + `pnpm run validate:conventions`
 - ESLint Local Rules: `eslint-local-rules/`
-- Example MCP Rule: `src/mcp/validation/rules/aws-sdk-encapsulation.ts`
 - Example ESLint Rule: `eslint-local-rules/rules/no-direct-aws-sdk-import.cjs`

@@ -1,9 +1,0 @@
-{
-  "mcpServers": {
-    "media-downloader": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["tsx", "src/mcp/server.ts"]
-    }
-  }
-}

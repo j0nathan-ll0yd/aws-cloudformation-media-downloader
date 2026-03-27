@@ -76,8 +76,6 @@
     "localstack:logs": "docker compose -f docker-compose.localstack.yml logs -f localstack",
     "localstack:start": "docker compose -f docker-compose.localstack.yml up -d",
     "localstack:stop": "docker compose -f docker-compose.localstack.yml down",
-    "mcp:inspect": "pnpm exec mcp-inspector src/mcp/server.ts",
-    "mcp:server": "node --import tsx src/mcp/server.ts",
     "pack:context": "repomix",
     "pack:light": "repomix --include \"src/**/*.ts,docs/**/*.md,AGENTS.md\" --ignore \"**/*.test.ts,**/*.spec.ts\"",
     "plan:staging": "mantle deploy --stage staging --dry-run",

@@ -86,7 +86,6 @@ Verify all documented conventions have corresponding wiki pages.
 Cross-reference AGENTS.md with actual codebase:
 - Lambda list matches `src/lambdas/`
 - Entity list matches `src/entities/`
-- MCP tools match `src/mcp/handlers/`
 
 ---
 

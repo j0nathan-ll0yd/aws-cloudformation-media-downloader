@@ -170,9 +170,6 @@ pnpm run plan:production          # Plan production changes
 ## 6. AI AGENT HELPERS (MCP, Commands)
 
 **Files to Read (ALL):**
-- `src/mcp/server.ts`
-- ALL files in `src/mcp/handlers/`
-- ALL files in `src/mcp/validation/`
 - ALL files in `.claude/commands/`
 - `graphrag/metadata.json`
 - `graphrag/extract.ts`

@@ -49,7 +49,6 @@
     "**/*.fixture.ts",
     "test/**/*",
     "./src/types/terraform.d.ts",
-    "src/mcp/test/fixtures/**/*",
     "src/lib/**/*"
   ]
 }

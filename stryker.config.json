@@ -35,7 +35,6 @@
     "!src/**/*.test.ts",
     "!src/**/*.fixture.ts",
     "!src/**/*.d.ts",
-    "!src/mcp/**",
     "!src/db/client.ts",
     "!src/db/schema.ts"
   ],

@@ -85,27 +85,10 @@ main() {
   fi
 
   # =============================================================================
-  # Check 3: MCP validation rule count
+  # Check 3: Convention validation (managed by Mantle)
   # =============================================================================
-  echo -n "  [3/11] Checking MCP rule count... "
-  if [ -d "src/mcp/validation/rules" ]; then
-    # Exclude cicd-conventions.ts as it's a YAML validator, not a TypeScript AST rule
-    MCP_RULE_COUNT=$(find src/mcp/validation/rules -name "*.ts" ! -name "*.test.ts" ! -name "index.ts" ! -name "types.ts" ! -name "cicd-conventions.ts" 2> /dev/null | wc -l | tr -d ' ')
-
-    # Count rules in the allRules array by counting lines ending with "Rule" or "Rule,"
-    # This counts the actual rule references in the array
-    REGISTERED_RULE_COUNT=$(sed -n '/export const allRules/,/^]/p' src/mcp/validation/index.ts 2> /dev/null | grep -cE '[a-z]Rule,?$' || echo "0")
-
-    if [ "$MCP_RULE_COUNT" -ne "$REGISTERED_RULE_COUNT" ]; then
-      echo -e "${RED}MISMATCH${NC}"
-      ERRORS="$ERRORS\n  - MCP rules: found $MCP_RULE_COUNT rule files, $REGISTERED_RULE_COUNT registered in index.ts"
-    else
-      echo -e "${GREEN}OK${NC} ($MCP_RULE_COUNT rules)"
-    fi
-  else
-    # MCP validation moved to Mantle framework — skip check
-    echo -e "${GREEN}SKIP${NC} (MCP validation managed by Mantle)"
-  fi
+  echo -n "  [3/11] Convention validation... "
+  echo -e "${GREEN}SKIP${NC} (managed by mantle check)"
 
   # =============================================================================
   # Check 4: Critical paths exist

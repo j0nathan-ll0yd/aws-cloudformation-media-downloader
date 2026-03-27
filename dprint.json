@@ -83,7 +83,6 @@
     "**/.git",
     ".omc/**",
     "infra/**",
-    "src/mcp/test/fixtures/**/config-*.fixture.ts"
   ],
 
   "plugins": [

@@ -45,7 +45,6 @@
   ],
   "exclude": [
     "node_modules",
-    "**/*.fixture.ts",
-    "src/mcp/test/fixtures/**/*"
+    "**/*.fixture.ts"
   ]
 }
