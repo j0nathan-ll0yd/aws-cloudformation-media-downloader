@@ -69,6 +69,9 @@ module.exports = {
         pathNot: [
           '\\.(test|spec)\\.(ts|js)$',
           '^src/lambdas/[^/]+/src/index\\.ts$',
+          '^src/lambdas/.+\\.(get|post|put|delete|patch)\\.ts$',
+          '^src/index\\.ts$',
+          '^src/util/vitest-setup\\.ts$',
           '^graphrag/(extract|query)\\.ts$',
           '^scripts/',
           '\\.d\\.ts$',
@@ -116,7 +119,7 @@ module.exports = {
       comment: 'Allow imports from shared utilities',
       from: {},
       to: {
-        path: '^src/(util|types)/',
+        path: '^src/(util|utils|types)/',
       },
     },
     {
@@ -140,6 +143,50 @@ module.exports = {
       },
       to: {
         path: '^src/entities/queries/',
+      },
+    },
+    {
+      comment: 'Allow imports from database layer',
+      from: {},
+      to: {
+        path: '^src/db/',
+      },
+    },
+    {
+      comment: 'Allow imports from domain layer',
+      from: {},
+      to: {
+        path: '^src/domain/',
+      },
+    },
+    {
+      comment: 'Allow imports from services layer',
+      from: {},
+      to: {
+        path: '^src/services/',
+      },
+    },
+    {
+      comment: 'Allow imports from integrations layer',
+      from: {},
+      to: {
+        path: '^src/integrations/',
+      },
+    },
+    {
+      comment: 'Allow imports from errors module',
+      from: {},
+      to: {
+        path: '^src/errors/',
+      },
+    },
+    {
+      comment: 'Allow barrel export to import all Lambda handlers',
+      from: {
+        path: '^src/index\\.ts$',
+      },
+      to: {
+        path: '^src/lambdas/',
       },
     },
     {
