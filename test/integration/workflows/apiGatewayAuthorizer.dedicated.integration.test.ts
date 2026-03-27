@@ -20,7 +20,7 @@ import type {Context} from 'aws-lambda'
 import {createObservabilityMock} from '@mantleframework/testing/lambda-mocks'
 
 // Test helpers
-import {closeTestDb, createAllTables, dropAllTables, getTestDbAsync, insertSession, insertUser, truncateAllTables} from '../helpers/postgres-helpers'
+import {closeTestDb, createAllTables, getTestDbAsync, insertSession, insertUser, truncateAllTables} from '../helpers/postgres-helpers'
 import {createMockContext} from '../helpers/lambda-context'
 import {createMockAPIGatewayRequestAuthorizerEvent} from '../helpers/test-data'
 
@@ -60,7 +60,7 @@ describe('ApiGatewayAuthorizer Dedicated Integration Tests', () => {
   })
 
   afterAll(async () => {
-    await dropAllTables()
+    await truncateAllTables()
     await closeTestDb()
   })
 
