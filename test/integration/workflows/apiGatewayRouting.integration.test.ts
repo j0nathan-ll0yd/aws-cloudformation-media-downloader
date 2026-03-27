@@ -7,7 +7,6 @@
  */
 
 // Set environment variables before imports
-process.env.USE_LOCALSTACK = 'true'
 process.env.AWS_REGION = 'us-west-2'
 
 import {afterAll, beforeAll, describe, expect, test} from 'vitest'

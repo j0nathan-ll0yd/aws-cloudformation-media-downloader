@@ -4,10 +4,8 @@
  * Utilities for setting up and querying test data in PostgreSQL
  * for Drizzle/Aurora DSQL integration tests.
  *
- * Each Jest worker gets its own PostgreSQL schema for complete isolation
- * during parallel test execution. Schema is determined by JEST_WORKER_ID.
- *
- * Requires: docker-compose -f docker-compose.test.yml up -d
+ * Each Vitest worker gets its own PostgreSQL schema for complete isolation
+ * during parallel test execution. Schema is determined by VITEST_POOL_ID.
  */
 
 import {drizzle} from 'drizzle-orm/postgres-js'

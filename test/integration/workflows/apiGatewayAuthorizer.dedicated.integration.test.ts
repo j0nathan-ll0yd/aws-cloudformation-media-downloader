@@ -11,7 +11,6 @@
  */
 
 // Set environment variables before imports
-process.env.USE_LOCALSTACK = 'true'
 process.env.AWS_REGION = 'us-west-2'
 process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
 process.env.MULTI_AUTHENTICATION_PATH_PARTS = 'auth/login,auth/register,webhooks/feedly'
