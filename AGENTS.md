@@ -252,7 +252,7 @@ Queued | Downloading | Downloaded | Failed
 pnpm run precheck              # Type check + lint (run before commits)
 pnpm run test                  # Unit tests
 pnpm run check:conventions  # MCP rule validation
-pnpm run ci:local              # Full local CI
+npx mantle ci                  # Full local CI
 ```
 
 ### Deployment Commands

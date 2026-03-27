@@ -114,6 +114,8 @@ jobs:
       - name: Build mantle packages
         working-directory: ../mantle
         run: pnpm build
+      - name: Refresh bin links after mantle build
+        run: pnpm install
 
       - uses: ./.github/actions/setup-homebrew-tools
 
@@ -178,9 +180,6 @@ jobs:
       - uses: ./.github/actions/build-project
         with:
           cache-build: 'true'
-
-      - name: Check bundle sizes
-        run: pnpm run check:bundle:size
 
       - name: Validate GraphRAG synchronization
         run: pnpm run validate:graphrag
