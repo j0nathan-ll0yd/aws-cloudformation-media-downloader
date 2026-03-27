@@ -169,7 +169,12 @@ async function discoverEntities(): Promise<string[]> {
  */
 async function discoverTypeSpecModels(): Promise<TypeSpecModelMetadata[]> {
   const modelsPath = path.join(projectRoot, 'tsp', 'models', 'models.tsp')
-  const content = await fs.readFile(modelsPath, 'utf-8')
+  let content: string
+  try {
+    content = await fs.readFile(modelsPath, 'utf-8')
+  } catch {
+    return []
+  }
   const models: TypeSpecModelMetadata[] = []
 
   // Parse model definitions
@@ -344,7 +349,12 @@ function parseTypeSpecInterface(content: string, interfaceMatch: RegExpMatchArra
  */
 async function discoverTypeSpecEndpoints(): Promise<TypeSpecEndpointMetadata[]> {
   const operationsPath = path.join(projectRoot, 'tsp', 'operations', 'operations.tsp')
-  const content = await fs.readFile(operationsPath, 'utf-8')
+  let content: string
+  try {
+    content = await fs.readFile(operationsPath, 'utf-8')
+  } catch {
+    return []
+  }
   const endpoints: TypeSpecEndpointMetadata[] = []
 
   // Find all interface definitions
