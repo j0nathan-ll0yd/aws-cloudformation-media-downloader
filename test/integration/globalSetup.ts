@@ -14,11 +14,11 @@ import * as fs from 'fs'
 import * as path from 'path'
 import postgres from 'postgres'
 
-// Create more schemas than maxWorkers to handle edge cases where Vitest
-// assigns higher pool IDs (e.g., for the main thread, test shuffling, or
-// internal coordination threads). Vitest may use pool IDs beyond maxWorkers.
-// Set to 20 to safely cover all possible pool IDs with margin.
-const MAX_WORKERS = 20
+// Create 2x the CI maxWorkers (4) to handle edge cases where Vitest
+// assigns pool IDs beyond maxWorkers. In forks mode, VITEST_POOL_ID
+// is 0-indexed from 0 to maxWorkers-1, but we add safety margin.
+// Must match MAX_WORKERS in globalTeardown.ts (currently 8).
+const MAX_WORKERS = 8
 
 /**
  * Get schema prefix for CI isolation.

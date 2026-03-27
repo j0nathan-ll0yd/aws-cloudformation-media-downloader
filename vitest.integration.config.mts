@@ -2,6 +2,7 @@ import {resolve} from 'path'
 import {cpus} from 'os'
 import {defineConfig} from 'vitest/config'
 import swc from 'unplugin-swc'
+import {TIMEOUTS} from '@mantleframework/testing/integration'
 
 const isCI = process.env.CI === 'true'
 const maxWorkers = isCI ? 4 : Math.min(cpus().length, 6)
@@ -48,7 +49,7 @@ export default defineConfig({
     exclude: ['node_modules/**', 'dist/**', 'build/**'],
     clearMocks: true,
     testTimeout: 30000,
-    hookTimeout: 60000,
+    hookTimeout: isCI ? TIMEOUTS.hookTimeout : 60_000,
     pool: 'forks',
     maxWorkers,
     globalSetup: './test/integration/globalSetup.ts',
