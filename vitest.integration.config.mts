@@ -1,11 +1,13 @@
 import {resolve} from 'path'
 import {cpus} from 'os'
 import {defineConfig} from 'vitest/config'
+import swc from 'unplugin-swc'
 
 const isCI = process.env.CI === 'true'
 const maxWorkers = isCI ? 4 : Math.min(cpus().length, 6)
 
 export default defineConfig({
+  plugins: [swc.vite({jsc: {target: 'es2024', parser: {syntax: 'typescript', decorators: true}, transform: {decoratorVersion: '2023-11'}}})],
   resolve: {
     alias: {
       '#config': resolve(__dirname, 'src/config'),
