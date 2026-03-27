@@ -199,10 +199,12 @@ export async function setup(): Promise<void> {
       log(`[globalSetup] Schema ${schemaName} ready with ${schemaStatements.length} statements`)
     }
 
-    // Create all schemas in parallel for faster setup
-    // This ensures all schemas are ready before any tests start
-    const workerIds = Array.from({length: MAX_WORKERS}, (_, i) => i + 1)
-    await Promise.all(workerIds.map(createSchema))
+    // Create schemas sequentially to avoid connection pool contention
+    // and PostgreSQL catalog lock conflicts during parallel CREATE TABLE.
+    // With fsync=off + tmpfs, sequential creation is fast enough (~2-5s total).
+    for (let workerId = 1; workerId <= MAX_WORKERS; workerId++) {
+      await createSchema(workerId)
+    }
 
     log(`[globalSetup] All ${MAX_WORKERS} worker schemas created successfully`)
   } catch (error) {
