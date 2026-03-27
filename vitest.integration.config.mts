@@ -52,7 +52,11 @@ export default defineConfig({
       ENVIRONMENT: 'test',
       EVENT_BUS_NAME: 'MediaDownloader',
       EVENT_SOURCE: 'media-downloader',
-      LOG_LEVEL: 'SILENT'
+      LOG_LEVEL: 'SILENT',
+      TEST_DATABASE_URL: 'postgres://test:test@localhost:5432/media_downloader_test',
+      DSQL_ENDPOINT: 'localhost',
+      DSQL_REGION: 'us-west-2',
+      DSQL_ROLE_NAME: 'test'
     },
     alias: {
       '#entities': resolve(__dirname, 'src/entities'),

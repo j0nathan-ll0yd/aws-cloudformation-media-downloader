@@ -6,7 +6,7 @@
  */
 
 import {beforeAll} from 'vitest'
-import {getTestDbAsync} from './helpers/postgres-helpers'
+import {getTestDbAsync, getWorkerSchema} from './helpers/postgres-helpers'
 import {logIsolationConfig, validateSchemaIsolation} from './helpers/isolation-validator'
 import {POLLING, TIMEOUTS} from './helpers/timeout-config'
 
@@ -15,6 +15,13 @@ import {POLLING, TIMEOUTS} from './helpers/timeout-config'
  * This triggers all vendor wrappers to use LocalStack clients instead of production AWS
  */
 process.env.USE_LOCALSTACK = 'true'
+
+/**
+ * Set TEST_DATABASE_SCHEMA for @mantleframework/database
+ * This ensures getDrizzleClient() uses the same worker-isolated schema
+ * as the test's getTestDbAsync() connection
+ */
+process.env.TEST_DATABASE_SCHEMA = getWorkerSchema()
 
 /**
  * Set AWS region for LocalStack
