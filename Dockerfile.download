@@ -3,6 +3,13 @@
 # Target architecture: x86_64 (matching binary dependencies)
 
 # ===========================================================
+# Build bgutil Python plugin (pip install in Lambda Python image)
+# ===========================================================
+FROM public.ecr.aws/lambda/python:3.12-x86_64 AS bgutil-builder
+COPY layers/bgutil/requirements.txt /tmp/requirements.txt
+RUN pip install -r /tmp/requirements.txt -t /opt/python --no-cache-dir --quiet && chmod -R 755 /opt/python
+
+# ===========================================================
 # Binary dependencies (cached independently of app code)
 # ===========================================================
 FROM public.ecr.aws/lambda/nodejs:24-x86_64 AS base
@@ -35,8 +42,8 @@ RUN cd /tmp && tar xf ffmpeg.tar.xz --wildcards '*/ffmpeg' '*/ffprobe' --strip-c
 # --- yt-dlp cookies ---
 COPY layers/yt-dlp/cookies/ /opt/cookies/
 
-# --- bgutil Python plugin for yt-dlp ---
-COPY layers/bgutil/build/python/ /opt/python/
+# --- bgutil Python plugin for yt-dlp (from builder stage) ---
+COPY --from=bgutil-builder /opt/python/ /opt/python/
 
 # ===========================================================
 # Application code (changes frequently)
