@@ -26,7 +26,7 @@ Root causes:
 Implement mandatory drift prevention workflow with automated checks.
 
 ### Mandatory Workflow
-1. **NEVER run `tofu apply` directly** - Always use `pnpm run deploy`
+1. **NEVER run `tofu apply` directly** - Always use `pnpm run deploy:staging`
 2. **Pre-deploy drift check** - `bin/pre-deploy-check.sh` runs automatically
 3. **Post-deploy verification** - `pnpm run state:verify`
 4. **Regular audits** - `pnpm run audit:aws` weekly
@@ -74,7 +74,7 @@ locals {
 
 | Method | Purpose |
 |--------|---------|
-| `pnpm run deploy` | Enforces pre-deploy check |
+| `pnpm run deploy:staging` | Enforces pre-deploy check |
 | `bin/pre-deploy-check.sh` | Blocks on drift (exit code 2) |
 | MCP rule `drift-prevention` | Validates `pnpm deploy` usage |
 | Post-checkout hook | Validates state file integrity |

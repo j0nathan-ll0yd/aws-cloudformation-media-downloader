@@ -188,6 +188,8 @@ jobs:
       - name: Build mantle packages
         working-directory: ../mantle
         run: pnpm build
+      - name: Refresh bin links after mantle build
+        run: pnpm install
 
       - uses: ./.github/actions/setup-homebrew-tools
       - uses: ./.github/actions/build-project

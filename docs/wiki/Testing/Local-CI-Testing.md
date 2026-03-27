@@ -18,12 +18,12 @@ pnpm run prepare
 pnpm run ci:local
 
 # Full CI (includes integration tests with LocalStack)
-pnpm run ci:local:full
+pnpm run ci:local
 ```
 
 ## Pre-Push Hook
 
-This project uses Husky to enforce CI checks before pushing. When you run `git push`, the pre-push hook automatically runs `pnpm run ci:local:full` (~5-10 minutes).
+This project uses Husky to enforce CI checks before pushing. When you run `git push`, the pre-push hook automatically runs `pnpm run ci:local` (~5-10 minutes).
 
 **First time setup** (after cloning):
 ```bash
@@ -47,19 +47,19 @@ git push --no-verify
 | Command | Duration | What it runs |
 |---------|----------|--------------|
 | `pnpm run ci:local` | ~2-3 min | All checks except integration tests |
-| `pnpm run ci:local:full` | ~5-10 min | Everything including integration tests |
+| `pnpm run ci:local` | ~5-10 min | Everything including integration tests |
 | `pnpm run test:integration` | ~30 sec | Integration tests only (LocalStack must be running) |
 | `pnpm run validate:docs` | ~1 sec | Documentation script validation only |
 | `pnpm run validate:graphrag` | ~5 sec | GraphRAG freshness check only |
 | `pnpm run lint:workflows` | ~1 sec | GitHub Actions YAML validation (requires actionlint) |
 
-### Why Both `ci:local:full` and `test:integration`?
+### Why Both `ci:local` and `test:integration`?
 
 These serve different purposes:
 
 | Command | LocalStack Lifecycle | Use Case |
 |---------|---------------------|----------|
-| `ci:local:full` | Manages start/stop automatically | Pre-push validation, comprehensive CI |
+| `ci:local` | Manages start/stop automatically | Pre-push validation, comprehensive CI |
 | `test:integration` | Assumes already running | Fast iteration when developing tests |
 
 **When developing integration tests**, use `test:integration` for rapid feedback:
@@ -79,7 +79,7 @@ pnpm run test:integration   # run again
 pnpm run localstack:stop
 ```
 
-**For pre-push validation**, use `ci:local:full` (or let the pre-push hook run it automatically).
+**For pre-push validation**, use `ci:local` (or let the pre-push hook run it automatically).
 
 ## What ci:local Checks
 
@@ -154,7 +154,7 @@ This catches:
 
 1. **During development**: Run `pnpm run precheck` frequently (type check + lint)
 2. **Before committing**: Run `pnpm run ci:local` (fast, ~2-3 min)
-3. **Before pushing**: The pre-push hook runs `ci:local:full` automatically
+3. **Before pushing**: The pre-push hook runs `ci:local` automatically
 4. **After pushing**: Monitor GitHub Actions for the remaining 5% of checks
 
 ## Troubleshooting

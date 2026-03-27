@@ -48,7 +48,7 @@ This runbook documents all secrets used in the media downloader infrastructure, 
    ```
 4. Deploy the updated layer:
    ```bash
-   pnpm run deploy
+   pnpm run deploy:staging
    ```
 
 **Troubleshooting**:
@@ -86,7 +86,7 @@ This runbook documents all secrets used in the media downloader infrastructure, 
 5. Re-encrypt and deploy:
    ```bash
    pnpm run build-dependencies  # Auto-encrypts
-   pnpm run deploy
+   pnpm run deploy:staging
    ```
 
 **Verification**:
@@ -140,7 +140,7 @@ curl -H "Authorization: token YOUR_TOKEN" \
 7. Re-encrypt and deploy:
    ```bash
    pnpm run build-dependencies
-   pnpm run deploy
+   pnpm run deploy:staging
    ```
 
 **Verification**:
@@ -170,7 +170,7 @@ curl -H "Authorization: token YOUR_TOKEN" \
 3. Re-encrypt and deploy:
    ```bash
    pnpm run build-dependencies
-   pnpm run deploy
+   pnpm run deploy:staging
    ```
 
 **Post-rotation**:
@@ -202,7 +202,7 @@ curl -H "Authorization: token YOUR_TOKEN" \
 7. Re-encrypt and deploy:
    ```bash
    pnpm run build-dependencies
-   pnpm run deploy
+   pnpm run deploy:staging
    ```
 
 ---
@@ -212,7 +212,7 @@ curl -H "Authorization: token YOUR_TOKEN" \
 If a secret is suspected to be compromised:
 
 1. **Immediate**: Rotate the affected secret using procedures above
-2. **Deploy**: Push changes immediately with `pnpm run deploy`
+2. **Deploy**: Push changes immediately with `pnpm run deploy:staging`
 3. **Audit**: Check CloudWatch logs for unauthorized access
 4. **Notify**: Update team on incident
 

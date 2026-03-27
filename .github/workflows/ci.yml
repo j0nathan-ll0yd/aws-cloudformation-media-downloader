@@ -129,6 +129,8 @@ jobs:
       - name: Build mantle packages
         working-directory: ../mantle
         run: pnpm build
+      - name: Refresh bin links after mantle build
+        run: pnpm install
       - run: pnpm run build
       - name: Verify Lambda outputs
         run: |

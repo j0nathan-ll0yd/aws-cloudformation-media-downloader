@@ -218,7 +218,7 @@ The `.husky/post-checkout` hook automatically configures worktrees:
 | Semantic search | `index:codebase` runs in background |
 | Repomix | `pack:context` generates AI context (background) |
 
-After navigating to a new worktree, you can immediately run `pnpm run deploy`.
+After navigating to a new worktree, you can immediately run `pnpm run deploy:staging`.
 
 ### Claude Code and Worktrees
 

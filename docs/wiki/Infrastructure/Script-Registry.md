@@ -50,7 +50,7 @@ Scripts documented in `AGENTS.md` and `README.md` are automatically validated ag
 **Purpose**: Run integration tests against LocalStack
 **Dependencies**: LocalStack (Docker), vitest
 **CI Coverage**: Yes (integration-tests.yml)
-**Notes**: Requires LocalStack already running. Use for fast iteration when developing integration tests (~30 s). For full lifecycle management, use `ci:local:full` instead.
+**Notes**: Requires LocalStack already running. Use for fast iteration when developing integration tests (~30 s). For full lifecycle management, use `ci:local` instead.
 
 ---
 
@@ -62,7 +62,7 @@ Scripts documented in `AGENTS.md` and `README.md` are automatically validated ag
 **CI Coverage**: Mirrors unit-tests.yml + dependency-check.yml
 **Notes**: ~2-3 minutes; catches ~95% of CI failures. Use before committing.
 
-### `pnpm run ci:local:full`
+### `pnpm run ci:local`
 **Purpose**: Run complete CI checks including integration tests
 **Dependencies**: All ci:local deps + Docker (for LocalStack)
 **CI Coverage**: Mirrors all CI workflows
@@ -228,12 +228,6 @@ Scripts documented in `AGENTS.md` and `README.md` are automatically validated ag
 
 ## Infrastructure Scripts
 
-### `pnpm run plan`
-**Purpose**: Run OpenTofu plan (requires workspace selection)
-**Dependencies**: OpenTofu, AWS credentials, `.env` file
-**CI Coverage**: No
-**Notes**: Preview infrastructure changes; use environment-specific variants instead
-
 ### `pnpm run plan:staging`
 **Purpose**: Run OpenTofu plan for staging environment
 **Dependencies**: OpenTofu, AWS credentials, `.env` file
@@ -245,12 +239,6 @@ Scripts documented in `AGENTS.md` and `README.md` are automatically validated ag
 **Dependencies**: OpenTofu, AWS credentials, `.env` file
 **CI Coverage**: No
 **Notes**: Selects production workspace and uses production.tfvars
-
-### `pnpm run deploy`
-**Purpose**: Deploy infrastructure with OpenTofu
-**Dependencies**: OpenTofu, AWS credentials, `.env` file
-**CI Coverage**: No
-**Notes**: Auto-approve enabled; use environment-specific variants instead
 
 ### `pnpm run deploy:staging`
 **Purpose**: Deploy to staging environment
@@ -306,7 +294,7 @@ Scripts documented in `AGENTS.md` and `README.md` are automatically validated ag
 
 | Tool | Scripts Using It | Installation |
 |------|------------------|--------------|
-| Docker | build-dependencies, localstack:*, test:integration, ci:local:full | `brew install docker` |
+| Docker | build-dependencies, localstack:*, test:integration, ci:local | `brew install docker` |
 | terraform-docs | document-terraform | `brew install terraform-docs` |
 | hcl2json | ci:local, build-dependencies | `brew install hcl2json` |
 | jq | test-remote-*, localstack:health, validate:docs | `brew install jq` |

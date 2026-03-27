@@ -7,7 +7,7 @@ This document provides a comprehensive comparison of checks run across different
 | Script/Workflow | Purpose | Approx. Time |
 |-----------------|---------|--------------|
 | `pnpm run ci:local` | Fast local CI (no integration tests) | ~2-3 min |
-| `pnpm run ci:local:full` | Full local CI with integration tests | ~5-10 min |
+| `pnpm run ci:local` | Full local CI with integration tests | ~5-10 min |
 | `pnpm run cleanup` | Comprehensive cleanup with auto-fixes | Varies |
 | GitHub `unit-tests.yml` | Remote unit test pipeline | ~3-5 min |
 | GitHub `integration-tests.yml` | Remote integration tests | ~5-8 min |
@@ -103,7 +103,7 @@ Runs all essential checks in ~2-3 minutes with parallel execution.
 
 ### Before Pushing (Full Check)
 ```bash
-pnpm run ci:local:full
+pnpm run ci:local
 ```
 Includes integration tests against LocalStack (~5-10 minutes).
 

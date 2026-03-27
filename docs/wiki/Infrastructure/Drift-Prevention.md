@@ -150,7 +150,7 @@ The project includes several automated checks:
 
 ### Pre-Deploy Check
 
-`bin/pre-deploy-check.sh` runs automatically before `pnpm run deploy`:
+`bin/pre-deploy-check.sh` runs automatically before `pnpm run deploy:staging`:
 
 - Verifies state file exists and is readable
 - Runs `tofu plan -detailed-exitcode`
