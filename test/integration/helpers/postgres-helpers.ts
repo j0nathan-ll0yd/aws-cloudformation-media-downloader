@@ -147,20 +147,26 @@ export async function createAllTables(): Promise<void> {
 
   const rows = [...schemaCheck] as Array<{exists: boolean}>
   if (!rows[0]?.exists) {
-    // Schema not found — log available schemas for debugging
+    // Schema tables not found — gather diagnostics
     const allSchemas = await db.execute(
       sql.raw(`SELECT schema_name FROM information_schema.schemata WHERE schema_name LIKE '%worker%' ORDER BY schema_name`)
     )
     const schemaNames = [...allSchemas].map((r: Record<string, unknown>) => r.schema_name)
 
-    // Also check if the connection is actually pointing at the right database
-    const dbCheck = await db.execute(sql.raw(`SELECT current_database(), current_user`))
-    const dbInfo = [...dbCheck][0] as Record<string, unknown> | undefined
+    // Check what tables DO exist in this schema
+    const tablesInSchema = await db.execute(sql.raw(`SELECT table_name FROM information_schema.tables WHERE table_schema = '${schema}' ORDER BY table_name`))
+    const tableNames = [...tablesInSchema].map((r: Record<string, unknown>) => r.table_name)
+
+    // Check current search_path and connection state
+    const connCheck = await db.execute(sql.raw(`SELECT current_database(), current_user, current_schema(), current_setting('search_path') as search_path`))
+    const connInfo = [...connCheck][0] as Record<string, unknown> | undefined
 
     throw new Error(
-      `[createAllTables] Schema '${schema}' not found. ` +
-        `Available worker schemas: [${schemaNames.join(', ')}]. ` +
-        `Database: ${dbInfo?.current_database}, User: ${dbInfo?.current_user}. ` +
+      `[createAllTables] Table 'users' not found in schema '${schema}'. ` +
+        `Tables in schema: [${tableNames.join(', ') || 'NONE'}]. ` +
+        `Worker schemas exist: [${schemaNames.join(', ')}]. ` +
+        `Connection: db=${connInfo?.current_database}, user=${connInfo?.current_user}, ` +
+        `schema=${connInfo?.current_schema}, search_path=${connInfo?.search_path}. ` +
         `VITEST_POOL_ID=${process.env.VITEST_POOL_ID}, GITHUB_RUN_ID=${process.env.GITHUB_RUN_ID}`
     )
   }
