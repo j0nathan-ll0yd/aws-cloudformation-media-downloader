@@ -1,5 +1,5 @@
 name: 'Build Project'
-description: 'Run full project build with optional caching'
+description: 'Run full project build with dependency graph generation'
 
 inputs:
   cache-build:
@@ -23,6 +23,10 @@ runs:
         key: build-${{ runner.os }}-${{ hashFiles('src/**') }}
         restore-keys: |
           build-${{ runner.os }}-
+
+    - name: Generate dependency graph
+      shell: bash
+      run: node ../mantle/packages/cli/dist/index.mjs generate graph
 
     - name: Build
       shell: bash

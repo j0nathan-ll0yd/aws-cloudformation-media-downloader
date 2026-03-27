@@ -87,7 +87,7 @@
     "validate:docs": "./bin/validate-docs.sh",
     "validate:docs:freshness": "./bin/validate-docs-freshness.sh",
     "validate:graphrag": "./bin/validate-graphrag.sh",
-    "check:conventions": "npx mantle check --severity HIGH"
+    "check:conventions": "node ../mantle/packages/cli/dist/index.mjs check --severity HIGH"
   },
   "author": "Jonathan Lloyd",
   "dependencies": {
