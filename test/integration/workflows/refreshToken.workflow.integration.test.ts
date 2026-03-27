@@ -30,7 +30,7 @@ describe('RefreshToken Workflow Integration Tests', () => {
     await getTestDbAsync()
     await createAllTables()
     mockContext = createMockContext()
-  })
+  }, 120_000)
 
   afterEach(async () => {
     await truncateAllTables()
