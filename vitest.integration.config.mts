@@ -48,7 +48,11 @@ export default defineConfig({
       reportsDirectory: './coverage/integration'
     },
     env: {
-      METRICS_NAMESPACE: 'MediaDownloaderTest'
+      METRICS_NAMESPACE: 'MediaDownloaderTest',
+      ENVIRONMENT: 'test',
+      EVENT_BUS_NAME: 'MediaDownloader',
+      EVENT_SOURCE: 'media-downloader',
+      LOG_LEVEL: 'SILENT'
     },
     alias: {
       '#entities': resolve(__dirname, 'src/entities'),
