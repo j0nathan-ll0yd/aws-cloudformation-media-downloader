@@ -140,6 +140,18 @@ jobs:
             echo "::error::Expected 17 Lambda functions, got ${count}"
             exit 1
           fi
+      - name: Check for container Lambda changes
+        id: container-changes
+        run: |
+          CHANGES=$(git diff --name-only ${{ github.event.pull_request.base.sha || github.event.before || 'HEAD~1' }} HEAD -- \
+            Dockerfile.download \
+            'src/lambdas/sqs/StartFileUpload/**' \
+            package.json \
+            pnpm-lock.yaml) || true
+          echo "changed=$([ -n "$CHANGES" ] && echo 'true' || echo 'false')" >> "$GITHUB_OUTPUT"
+      - name: Verify container Lambda Dockerfile builds
+        if: steps.container-changes.outputs.changed == 'true'
+        run: docker build -f Dockerfile.download -t test-container-build:ci .
 
   integration-test:
     name: Integration Tests
