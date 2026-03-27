@@ -82,7 +82,7 @@
     "**/coverage",
     "**/.git",
     ".omc/**",
-    "infra/**",
+    "infra/**"
   ],
 
   "plugins": [
