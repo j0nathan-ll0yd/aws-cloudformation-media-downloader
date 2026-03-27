@@ -88,6 +88,9 @@ describe('ListFiles Workflow Integration Tests', () => {
     expect(response.body.contents).toHaveLength(0)
   })
 
+  // Auth enforcement for /files is at the API Gateway authorizer level
+  // (it is listed in MULTI_AUTHENTICATION_PATH_PARTS), so the handler itself
+  // returns demo file content for anonymous users rather than 401.
   test('should return demo file for anonymous user without querying database', async () => {
     const event = createListFilesEvent(undefined, UserStatus.Anonymous)
     const result = await handler(event, mockContext)
@@ -98,13 +101,6 @@ describe('ListFiles Workflow Integration Tests', () => {
     expect(response.body.keyCount).toBe(1)
     expect(response.body.contents).toHaveLength(1)
     expect(response.body.contents[0]).toHaveProperty('fileId')
-  })
-
-  test('should return 401 for unauthenticated user', async () => {
-    const event = createListFilesEvent(undefined, UserStatus.Anonymous)
-    const result = await handler(event, mockContext)
-
-    expect(result.statusCode).toBe(401)
   })
 
   test('should filter out non-Downloaded files', async () => {

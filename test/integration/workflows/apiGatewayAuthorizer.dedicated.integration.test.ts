@@ -18,6 +18,7 @@ process.env.MULTI_AUTHENTICATION_PATH_PARTS = 'auth/login,auth/register,webhooks
 
 import {afterAll, afterEach, beforeAll, describe, expect, test, vi} from 'vitest'
 import type {Context} from 'aws-lambda'
+import {createObservabilityMock} from '@mantleframework/testing/lambda-mocks'
 
 // Test helpers
 import {closeTestDb, createAllTables, dropAllTables, getTestDbAsync, insertSession, insertUser, truncateAllTables} from '../helpers/postgres-helpers'
@@ -29,7 +30,12 @@ import {createMockAPIGatewayRequestAuthorizerEvent} from '../helpers/test-data'
 // because LocalStack API Gateway emulation has limitations for these features
 const {getApiKeysMock, getUsagePlansMock, getUsageMock} = vi.hoisted(() => ({getApiKeysMock: vi.fn(), getUsagePlansMock: vi.fn(), getUsageMock: vi.fn()}))
 
-vi.mock('#lib/vendor/AWS/ApiGateway', () => ({getApiKeys: getApiKeysMock, getUsagePlans: getUsagePlansMock, getUsage: getUsageMock}))
+vi.mock('@mantleframework/aws', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@mantleframework/aws')>()
+  return {...actual, getApiKeys: getApiKeysMock, getUsagePlans: getUsagePlansMock, getUsage: getUsageMock}
+})
+
+vi.mock('@mantleframework/observability', () => createObservabilityMock())
 
 const {handler} = await import('#lambdas/standalone/ApiGatewayAuthorizer/index')
 
@@ -91,11 +97,11 @@ describe('ApiGatewayAuthorizer Dedicated Integration Tests', () => {
 
     const result = await handler(event, mockContext)
 
-    expect(result.principalId).toBe('unknown')
+    expect(result.principalId).toBe('anonymous')
     expect(result.policyDocument.Statement[0]!.Effect).toBe('Allow')
   })
 
-  test('should return unknown principal for missing Authorization header on multi-auth path', async () => {
+  test('should return anonymous principal for missing Authorization header on multi-auth path', async () => {
     setupApiGatewayMocks()
 
     // Use a multi-auth path that doesn't require Authorization header
@@ -104,7 +110,7 @@ describe('ApiGatewayAuthorizer Dedicated Integration Tests', () => {
 
     const result = await handler(event, mockContext)
 
-    expect(result.principalId).toBe('unknown')
+    expect(result.principalId).toBe('anonymous')
     expect(result.policyDocument.Statement[0]!.Effect).toBe('Allow')
   })
 

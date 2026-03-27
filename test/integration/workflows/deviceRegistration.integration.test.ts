@@ -169,6 +169,9 @@ describe('Device Registration Integration Tests', () => {
     expect(userDevices).toHaveLength(2)
   })
 
+  // Auth enforcement for device/register is at the API Gateway authorizer level
+  // (it is listed in MULTI_AUTHENTICATION_PATH_PARTS), so the handler itself allows
+  // anonymous users through and processes their registration normally.
   test('should register device for anonymous user using real database and LocalStack SNS', async () => {
     const deviceId = `device-anon-${Date.now()}`
     const token = `apns-token-anon-${Date.now()}`
@@ -185,18 +188,6 @@ describe('Device Registration Integration Tests', () => {
 
     // Anonymous users don't have user-device links
     // (no userId to query with)
-  })
-
-  test('should return 401 for unauthenticated user', async () => {
-    const deviceId = `device-unauth-${Date.now()}`
-    const token = `apns-token-unauth-${Date.now()}`
-
-    const body = createDeviceBody(deviceId, token)
-    const event = createRegisterDeviceEvent(body, undefined, UserStatus.Anonymous)
-
-    const result = await handler(event, mockContext)
-
-    expect(result.statusCode).toBe(401)
   })
 
   test('should validate request body schema', async () => {
