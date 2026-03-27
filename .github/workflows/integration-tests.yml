@@ -186,6 +186,7 @@ jobs:
           CI: true
           USE_LOCALSTACK: true
           TEST_DATABASE_URL: postgres://test:test@localhost:5432/media_downloader_test
+          LOG_LEVEL: WARN
 
       - name: Parse flaky tests from JUnit report
         if: always() && hashFiles('test-results/integration-results.xml') != ''
