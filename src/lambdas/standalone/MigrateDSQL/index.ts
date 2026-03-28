@@ -20,7 +20,7 @@
 import {readdirSync, readFileSync} from 'fs'
 import {dirname, join} from 'path'
 import {fileURLToPath} from 'url'
-import {sql} from 'drizzle-orm'
+import {sql} from '@mantleframework/database/orm'
 import {getDrizzleClient} from '#db/client'
 import {defineLambda, withObservability} from '@mantleframework/core'
 import {addMetadata, endSpan, logDebug, logError, logInfo, metrics, MetricUnit, startSpan} from '@mantleframework/observability'

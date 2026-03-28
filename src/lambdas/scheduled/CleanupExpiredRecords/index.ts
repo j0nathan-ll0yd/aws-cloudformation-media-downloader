@@ -13,7 +13,7 @@
  * Input: ScheduledEvent
  * Output: CleanupResult with deletion counts
  */
-import {and, eq, lt, or} from 'drizzle-orm'
+import {and, eq, lt, or} from '@mantleframework/database/orm'
 import {getDrizzleClient} from '#db/client'
 import {fileDownloads, sessions, verification} from '#db/schema'
 import {defineScheduledHandler} from '@mantleframework/core'

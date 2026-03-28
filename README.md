@@ -44,6 +44,10 @@ npx mantle deploy --stage production
 - **Fixture capture** — Production request/response logging from CloudWatch for test generation
 - **pnpm lifecycle protection** — Supply chain attack hardening
 
+## Convention Enforcement
+
+All code follows 49 Mantle convention checks (C1-C49). Run `mantle check` to validate locally. See [`CLAUDE.md`](CLAUDE.md) for AI assistant conventions and enforcement details.
+
 ## Documentation
 
 - **Project conventions**: [`CLAUDE.md`](CLAUDE.md)
