@@ -134,7 +134,6 @@ export class GraphQuery {
    * Complex query: What happens if a file is deleted?
    * Note: fileId parameter would be used to find specific file relationships
    */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   fileDeleteImpact(_fileId: string): {
     affectedUsers: string[]
     affectedLambdas: string[]
