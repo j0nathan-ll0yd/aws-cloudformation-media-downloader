@@ -61,10 +61,9 @@ AWS Serverless media downloader service built with OpenTofu and TypeScript. Down
 │   │   ├── BetterAuth/    # Better Auth configuration & adapter
 │   │   ├── Drizzle/       # Drizzle ORM configuration & schema
 │   │   └── YouTube.ts     # YouTube/yt-dlp wrapper
-│   └── mcp/               # Model Context Protocol server & validation
-│       ├── server.ts      # MCP server entry point
-│       ├── handlers/      # Query tools (entities, lambda, infrastructure, etc.)
-│       └── validation/    # AST-based convention enforcement (21 rules)
+│   └── mcp/               # Model Context Protocol server (legacy source removed; dist/ only)
+│       ├── server.ts      # MCP server entry point (compiled)
+│       └── handlers/      # Query tools (entities, lambda, infrastructure, etc.)
 ├── test/helpers/          # Test utilities
 │   ├── entity-fixtures.ts # Factory functions for mock entity rows
 │   └── aws-sdk-mock.ts    # AWS SDK v3 mock helpers (aws-sdk-client-mock)
@@ -113,7 +112,7 @@ cat build/graph.json | jq '.files | to_entries | map({file: .key, importCount: (
 
 ### Keeping GraphRAG in Sync
 
-The GraphRAG system (`graphrag/`) uses shared data sources for accuracy:
+The GraphRAG system (`graphrag/`) is **active** and integrated into CI. It uses shared data sources for accuracy:
 
 | Data Source | Purpose | Auto-Updated |
 |-------------|---------|--------------|
@@ -251,7 +250,7 @@ Queued | Downloading | Downloaded | Failed
 ```bash
 pnpm run precheck              # Type check + lint (run before commits)
 pnpm run test                  # Unit tests
-pnpm run check:conventions  # MCP rule validation
+pnpm run check:conventions  # mantle check --severity HIGH
 npx mantle ci                  # Full local CI
 ```
 
@@ -357,7 +356,7 @@ See `package.json` for complete command list (cleanup, integration tests, deploy
 
 ## Mantle Spec Conformance — Acknowledged Exceptions
 
-This project passes all Mantle spec checks (C1–C21) with three documented exceptions:
+This project passes all Mantle spec checks (C1–C52) with three documented exceptions:
 
 ### C6: MigrateDSQL dynamic env var substitution
 `src/lambdas/standalone/MigrateDSQL/index.ts:44` uses `process.env[varName]` for dynamic variable substitution in SQL migration files. This is intentional because the variable name is not known at compile time (comes from `${VAR_NAME}` patterns in SQL files), and `getOptionalEnv`/`getRequiredEnv` require a static string key. The eslint-disable comment documents the reason. The access is inside a function body (not module-level).
