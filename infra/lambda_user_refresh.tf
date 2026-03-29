@@ -22,13 +22,13 @@ module "lambda_user_refresh" {
   api_gateway_enabled = true
 
   environment_variables = merge(local.common_lambda_env, {
-    API_BEARER_TOKEN = var.api_bearer_token
-    DSQL_ROLE_NAME   = local.lambda_dsql_roles["UserRefresh"].role_name
-    AUTH_SECRET      = data.sops_file.secrets.data["platform.key"]
-    AUTH_BASE_URL    = "https://${module.api.rest_api_id}.execute-api.${module.core.region}.amazonaws.com/prod"
+      API_BEARER_TOKEN = var.api_bearer_token
+      DSQL_ROLE_NAME = local.lambda_dsql_roles["UserRefresh"].role_name
+      AUTH_SECRET = data.sops_file.secrets.data["platform.key"]
+      AUTH_BASE_URL = "https://${module.api.rest_api_id}.execute-api.${module.core.region}.amazonaws.com/prod"
   })
 
-  additional_policy_arns = [module.database.connect_policy_arn]
+    additional_policy_arns = [module.database.connect_policy_arn]
 }
 
 resource "aws_api_gateway_resource" "user_refresh" {

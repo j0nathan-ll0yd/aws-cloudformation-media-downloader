@@ -35,41 +35,42 @@ resource "aws_ecr_lifecycle_policy" "start_file_upload" {
 module "lambda_start_file_upload" {
   source = "../../mantle/modules/lambda"
 
-  function_name                  = "StartFileUpload"
-  name_prefix                    = module.core.name_prefix
-  package_type                   = "Image"
-  image_uri                      = var.image_uri_start_file_upload
-  source_dir                     = "${path.module}/../build/lambdas/StartFileUpload"
-  assume_role_policy             = module.core.lambda_assume_role_policy
-  xray_policy_arn                = module.core.lambda_xray_policy_arn
-  region                         = module.core.region
-  account_id                     = module.core.account_id
-  environment                    = var.environment
-  log_retention_days             = var.log_retention_days
-  log_level                      = var.log_level
-  tags                           = module.core.common_tags
-  timeout                        = 900
-  memory_size                    = 2048
+  function_name      = "StartFileUpload"
+  name_prefix        = module.core.name_prefix
+  package_type       = "Image"
+  image_uri          = var.image_uri_start_file_upload
+  source_dir         = "${path.module}/../build/lambdas/StartFileUpload"
+  assume_role_policy = module.core.lambda_assume_role_policy
+  xray_policy_arn    = module.core.lambda_xray_policy_arn
+  region             = module.core.region
+  account_id         = module.core.account_id
+  environment        = var.environment
+  log_retention_days = var.log_retention_days
+  log_level          = var.log_level
+  tags               = module.core.common_tags
+  timeout            = 900
+  memory_size        = 2048
   reserved_concurrent_executions = var.reserved_concurrency_start_file_upload
-  architecture                   = "x86_64"
+  architecture       = "x86_64"
 
   api_gateway_enabled = false
 
   environment_variables = merge(local.common_lambda_env, {
-    API_BEARER_TOKEN         = var.api_bearer_token
-    DSQL_ROLE_NAME           = local.lambda_dsql_roles["StartFileUpload"].role_name
-    GITHUB_PERSONAL_TOKEN    = data.sops_file.secrets.data["github.issue.token"]
-    YTDLP_BINARY_PATH        = "/opt/bin/yt-dlp"
-    YTDLP_COOKIES_PATH       = "/opt/cookies/youtube-cookies.txt"
-    YTDLP_SLEEP_REQUESTS     = "1"
-    YTDLP_SLEEP_INTERVAL     = "2"
-    YTDLP_MAX_SLEEP_INTERVAL = "5"
-    CLOUDFRONT_DOMAIN        = module.storage_files.cloudfront_domain_name
-    SNS_QUEUE_URL            = module.queue_SendPushNotification.queue_url
-    BUCKET                   = module.storage_files.bucket_id
+      API_BEARER_TOKEN = var.api_bearer_token
+      DSQL_ROLE_NAME = local.lambda_dsql_roles["StartFileUpload"].role_name
+      GITHUB_PERSONAL_TOKEN = data.sops_file.secrets.data["github.issue.token"]
+      YTDLP_BINARY_PATH = "/opt/bin/yt-dlp"
+      YTDLP_COOKIES_PATH = "/opt/cookies/youtube-cookies.txt"
+      YTDLP_SLEEP_REQUESTS = "1"
+      YTDLP_SLEEP_INTERVAL = "2"
+      YTDLP_MAX_SLEEP_INTERVAL = "5"
+      CLOUDFRONT_DOMAIN = module.storage_files.cloudfront_domain_name
+      SNS_QUEUE_URL = module.queue_SendPushNotification.queue_url
+      BUCKET = module.storage_files.bucket_id
+      PATH = var.path
   })
 
-  additional_policy_arns = [module.database.connect_policy_arn]
+    additional_policy_arns = [module.database.connect_policy_arn]
 
   inline_policies = {
     "SQSSend_Sendpushnotification" = jsonencode({
@@ -84,7 +85,7 @@ module "lambda_start_file_upload" {
       Version = "2012-10-17"
       Statement = [{
         Effect   = "Allow"
-        Action   = ["s3:AbortMultipartUpload", "s3:HeadObject", "s3:ListMultipartUploadParts", "s3:PutObject"]
+        Action   = ["s3:AbortMultipartUpload","s3:HeadObject","s3:ListMultipartUploadParts","s3:PutObject"]
         Resource = "${module.storage_files.bucket_arn}/*"
       }]
     })

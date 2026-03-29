@@ -22,11 +22,11 @@ module "lambda_device_event" {
   api_gateway_enabled = true
 
   environment_variables = merge(local.common_lambda_env, {
-    API_BEARER_TOKEN = var.api_bearer_token
-    DSQL_ROLE_NAME   = local.lambda_dsql_roles["DeviceEvent"].role_name
+      API_BEARER_TOKEN = var.api_bearer_token
+      DSQL_ROLE_NAME = local.lambda_dsql_roles["DeviceEvent"].role_name
   })
 
-  additional_policy_arns = [module.database.connect_policy_arn]
+    additional_policy_arns = [module.database.connect_policy_arn]
 }
 
 resource "aws_api_gateway_resource" "device_event" {

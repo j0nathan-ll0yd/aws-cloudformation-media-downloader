@@ -67,6 +67,12 @@ variable "multi_authentication_path_parts" {
   default     = ""
 }
 
+variable "varname" {
+  description = "varname"
+  type        = string
+  default     = ""
+}
+
 variable "apns_team" {
   description = "apns team"
   type        = string
@@ -95,6 +101,12 @@ variable "apns_default_topic" {
 
 variable "apns_host" {
   description = "apns host"
+  type        = string
+  default     = ""
+}
+
+variable "path" {
+  description = "path"
   type        = string
   default     = ""
 }

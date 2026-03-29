@@ -43,27 +43,6 @@ resource "aws_lambda_layer_version" "bgutil" {
   }
 }
 
-data "archive_file" "layer_quickjs" {
-  type             = "zip"
-  source_dir       = "${path.module}/../layers/quickjs"
-  output_path      = "${path.module}/../build/layers/quickjs.zip"
-  output_file_mode = "0644"
-  excludes         = ["**/.DS_Store", "**/__pycache__/**", "**/*.pyc", "**/*.dist-info/**", "VERSION"]
-}
-
-resource "aws_lambda_layer_version" "quickjs" {
-  layer_name               = "${module.core.name_prefix}-quickjs"
-  filename                 = data.archive_file.layer_quickjs.output_path
-  source_code_hash         = data.archive_file.layer_quickjs.output_base64sha256
-  compatible_architectures = ["x86_64"]
-  description              = "QuickJS runtime for yt-dlp YouTube challenge solving"
-  skip_destroy             = true
-
-  lifecycle {
-    create_before_destroy = true
-  }
-}
-
 data "archive_file" "layer_ffmpeg" {
   type             = "zip"
   source_dir       = "${path.module}/../layers/ffmpeg"
