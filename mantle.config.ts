@@ -99,7 +99,6 @@ export default defineConfig({
     }
   },
   authorizer: {cacheTtl: 0},
-  // @ts-expect-error ci config is consumed by @mantleframework/cli, not typed in @mantleframework/core
   ci: {
     mantleRepo: 'j0nathan-ll0yd/mantle',
     mantleRef: 'main',
