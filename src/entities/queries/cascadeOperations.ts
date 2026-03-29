@@ -14,91 +14,70 @@
  * @see docs/wiki/TypeScript/Entity-Query-Patterns.md for usage examples
  * @see src/lib/vendor/Drizzle/instrumentation.ts for query metrics
  */
-import {DatabaseOperation, RequiresTable, withQueryMetrics} from '@mantleframework/database'
-import {withTransaction} from '#db/client'
+import {DatabaseOperation} from '@mantleframework/database'
 import {eq} from '@mantleframework/database/orm'
+import {defineQuery} from '#db/defineQuery'
 import {accounts, sessions, userDevices, userFiles, users} from '#db/schema'
 
 /**
- * Cascade entity operations with declarative permission metadata.
- * Each method declares the database permissions it requires via decorators.
- * Permissions are extracted at build time to generate Lambda database roles.
+ * Deletes a user and ALL related records atomically.
+ * Children are deleted before parent to maintain referential integrity.
+ *
+ * Note: This does NOT delete Devices - devices may be shared across users.
+ * Use deleteUserWithDevices() if you need to delete orphaned devices.
+ *
+ * @param userId - The user's unique identifier
  */
-class CascadeOperations {
-  /**
-   * Deletes a user and ALL related records atomically.
-   * Children are deleted before parent to maintain referential integrity.
-   *
-   * Note: This does NOT delete Devices - devices may be shared across users.
-   * Use deleteUserWithDevices() if you need to delete orphaned devices.
-   *
-   * @param userId - The user's unique identifier
-   */
-  @RequiresTable([
-    {table: 'user_files', operations: [DatabaseOperation.Delete]},
-    {table: 'user_devices', operations: [DatabaseOperation.Delete]},
-    {table: 'sessions', operations: [DatabaseOperation.Delete]},
-    {table: 'accounts', operations: [DatabaseOperation.Delete]},
-    {table: 'users', operations: [DatabaseOperation.Delete]}
-  ])
-  static deleteUserCascade(userId: string): Promise<void> {
-    return withQueryMetrics('Cascade.deleteUser', async () => {
-      await withTransaction(async (tx) => {
-        // 1. Delete junction tables first (children)
-        await tx.delete(userFiles).where(eq(userFiles.userId, userId))
-        await tx.delete(userDevices).where(eq(userDevices.userId, userId))
-        // 2. Delete auth tables
-        await tx.delete(sessions).where(eq(sessions.userId, userId))
-        await tx.delete(accounts).where(eq(accounts.userId, userId))
-        // 3. Delete user last (parent)
-        await tx.delete(users).where(eq(users.id, userId))
-      })
-    })
-  }
+export const deleteUserCascade = defineQuery({
+  tables: [
+    {table: userFiles, operations: [DatabaseOperation.Delete]},
+    {table: userDevices, operations: [DatabaseOperation.Delete]},
+    {table: sessions, operations: [DatabaseOperation.Delete]},
+    {table: accounts, operations: [DatabaseOperation.Delete]},
+    {table: users, operations: [DatabaseOperation.Delete]}
+  ],
+  transaction: true
+}, async function deleteUserCascade(tx, userId: string): Promise<void> {
+  // 1. Delete junction tables first (children)
+  await tx.delete(userFiles).where(eq(userFiles.userId, userId))
+  await tx.delete(userDevices).where(eq(userDevices.userId, userId))
+  // 2. Delete auth tables
+  await tx.delete(sessions).where(eq(sessions.userId, userId))
+  await tx.delete(accounts).where(eq(accounts.userId, userId))
+  // 3. Delete user last (parent)
+  await tx.delete(users).where(eq(users.id, userId))
+})
 
-  /**
-   * Deletes all relationships for a user atomically.
-   * Use this for partial cleanup (e.g., before re-associating).
-   *
-   * @param userId - The user's unique identifier
-   */
-  @RequiresTable([
-    {table: 'user_files', operations: [DatabaseOperation.Delete]},
-    {table: 'user_devices', operations: [DatabaseOperation.Delete]}
-  ])
-  static deleteUserRelationships(userId: string): Promise<void> {
-    return withQueryMetrics('Cascade.deleteUserRelationships', async () => {
-      await withTransaction(async (tx) => {
-        await tx.delete(userFiles).where(eq(userFiles.userId, userId))
-        await tx.delete(userDevices).where(eq(userDevices.userId, userId))
-      })
-    })
-  }
+/**
+ * Deletes all relationships for a user atomically.
+ * Use this for partial cleanup (e.g., before re-associating).
+ *
+ * @param userId - The user's unique identifier
+ */
+export const deleteUserRelationships = defineQuery({
+  tables: [
+    {table: userFiles, operations: [DatabaseOperation.Delete]},
+    {table: userDevices, operations: [DatabaseOperation.Delete]}
+  ],
+  transaction: true
+}, async function deleteUserRelationships(tx, userId: string): Promise<void> {
+  await tx.delete(userFiles).where(eq(userFiles.userId, userId))
+  await tx.delete(userDevices).where(eq(userDevices.userId, userId))
+})
 
-  /**
-   * Deletes all auth records for a user atomically.
-   * Use this for session invalidation (e.g., logout all devices).
-   *
-   * @param userId - The user's unique identifier
-   */
-  @RequiresTable([
-    {table: 'sessions', operations: [DatabaseOperation.Delete]},
-    {table: 'accounts', operations: [DatabaseOperation.Delete]}
-  ])
-  static deleteUserAuthRecords(userId: string): Promise<void> {
-    return withQueryMetrics('Cascade.deleteUserAuthRecords', async () => {
-      await withTransaction(async (tx) => {
-        await tx.delete(sessions).where(eq(sessions.userId, userId))
-        await tx.delete(accounts).where(eq(accounts.userId, userId))
-      })
-    })
-  }
-}
-
-// Bound function exports for direct import by consumers
-export const deleteUserCascade = CascadeOperations.deleteUserCascade.bind(CascadeOperations)
-export const deleteUserRelationships = CascadeOperations.deleteUserRelationships.bind(CascadeOperations)
-export const deleteUserAuthRecords = CascadeOperations.deleteUserAuthRecords.bind(CascadeOperations)
-
-// Export class for extraction script access
-export { CascadeOperations }
+/**
+ * Deletes all auth records for a user atomically.
+ * Use this for session invalidation (e.g., logout all devices).
+ *
+ * @param userId - The user's unique identifier
+ */
+export const deleteUserAuthRecords = defineQuery({
+  tables: [
+    {table: sessions, operations: [DatabaseOperation.Delete]},
+    {table: accounts, operations: [DatabaseOperation.Delete]}
+  ],
+  transaction: true
+}, async function deleteUserAuthRecords(tx, userId: string): Promise<void> {
+  await tx.delete(sessions).where(eq(sessions.userId, userId))
+  await tx.delete(accounts).where(eq(accounts.userId, userId))
+})

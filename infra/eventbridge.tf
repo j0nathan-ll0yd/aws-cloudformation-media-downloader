@@ -6,6 +6,7 @@ module "eventbridge" {
   bus_name    = "MediaDownloader"
   name_prefix = module.core.name_prefix
   tags        = module.core.common_tags
+  enable_dlq  = true
 }
 
 # Rule: Route DownloadRequested events to DownloadQueue
@@ -26,6 +27,10 @@ resource "aws_cloudwatch_event_target" "download_requested_to_sqs" {
   event_bus_name = module.eventbridge.bus_name
   target_id      = "DownloadQueue"
   arn            = module.queue_DownloadQueue.queue_arn
+
+  dead_letter_config {
+    arn = module.eventbridge.dlq_arn
+  }
 
   input_transformer {
     input_paths = {

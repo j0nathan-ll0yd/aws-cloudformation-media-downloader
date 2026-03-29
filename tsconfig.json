@@ -11,6 +11,7 @@
     "noUncheckedIndexedAccess": true,
     "types": ["node"],
     "moduleResolution": "bundler",
+    "customConditions": ["source"],
     "ignoreDeprecations": "6.0",
     "baseUrl": ".",
     "paths": {

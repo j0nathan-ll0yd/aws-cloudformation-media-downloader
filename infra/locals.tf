@@ -10,10 +10,9 @@ locals {
   event_bus_name = "${module.core.name_prefix}-MediaDownloader"
 
   # Custom Lambda layer ARNs
-  layer_yt_dlp_arn  = aws_lambda_layer_version.yt_dlp.arn
-  layer_bgutil_arn  = aws_lambda_layer_version.bgutil.arn
-  layer_quickjs_arn = aws_lambda_layer_version.quickjs.arn
-  layer_ffmpeg_arn  = aws_lambda_layer_version.ffmpeg.arn
+  layer_yt_dlp_arn = aws_lambda_layer_version.yt_dlp.arn
+  layer_bgutil_arn = aws_lambda_layer_version.bgutil.arn
+  layer_ffmpeg_arn = aws_lambda_layer_version.ffmpeg.arn
 
   # Common environment variables for all Lambdas
   common_lambda_env = {
@@ -22,10 +21,6 @@ locals {
     NODE_OPTIONS                       = "--no-deprecation"
     LOG_LEVEL                          = var.log_level
     ENVIRONMENT                        = var.environment
-    DSQL_ENDPOINT                      = module.database.cluster_endpoint
-    DSQL_REGION                        = module.core.region
-    EVENT_BUS_NAME                     = local.event_bus_name
-    EVENT_SOURCE                       = "media-downloader"
     METRICS_NAMESPACE                  = "MediaDownloader"
   }
 }

@@ -5,10 +5,10 @@
  * @see src/lib/vendor/Drizzle/schema.ts for table definitions
  * @see src/lib/vendor/Drizzle/instrumentation.ts for query metrics
  */
-import {DatabaseOperation, RequiresTable, withQueryMetrics} from '@mantleframework/database'
-import {getDrizzleClient} from '#db/client'
+import {DatabaseOperation} from '@mantleframework/database'
 import {eq, lt} from '@mantleframework/database/orm'
 import type {InferInsertModel, InferSelectModel} from '@mantleframework/database/orm'
+import {defineQuery} from '#db/defineQuery'
 import {accounts, sessions, verification} from '#db/schema'
 import {accountInsertSchema, sessionInsertSchema, sessionUpdateSchema, verificationInsertSchema} from '#db/zodSchemas'
 
@@ -24,266 +24,186 @@ export type UpdateAccountInput = Partial<Omit<InferInsertModel<typeof accounts>,
 
 export type CreateVerificationInput = Omit<InferInsertModel<typeof verification>, 'id' | 'createdAt' | 'updatedAt'>
 
+// Session Operations
+
 /**
- * Session entity query operations with declarative permission metadata.
- * Each method declares the database permissions it requires via decorators.
- * Permissions are extracted at build time to generate Lambda database roles.
+ * Gets a session by ID.
+ * @param id - The session's unique identifier
+ * @returns The session row or null if not found
  */
-class SessionQueries {
-  // Session Operations
+export const getSession = defineQuery({tables: [{table: sessions, operations: [DatabaseOperation.Select]}]},
+  async function getSession(db, id: string): Promise<SessionRow | null> {
+    const result = await db.select().from(sessions).where(eq(sessions.id, id)).limit(1)
+    return result[0] ?? null
+  })
 
-  /**
-   * Gets a session by ID.
-   * @param id - The session's unique identifier
-   * @returns The session row or null if not found
-   */
-  @RequiresTable([{table: 'sessions', operations: [DatabaseOperation.Select]}])
-  static getSession(id: string): Promise<SessionRow | null> {
-    return withQueryMetrics('Sessions.get', async () => {
-      const db = await getDrizzleClient()
-      const result = await db.select().from(sessions).where(eq(sessions.id, id)).limit(1)
-      return result[0] ?? null
-    })
-  }
+/**
+ * Gets a session by token.
+ * @param token - The session token
+ * @returns The session row or null if not found
+ */
+export const getSessionByToken = defineQuery({tables: [{table: sessions, operations: [DatabaseOperation.Select]}]},
+  async function getSessionByToken(db, token: string): Promise<SessionRow | null> {
+    const result = await db.select().from(sessions).where(eq(sessions.token, token)).limit(1)
+    return result[0] ?? null
+  })
 
-  /**
-   * Gets a session by token.
-   * @param token - The session token
-   * @returns The session row or null if not found
-   */
-  @RequiresTable([{table: 'sessions', operations: [DatabaseOperation.Select]}])
-  static getSessionByToken(token: string): Promise<SessionRow | null> {
-    return withQueryMetrics('Sessions.getByToken', async () => {
-      const db = await getDrizzleClient()
-      const result = await db.select().from(sessions).where(eq(sessions.token, token)).limit(1)
-      return result[0] ?? null
-    })
-  }
+/**
+ * Gets all sessions for a user.
+ * @param userId - The user's unique identifier
+ * @returns Array of session rows for the user
+ */
+export const getSessionsByUserId = defineQuery({tables: [{table: sessions, operations: [DatabaseOperation.Select]}]},
+  async function getSessionsByUserId(db, userId: string): Promise<SessionRow[]> {
+    return await db.select().from(sessions).where(eq(sessions.userId, userId))
+  })
 
-  /**
-   * Gets all sessions for a user.
-   * @param userId - The user's unique identifier
-   * @returns Array of session rows for the user
-   */
-  @RequiresTable([{table: 'sessions', operations: [DatabaseOperation.Select]}])
-  static getSessionsByUserId(userId: string): Promise<SessionRow[]> {
-    return withQueryMetrics('Sessions.getByUserId', async () => {
-      const db = await getDrizzleClient()
-      return await db.select().from(sessions).where(eq(sessions.userId, userId))
-    })
-  }
+/**
+ * Creates a new session.
+ * @param input - The session data to create
+ * @returns The created session row
+ */
+export const createSession = defineQuery({tables: [{table: sessions, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}]},
+  async function createSession(db, input: CreateSessionInput): Promise<SessionRow> {
+    // Validate session input against schema
+    const validatedInput = sessionInsertSchema.parse(input)
+    const [session] = await db.insert(sessions).values(validatedInput).returning()
+    return session!
+  })
 
-  /**
-   * Creates a new session.
-   * @param input - The session data to create
-   * @returns The created session row
-   */
-  @RequiresTable([{table: 'sessions', operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}])
-  static createSession(input: CreateSessionInput): Promise<SessionRow> {
-    return withQueryMetrics('Sessions.create', async () => {
-      // Validate session input against schema
-      const validatedInput = sessionInsertSchema.parse(input)
-      const db = await getDrizzleClient()
-      const [session] = await db.insert(sessions).values(validatedInput).returning()
-      return session!
-    })
-  }
+/**
+ * Updates a session by ID.
+ * @param id - The session's unique identifier
+ * @param data - The fields to update
+ * @returns The updated session row
+ */
+export const updateSession = defineQuery({tables: [{table: sessions, operations: [DatabaseOperation.Select, DatabaseOperation.Update]}]},
+  async function updateSession(db, id: string, data: UpdateSessionInput): Promise<SessionRow> {
+    // Validate partial update data against schema
+    const validatedData = sessionUpdateSchema.partial().parse(data)
+    const [updated] = await db.update(sessions).set({...validatedData, updatedAt: new Date()}).where(eq(sessions.id, id)).returning()
+    return updated!
+  })
 
-  /**
-   * Updates a session by ID.
-   * @param id - The session's unique identifier
-   * @param data - The fields to update
-   * @returns The updated session row
-   */
-  @RequiresTable([{table: 'sessions', operations: [DatabaseOperation.Select, DatabaseOperation.Update]}])
-  static updateSession(id: string, data: UpdateSessionInput): Promise<SessionRow> {
-    return withQueryMetrics('Sessions.update', async () => {
-      // Validate partial update data against schema
-      const validatedData = sessionUpdateSchema.partial().parse(data)
-      const db = await getDrizzleClient()
-      const [updated] = await db.update(sessions).set({...validatedData, updatedAt: new Date()}).where(eq(sessions.id, id)).returning()
-      return updated!
-    })
-  }
+/**
+ * Deletes a session by ID.
+ * @param id - The session's unique identifier
+ */
+export const deleteSession = defineQuery({tables: [{table: sessions, operations: [DatabaseOperation.Delete]}]},
+  async function deleteSession(db, id: string): Promise<void> {
+    await db.delete(sessions).where(eq(sessions.id, id))
+  })
 
-  /**
-   * Deletes a session by ID.
-   * @param id - The session's unique identifier
-   */
-  @RequiresTable([{table: 'sessions', operations: [DatabaseOperation.Delete]}])
-  static deleteSession(id: string): Promise<void> {
-    return withQueryMetrics('Sessions.delete', async () => {
-      const db = await getDrizzleClient()
-      await db.delete(sessions).where(eq(sessions.id, id))
-    })
-  }
+/**
+ * Deletes all sessions for a user.
+ * @param userId - The user's unique identifier
+ */
+export const deleteSessionsByUserId = defineQuery({tables: [{table: sessions, operations: [DatabaseOperation.Delete]}]},
+  async function deleteSessionsByUserId(db, userId: string): Promise<void> {
+    await db.delete(sessions).where(eq(sessions.userId, userId))
+  })
 
-  /**
-   * Deletes all sessions for a user.
-   * @param userId - The user's unique identifier
-   */
-  @RequiresTable([{table: 'sessions', operations: [DatabaseOperation.Delete]}])
-  static deleteSessionsByUserId(userId: string): Promise<void> {
-    return withQueryMetrics('Sessions.deleteByUserId', async () => {
-      const db = await getDrizzleClient()
-      await db.delete(sessions).where(eq(sessions.userId, userId))
-    })
-  }
+/**
+ * Deletes expired sessions.
+ */
+export const deleteExpiredSessions = defineQuery({tables: [{table: sessions, operations: [DatabaseOperation.Delete]}]},
+  async function deleteExpiredSessions(db): Promise<void> {
+    await db.delete(sessions).where(lt(sessions.expiresAt, new Date()))
+  })
 
-  /**
-   * Deletes expired sessions.
-   */
-  @RequiresTable([{table: 'sessions', operations: [DatabaseOperation.Delete]}])
-  static deleteExpiredSessions(): Promise<void> {
-    return withQueryMetrics('Sessions.deleteExpired', async () => {
-      const db = await getDrizzleClient()
-      await db.delete(sessions).where(lt(sessions.expiresAt, new Date()))
-    })
-  }
+// Account Operations
 
-  // Account Operations
+/**
+ * Gets an account by ID.
+ * @param id - The account's unique identifier
+ * @returns The account row or null if not found
+ */
+export const getAccount = defineQuery({tables: [{table: accounts, operations: [DatabaseOperation.Select]}]},
+  async function getAccount(db, id: string): Promise<AccountRow | null> {
+    const result = await db.select().from(accounts).where(eq(accounts.id, id)).limit(1)
+    return result[0] ?? null
+  })
 
-  /**
-   * Gets an account by ID.
-   * @param id - The account's unique identifier
-   * @returns The account row or null if not found
-   */
-  @RequiresTable([{table: 'accounts', operations: [DatabaseOperation.Select]}])
-  static getAccount(id: string): Promise<AccountRow | null> {
-    return withQueryMetrics('Accounts.get', async () => {
-      const db = await getDrizzleClient()
-      const result = await db.select().from(accounts).where(eq(accounts.id, id)).limit(1)
-      return result[0] ?? null
-    })
-  }
+/**
+ * Gets all accounts for a user.
+ * @param userId - The user's unique identifier
+ * @returns Array of account rows for the user
+ */
+export const getAccountsByUserId = defineQuery({tables: [{table: accounts, operations: [DatabaseOperation.Select]}]},
+  async function getAccountsByUserId(db, userId: string): Promise<AccountRow[]> {
+    return await db.select().from(accounts).where(eq(accounts.userId, userId))
+  })
 
-  /**
-   * Gets all accounts for a user.
-   * @param userId - The user's unique identifier
-   * @returns Array of account rows for the user
-   */
-  @RequiresTable([{table: 'accounts', operations: [DatabaseOperation.Select]}])
-  static getAccountsByUserId(userId: string): Promise<AccountRow[]> {
-    return withQueryMetrics('Accounts.getByUserId', async () => {
-      const db = await getDrizzleClient()
-      return await db.select().from(accounts).where(eq(accounts.userId, userId))
-    })
-  }
+/**
+ * Creates a new account.
+ * @param input - The account data to create
+ * @returns The created account row
+ */
+export const createAccount = defineQuery({tables: [{table: accounts, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}]},
+  async function createAccount(db, input: CreateAccountInput): Promise<AccountRow> {
+    // Validate account input against schema
+    const validatedInput = accountInsertSchema.parse(input)
+    const [account] = await db.insert(accounts).values(validatedInput).returning()
+    return account!
+  })
 
-  /**
-   * Creates a new account.
-   * @param input - The account data to create
-   * @returns The created account row
-   */
-  @RequiresTable([{table: 'accounts', operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}])
-  static createAccount(input: CreateAccountInput): Promise<AccountRow> {
-    return withQueryMetrics('Accounts.create', async () => {
-      // Validate account input against schema
-      const validatedInput = accountInsertSchema.parse(input)
-      const db = await getDrizzleClient()
-      const [account] = await db.insert(accounts).values(validatedInput).returning()
-      return account!
-    })
-  }
+/**
+ * Deletes an account by ID.
+ * @param id - The account's unique identifier
+ */
+export const deleteAccount = defineQuery({tables: [{table: accounts, operations: [DatabaseOperation.Delete]}]},
+  async function deleteAccount(db, id: string): Promise<void> {
+    await db.delete(accounts).where(eq(accounts.id, id))
+  })
 
-  /**
-   * Deletes an account by ID.
-   * @param id - The account's unique identifier
-   */
-  @RequiresTable([{table: 'accounts', operations: [DatabaseOperation.Delete]}])
-  static deleteAccount(id: string): Promise<void> {
-    return withQueryMetrics('Accounts.delete', async () => {
-      const db = await getDrizzleClient()
-      await db.delete(accounts).where(eq(accounts.id, id))
-    })
-  }
+/**
+ * Deletes all accounts for a user.
+ * @param userId - The user's unique identifier
+ */
+export const deleteAccountsByUserId = defineQuery({tables: [{table: accounts, operations: [DatabaseOperation.Delete]}]},
+  async function deleteAccountsByUserId(db, userId: string): Promise<void> {
+    await db.delete(accounts).where(eq(accounts.userId, userId))
+  })
 
-  /**
-   * Deletes all accounts for a user.
-   * @param userId - The user's unique identifier
-   */
-  @RequiresTable([{table: 'accounts', operations: [DatabaseOperation.Delete]}])
-  static deleteAccountsByUserId(userId: string): Promise<void> {
-    return withQueryMetrics('Accounts.deleteByUserId', async () => {
-      const db = await getDrizzleClient()
-      await db.delete(accounts).where(eq(accounts.userId, userId))
-    })
-  }
+// Verification Operations
 
-  // Verification Operations
+/**
+ * Gets a verification token by identifier.
+ * @param identifier - The verification identifier
+ * @returns The verification row or null if not found
+ */
+export const getVerificationByIdentifier = defineQuery({tables: [{table: verification, operations: [DatabaseOperation.Select]}]},
+  async function getVerificationByIdentifier(db, identifier: string): Promise<VerificationRow | null> {
+    const result = await db.select().from(verification).where(eq(verification.identifier, identifier)).limit(1)
+    return result[0] ?? null
+  })
 
-  /**
-   * Gets a verification token by identifier.
-   * @param identifier - The verification identifier
-   * @returns The verification row or null if not found
-   */
-  @RequiresTable([{table: 'verification_tokens', operations: [DatabaseOperation.Select]}])
-  static getVerificationByIdentifier(identifier: string): Promise<VerificationRow | null> {
-    return withQueryMetrics('Verifications.getByIdentifier', async () => {
-      const db = await getDrizzleClient()
-      const result = await db.select().from(verification).where(eq(verification.identifier, identifier)).limit(1)
-      return result[0] ?? null
-    })
-  }
+/**
+ * Creates a new verification token.
+ * @param input - The verification data to create
+ * @returns The created verification row
+ */
+export const createVerification = defineQuery({tables: [{table: verification, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}]},
+  async function createVerification(db, input: CreateVerificationInput): Promise<VerificationRow> {
+    // Validate verification input against schema
+    const validatedInput = verificationInsertSchema.parse(input)
+    const [token] = await db.insert(verification).values(validatedInput).returning()
+    return token!
+  })
 
-  /**
-   * Creates a new verification token.
-   * @param input - The verification data to create
-   * @returns The created verification row
-   */
-  @RequiresTable([{table: 'verification_tokens', operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}])
-  static createVerification(input: CreateVerificationInput): Promise<VerificationRow> {
-    return withQueryMetrics('Verifications.create', async () => {
-      // Validate verification input against schema
-      const validatedInput = verificationInsertSchema.parse(input)
-      const db = await getDrizzleClient()
-      const [token] = await db.insert(verification).values(validatedInput).returning()
-      return token!
-    })
-  }
+/**
+ * Deletes a verification token by ID.
+ * @param id - The verification token's unique identifier
+ */
+export const deleteVerification = defineQuery({tables: [{table: verification, operations: [DatabaseOperation.Delete]}]},
+  async function deleteVerification(db, id: string): Promise<void> {
+    await db.delete(verification).where(eq(verification.id, id))
+  })
 
-  /**
-   * Deletes a verification token by ID.
-   * @param id - The verification token's unique identifier
-   */
-  @RequiresTable([{table: 'verification_tokens', operations: [DatabaseOperation.Delete]}])
-  static deleteVerification(id: string): Promise<void> {
-    return withQueryMetrics('Verifications.delete', async () => {
-      const db = await getDrizzleClient()
-      await db.delete(verification).where(eq(verification.id, id))
-    })
-  }
-
-  /**
-   * Deletes expired verification tokens.
-   */
-  @RequiresTable([{table: 'verification_tokens', operations: [DatabaseOperation.Delete]}])
-  static deleteExpiredVerifications(): Promise<void> {
-    return withQueryMetrics('Verifications.deleteExpired', async () => {
-      const db = await getDrizzleClient()
-      await db.delete(verification).where(lt(verification.expiresAt, new Date()))
-    })
-  }
-}
-
-// Bound function exports for direct import by consumers
-export const getSession = SessionQueries.getSession.bind(SessionQueries)
-export const getSessionByToken = SessionQueries.getSessionByToken.bind(SessionQueries)
-export const getSessionsByUserId = SessionQueries.getSessionsByUserId.bind(SessionQueries)
-export const createSession = SessionQueries.createSession.bind(SessionQueries)
-export const updateSession = SessionQueries.updateSession.bind(SessionQueries)
-export const deleteSession = SessionQueries.deleteSession.bind(SessionQueries)
-export const deleteSessionsByUserId = SessionQueries.deleteSessionsByUserId.bind(SessionQueries)
-export const deleteExpiredSessions = SessionQueries.deleteExpiredSessions.bind(SessionQueries)
-export const getAccount = SessionQueries.getAccount.bind(SessionQueries)
-export const getAccountsByUserId = SessionQueries.getAccountsByUserId.bind(SessionQueries)
-export const createAccount = SessionQueries.createAccount.bind(SessionQueries)
-export const deleteAccount = SessionQueries.deleteAccount.bind(SessionQueries)
-export const deleteAccountsByUserId = SessionQueries.deleteAccountsByUserId.bind(SessionQueries)
-export const getVerificationByIdentifier = SessionQueries.getVerificationByIdentifier.bind(SessionQueries)
-export const createVerification = SessionQueries.createVerification.bind(SessionQueries)
-export const deleteVerification = SessionQueries.deleteVerification.bind(SessionQueries)
-export const deleteExpiredVerifications = SessionQueries.deleteExpiredVerifications.bind(SessionQueries)
-
-// Export class for extraction script access
-export { SessionQueries }
+/**
+ * Deletes expired verification tokens.
+ */
+export const deleteExpiredVerifications = defineQuery({tables: [{table: verification, operations: [DatabaseOperation.Delete]}]},
+  async function deleteExpiredVerifications(db): Promise<void> {
+    await db.delete(verification).where(lt(verification.expiresAt, new Date()))
+  })

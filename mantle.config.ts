@@ -18,7 +18,8 @@ export default defineConfig({
       name: 'resource_prefix',
       type: 'string',
       description: 'DEPRECATED: Legacy prefix for S3 bucket names only. New resources use module.core.name_prefix. Do not replicate in new instances. See ADR 0001.',
-      validation: {condition: 'contains(["stag", "prod"], var.resource_prefix)', errorMessage: "Resource prefix must be 'stag' or 'prod'."}
+      validation: {oneOf: ['stag', 'prod']},
+      validationMessage: "Resource prefix must be 'stag' or 'prod'."
     },
     {name: 'api_throttle_burst_limit', type: 'number', description: 'API Gateway throttle burst limit', default: '100'},
     {name: 'api_throttle_rate_limit', type: 'number', description: 'API Gateway throttle rate limit', default: '50'},
@@ -40,21 +41,13 @@ export default defineConfig({
       {
         detailType: 'DownloadRequested',
         queue: 'DownloadQueue',
-        inputTransformer: {
-          inputPaths: {
-            fileId: '$.detail.fileId',
-            sourceUrl: '$.detail.sourceUrl',
-            correlationId: '$.detail.correlationId',
-            userId: '$.detail.userId'
-          },
-          inputTemplate: `{
-  "fileId": <fileId>,
-  "sourceUrl": <sourceUrl>,
-  "correlationId": <correlationId>,
-  "userId": <userId>,
-  "attempt": 1
-}`
-        }
+        fieldMapping: {
+          fileId: '$.detail.fileId',
+          sourceUrl: '$.detail.sourceUrl',
+          correlationId: '$.detail.correlationId',
+          userId: '$.detail.userId'
+        },
+        staticFields: {attempt: 1}
       }
     ]
   },
@@ -82,10 +75,10 @@ export default defineConfig({
     ]
   },
   dynamodb: [
-    {name: 'idempotency', tableNameOverride: '${module.core.name_prefix}-MediaDownloader-Idempotency', hashKey: 'id', attributes: [{name: 'id', type: 'S'}], ttlAttribute: 'expiration'}
+    {name: 'idempotency', tableName: 'Idempotency', hashKey: 'id', attributes: [{name: 'id', type: 'S'}], ttlAttribute: 'expiration'}
   ],
   storage: [
-    {name: 'files', bucketNameOverride: '${module.core.name_prefix}-mantle-lifegamesportal-videos', cloudfront: true, intelligentTiering: true, assets: ['videos/default-file.mp4']}
+    {name: 'files', bucketName: 'mantle-offlinemediadownloader-videos', cloudfront: true, intelligentTiering: true, assets: ['videos/default-file.mp4']}
   ],
   queues: [
     {name: 'DownloadQueue', visibilityTimeoutSeconds: 900},
@@ -99,7 +92,6 @@ export default defineConfig({
     }
   },
   authorizer: {cacheTtl: 0},
-  // @ts-expect-error ci config is consumed by @mantleframework/cli, not typed in @mantleframework/core
   ci: {
     mantleRepo: 'j0nathan-ll0yd/mantle',
     mantleRef: 'main',

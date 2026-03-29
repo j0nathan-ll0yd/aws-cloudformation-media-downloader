@@ -7,10 +7,10 @@
  * @see src/lib/vendor/Drizzle/schema.ts for table definitions
  * @see src/lib/vendor/Drizzle/instrumentation.ts for query metrics
  */
-import {DatabaseOperation, RequiresTable, withQueryMetrics} from '@mantleframework/database'
-import {getDrizzleClient} from '#db/client'
+import {DatabaseOperation} from '@mantleframework/database'
 import {eq} from '@mantleframework/database/orm'
 import type {InferInsertModel, InferSelectModel} from '@mantleframework/database/orm'
+import {defineQuery} from '#db/defineQuery'
 import {users} from '#db/schema'
 import {userInsertSchema, userUpdateSchema} from '#db/zodSchemas'
 
@@ -23,89 +23,57 @@ export type CreateUserInput = Omit<InferInsertModel<typeof users>, 'id' | 'creat
 export type UpdateUserInput = Partial<Omit<InferInsertModel<typeof users>, 'id' | 'createdAt'>>
 
 /**
- * User entity query operations with declarative permission metadata.
- * Each method declares the database permissions it requires via decorators.
- * Permissions are extracted at build time to generate Lambda database roles.
+ * Gets a user by ID.
+ * @param id - The user's UUID
+ * @returns The user, or null if not found
  */
-class UserQueries {
-  /**
-   * Gets a user by ID.
-   * @param id - The user's UUID
-   * @returns The user, or null if not found
-   */
-  @RequiresTable([{table: 'users', operations: [DatabaseOperation.Select]}])
-  static getUser(id: string): Promise<UserItem | null> {
-    return withQueryMetrics('Users.get', async () => {
-      const db = await getDrizzleClient()
-      const result = await db.select().from(users).where(eq(users.id, id)).limit(1)
-      return result[0] ?? null
-    })
-  }
+export const getUser = defineQuery({tables: [{table: users, operations: [DatabaseOperation.Select]}]},
+  async function getUser(db, id: string): Promise<UserItem | null> {
+    const result = await db.select().from(users).where(eq(users.id, id)).limit(1)
+    return result[0] ?? null
+  })
 
-  /**
-   * Finds users by email.
-   * @param email - The email address to search for
-   * @returns Array of users matching the email
-   */
-  @RequiresTable([{table: 'users', operations: [DatabaseOperation.Select]}])
-  static getUsersByEmail(email: string): Promise<UserItem[]> {
-    return withQueryMetrics('Users.getByEmail', async () => {
-      const db = await getDrizzleClient()
-      return db.select().from(users).where(eq(users.email, email))
-    })
-  }
+/**
+ * Finds users by email.
+ * @param email - The email address to search for
+ * @returns Array of users matching the email
+ */
+export const getUsersByEmail = defineQuery({tables: [{table: users, operations: [DatabaseOperation.Select]}]},
+  async function getUsersByEmail(db, email: string): Promise<UserItem[]> {
+    return db.select().from(users).where(eq(users.email, email))
+  })
 
-  /**
-   * Creates a new user.
-   * @param input - The user data
-   * @returns The created user
-   */
-  @RequiresTable([{table: 'users', operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}])
-  static createUser(input: CreateUserInput): Promise<UserItem> {
-    return withQueryMetrics('Users.create', async () => {
-      const validatedUser = userInsertSchema.parse(input)
-      const db = await getDrizzleClient()
-      const [user] = await db.insert(users).values({...validatedUser, updatedAt: new Date()}).returning()
-      return user!
-    })
-  }
+/**
+ * Creates a new user.
+ * @param input - The user data
+ * @returns The created user
+ */
+export const createUser = defineQuery({tables: [{table: users, operations: [DatabaseOperation.Select, DatabaseOperation.Insert]}]},
+  async function createUser(db, input: CreateUserInput): Promise<UserItem> {
+    const validatedUser = userInsertSchema.parse(input)
+    const [user] = await db.insert(users).values({...validatedUser, updatedAt: new Date()}).returning()
+    return user!
+  })
 
-  /**
-   * Updates a user by ID.
-   * @param id - The user's UUID
-   * @param data - The fields to update
-   * @returns The updated user
-   */
-  @RequiresTable([{table: 'users', operations: [DatabaseOperation.Select, DatabaseOperation.Update]}])
-  static updateUser(id: string, data: UpdateUserInput): Promise<UserItem> {
-    return withQueryMetrics('Users.update', async () => {
-      const validatedData = userUpdateSchema.partial().parse(data)
-      const db = await getDrizzleClient()
-      const [updated] = await db.update(users).set({...validatedData, updatedAt: new Date()}).where(eq(users.id, id)).returning()
-      return updated!
-    })
-  }
+/**
+ * Updates a user by ID.
+ * @param id - The user's UUID
+ * @param data - The fields to update
+ * @returns The updated user
+ */
+export const updateUser = defineQuery({tables: [{table: users, operations: [DatabaseOperation.Select, DatabaseOperation.Update]}]},
+  async function updateUser(db, id: string, data: UpdateUserInput): Promise<UserItem> {
+    const validatedData = userUpdateSchema.partial().parse(data)
+    const [updated] = await db.update(users).set({...validatedData, updatedAt: new Date()}).where(eq(users.id, id)).returning()
+    return updated!
+  })
 
-  /**
-   * Deletes a user by ID.
-   * Note: Does NOT cascade - call deleteUserCascade for full cleanup.
-   * @param id - The user's UUID
-   */
-  @RequiresTable([{table: 'users', operations: [DatabaseOperation.Delete]}])
-  static deleteUser(id: string): Promise<void> {
-    return withQueryMetrics('Users.delete', async () => {
-      const db = await getDrizzleClient()
-      await db.delete(users).where(eq(users.id, id))
-    })
-  }
-}
-
-// Bound function exports for direct import by consumers
-export const getUser = UserQueries.getUser.bind(UserQueries)
-export const getUsersByEmail = UserQueries.getUsersByEmail.bind(UserQueries)
-export const createUser = UserQueries.createUser.bind(UserQueries)
-export const updateUser = UserQueries.updateUser.bind(UserQueries)
-export const deleteUser = UserQueries.deleteUser.bind(UserQueries)
-
-// Export class for extraction script access
-export { UserQueries }
+/**
+ * Deletes a user by ID.
+ * Note: Does NOT cascade - call deleteUserCascade for full cleanup.
+ * @param id - The user's UUID
+ */
+export const deleteUser = defineQuery({tables: [{table: users, operations: [DatabaseOperation.Delete]}]},
+  async function deleteUser(db, id: string): Promise<void> {
+    await db.delete(users).where(eq(users.id, id))
+  })
