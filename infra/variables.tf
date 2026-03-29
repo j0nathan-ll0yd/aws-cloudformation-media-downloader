@@ -24,13 +24,6 @@ variable "aws_region" {
   default     = "us-west-2"
 }
 
-variable "api_bearer_token" {
-  description = "Bearer token for API authentication"
-  type        = string
-  sensitive   = true
-  default     = ""
-}
-
 variable "log_level" {
   description = "Application log level (DEBUG, INFO, WARN, ERROR)"
   type        = string

@@ -24,8 +24,9 @@ module "lambda_prune_devices" {
   api_gateway_enabled = false
 
   environment_variables = merge(local.common_lambda_env, {
-      API_BEARER_TOKEN = var.api_bearer_token
       DSQL_ROLE_NAME = local.lambda_dsql_roles["PruneDevices"].role_name
+      DSQL_ENDPOINT = module.database.cluster_endpoint
+      DSQL_REGION = module.core.region
       APNS_SIGNING_KEY = data.sops_file.secrets.data["apns.staging.signingKey"]
       APNS_TEAM = data.sops_file.secrets.data["apns.staging.team"]
       APNS_KEY_ID = data.sops_file.secrets.data["apns.staging.keyId"]

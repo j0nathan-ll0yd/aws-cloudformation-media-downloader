@@ -56,8 +56,9 @@ module "lambda_start_file_upload" {
   api_gateway_enabled = false
 
   environment_variables = merge(local.common_lambda_env, {
-      API_BEARER_TOKEN = var.api_bearer_token
       DSQL_ROLE_NAME = local.lambda_dsql_roles["StartFileUpload"].role_name
+      DSQL_ENDPOINT = module.database.cluster_endpoint
+      DSQL_REGION = module.core.region
       GITHUB_PERSONAL_TOKEN = data.sops_file.secrets.data["github.issue.token"]
       YTDLP_BINARY_PATH = "/opt/bin/yt-dlp"
       YTDLP_COOKIES_PATH = "/opt/cookies/youtube-cookies.txt"
@@ -68,6 +69,8 @@ module "lambda_start_file_upload" {
       SNS_QUEUE_URL = module.queue_SendPushNotification.queue_url
       BUCKET = module.storage_files.bucket_id
       PATH = var.path
+      EVENT_BUS_NAME = local.event_bus_name
+      EVENT_SOURCE = "media-downloader"
   })
 
     additional_policy_arns = [module.database.connect_policy_arn]

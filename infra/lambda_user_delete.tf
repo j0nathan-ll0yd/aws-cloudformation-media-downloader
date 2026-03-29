@@ -22,8 +22,9 @@ module "lambda_user_delete" {
   api_gateway_enabled = true
 
   environment_variables = merge(local.common_lambda_env, {
-      API_BEARER_TOKEN = var.api_bearer_token
       DSQL_ROLE_NAME = local.lambda_dsql_roles["UserDelete"].role_name
+      DSQL_ENDPOINT = module.database.cluster_endpoint
+      DSQL_REGION = module.core.region
       GITHUB_PERSONAL_TOKEN = data.sops_file.secrets.data["github.issue.token"]
   })
 

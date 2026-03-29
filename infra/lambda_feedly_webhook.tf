@@ -22,8 +22,9 @@ module "lambda_feedly_webhook" {
   api_gateway_enabled = true
 
   environment_variables = merge(local.common_lambda_env, {
-      API_BEARER_TOKEN = var.api_bearer_token
       DSQL_ROLE_NAME = local.lambda_dsql_roles["FeedlyWebhook"].role_name
+      DSQL_ENDPOINT = module.database.cluster_endpoint
+      DSQL_REGION = module.core.region
       SNS_QUEUE_URL = module.queue_SendPushNotification.queue_url
       PATH = var.path
       YTDLP_SLEEP_REQUESTS = var.ytdlp_sleep_requests
@@ -31,6 +32,8 @@ module "lambda_feedly_webhook" {
       YTDLP_MAX_SLEEP_INTERVAL = var.ytdlp_max_sleep_interval
       YTDLP_BINARY_PATH = var.ytdlp_binary_path
       IDEMPOTENCY_TABLE_NAME = module.dynamodb_idempotency.table_name
+      EVENT_BUS_NAME = local.event_bus_name
+      EVENT_SOURCE = "media-downloader"
   })
 
     additional_policy_arns = [module.database.connect_policy_arn]

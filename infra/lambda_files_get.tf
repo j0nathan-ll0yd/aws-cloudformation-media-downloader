@@ -22,8 +22,9 @@ module "lambda_files_get" {
   api_gateway_enabled = true
 
   environment_variables = merge(local.common_lambda_env, {
-      API_BEARER_TOKEN = var.api_bearer_token
       DSQL_ROLE_NAME = local.lambda_dsql_roles["FilesGet"].role_name
+      DSQL_ENDPOINT = module.database.cluster_endpoint
+      DSQL_REGION = module.core.region
       ASSET_VIDEOS_DEFAULT_FILE_KEY = aws_s3_object.asset_videos_default_file.key
       ASSET_VIDEOS_DEFAULT_FILE_URL = "https://${module.storage_files.cloudfront_domain_name != "" ? module.storage_files.cloudfront_domain_name : module.storage_files.bucket_regional_domain_name}/videos/default-file.mp4"
       ASSET_VIDEOS_DEFAULT_FILE_SIZE = 436743

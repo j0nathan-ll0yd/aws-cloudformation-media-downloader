@@ -22,8 +22,9 @@ module "lambda_device_register" {
   api_gateway_enabled = true
 
   environment_variables = merge(local.common_lambda_env, {
-      API_BEARER_TOKEN = var.api_bearer_token
       DSQL_ROLE_NAME = local.lambda_dsql_roles["DeviceRegister"].role_name
+      DSQL_ENDPOINT = module.database.cluster_endpoint
+      DSQL_REGION = module.core.region
       PLATFORM_APPLICATION_ARN = aws_sns_platform_application.apns.arn
       PUSH_NOTIFICATION_TOPIC_ARN = aws_sns_topic.push_notifications.arn
   })
