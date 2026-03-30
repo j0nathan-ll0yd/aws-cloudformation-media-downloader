@@ -103,7 +103,7 @@
     "@mantleframework/validation": "link:../mantle/packages/validation",
     "@octokit/rest": "^22.0.1",
     "apns2": "12.2.0",
-    "drizzle-orm": "^0.45.1",
+    "drizzle-orm": "^0.45.2",
     "drizzle-zod": "^0.8.3",
     "postgres": "^3.4.8",
     "zod": "^4.3.6"
