@@ -124,7 +124,7 @@
     "#test/*": "./test/*"
   },
   "devDependencies": {
-    "@aws-sdk/client-cloudwatch-logs": "3.1018.0",
+    "@aws-sdk/client-cloudwatch-logs": "3.1019.0",
     "@aws-sdk/client-dynamodb": "3.1018.0",
     "@aws-sdk/client-eventbridge": "3.1018.0",
     "@aws-sdk/client-lambda": "3.1018.0",
