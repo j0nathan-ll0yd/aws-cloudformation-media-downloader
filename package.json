@@ -130,7 +130,7 @@
     "@aws-sdk/client-lambda": "3.1018.0",
     "@aws-sdk/client-s3": "3.1018.0",
     "@aws-sdk/client-sns": "3.1018.0",
-    "@aws-sdk/client-sqs": "3.1018.0",
+    "@aws-sdk/client-sqs": "3.1019.0",
     "@huggingface/transformers": "^3.8.1",
     "@lancedb/lancedb": "^0.27.1",
     "@mantleframework/cli": "link:../mantle/packages/cli",
