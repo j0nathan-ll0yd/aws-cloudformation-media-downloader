@@ -42,8 +42,11 @@ AWS Serverless media downloader service built with OpenTofu and TypeScript. Down
 .
 ├── infra/                 # AWS Infrastructure definitions (OpenTofu)
 ├── src/
+│   ├── db/
+│   │   ├── defineQuery.ts            # createQueryFactory(getDrizzleClient) — project-local query factory
+│   │   └── ...                       # Client and schema files
 │   ├── entities/          # Entity query functions (Drizzle ORM with Aurora DSQL)
-│   │   └── queries/       # Native Drizzle query modules
+│   │   └── queries/       # Native Drizzle query modules (using defineQuery pattern)
 │   │       ├── userQueries.ts        # User operations (create, get, update, delete)
 │   │       ├── fileQueries.ts        # File and FileDownload operations
 │   │       ├── deviceQueries.ts      # Device operations
@@ -356,7 +359,7 @@ See `package.json` for complete command list (cleanup, integration tests, deploy
 
 ## Mantle Spec Conformance — Acknowledged Exceptions
 
-This project passes all Mantle spec checks (C1–C52) with three documented exceptions:
+This project passes all Mantle spec checks (C1–C56) with three documented exceptions:
 
 ### C6: MigrateDSQL dynamic env var substitution
 `src/lambdas/standalone/MigrateDSQL/index.ts:44` uses `process.env[varName]` for dynamic variable substitution in SQL migration files. This is intentional because the variable name is not known at compile time (comes from `${VAR_NAME}` patterns in SQL files), and `getOptionalEnv`/`getRequiredEnv` require a static string key. The eslint-disable comment documents the reason. The access is inside a function body (not module-level).
