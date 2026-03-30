@@ -9,6 +9,10 @@ on:
 
 permissions: {}
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   integration-tests:
     runs-on: ubuntu-latest
@@ -51,49 +55,6 @@ jobs:
           docker compose -f docker-compose.localstack.yml up -d --wait
           docker compose -f docker-compose.test.yml up -d --wait
           echo "Services are healthy and ready"
-
-      - name: Wait for LocalStack health check
-        run: |
-          max_retries=30
-          retry_count=0
-
-          while [ $retry_count -lt $max_retries ]; do
-            if curl -sf http://localhost:4566/_localstack/health > /dev/null 2>&1; then
-              echo "LocalStack is healthy"
-              curl -s http://localhost:4566/_localstack/health | jq
-              break
-            fi
-
-            retry_count=$((retry_count + 1))
-            echo "Attempt $retry_count of $max_retries..."
-            sleep 1
-          done
-
-          if [ $retry_count -eq $max_retries ]; then
-            echo "LocalStack failed to become healthy"
-            docker compose -f docker-compose.localstack.yml logs
-            exit 1
-          fi
-
-      - name: Wait for PostgreSQL health check
-        run: |
-          max_retries=30
-          retry_count=0
-
-          while [ $retry_count -lt $max_retries ]; do
-            if docker compose -f docker-compose.test.yml exec -T postgres pg_isready -U test -d media_downloader_test > /dev/null 2>&1; then
-              echo "PostgreSQL is healthy"
-              exit 0
-            fi
-
-            retry_count=$((retry_count + 1))
-            echo "Attempt $retry_count of $max_retries..."
-            sleep 1
-          done
-
-          echo "PostgreSQL failed to become healthy"
-          docker compose -f docker-compose.test.yml logs
-          exit 1
 
       - name: Verify all LocalStack services
         env:

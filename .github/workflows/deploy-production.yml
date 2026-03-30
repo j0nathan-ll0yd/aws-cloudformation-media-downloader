@@ -133,13 +133,9 @@ jobs:
 
       - name: Deploy to Production
         if: steps.check-creds.outputs.configured == 'true'
-        working-directory: infra
         env:
           SOPS_AGE_KEY_FILE: /tmp/age-key.txt
-        run: |
-          tofu init
-          tofu workspace select production || tofu workspace new production
-          tofu apply -var-file=environments/production.tfvars -auto-approve
+        run: npx mantle deploy --stage production
 
       - name: Post deployment notification
         if: steps.check-creds.outputs.configured == 'true' && success()

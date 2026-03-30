@@ -92,15 +92,9 @@ jobs:
           ./bin/build-bgutil-layer.sh
 
       - name: Rollback deployment
-        working-directory: infra
         env:
           SOPS_AGE_KEY_FILE: /tmp/age-key.txt
-        run: |
-          tofu init
-          tofu workspace select ${{ inputs.environment }}
-
-          ENV_FILE=${{ inputs.environment == 'production' && 'production' || 'staging' }}
-          tofu apply -var-file=environments/${ENV_FILE}.tfvars -auto-approve
+        run: npx mantle deploy --stage ${{ github.event.inputs.environment }}
 
       - name: Post rollback notification
         run: |
