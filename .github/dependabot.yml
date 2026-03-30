@@ -38,8 +38,24 @@ updates:
         update-types:
           - "patch"
 
-    # Ignore major version updates (require manual review)
     ignore:
+      # Catalog-managed: upgrade in mantle/pnpm-workspace.yaml first (C52)
+      - dependency-name: "@aws-sdk/*"
+      - dependency-name: "drizzle-orm"
+      - dependency-name: "drizzle-kit"
+      - dependency-name: "zod"
+      - dependency-name: "better-auth"
+      - dependency-name: "@better-auth/*"
+      - dependency-name: "@opentelemetry/*"
+      - dependency-name: "typescript"
+      - dependency-name: "vitest"
+      - dependency-name: "@vitest/*"
+      - dependency-name: "vite"
+      - dependency-name: "unbuild"
+      - dependency-name: "dprint"
+      - dependency-name: "eslint"
+      - dependency-name: "@typescript-eslint/*"
+      # Major version bumps handled manually
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
 

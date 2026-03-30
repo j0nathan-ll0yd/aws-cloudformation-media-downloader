@@ -5,7 +5,7 @@ runs:
   using: 'composite'
   steps:
     - name: Set up Homebrew
-      uses: Homebrew/actions/setup-homebrew@master
+      uses: Homebrew/actions/setup-homebrew@b2a302b9a642580cae998e6ba2076ffd28e61317  # master
 
     - name: Cache Homebrew packages
       uses: actions/cache@v4

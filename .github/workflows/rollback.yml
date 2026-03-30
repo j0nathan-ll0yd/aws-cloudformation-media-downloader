@@ -15,6 +15,8 @@ on:
         required: false
         type: string
 
+permissions: {}
+
 env:
   AWS_REGION: us-west-2
   TOFU_VERSION: '1.8.0'
@@ -25,6 +27,7 @@ jobs:
     if: false
     name: Rollback ${{ inputs.environment }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     environment: ${{ inputs.environment }}
     permissions:
       id-token: write
@@ -63,12 +66,12 @@ jobs:
         run: pnpm run build
 
       - name: Setup OpenTofu
-        uses: opentofu/setup-opentofu@v2
+        uses: opentofu/setup-opentofu@fc711fa910b93cba0f3fbecaafc9f42fd0c411cb  # v2
         with:
           tofu_version: ${{ env.TOFU_VERSION }}
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7  # v6
         with:
           role-to-assume: ${{ inputs.environment == 'production' && secrets.AWS_ROLE_PRODUCTION || secrets.AWS_ROLE_STAGING }}
           aws-region: ${{ env.AWS_REGION }}
@@ -89,15 +92,9 @@ jobs:
           ./bin/build-bgutil-layer.sh
 
       - name: Rollback deployment
-        working-directory: infra
         env:
           SOPS_AGE_KEY_FILE: /tmp/age-key.txt
-        run: |
-          tofu init
-          tofu workspace select ${{ inputs.environment }}
-
-          ENV_FILE=${{ inputs.environment == 'production' && 'production' || 'staging' }}
-          tofu apply -var-file=environments/${ENV_FILE}.tfvars -auto-approve
+        run: npx mantle deploy --stage ${{ github.event.inputs.environment }}
 
       - name: Post rollback notification
         run: |
