@@ -34,7 +34,7 @@ jobs:
         run: GIT_SSH_COMMAND="ssh -i ~/.ssh/mantle_deploy_key -o StrictHostKeyChecking=no" git clone --depth 1 --branch "${GITHUB_HEAD_REF:-${GITHUB_REF_NAME:-main}}" git@github.com:j0nathan-ll0yd/mantle.git ../mantle || GIT_SSH_COMMAND="ssh -i ~/.ssh/mantle_deploy_key -o StrictHostKeyChecking=no" git clone --depth 1 --branch main git@github.com:j0nathan-ll0yd/mantle.git ../mantle
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@a3252b7fd9f8da12d5b4ac6d13eca46eed98e2a6  # v4.1.0
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1  # v4
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
