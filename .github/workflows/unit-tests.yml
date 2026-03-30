@@ -7,10 +7,15 @@ on:
     branches: [master]
   workflow_call:
 
+permissions: {}
+
 jobs:
   # Parallel job 1: Validation checks (TypeSpec, API docs, config)
   validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -93,6 +98,9 @@ jobs:
   # Parallel job 2: Type checking and linting
   lint-and-types:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -152,6 +160,9 @@ jobs:
   # Parallel job 3: Build and validate artifacts
   build-and-validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -195,6 +206,9 @@ jobs:
   test:
     needs: [validate, lint-and-types, build-and-validate]
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v6

@@ -11,9 +11,14 @@ on:
       - 'graphrag/metadata.json'
       - 'tsp/**'
 
+permissions: {}
+
 jobs:
   update-graphrag:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v6

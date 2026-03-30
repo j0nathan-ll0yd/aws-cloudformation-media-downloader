@@ -5,10 +5,14 @@ on:
     - cron: '0 6 * * 0'  # Sunday 6 AM UTC
   workflow_dispatch:
 
+permissions: {}
+
 jobs:
   mutation-test:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -24,7 +28,7 @@ jobs:
       - uses: ./.github/actions/build-project
 
       - name: Download previous incremental file
-        uses: dawidd6/action-download-artifact@v19
+        uses: dawidd6/action-download-artifact@07ab29fd4a977ae4d2b275957ba8f3ef8401e6f8  # v19
         with:
           workflow: mutation-tests.yml
           name: stryker-incremental

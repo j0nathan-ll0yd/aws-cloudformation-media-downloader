@@ -15,6 +15,8 @@ on:
         required: false
         type: string
 
+permissions: {}
+
 env:
   AWS_REGION: us-west-2
   TOFU_VERSION: '1.8.0'
@@ -25,6 +27,7 @@ jobs:
     if: false
     name: Rollback ${{ inputs.environment }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     environment: ${{ inputs.environment }}
     permissions:
       id-token: write
@@ -63,12 +66,12 @@ jobs:
         run: pnpm run build
 
       - name: Setup OpenTofu
-        uses: opentofu/setup-opentofu@v2
+        uses: opentofu/setup-opentofu@ae80d4ecaab946d8f5ff18397fbf6d0686c6d46a  # v1.0.5
         with:
           tofu_version: ${{ env.TOFU_VERSION }}
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502  # v4.0.2
         with:
           role-to-assume: ${{ inputs.environment == 'production' && secrets.AWS_ROLE_PRODUCTION || secrets.AWS_ROLE_STAGING }}
           aws-region: ${{ env.AWS_REGION }}

@@ -4,6 +4,8 @@ on:
   pull_request:
     branches: [master, main]
 
+permissions: {}
+
 concurrency:
   group: pr-${{ github.event.pull_request.number }}
   cancel-in-progress: true
@@ -12,6 +14,9 @@ jobs:
   # Quick validation (no build required)
   quick-checks:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -55,7 +60,10 @@ jobs:
   pr-ready:
     needs: [full-ci, integration]
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     if: always()
+    permissions:
+      contents: read
     steps:
       - name: Check all jobs succeeded
         run: |

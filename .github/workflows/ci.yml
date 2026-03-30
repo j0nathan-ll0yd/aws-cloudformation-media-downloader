@@ -6,6 +6,8 @@ on:
   push:
     branches: [master, main]
 
+permissions: {}
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -14,6 +16,9 @@ jobs:
   typecheck:
     name: Type Check
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v6
       # Checkout mantle framework as a sibling directory.
@@ -39,6 +44,9 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v6
       - name: Setup SSH for mantle checkout
@@ -61,6 +69,9 @@ jobs:
   format:
     name: Format Check
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v6
       - name: Setup SSH for mantle checkout
@@ -83,6 +94,9 @@ jobs:
   test:
     name: Unit Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v6
       - name: Setup SSH for mantle checkout
@@ -112,6 +126,9 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v6
       - name: Setup SSH for mantle checkout
@@ -156,7 +173,10 @@ jobs:
   integration-test:
     name: Integration Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     needs: [build]
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v6
       - name: Setup SSH for mantle checkout
@@ -214,7 +234,10 @@ jobs:
     name: CI Ready
     needs: [typecheck, lint, format, test, build]
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     if: always()
+    permissions:
+      contents: read
     steps:
       - name: Check all jobs succeeded
         run: |
