@@ -90,7 +90,7 @@ async function processWebhookRequest(input: WebhookProcessingInput): Promise<Web
       logError('Failed to associate file to user', {fileId, userId, error: String(assocResult.reason)})
     }
 
-    if (file && file.status == FileStatus.Downloaded) {
+    if (file && file.status === FileStatus.Downloaded) {
       // File already downloaded - send notification to user
       await sendFileNotification(file, userId)
       addMetadata(span, 'action', 'dispatched')

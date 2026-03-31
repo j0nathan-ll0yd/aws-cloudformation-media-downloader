@@ -170,7 +170,7 @@ export const handler = authorizer(async ({event, headers, queryStringParameters,
   const apiKeyValue = queryStringParameters.ApiKey
   const apiKeys = await fetchApiKeys()
   const matchedApiKey = apiKeys.filter((item) => item.value === apiKeyValue)
-  if (matchedApiKey.length == 0) {
+  if (matchedApiKey.length === 0) {
     logInfo('API key is invalid')
     metrics.addMetric('AuthorizationDenied', MetricUnit.Count, 1)
     addMetadata(span, 'reason', 'invalid_api_key')

@@ -98,7 +98,7 @@ export const handler = sqs(async (record) => {
     const deviceIds = await getDeviceIdsForUser(userId)
     addMetadata(span, 'deviceCount', deviceIds.length)
 
-    if (deviceIds.length == 0) {
+    if (deviceIds.length === 0) {
       logInfo('No devices registered for user', {userId})
       endSpan(span)
       return
