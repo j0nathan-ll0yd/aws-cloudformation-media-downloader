@@ -7,7 +7,9 @@
 # ===========================================================
 FROM public.ecr.aws/lambda/python:3.12-x86_64 AS bgutil-builder
 COPY layers/bgutil/requirements.txt /tmp/requirements.txt
-RUN pip install -r /tmp/requirements.txt -t /opt/python --no-cache-dir --quiet && chmod -R 755 /opt/python
+RUN pip install -r /tmp/requirements.txt -t /opt/python --no-cache-dir --quiet \
+  && pip install yt-dlp-ejs==0.8.0 -t /opt/python --no-cache-dir --quiet \
+  && chmod -R 755 /opt/python
 
 # ===========================================================
 # Binary dependencies (cached independently of app code)
@@ -39,8 +41,8 @@ ADD https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz
 RUN cd /tmp && tar xf ffmpeg.tar.xz --wildcards '*/ffmpeg' '*/ffprobe' --strip-components=1 \
   && chmod +x ffmpeg ffprobe && mv ffmpeg ffprobe /opt/bin/ && rm ffmpeg.tar.xz
 
-# --- yt-dlp cookies (optional — gitignored, injected at deploy time via secrets) ---
-RUN mkdir -p /opt/cookies
+# --- yt-dlp cookies (SOPS-encrypted in repo, decrypted before build) ---
+COPY layers/yt-dlp/cookies/youtube-cookies.txt /opt/cookies/youtube-cookies.txt
 
 # --- bgutil Python plugin for yt-dlp (from builder stage) ---
 COPY --from=bgutil-builder /opt/python/ /opt/python/
@@ -50,8 +52,9 @@ COPY --from=bgutil-builder /opt/python/ /opt/python/
 # ===========================================================
 COPY build/lambdas/StartFileUpload/index.mjs ${LAMBDA_TASK_ROOT}/index.mjs
 
-# Ensure binaries are on PATH
+# Ensure binaries are on PATH and yt-dlp can discover yt-dlp-ejs solver scripts
 ENV PATH="/opt/bin:${PATH}"
+ENV PYTHONPATH="/opt/python"
 
 # Lambda handler
 CMD ["index.handler"]

@@ -86,7 +86,11 @@ const YTDLP_STATIC_CONFIG = {
   /** Number of concurrent fragment downloads for speed */
   CONCURRENT_FRAGMENTS: '4',
   /** bgutil plugin path in Lambda layer (set via PYTHONPATH env var) */
-  PLUGIN_PATH: '/opt/python'
+  PLUGIN_PATH: '/opt/python',
+  /** Explicit deno path for yt-dlp JS challenge solving (PyInstaller binary can't discover via PATH) */
+  JS_RUNTIME: 'deno:/opt/bin/deno',
+  /** Explicit ffmpeg location (PyInstaller binary can't discover via PATH) */
+  FFMPEG_LOCATION: '/opt/bin'
 } as const
 
 /** Runtime yt-dlp config — env vars read at call time, not import time */
@@ -213,7 +217,7 @@ import type {FetchVideoInfoResult} from '#types/video'
  */
 function getVideoInfo(binaryPath: string, args: string[]): Promise<YtDlpVideoInfo> {
   return new Promise((resolve, reject) => {
-    const proc = spawn(binaryPath, ['-J', '--skip-download', '--no-check-formats', '-f', 'worst', ...args])
+    const proc = spawn(binaryPath, ['-J', '--skip-download', '--no-check-formats', '--verbose', ...args])
     let stdout = ''
     let stderr = ''
 
@@ -231,7 +235,7 @@ function getVideoInfo(binaryPath: string, args: string[]): Promise<YtDlpVideoInf
     proc.on('close', (code) => {
       // Always log stderr for debugging yt-dlp client/format behavior
       if (stderr) {
-        logDebug('yt-dlp stderr', {stderr: stderr.substring(0, 2000)})
+        logDebug('yt-dlp stderr', {stderr: stderr.substring(0, 8000)})
       }
       if (code === 0) {
         try {
@@ -283,6 +287,10 @@ export async function fetchVideoInfo(uri: string): Promise<FetchVideoInfoResult>
     const ytdlpFlags = [
       '--no-warnings',
       '--no-check-formats',
+      '--js-runtimes',
+      ytdlpConfig.JS_RUNTIME,
+      '--ffmpeg-location',
+      ytdlpConfig.FFMPEG_LOCATION,
       '--plugin-dirs',
       ytdlpConfig.PLUGIN_PATH,
       '--cookies',
@@ -472,6 +480,10 @@ export async function downloadVideoToS3(uri: string, bucket: string, key: string
           formatSelector,
           '--merge-output-format',
           ytdlpConfig.MERGE_FORMAT,
+          '--js-runtimes',
+          ytdlpConfig.JS_RUNTIME,
+          '--ffmpeg-location',
+          ytdlpConfig.FFMPEG_LOCATION,
           '--cookies',
           ytdlpConfig.COOKIES_DEST,
           '--plugin-dirs',

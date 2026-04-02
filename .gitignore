@@ -30,7 +30,8 @@ infra/.terraform.tfstate.lock.info
 .webpackCache
 .python-version
 layers/yt-dlp/bin/ffmpeg
-layers/yt-dlp/cookies
+layers/yt-dlp/cookies/*
+!layers/yt-dlp/cookies/youtube-cookies.enc
 layers/ffmpeg/bin/ffmpeg
 layers/quickjs/bin/qjs
 layers/bgutil/build/

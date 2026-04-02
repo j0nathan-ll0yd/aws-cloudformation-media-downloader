@@ -124,6 +124,8 @@ jobs:
           echo "${{ secrets.SOPS_AGE_KEY }}" > /tmp/age-key.txt
           export SOPS_AGE_KEY_FILE=/tmp/age-key.txt
           sops --decrypt secrets.prod.enc.yaml > secrets.prod.yaml
+          sops decrypt --output-type binary \
+            layers/yt-dlp/cookies/youtube-cookies.enc > layers/yt-dlp/cookies/youtube-cookies.txt
 
       - name: Build Lambda layers
         if: steps.check-creds.outputs.configured == 'true'
