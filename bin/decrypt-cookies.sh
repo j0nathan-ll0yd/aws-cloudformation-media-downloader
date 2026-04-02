@@ -14,11 +14,13 @@ if [[ ! -f "$COOKIES_ENC" ]]; then
   exit 1
 fi
 
+mkdir -p "$(dirname "$COOKIES_TXT")"
+
 if ! command -v sops &>/dev/null; then
-  echo "ERROR: sops is not installed. Install with: brew install sops"
-  exit 1
+  echo "WARNING: sops is not installed — creating placeholder cookies for build"
+  echo "# Placeholder — replace with real cookies via: pnpm run cookies:encrypt" > "$COOKIES_TXT"
+  exit 0
 fi
 
-mkdir -p "$(dirname "$COOKIES_TXT")"
 sops decrypt --output-type binary "$COOKIES_ENC" > "$COOKIES_TXT"
 echo "Decrypted cookies to $COOKIES_TXT"
