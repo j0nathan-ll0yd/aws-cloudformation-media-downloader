@@ -131,6 +131,18 @@ jobs:
 
       - uses: ./.github/actions/setup-homebrew-tools
 
+      - name: Setup SOPS
+        uses: ./.github/actions/setup-sops
+
+      - name: Decrypt YouTube cookies
+        env:
+          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+        run: |
+          echo "$SOPS_AGE_KEY" > /tmp/age-key.txt
+          export SOPS_AGE_KEY_FILE=/tmp/age-key.txt
+          sops decrypt --output-type binary \
+            layers/yt-dlp/cookies/youtube-cookies.enc > layers/yt-dlp/cookies/youtube-cookies.txt
+
       - name: Build project
         run: pnpm run build
 

@@ -24,9 +24,23 @@ This will:
 4. Extract cookies after login
 5. Save cookies to `layers/yt-dlp/cookies/youtube-cookies.txt`
 
-### Step 2: Deploy the Updated Layer
+### Step 2: Re-encrypt Cookies
 ```bash
-pnpm run deploy
+pnpm run cookies:encrypt
+```
+
+This encrypts the plaintext cookies with SOPS and updates the committed `youtube-cookies.enc` file.
+
+### Step 3: Commit and Deploy
+```bash
+git add layers/yt-dlp/cookies/youtube-cookies.enc
+git commit -m "chore(cookies): refresh YouTube session cookies"
+git push
+```
+
+Production deploys automatically on merge to master. For staging:
+```bash
+npx mantle build && pnpm run deploy:staging
 ```
 
 ---

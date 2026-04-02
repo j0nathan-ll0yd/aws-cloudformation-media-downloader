@@ -41,7 +41,7 @@ ADD https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz
 RUN cd /tmp && tar xf ffmpeg.tar.xz --wildcards '*/ffmpeg' '*/ffprobe' --strip-components=1 \
   && chmod +x ffmpeg ffprobe && mv ffmpeg ffprobe /opt/bin/ && rm ffmpeg.tar.xz
 
-# --- yt-dlp cookies (gitignored, must exist locally at build time) ---
+# --- yt-dlp cookies (SOPS-encrypted in repo, decrypted before build) ---
 COPY layers/yt-dlp/cookies/youtube-cookies.txt /opt/cookies/youtube-cookies.txt
 
 # --- bgutil Python plugin for yt-dlp (from builder stage) ---
