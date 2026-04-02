@@ -88,7 +88,9 @@ const YTDLP_STATIC_CONFIG = {
   /** bgutil plugin path in Lambda layer (set via PYTHONPATH env var) */
   PLUGIN_PATH: '/opt/python',
   /** Explicit deno path for yt-dlp JS challenge solving (PyInstaller binary can't discover via PATH) */
-  JS_RUNTIME: 'deno:/opt/bin/deno'
+  JS_RUNTIME: 'deno:/opt/bin/deno',
+  /** Explicit ffmpeg location (PyInstaller binary can't discover via PATH) */
+  FFMPEG_LOCATION: '/opt/bin'
 } as const
 
 /** Runtime yt-dlp config — env vars read at call time, not import time */
@@ -287,6 +289,8 @@ export async function fetchVideoInfo(uri: string): Promise<FetchVideoInfoResult>
       '--no-check-formats',
       '--js-runtimes',
       ytdlpConfig.JS_RUNTIME,
+      '--ffmpeg-location',
+      ytdlpConfig.FFMPEG_LOCATION,
       '--plugin-dirs',
       ytdlpConfig.PLUGIN_PATH,
       '--cookies',
@@ -478,6 +482,8 @@ export async function downloadVideoToS3(uri: string, bucket: string, key: string
           ytdlpConfig.MERGE_FORMAT,
           '--js-runtimes',
           ytdlpConfig.JS_RUNTIME,
+          '--ffmpeg-location',
+          ytdlpConfig.FFMPEG_LOCATION,
           '--cookies',
           ytdlpConfig.COOKIES_DEST,
           '--plugin-dirs',
