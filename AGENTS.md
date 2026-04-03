@@ -1,25 +1,8 @@
 # Project Context for AI Agents
 
-## Convention Capture System
+## Convention Enforcement
 
-**CRITICAL**: This project captures emergent conventions during development. Read `docs/wiki/Meta/Conventions-Tracking.md` at session start.
-
-### Detection Signals:
-- 🚨 **CRITICAL**: "NEVER", "FORBIDDEN", "Zero-tolerance"
-- ⚠️ **HIGH**: "MUST", "REQUIRED", "ALWAYS"
-- 📋 **MEDIUM**: "Prefer X over Y", repeated decisions
-
-### When Convention Detected:
-1. Update `docs/wiki/Meta/Conventions-Tracking.md` with the new convention
-2. Document in appropriate wiki page under `docs/wiki/`
-3. Mark as documented in tracking file
-
-### Reference:
-- **Architecture Decisions**: `docs/wiki/Decisions/` - ADRs capturing "why" behind decisions
-- **Active Conventions**: `docs/wiki/Meta/Conventions-Tracking.md` - "how" to follow conventions
-- **Documentation Guide**: `docs/wiki/Meta/Convention-Capture-System.md`
-
-**Philosophy**: ADRs capture decisions (immutable), conventions capture current practices (living). No duplicate documentation.
+Conventions are enforced by `mantle check` (65 rules, C1-C65) and documented in `~/.claude/principles/mantle.md`. Architecture decisions are recorded as ADRs in `docs/wiki/Decisions/`.
 
 ---
 
@@ -174,49 +157,35 @@ See [System Diagrams](docs/wiki/Architecture/System-Diagrams.md) for Lambda Trig
 ### Testing with Drizzle
 - **ALWAYS** mock `#entities/queries` with `vi.mock()` and `vi.fn()` for each query function
 - **PREFER** `test/helpers/entity-fixtures.ts` for creating mock entity data
-- See [Vitest Mocking Strategy](docs/wiki/Testing/Vitest-Mocking-Strategy.md) for patterns
+- See [Mock Factory Patterns](docs/wiki/Testing/Mock-Factory-Patterns.md) for patterns
 
 ### Testing with AWS SDK
 - **PREFER** `test/helpers/aws-sdk-mock.ts` for AWS SDK v3 mocking (uses aws-sdk-client-mock)
 - Mock helpers integrate with vendor wrappers via test client injection
-- See [Vitest Mocking Strategy](docs/wiki/Testing/Vitest-Mocking-Strategy.md) for patterns
+- See [Mock Factory Patterns](docs/wiki/Testing/Mock-Factory-Patterns.md) for patterns
 
-## Wiki Conventions to Follow
+## Conventions Reference
 
-**BEFORE WRITING ANY CODE, READ THE APPLICABLE GUIDE:**
+Convention enforcement is handled by `mantle check` (65 rules) and `~/.claude/principles/mantle.md`. Key references:
 
-### Core Conventions
-- **Git Workflow**: [docs/wiki/Conventions/Git-Workflow.md](docs/wiki/Conventions/Git-Workflow.md) - NO AI attribution in commits
-- **Naming**: [docs/wiki/Conventions/Naming-Conventions.md](docs/wiki/Conventions/Naming-Conventions.md) - camelCase, PascalCase rules
-- **Comments**: [docs/wiki/Conventions/Code-Comments.md](docs/wiki/Conventions/Code-Comments.md) - Git as source of truth
-
-### TypeScript & Testing
-- **Lambda Patterns**: [docs/wiki/TypeScript/Lambda-Function-Patterns.md](docs/wiki/TypeScript/Lambda-Function-Patterns.md)
-- **Entity Queries**: [docs/wiki/TypeScript/Entity-Query-Patterns.md](docs/wiki/TypeScript/Entity-Query-Patterns.md) - Drizzle ORM patterns
-- **System Library**: [docs/wiki/TypeScript/System-Library.md](docs/wiki/TypeScript/System-Library.md) - Circuit breaker, retry, errors
-- **Vitest Mocking**: [docs/wiki/Testing/Vitest-Mocking-Strategy.md](docs/wiki/Testing/Vitest-Mocking-Strategy.md)
-- **Mock Types**: [docs/wiki/Testing/Mock-Type-Annotations.md](docs/wiki/Testing/Mock-Type-Annotations.md)
-- **Coverage Philosophy**: [docs/wiki/Testing/Coverage-Philosophy.md](docs/wiki/Testing/Coverage-Philosophy.md)
-- **Integration Testing**: [docs/wiki/Integration/LocalStack-Testing.md](docs/wiki/Integration/LocalStack-Testing.md)
-
-### AWS & Infrastructure
-- **Vendor Encapsulation**: [docs/wiki/Conventions/Vendor-Encapsulation-Policy.md](docs/wiki/Conventions/Vendor-Encapsulation-Policy.md) - ZERO tolerance
 - **Bash Scripts**: [docs/wiki/Bash/Script-Patterns.md](docs/wiki/Bash/Script-Patterns.md)
-- **OpenTofu/Terraform**: [docs/wiki/Infrastructure/OpenTofu-Patterns.md](docs/wiki/Infrastructure/OpenTofu-Patterns.md)
+- **Mock Patterns**: [docs/wiki/Testing/Mock-Factory-Patterns.md](docs/wiki/Testing/Mock-Factory-Patterns.md)
+- **Infrastructure**: [docs/wiki/Infrastructure/Staging-Production-Strategy.md](docs/wiki/Infrastructure/Staging-Production-Strategy.md)
+- **Architecture**: [docs/wiki/Architecture/System-Diagrams.md](docs/wiki/Architecture/System-Diagrams.md)
 
 ## Anti-Patterns (Quick Reference)
 
-| Anti-Pattern | Severity | Example | Documentation |
-|--------------|----------|---------|---------------|
-| Direct AWS SDK Imports | CRITICAL | `import {S3} from '@aws-sdk/client-s3'` | [Vendor Encapsulation](docs/wiki/Conventions/Vendor-Encapsulation-Policy.md) |
-| Legacy Entity Mocks | CRITICAL | `vi.mock('#entities/Users')` | [Vitest Mocking](docs/wiki/Testing/Vitest-Mocking-Strategy.md) |
-| Promise.all for Cascades | CRITICAL | `Promise.all([deleteUser(), deleteFiles()])` | [Lambda Patterns](docs/wiki/TypeScript/Lambda-Function-Patterns.md) |
-| AI Attribution in Commits | CRITICAL | `Co-Authored-By: Claude` | [Git Workflow](docs/wiki/Conventions/Git-Workflow.md) |
-| Module-Level getRequiredEnv | HIGH | `const X = getRequiredEnv('X')` at top level | [Lambda Patterns](docs/wiki/TypeScript/Lambda-Function-Patterns.md) |
-| Raw Response Objects | HIGH | `return {statusCode: 200, body: ...}` | [Lambda Patterns](docs/wiki/TypeScript/Lambda-Function-Patterns.md) |
-| Underscore-Prefixed Vars | HIGH | `handler(event, _context)` | [Lambda Patterns](docs/wiki/TypeScript/Lambda-Function-Patterns.md) |
+| Anti-Pattern | Severity | Example | Enforcement |
+|--------------|----------|---------|-------------|
+| Direct AWS SDK Imports | CRITICAL | `import {S3} from '@aws-sdk/client-s3'` | `mantle check` rule: no-raw-aws-sdk |
+| Legacy Entity Mocks | CRITICAL | `vi.mock('#entities/Users')` | `mantle check` rule: entity-mocking |
+| Promise.all for Cascades | CRITICAL | `Promise.all([deleteUser(), deleteFiles()])` | `mantle check` rule: cascade-safety |
+| AI Attribution in Commits | CRITICAL | `Co-Authored-By: Claude` | C17: Conventional Commits |
+| Module-Level getRequiredEnv | HIGH | `const X = getRequiredEnv('X')` at top level | `mantle check` rule: no-raw-process-env |
+| Raw Response Objects | HIGH | `return {statusCode: 200, body: ...}` | `mantle check` rule: response-validation |
+| Underscore-Prefixed Vars | HIGH | `handler(event, _context)` | `mantle check` rule: naming-conventions |
 
-**Quick fixes**: Use `#lib/vendor/AWS/*` for AWS SDK, `#entities/queries` for entity mocks, `response()` helper for Lambda returns.
+**Quick fixes**: Use `#lib/vendor/AWS/*` for AWS SDK, `#entities/queries` for entity mocks, `buildValidatedResponse()` for Lambda returns.
 
 ## Type Naming Patterns
 

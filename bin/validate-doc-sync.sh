@@ -182,35 +182,45 @@ main() {
   WIKI_OK=true
   BROKEN_LINKS=""
 
-  # Find all markdown files in docs/wiki and check their links
+  # Find all markdown files in docs/wiki and check their internal links
   while IFS= read -r md_file; do
-    # Extract relative markdown links: [text](path.md) or [text](../path.md)
-    # Filter out code blocks first (``` fenced blocks) to avoid false positives from examples
     while IFS= read -r link; do
-      # Skip empty results
       [ -z "$link" ] && continue
-
-      # Skip external links and anchors
       [[ "$link" == http* ]] && continue
       [[ "$link" == "#"* ]] && continue
-
-      # Remove anchor from link if present
       link_path="${link%%#*}"
-
-      # Skip if empty after removing anchor
       [ -z "$link_path" ] && continue
 
       # Resolve relative path from the markdown file's directory
       md_dir=$(dirname "$md_file")
       target_path="$md_dir/$link_path"
 
-      # Normalize and check if file exists
       if [ ! -f "$target_path" ]; then
         BROKEN_LINKS="$BROKEN_LINKS\n  - $md_file: broken link to '$link_path'"
         WIKI_OK=false
       fi
     done < <(awk 'BEGIN{c=0; bt=sprintf("%c",96); pat="^" bt bt bt} $0 ~ pat {c=1-c; next} c==0{print}' "$md_file" 2> /dev/null | grep -oE '\]\([^)]+\.md[^)]*\)' | sed 's/\](\([^)]*\))/\1/' | sed 's/#.*//' || true)
   done < <(find docs/wiki -name "*.md" 2> /dev/null)
+
+  # Also scan AGENTS.md and CLAUDE.md for links to docs/wiki/ paths
+  for root_doc in AGENTS.md CLAUDE.md; do
+    [ ! -f "$root_doc" ] && continue
+    while IFS= read -r link; do
+      [ -z "$link" ] && continue
+      [[ "$link" == http* ]] && continue
+      [[ "$link" == "#"* ]] && continue
+      link_path="${link%%#*}"
+      [ -z "$link_path" ] && continue
+
+      # Only check links that target docs/wiki/
+      [[ "$link_path" != docs/wiki/* ]] && continue
+
+      if [ ! -f "$link_path" ]; then
+        BROKEN_LINKS="$BROKEN_LINKS\n  - $root_doc: broken link to '$link_path'"
+        WIKI_OK=false
+      fi
+    done < <(awk 'BEGIN{c=0; bt=sprintf("%c",96); pat="^" bt bt bt} $0 ~ pat {c=1-c; next} c==0{print}' "$root_doc" 2> /dev/null | grep -oE '\]\([^)]+\.md[^)]*\)' | sed 's/\](\([^)]*\))/\1/' | sed 's/#.*//' || true)
+  done
 
   if [ "$WIKI_OK" = true ]; then
     echo -e "${GREEN}OK${NC}"
