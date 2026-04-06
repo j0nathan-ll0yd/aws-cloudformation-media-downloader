@@ -44,7 +44,8 @@ defineLambda({
     YTDLP_COOKIES_PATH: '/opt/cookies/youtube-cookies.txt',
     YTDLP_SLEEP_REQUESTS: '1',
     YTDLP_SLEEP_INTERVAL: '2',
-    YTDLP_MAX_SLEEP_INTERVAL: '5'
+    YTDLP_MAX_SLEEP_INTERVAL: '5',
+    AWS_SDK_UA_APP_ID: 'StartFileUpload'
   }
 })
 
@@ -488,7 +489,14 @@ async function processDownloadRequest(message: ValidatedDownloadQueueMessage, re
   }
 
   const videoInfo = videoInfoResult.value
-  logDebug('fetchVideoInfo =>', videoInfo as unknown as Record<string, unknown>)
+  logDebug('fetchVideoInfo =>', {
+    id: videoInfo.id,
+    title: videoInfo.title,
+    duration: videoInfo.duration,
+    formatCount: videoInfo.formats?.length,
+    upload_date: videoInfo.upload_date,
+    view_count: videoInfo.view_count
+  })
 
   // Dispatch MetadataNotification to all users waiting for this file
   await dispatchMetadataNotifications(fileId, videoInfo)

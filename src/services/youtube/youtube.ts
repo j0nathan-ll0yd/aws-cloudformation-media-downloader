@@ -62,7 +62,7 @@ function runLayerDiagnostics(binaryPath: string): void {
 
   // Check if deno is executable
   try {
-    checks['deno-version'] = execSync('/opt/bin/deno --version 2>&1 | head -1', {timeout: 5000, shell: '/bin/sh'}).toString().trim()
+    checks['deno-version'] = execSync('/opt/bin/deno --version', {timeout: 5000}).toString().split('\n')[0]?.trim()
   } catch (e) {
     checks['deno-version'] = `error: ${String(e).substring(0, 200)}`
   }
@@ -405,9 +405,9 @@ function execYtDlp(ytdlpBinaryPath: string, args: string[]): Promise<void> {
     const ytdlp = spawn(ytdlpBinaryPath, args, {cwd: '/tmp'})
 
     let stderr = ''
-    let lastLoggedPercent = -10 // Log every 10% progress
+    let lastLoggedPercent = -25 // Log every 25% progress
     let lastLogTime = Date.now()
-    const LOG_INTERVAL_MS = 30000 // Also log at least every 30 seconds
+    const LOG_INTERVAL_MS = 60000 // Also log at least every 60 seconds
 
     ytdlp.stderr.on('data', (chunk) => {
       const data = chunk.toString()
@@ -421,14 +421,14 @@ function execYtDlp(ytdlpBinaryPath: string, args: string[]): Promise<void> {
           const now = Date.now()
           const timeSinceLastLog = now - lastLogTime
 
-          // Log if: 10% progress milestone, 30s elapsed, or merging started
-          const shouldLog = (progress.percent !== undefined && progress.percent >= lastLoggedPercent + 10) ||
+          // Log if: 25% progress milestone, 60s elapsed, or download complete
+          const shouldLog = (progress.percent !== undefined && progress.percent >= lastLoggedPercent + 25) ||
             timeSinceLastLog >= LOG_INTERVAL_MS ||
             (progress.percent === 100)
 
           if (shouldLog && progress.percent !== undefined) {
             logDebug('yt-dlp progress', {percent: `${progress.percent.toFixed(1)}%`, size: progress.size, speed: progress.speed, eta: progress.eta})
-            lastLoggedPercent = Math.floor(progress.percent / 10) * 10
+            lastLoggedPercent = Math.floor(progress.percent / 25) * 25
             lastLogTime = now
           }
         }
