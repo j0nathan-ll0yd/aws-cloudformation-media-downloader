@@ -39,7 +39,7 @@ function getSchemaPrefix(): string {
  * - UUID → TEXT for test simplicity with regular PostgreSQL
  *
  * DO NOT add DEFAULT NULL or other schema modifications here.
- * All schema definitions belong in migrations/0001_schema.sql.
+ * All schema definitions belong in migrations/*.sql files.
  */
 function adaptMigrationForSchema(migrationSql: string, schema: string): string {
   let adapted = migrationSql
@@ -60,13 +60,17 @@ function adaptMigrationForSchema(migrationSql: string, schema: string): string {
 
   // Add schema prefix to table references (for worker isolation)
   for (const table of tables) {
-    // Match table name in CREATE TABLE, CREATE INDEX, ON clauses
+    // Match table name in CREATE TABLE, ALTER TABLE, CREATE INDEX, UPDATE, ON clauses
     // Use word boundaries to avoid partial matches
     const createTablePattern = new RegExp(`CREATE TABLE IF NOT EXISTS ${table}`, 'g')
+    const alterTablePattern = new RegExp(`ALTER TABLE ${table} `, 'g')
+    const updateTablePattern = new RegExp(`UPDATE ${table} `, 'g')
     const onParenPattern = new RegExp(`ON ${table}\\(`, 'g')
     const onSpacePattern = new RegExp(`ON ${table} `, 'g')
 
     adapted = adapted.replace(createTablePattern, `CREATE TABLE IF NOT EXISTS ${schema}.${table}`)
+    adapted = adapted.replace(alterTablePattern, `ALTER TABLE ${schema}.${table} `)
+    adapted = adapted.replace(updateTablePattern, `UPDATE ${schema}.${table} `)
     adapted = adapted.replace(onParenPattern, `ON ${schema}.${table}(`)
     adapted = adapted.replace(onSpacePattern, `ON ${schema}.${table} `)
   }
@@ -171,9 +175,10 @@ export async function setup(): Promise<void> {
   log(`[globalSetup] Starting schema creation with prefix: "${prefix}"`)
   log(`[globalSetup] MAX_WORKERS: ${MAX_WORKERS}`)
 
-  // Read migration files (0001_schema.sql contains both schema and indexes)
+  // Read schema migration files in order (excludes DSQL-specific role migrations)
   const migrationsDir = path.join(process.cwd(), 'migrations')
-  const schemaMigration = fs.readFileSync(path.join(migrationsDir, '0001_schema.sql'), 'utf8')
+  const migrationFiles = fs.readdirSync(migrationsDir).filter((f: string) => f.endsWith('.sql') && !f.includes('lambda_roles')).sort()
+  const schemaMigration = migrationFiles.map((f: string) => fs.readFileSync(path.join(migrationsDir, f), 'utf8')).join('\n')
 
   // Wait for PostgreSQL to be ready with retry logic (handles CI startup delays)
   const sql = await waitForPostgres(databaseUrl)
