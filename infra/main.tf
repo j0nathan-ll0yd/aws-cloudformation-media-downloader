@@ -2,7 +2,7 @@
 # To customize, remove the first line and this file will be skipped on re-generation.
 
 terraform {
-  required_version = ">= 1.6.0"
+  required_version = ">= 1.11.0"
 
   required_providers {
     aws = {

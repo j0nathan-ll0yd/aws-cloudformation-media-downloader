@@ -35,6 +35,7 @@ defineLambda({
   dockerfile: 'Dockerfile.download',
   architecture: 'x86_64',
   memorySize: 2048,
+  ephemeralStorage: 10240,
   timeout: 900,
   reservedConcurrency: 1,
   secrets: {GITHUB_PERSONAL_TOKEN: 'github.issue.token'},

@@ -7,7 +7,7 @@ locals {
   adot_layer_arn_x86_64 = "arn:aws:lambda:${module.core.region}:901920570463:layer:aws-otel-nodejs-amd64-ver-1-30-2:1"
 
   # EventBridge event bus name
-  event_bus_name = "${module.core.name_prefix}-MediaDownloader"
+  event_bus_name = module.eventbridge.bus_name
 
   # Custom Lambda layer ARNs
   layer_yt_dlp_arn = aws_lambda_layer_version.yt_dlp.arn

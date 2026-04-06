@@ -25,7 +25,9 @@ const PERMANENT_ERROR_PATTERNS = [
   'join this channel to get access',
   'members-only content',
   'this live event will begin',
-  'premiere will begin'
+  'premiere will begin',
+  'no space left on device',
+  'errno 28'
 ]
 
 /** Patterns indicating transient/network errors that should be retried with backoff */

@@ -1,6 +1,6 @@
 import {execSync, spawn} from 'child_process'
 import {createReadStream, existsSync, readdirSync, statSync} from 'fs'
-import {copyFile, stat, unlink} from 'fs/promises'
+import {copyFile, readdir, stat, unlink} from 'fs/promises'
 import type {YtDlpVideoInfo} from '#types/youtube'
 import {metrics, MetricUnit} from '@mantleframework/observability'
 import {logDebug, logError} from '@mantleframework/observability'
@@ -103,6 +103,28 @@ function getYtdlpConfig() {
     SLEEP_INTERVAL: getOptionalEnv('YTDLP_SLEEP_INTERVAL', '2'),
     /** Maximum sleep between downloads (seconds) - random delay between min and max */
     MAX_SLEEP_INTERVAL: getOptionalEnv('YTDLP_MAX_SLEEP_INTERVAL', '5')
+  }
+}
+
+/** Video file extensions that yt-dlp may leave in /tmp (intermediates + output) */
+const VIDEO_FILE_EXTENSIONS = ['.mp4', '.m4a', '.webm', '.mkv', '.part', '.ytdl']
+
+/**
+ * Remove stale video files from /tmp left by previous invocations.
+ * Lambda containers are reused — crashed/timed-out downloads leave
+ * intermediate files (.f137.mp4, .f140.m4a, .part) that accumulate.
+ * Preserves the cookies file.
+ */
+async function cleanupStaleTempFiles(): Promise<void> {
+  try {
+    const files = await readdir('/tmp')
+    const staleFiles = files.filter((f) => VIDEO_FILE_EXTENSIONS.some((ext) => f.endsWith(ext)))
+    if (staleFiles.length > 0) {
+      logDebug('Cleaning up stale temp files', {count: staleFiles.length, files: staleFiles})
+      await Promise.all(staleFiles.map((f) => unlink(`/tmp/${f}`).catch(() => {})))
+    }
+  } catch {
+    // /tmp may not be listable in some environments
   }
 }
 
@@ -462,6 +484,9 @@ export async function downloadVideoToS3(uri: string, bucket: string, key: string
   const startTime = Date.now()
 
   try {
+    // Clean up stale files from previous invocations (container reuse)
+    await cleanupStaleTempFiles()
+
     // Prepare cookies from Lambda layer
     await prepareCookies()
 
