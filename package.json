@@ -154,7 +154,7 @@
     "dependency-cruiser": "^17.3.10",
     "dprint": "^0.53.1",
     "drizzle-kit": "^0.31.10",
-    "esbuild": "^0.27.4",
+    "esbuild": "^0.28.0",
     "eslint": "^10.1.0",
     "eslint-plugin-drizzle": "^0.2.3",
     "eslint-plugin-jsdoc": "^62.8.1",
