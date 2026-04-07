@@ -14,7 +14,7 @@
  * - Single-table design becomes normalized relational tables
  * - TTL attribute becomes scheduled cleanup Lambda
  */
-import {boolean, index, integer, pgTable, primaryKey, text, timestamp, uuid} from 'drizzle-orm/pg-core'
+import {bigint, boolean, index, integer, pgTable, primaryKey, text, timestamp, uuid} from 'drizzle-orm/pg-core'
 
 /**
  * Users table - Core user account management (Better Auth).
@@ -50,7 +50,7 @@ export const users = pgTable('users', {
  */
 export const files = pgTable('files', {
   fileId: text('file_id').primaryKey(),
-  size: integer('size').notNull().default(0),
+  size: bigint('file_size', {mode: 'number'}).notNull().default(0),
   authorName: text('author_name').notNull(),
   authorUser: text('author_user').notNull(),
   publishDate: text('publish_date').notNull(),

@@ -52,6 +52,7 @@ module "lambda_start_file_upload" {
   memory_size        = 2048
   reserved_concurrent_executions = var.reserved_concurrency_start_file_upload
   architecture       = "x86_64"
+  ephemeral_storage  = 10240
 
   api_gateway_enabled = false
 

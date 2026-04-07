@@ -152,7 +152,10 @@ describe('errorClassifier', () => {
         ['The uploader has not made this video available'],
         ['Video is unavailable'],
         ['Join this channel to get access'],
-        ['Members-only content']
+        ['Members-only content'],
+        ['No space left on device'],
+        ['[Errno 28] No space left on device'],
+        ['yt-dlp exited with code 1: ERROR: unable to write data: [Errno 28] No space left on device']
       ])('should classify "%s" as permanent', (errorMessage) => {
         const error = new Error(errorMessage)
 

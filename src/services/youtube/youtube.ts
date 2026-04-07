@@ -1,6 +1,6 @@
 import {execSync, spawn} from 'child_process'
 import {createReadStream, existsSync, readdirSync, statSync} from 'fs'
-import {copyFile, stat, unlink} from 'fs/promises'
+import {copyFile, readdir, stat, unlink} from 'fs/promises'
 import type {YtDlpVideoInfo} from '#types/youtube'
 import {metrics, MetricUnit} from '@mantleframework/observability'
 import {logDebug, logError} from '@mantleframework/observability'
@@ -62,7 +62,7 @@ function runLayerDiagnostics(binaryPath: string): void {
 
   // Check if deno is executable
   try {
-    checks['deno-version'] = execSync('/opt/bin/deno --version 2>&1 | head -1', {timeout: 5000, shell: '/bin/sh'}).toString().trim()
+    checks['deno-version'] = execSync('/opt/bin/deno --version', {timeout: 5000}).toString().split('\n')[0]?.trim()
   } catch (e) {
     checks['deno-version'] = `error: ${String(e).substring(0, 200)}`
   }
@@ -103,6 +103,28 @@ function getYtdlpConfig() {
     SLEEP_INTERVAL: getOptionalEnv('YTDLP_SLEEP_INTERVAL', '2'),
     /** Maximum sleep between downloads (seconds) - random delay between min and max */
     MAX_SLEEP_INTERVAL: getOptionalEnv('YTDLP_MAX_SLEEP_INTERVAL', '5')
+  }
+}
+
+/** Video file extensions that yt-dlp may leave in /tmp (intermediates + output) */
+const VIDEO_FILE_EXTENSIONS = ['.mp4', '.m4a', '.webm', '.mkv', '.part', '.ytdl']
+
+/**
+ * Remove stale video files from /tmp left by previous invocations.
+ * Lambda containers are reused — crashed/timed-out downloads leave
+ * intermediate files (.f137.mp4, .f140.m4a, .part) that accumulate.
+ * Preserves the cookies file.
+ */
+async function cleanupStaleTempFiles(): Promise<void> {
+  try {
+    const files = await readdir('/tmp')
+    const staleFiles = files.filter((f) => VIDEO_FILE_EXTENSIONS.some((ext) => f.endsWith(ext)))
+    if (staleFiles.length > 0) {
+      logDebug('Cleaning up stale temp files', {count: staleFiles.length, files: staleFiles})
+      await Promise.all(staleFiles.map((f) => unlink(`/tmp/${f}`).catch(() => {})))
+    }
+  } catch {
+    // /tmp may not be listable in some environments
   }
 }
 
@@ -383,9 +405,9 @@ function execYtDlp(ytdlpBinaryPath: string, args: string[]): Promise<void> {
     const ytdlp = spawn(ytdlpBinaryPath, args, {cwd: '/tmp'})
 
     let stderr = ''
-    let lastLoggedPercent = -10 // Log every 10% progress
+    let lastLoggedPercent = -25 // Log every 25% progress
     let lastLogTime = Date.now()
-    const LOG_INTERVAL_MS = 30000 // Also log at least every 30 seconds
+    const LOG_INTERVAL_MS = 60000 // Also log at least every 60 seconds
 
     ytdlp.stderr.on('data', (chunk) => {
       const data = chunk.toString()
@@ -399,14 +421,14 @@ function execYtDlp(ytdlpBinaryPath: string, args: string[]): Promise<void> {
           const now = Date.now()
           const timeSinceLastLog = now - lastLogTime
 
-          // Log if: 10% progress milestone, 30s elapsed, or merging started
-          const shouldLog = (progress.percent !== undefined && progress.percent >= lastLoggedPercent + 10) ||
+          // Log if: 25% progress milestone, 60s elapsed, or download complete
+          const shouldLog = (progress.percent !== undefined && progress.percent >= lastLoggedPercent + 25) ||
             timeSinceLastLog >= LOG_INTERVAL_MS ||
             (progress.percent === 100)
 
           if (shouldLog && progress.percent !== undefined) {
             logDebug('yt-dlp progress', {percent: `${progress.percent.toFixed(1)}%`, size: progress.size, speed: progress.speed, eta: progress.eta})
-            lastLoggedPercent = Math.floor(progress.percent / 10) * 10
+            lastLoggedPercent = Math.floor(progress.percent / 25) * 25
             lastLogTime = now
           }
         }
@@ -462,6 +484,9 @@ export async function downloadVideoToS3(uri: string, bucket: string, key: string
   const startTime = Date.now()
 
   try {
+    // Clean up stale files from previous invocations (container reuse)
+    await cleanupStaleTempFiles()
+
     // Prepare cookies from Lambda layer
     await prepareCookies()
 
