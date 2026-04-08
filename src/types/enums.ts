@@ -11,12 +11,8 @@ export { UserStatus } from '@mantleframework/core'
  * - Downloaded: Successfully downloaded, ready for users
  * - Failed: Permanently failed, will not be available
  */
-export enum FileStatus {
-  Queued = 'Queued',
-  Downloading = 'Downloading',
-  Downloaded = 'Downloaded',
-  Failed = 'Failed'
-}
+export const FileStatus = {Queued: 'Queued', Downloading: 'Downloading', Downloaded: 'Downloaded', Failed: 'Failed'} as const
+export type FileStatus = (typeof FileStatus)[keyof typeof FileStatus]
 
 /**
  * Download status for transient orchestration state.
@@ -28,13 +24,8 @@ export enum FileStatus {
  * - completed: Successfully downloaded (can be cleaned up)
  * - failed: Permanently failed, no more retries
  */
-export enum DownloadStatus {
-  Pending = 'Pending',
-  InProgress = 'InProgress',
-  Scheduled = 'Scheduled',
-  Completed = 'Completed',
-  Failed = 'Failed'
-}
+export const DownloadStatus = {Pending: 'Pending', InProgress: 'InProgress', Scheduled: 'Scheduled', Completed: 'Completed', Failed: 'Failed'} as const
+export type DownloadStatus = (typeof DownloadStatus)[keyof typeof DownloadStatus]
 
 /**
  * API response status values for async operations.
@@ -47,13 +38,14 @@ export enum DownloadStatus {
  * - Accepted: Request validated and accepted for processing
  * - Success: Operation completed successfully
  */
-export enum ResponseStatus {
+export const ResponseStatus = {
   /** Request has been sent/queued for processing */
-  Dispatched = 'Dispatched',
+  Dispatched: 'Dispatched',
   /** Processing has been initiated */
-  Initiated = 'Initiated',
+  Initiated: 'Initiated',
   /** Request validated and accepted */
-  Accepted = 'Accepted',
+  Accepted: 'Accepted',
   /** Operation completed successfully */
-  Success = 'Success'
-}
+  Success: 'Success'
+} as const
+export type ResponseStatus = (typeof ResponseStatus)[keyof typeof ResponseStatus]

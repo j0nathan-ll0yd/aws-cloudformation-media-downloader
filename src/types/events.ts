@@ -24,14 +24,15 @@
  * - MCP validation rules
  * - Event flow documentation generation
  */
-export enum EventType {
+export const EventType = {
   /** Published when user requests a new video download */
-  DownloadRequested = 'DownloadRequested',
+  DownloadRequested: 'DownloadRequested',
   /** Published after successful download to S3 */
-  DownloadCompleted = 'DownloadCompleted',
+  DownloadCompleted: 'DownloadCompleted',
   /** Published when download fails after all retries */
-  DownloadFailed = 'DownloadFailed'
-}
+  DownloadFailed: 'DownloadFailed'
+} as const
+export type EventType = (typeof EventType)[keyof typeof EventType]
 
 /**
  * Event types for routing in EventBridge rules.
