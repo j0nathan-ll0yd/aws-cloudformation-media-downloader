@@ -41,8 +41,6 @@ export interface EnvironmentConfig {
   dsqlDeletionProtection: boolean
   /** Whether CloudWatch dashboard is enabled */
   enableCloudwatchDashboard: boolean
-  /** Whether CloudWatch alarms are enabled */
-  enableCloudwatchAlarms: boolean
   /** Reserved concurrency for download Lambda (0 = unreserved) */
   downloadReservedConcurrency: number
 }
@@ -64,7 +62,6 @@ export const STAGING_CONFIG: EnvironmentConfig = {
   apiThrottleRateLimit: 10,
   dsqlDeletionProtection: false,
   enableCloudwatchDashboard: false,
-  enableCloudwatchAlarms: false,
   downloadReservedConcurrency: 0
 }
 
@@ -85,7 +82,6 @@ export const PRODUCTION_CONFIG: EnvironmentConfig = {
   apiThrottleRateLimit: 50,
   dsqlDeletionProtection: true,
   enableCloudwatchDashboard: false,
-  enableCloudwatchAlarms: true,
   downloadReservedConcurrency: 1
 }
 

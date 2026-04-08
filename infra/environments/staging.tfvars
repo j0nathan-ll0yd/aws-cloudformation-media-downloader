@@ -2,7 +2,7 @@
 # Deploy with: tofu apply -var-file=environments/staging.tfvars
 #
 # Cost optimization: Staging uses minimal resources to reduce costs
-# - CloudWatch dashboard and alarms disabled
+# - CloudWatch dashboard disabled
 # - Lower API quotas
 # - No deletion protection
 
@@ -21,7 +21,6 @@ dsql_deletion_protection = false
 
 # Disable monitoring to reduce costs
 enable_cloudwatch_dashboard = false
-enable_cloudwatch_alarms    = false
 
 # Disable reserved concurrency in staging (low-quota account)
 reserved_concurrency_start_file_upload = -1

@@ -35,7 +35,7 @@ module "lambda_send_push_notification" {
       Statement = [{
         Effect   = "Allow"
         Action   = ["sns:DeleteEndpoint","sns:Publish"]
-        Resource = ["${aws_sns_topic.push_notifications.arn}","${aws_sns_topic.operations_alerts.arn}","${aws_sns_platform_application.apns.arn}","${aws_sns_platform_application.apns.arn}/*"]
+        Resource = ["${aws_sns_topic.push_notifications.arn}","${aws_sns_platform_application.apns.arn}","${aws_sns_platform_application.apns.arn}/*"]
       }]
     })
   }

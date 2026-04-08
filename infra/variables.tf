@@ -203,12 +203,6 @@ variable "enable_cloudwatch_dashboard" {
   default     = false
 }
 
-variable "enable_cloudwatch_alarms" {
-  description = "Enable CloudWatch alarms (first 10 free, then $0.10/alarm)"
-  type        = bool
-  default     = false
-}
-
 variable "cors_allowed_origins" {
   description = "Origins allowed to fetch media files via CORS (empty list disables CORS)"
   type        = list(string)

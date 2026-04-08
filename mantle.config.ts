@@ -26,7 +26,6 @@ export default defineConfig({
     {name: 'api_quota_limit', type: 'number', description: 'API Gateway daily quota limit', default: '10000'},
     {name: 'dsql_deletion_protection', type: 'bool', description: 'Enable deletion protection for DSQL cluster', default: 'true'},
     {name: 'enable_cloudwatch_dashboard', type: 'bool', description: 'Enable CloudWatch dashboard (costs $3/month per environment)', default: 'false'},
-    {name: 'enable_cloudwatch_alarms', type: 'bool', description: 'Enable CloudWatch alarms (first 10 free, then $0.10/alarm)', default: 'false'},
     {
       name: 'cors_allowed_origins',
       type: 'list(string)',
@@ -61,8 +60,7 @@ export default defineConfig({
   },
   sns: {
     topics: [
-      {name: 'push-notifications'},
-      {name: 'operations-alerts'}
+      {name: 'push-notifications'}
     ],
     platformApplications: [
       {
