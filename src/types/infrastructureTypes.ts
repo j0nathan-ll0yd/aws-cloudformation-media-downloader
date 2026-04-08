@@ -1,12 +1,12 @@
-import {
+import type {
+  APIGatewayEventIdentity,
   APIGatewayProxyEventHeaders,
   APIGatewayProxyEventMultiValueHeaders,
   APIGatewayProxyEventMultiValueQueryStringParameters,
   APIGatewayProxyEventPathParameters,
   APIGatewayProxyEventQueryStringParameters,
   APIGatewayProxyEventStageVariables
-} from 'aws-lambda/trigger/apiGateway-proxy'
-import {APIGatewayEventIdentity} from 'aws-lambda/common/apiGateway'
+} from 'aws-lambda'
 
 /**
  * Custom API Gateway event type that extends the standard AWS Lambda types.
