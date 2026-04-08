@@ -8,11 +8,6 @@ resource "aws_sns_topic" "push_notifications" {
   tags = module.core.common_tags
 }
 
-resource "aws_sns_topic" "operations_alerts" {
-  name = "${module.core.name_prefix}-OperationsAlerts"
-  tags = module.core.common_tags
-}
-
 resource "aws_iam_role" "sns_logging" {
   name = "${module.core.name_prefix}-SNSLogging"
 

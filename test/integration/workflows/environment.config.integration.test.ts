@@ -33,10 +33,6 @@ describe('Environment Configuration', () => {
       expect(STAGING_CONFIG.logRetentionDays).toBe(3)
     })
 
-    it('should have CloudWatch alarms disabled for cost savings', () => {
-      expect(STAGING_CONFIG.enableCloudwatchAlarms).toBe(false)
-    })
-
     it('should have DSQL deletion protection disabled for easy cleanup', () => {
       expect(STAGING_CONFIG.dsqlDeletionProtection).toBe(false)
     })
@@ -57,10 +53,6 @@ describe('Environment Configuration', () => {
 
     it('should have longer log retention for debugging', () => {
       expect(PRODUCTION_CONFIG.logRetentionDays).toBe(7)
-    })
-
-    it('should have CloudWatch alarms enabled for monitoring', () => {
-      expect(PRODUCTION_CONFIG.enableCloudwatchAlarms).toBe(true)
     })
 
     it('should have DSQL deletion protection enabled', () => {
@@ -130,7 +122,6 @@ describe('Environment Configuration', () => {
       expect(matchesTfvar(content, 'resource_prefix', '"stag"')).toBe(true)
       expect(matchesTfvar(content, 'log_level', '"DEBUG"')).toBe(true)
       expect(matchesTfvar(content, 'log_retention_days', '3')).toBe(true)
-      expect(matchesTfvar(content, 'enable_cloudwatch_alarms', 'false')).toBe(true)
     })
 
     it('should have production.tfvars that matches fixture', () => {
@@ -142,7 +133,6 @@ describe('Environment Configuration', () => {
       expect(matchesTfvar(content, 'resource_prefix', '"prod"')).toBe(true)
       expect(matchesTfvar(content, 'log_level', '"INFO"')).toBe(true)
       expect(matchesTfvar(content, 'log_retention_days', '7')).toBe(true)
-      expect(matchesTfvar(content, 'enable_cloudwatch_alarms', 'true')).toBe(true)
     })
   })
 
@@ -155,12 +145,8 @@ describe('Environment Configuration', () => {
       expect(STAGING_CONFIG.logLevel).not.toBe(PRODUCTION_CONFIG.logLevel)
     })
 
-    it('staging and production should have different alarm settings', () => {
-      expect(STAGING_CONFIG.enableCloudwatchAlarms).not.toBe(PRODUCTION_CONFIG.enableCloudwatchAlarms)
-    })
-
     it('staging should be less protected than production', () => {
-      // Staging: lower retention, no deletion protection, no alarms
+      // Staging: lower retention, no deletion protection
       expect(STAGING_CONFIG.logRetentionDays).toBeLessThan(PRODUCTION_CONFIG.logRetentionDays)
       expect(STAGING_CONFIG.dsqlDeletionProtection).toBe(false)
       expect(PRODUCTION_CONFIG.dsqlDeletionProtection).toBe(true)
