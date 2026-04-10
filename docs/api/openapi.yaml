@@ -9,6 +9,18 @@ paths:
       responses:
         "200":
           description: Successful response
+        "400":
+          description: Bad request - validation failed or invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.InternalServerError"
   /device/register:
     post:
       operationId: postDeviceRegister
@@ -19,6 +31,30 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Models.DeviceRegistrationResponse"
+        "400":
+          description: Bad request - validation failed or invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.ErrorResponse"
+        "401":
+          description: Unauthorized - authentication required or invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.UnauthorizedError"
+        "403":
+          description: Forbidden - authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.ForbiddenError"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.InternalServerError"
       requestBody:
         required: true
         content:
@@ -35,6 +71,30 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Models.WebhookResponse"
+        "400":
+          description: Bad request - validation failed or invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.ErrorResponse"
+        "401":
+          description: Unauthorized - authentication required or invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.UnauthorizedError"
+        "403":
+          description: Forbidden - authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.ForbiddenError"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.InternalServerError"
       requestBody:
         required: true
         content:
@@ -51,6 +111,30 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Models.FileListResponse"
+        "400":
+          description: Bad request - validation failed or invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.ErrorResponse"
+        "401":
+          description: Unauthorized - authentication required or invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.UnauthorizedError"
+        "403":
+          description: Forbidden - authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.ForbiddenError"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.InternalServerError"
       requestBody:
         required: true
         content:
@@ -67,6 +151,30 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Models.PartialDeletionResponse"
+        "400":
+          description: Bad request - validation failed or invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.ErrorResponse"
+        "401":
+          description: Unauthorized - authentication required or invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.UnauthorizedError"
+        "403":
+          description: Forbidden - authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.ForbiddenError"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.InternalServerError"
   /user/login:
     post:
       operationId: postUserLogin
@@ -77,6 +185,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Models.UserLoginResponse"
+        "400":
+          description: Bad request - validation failed or invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.InternalServerError"
       requestBody:
         required: true
         content:
@@ -89,6 +209,30 @@ paths:
       responses:
         "200":
           description: Successful response
+        "400":
+          description: Bad request - validation failed or invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.ErrorResponse"
+        "401":
+          description: Unauthorized - authentication required or invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.UnauthorizedError"
+        "403":
+          description: Forbidden - authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.ForbiddenError"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.InternalServerError"
   /user/refresh:
     post:
       operationId: postUserRefresh
@@ -99,6 +243,30 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Models.UserLoginResponse"
+        "400":
+          description: Bad request - validation failed or invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.ErrorResponse"
+        "401":
+          description: Unauthorized - authentication required or invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.UnauthorizedError"
+        "403":
+          description: Forbidden - authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.ForbiddenError"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.InternalServerError"
   /user/register:
     post:
       operationId: postUserRegister
@@ -109,6 +277,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Models.UserRegistrationResponse"
+        "400":
+          description: Bad request - validation failed or invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.InternalServerError"
       requestBody:
         required: true
         content:
@@ -125,6 +305,30 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Models.SubscriptionResponse"
+        "400":
+          description: Bad request - validation failed or invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.ErrorResponse"
+        "401":
+          description: Unauthorized - authentication required or invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.UnauthorizedError"
+        "403":
+          description: Forbidden - authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.ForbiddenError"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.InternalServerError"
       requestBody:
         required: true
         content:
