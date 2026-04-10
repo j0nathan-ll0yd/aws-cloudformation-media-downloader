@@ -18,9 +18,15 @@ import {devices, files, users} from './schema.js'
  * Error thrown when a foreign key constraint would be violated.
  */
 export class ForeignKeyViolationError extends Error {
-  constructor(public readonly table: string, public readonly column: string, public readonly value: string) {
+  readonly table: string
+  readonly column: string
+  readonly value: string
+  constructor(table: string, column: string, value: string) {
     super(`Foreign key violation: ${table}.${column} = ${value} does not exist`)
     this.name = 'ForeignKeyViolationError'
+    this.table = table
+    this.column = column
+    this.value = value
   }
 }
 
