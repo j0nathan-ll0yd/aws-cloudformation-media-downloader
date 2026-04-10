@@ -1,0 +1,802 @@
+openapi: 3.1.0
+info:
+  title: Offline Media Downloader API
+  version: 1.0.0
+paths:
+  /device/event:
+    post:
+      operationId: postDeviceEvent
+      responses:
+        "200":
+          description: Successful response
+        "400":
+          description: Bad request - validation failed or invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.InternalServerError"
+  /device/register:
+    post:
+      operationId: postDeviceRegister
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.DeviceRegistrationResponse"
+        "400":
+          description: Bad request - validation failed or invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.ErrorResponse"
+        "401":
+          description: Unauthorized - authentication required or invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.UnauthorizedError"
+        "403":
+          description: Forbidden - authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.ForbiddenError"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.InternalServerError"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Models.DeviceRegistrationRequest"
+  /feedly/webhook:
+    post:
+      operationId: postFeedlyWebhook
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.WebhookResponse"
+        "400":
+          description: Bad request - validation failed or invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.ErrorResponse"
+        "401":
+          description: Unauthorized - authentication required or invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.UnauthorizedError"
+        "403":
+          description: Forbidden - authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.ForbiddenError"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.InternalServerError"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Models.FeedlyWebhookRequest"
+  /files:
+    get:
+      operationId: getFiles
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.FileListResponse"
+        "400":
+          description: Bad request - validation failed or invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.ErrorResponse"
+        "401":
+          description: Unauthorized - authentication required or invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.UnauthorizedError"
+        "403":
+          description: Forbidden - authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.ForbiddenError"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.InternalServerError"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Models.ListFilesQuery"
+  /user:
+    delete:
+      operationId: deleteUser
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.PartialDeletionResponse"
+        "400":
+          description: Bad request - validation failed or invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.ErrorResponse"
+        "401":
+          description: Unauthorized - authentication required or invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.UnauthorizedError"
+        "403":
+          description: Forbidden - authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.ForbiddenError"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.InternalServerError"
+  /user/login:
+    post:
+      operationId: postUserLogin
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.UserLoginResponse"
+        "400":
+          description: Bad request - validation failed or invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.InternalServerError"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Models.LoginRequest"
+  /user/logout:
+    post:
+      operationId: postUserLogout
+      responses:
+        "200":
+          description: Successful response
+        "400":
+          description: Bad request - validation failed or invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.ErrorResponse"
+        "401":
+          description: Unauthorized - authentication required or invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.UnauthorizedError"
+        "403":
+          description: Forbidden - authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.ForbiddenError"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.InternalServerError"
+  /user/refresh:
+    post:
+      operationId: postUserRefresh
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.UserLoginResponse"
+        "400":
+          description: Bad request - validation failed or invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.ErrorResponse"
+        "401":
+          description: Unauthorized - authentication required or invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.UnauthorizedError"
+        "403":
+          description: Forbidden - authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.ForbiddenError"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.InternalServerError"
+  /user/register:
+    post:
+      operationId: postUserRegister
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.UserRegistrationResponse"
+        "400":
+          description: Bad request - validation failed or invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.InternalServerError"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Models.RegistrationRequest"
+  /user/subscribe:
+    post:
+      operationId: postUserSubscribe
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.SubscriptionResponse"
+        "400":
+          description: Bad request - validation failed or invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.ErrorResponse"
+        "401":
+          description: Unauthorized - authentication required or invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.UnauthorizedError"
+        "403":
+          description: Forbidden - authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.ForbiddenError"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Models.InternalServerError"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Models.SubscriptionRequest"
+components:
+  schemas:
+    Models.DeviceRegistrationRequest:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      type: object
+      properties:
+        deviceId:
+          type: string
+        name:
+          type: string
+        systemName:
+          type: string
+        systemVersion:
+          type: string
+        token:
+          type: string
+      required:
+        - deviceId
+        - name
+        - systemName
+        - systemVersion
+        - token
+      additionalProperties: false
+      id: DeviceRegistrationRequest
+    Models.ClientEventRequest:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
+      additionalProperties: false
+      id: ClientEventRequest
+    Models.DeviceRegistrationResponse:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      type: object
+      properties:
+        endpointArn:
+          type: string
+      required:
+        - endpointArn
+      additionalProperties: false
+      id: DeviceRegistrationResponse
+    Models.Device:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      type: object
+      properties:
+        deviceId:
+          type: string
+        name:
+          type: string
+        systemName:
+          type: string
+        systemVersion:
+          type: string
+        token:
+          type: string
+        endpointArn:
+          type: string
+      required:
+        - deviceId
+        - name
+        - systemName
+        - systemVersion
+        - token
+      additionalProperties: false
+      id: Device
+    Models.ErrorResponse:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+          required:
+            - code
+            - message
+          additionalProperties: false
+        requestId:
+          type: string
+      required:
+        - error
+        - requestId
+      additionalProperties: false
+      id: ErrorResponse
+    Models.FeedlyWebhookRequest:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      type: object
+      properties:
+        articleURL:
+          type: string
+      required:
+        - articleURL
+      additionalProperties: false
+      id: FeedlyWebhookRequest
+    Models.FileListResponse:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      type: object
+      properties:
+        contents:
+          type: array
+          items:
+            type: object
+            properties:
+              fileId:
+                type: string
+              key:
+                type: string
+              size:
+                type: number
+              status:
+                type: string
+                enum:
+                  - Queued
+                  - Downloading
+                  - Downloaded
+                  - Failed
+              title:
+                type: string
+              publishDate:
+                type: string
+              authorName:
+                type: string
+              authorUser:
+                type: string
+              contentType:
+                type: string
+              description:
+                type: string
+              url:
+                type: string
+                format: uri
+              duration:
+                type: number
+              uploadDate:
+                type: string
+              viewCount:
+                type: number
+              thumbnailUrl:
+                type: string
+                format: uri
+            required:
+              - fileId
+            additionalProperties: false
+        keyCount:
+          type: number
+      required:
+        - contents
+        - keyCount
+      additionalProperties: false
+      id: FileListResponse
+    Models.File:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      type: object
+      properties:
+        fileId:
+          type: string
+        key:
+          type: string
+        size:
+          type: number
+        status:
+          type: string
+          enum:
+            - Queued
+            - Downloading
+            - Downloaded
+            - Failed
+        title:
+          type: string
+        publishDate:
+          type: string
+        authorName:
+          type: string
+        authorUser:
+          type: string
+        contentType:
+          type: string
+        description:
+          type: string
+        url:
+          type: string
+          format: uri
+        duration:
+          type: number
+        uploadDate:
+          type: string
+        viewCount:
+          type: number
+        thumbnailUrl:
+          type: string
+          format: uri
+      required:
+        - fileId
+      additionalProperties: false
+      id: File
+    Models.FileStatus:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      type: string
+      enum:
+        - Queued
+        - Downloading
+        - Downloaded
+        - Failed
+      id: FileStatus
+    Models.ForbiddenError:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+          required:
+            - code
+            - message
+          additionalProperties: false
+        requestId:
+          type: string
+      required:
+        - error
+        - requestId
+      additionalProperties: false
+      id: ForbiddenError
+    Models.InternalServerError:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+          required:
+            - code
+            - message
+          additionalProperties: false
+        requestId:
+          type: string
+      required:
+        - error
+        - requestId
+      additionalProperties: false
+      id: InternalServerError
+    Models.TokenRefreshResponse:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      type: object
+      properties:
+        token:
+          type: string
+        expiresAt:
+          type: string
+        sessionId:
+          type: string
+        userId:
+          type: string
+      required:
+        - token
+        - expiresAt
+        - sessionId
+        - userId
+      additionalProperties: false
+      id: TokenRefreshResponse
+    Models.UnauthorizedError:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+          required:
+            - code
+            - message
+          additionalProperties: false
+        requestId:
+          type: string
+      required:
+        - error
+        - requestId
+      additionalProperties: false
+      id: UnauthorizedError
+    Models.UserLoginRequest:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      type: object
+      properties:
+        idToken:
+          type: string
+      required:
+        - idToken
+      additionalProperties: false
+      id: UserLoginRequest
+    Models.UserLoginResponse:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      type: object
+      properties:
+        token:
+          type: string
+        expiresAt:
+          type: string
+        sessionId:
+          type: string
+        userId:
+          type: string
+      required:
+        - token
+        - expiresAt
+        - sessionId
+        - userId
+      additionalProperties: false
+      id: UserLoginResponse
+    Models.UserRegistrationRequest:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      type: object
+      properties:
+        idToken:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+      required:
+        - idToken
+      additionalProperties: false
+      id: UserRegistrationRequest
+    Models.UserRegistrationResponse:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      type: object
+      properties:
+        token:
+          type: string
+        expiresAt:
+          type: string
+        sessionId:
+          type: string
+        userId:
+          type: string
+      required:
+        - token
+        - expiresAt
+        - sessionId
+        - userId
+      additionalProperties: false
+      id: UserRegistrationResponse
+    Models.UserSubscriptionRequest:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      type: object
+      properties:
+        endpointArn:
+          type: string
+        topicArn:
+          type: string
+      required:
+        - endpointArn
+        - topicArn
+      additionalProperties: false
+      id: UserSubscriptionRequest
+    Models.UserSubscriptionResponse:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      type: object
+      properties:
+        subscriptionArn:
+          type: string
+      required:
+        - subscriptionArn
+      additionalProperties: false
+      id: UserSubscriptionResponse
+    Models.WebhookResponse:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      type: object
+      properties:
+        status:
+          anyOf:
+            - type: string
+              const: Dispatched
+            - type: string
+              const: Initiated
+            - type: string
+              const: Accepted
+      required:
+        - status
+      additionalProperties: false
+      id: WebhookResponse
+    Models.ListFilesQuery:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      type: object
+      properties:
+        status:
+          default: downloaded
+          type: string
+      required:
+        - status
+      additionalProperties: false
+      id: ListFilesQuery
+    Models.PartialDeletionResponse:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      type: object
+      properties:
+        message:
+          type: string
+        failedOperations:
+          type: number
+      required:
+        - message
+        - failedOperations
+      additionalProperties: false
+      id: PartialDeletionResponse
+    Models.LoginRequest:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      type: object
+      properties:
+        idToken:
+          type: string
+      required:
+        - idToken
+      additionalProperties: false
+      id: LoginRequest
+    Models.RegistrationRequest:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      type: object
+      properties:
+        idToken:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+      required:
+        - idToken
+      additionalProperties: false
+      id: RegistrationRequest
+    Models.SubscriptionRequest:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      type: object
+      properties:
+        endpointArn:
+          type: string
+        topicArn:
+          type: string
+      required:
+        - endpointArn
+        - topicArn
+      additionalProperties: false
+      id: SubscriptionRequest
+    Models.SubscriptionResponse:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      type: object
+      properties:
+        subscriptionArn:
+          type: string
+      additionalProperties: false
+      id: SubscriptionResponse

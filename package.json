@@ -40,6 +40,7 @@
     "format:bash:check": "shfmt -i 2 -ci -sr -d bin/*.sh",
     "format:check": "dprint check",
     "generate:llms": "cat README.md docs/wiki/**/*.md > docs/llms-full.txt",
+    "generate:openapi": "mantle generate openapi --schema-prefix 'Models.' --title 'Offline Media Downloader API' --output docs/api/openapi.yaml --html docs/api/index.html",
     "graphrag:extract": "node --import tsx graphrag/extract.ts",
     "graphrag:query": "pnpm dlx tsx graphrag/query.ts",
     "graphrag:validate": "node --import tsx graphrag/validate-metadata.ts",
