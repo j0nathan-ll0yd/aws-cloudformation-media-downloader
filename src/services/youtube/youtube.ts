@@ -9,6 +9,7 @@ import {UnexpectedError} from '@mantleframework/errors'
 import {createUpload} from '@mantleframework/aws'
 import {getOptionalEnv, getRequiredEnv} from '@mantleframework/env'
 import {err, ok} from '@mantleframework/core'
+import type {S3BucketName} from '@mantleframework/core'
 
 /**
  * One-time diagnostic check for Lambda layer environment.
@@ -475,7 +476,7 @@ function execYtDlp(ytdlpBinaryPath: string, args: string[]): Promise<void> {
  * @param key - Target S3 object key (e.g., "dQw4w9WgXcQ.mp4")
  * @returns Upload results including file size, S3 URL, and duration
  */
-export async function downloadVideoToS3(uri: string, bucket: string, key: string): Promise<{fileSize: number; s3Url: string; duration: number}> {
+export async function downloadVideoToS3(uri: string, bucket: S3BucketName, key: string): Promise<{fileSize: number; s3Url: string; duration: number}> {
   const ytdlpBinaryPath = getRequiredEnv('YTDLP_BINARY_PATH')
   const tempFile = `/tmp/${key}`
 
