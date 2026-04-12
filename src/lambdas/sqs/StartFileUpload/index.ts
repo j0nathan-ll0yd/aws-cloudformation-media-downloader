@@ -11,7 +11,7 @@
 import {createFileDownload, getFile, getFileDownload, getUserFilesByFileId, updateFile, updateFileDownload} from '#entities/queries'
 import {headObject} from '@mantleframework/aws'
 import {sendMessage} from '@mantleframework/aws'
-import {defineLambda, emitEvent, isOk} from '@mantleframework/core'
+import {defineLambda, emitEvent, isOk, S3BucketName} from '@mantleframework/core'
 import {defineSqsHandler} from '@mantleframework/core'
 import {addAnnotation, addMetadata, endSpan, logDebug, logError, logInfo, metrics, MetricUnit, startSpan} from '@mantleframework/observability'
 import {downloadVideoToS3, fetchVideoInfo} from '#services/youtube/youtube'
@@ -89,7 +89,11 @@ async function fetchVideoInfoTraced(fileUrl: string, fileId: string): Promise<Fe
  * @returns Object with fileSize, s3Url, and duration
  * @throws CircuitBreakerOpenError if circuit is open
  */
-async function downloadVideoToS3Traced(fileUrl: string, bucket: string, fileName: string): Promise<{fileSize: number; s3Url: string; duration: number}> {
+async function downloadVideoToS3Traced(
+  fileUrl: string,
+  bucket: S3BucketName,
+  fileName: string
+): Promise<{fileSize: number; s3Url: string; duration: number}> {
   const span = startSpan('yt-dlp-download-to-s3')
   try {
     // Use circuit breaker to protect against cascading failures
@@ -118,7 +122,7 @@ async function downloadVideoToS3Traced(fileUrl: string, bucket: string, fileName
  * @param key - The S3 object key (e.g., 'dQw4w9WgXcQ.mp4')
  * @returns Object with exists flag and size, or exists: false if not found
  */
-async function checkS3FileExists(bucket: string, key: string): Promise<{exists: true; size: number} | {exists: false}> {
+async function checkS3FileExists(bucket: S3BucketName, key: string): Promise<{exists: true; size: number} | {exists: false}> {
   try {
     const response = await headObject({Bucket: bucket, Key: key})
     const size = response.ContentLength ?? 0
@@ -432,7 +436,7 @@ async function processDownloadRequest(message: ValidatedDownloadQueueMessage, re
   const isRetry = receiveCount > 1
 
   // Check if file already exists in S3 (recovery path for missing DB records)
-  const bucket = getRequiredEnv('BUCKET')
+  const bucket = S3BucketName(getRequiredEnv('BUCKET'))
   const fileName = `${fileId}.mp4`
   const s3Check = await checkS3FileExists(bucket, fileName)
 

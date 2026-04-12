@@ -1,6 +1,12 @@
 import {beforeEach, describe, expect, type Mock, test, vi} from 'vitest'
 import {EventEmitter} from 'events'
 import {Readable} from 'stream'
+import type {S3BucketName as S3BucketNameType} from '@mantleframework/core'
+
+// Type-only import + local helper avoids triggering @mantleframework/core module load
+// at test-file eval time, which would fire the hoisted vi.mock('@mantleframework/aws')
+// factory before `const mockCreateUpload` is initialized (temporal dead zone error).
+const S3BucketName = (s: string): S3BucketNameType => s as S3BucketNameType
 
 // Mock child_process for yt-dlp spawning
 const mockSpawn = vi.fn()
@@ -95,7 +101,7 @@ describe('#Vendor:YouTube', () => {
       const mockYtdlp = createMockProcess()
       mockSpawn.mockReturnValue(mockYtdlp)
 
-      const resultPromise = downloadVideoToS3('https://www.youtube.com/watch?v=test123', 'test-bucket', 'test123.mp4')
+      const resultPromise = downloadVideoToS3('https://www.youtube.com/watch?v=test123', S3BucketName('test-bucket'), 'test123.mp4')
 
       // Simulate successful yt-dlp exit
       await new Promise((resolve) => setTimeout(resolve, 10))
@@ -126,7 +132,7 @@ describe('#Vendor:YouTube', () => {
       const mockYtdlp = createMockProcess()
       mockSpawn.mockReturnValue(mockYtdlp)
 
-      const resultPromise = downloadVideoToS3('https://www.youtube.com/watch?v=test123', 'test-bucket', 'test123.mp4')
+      const resultPromise = downloadVideoToS3('https://www.youtube.com/watch?v=test123', S3BucketName('test-bucket'), 'test123.mp4')
 
       await new Promise((resolve) => setTimeout(resolve, 10))
       mockYtdlp.stderr.emit('data', Buffer.from('ERROR: Video unavailable'))
@@ -142,7 +148,7 @@ describe('#Vendor:YouTube', () => {
       const mockYtdlp = createMockProcess()
       mockSpawn.mockReturnValue(mockYtdlp)
 
-      const resultPromise = downloadVideoToS3('https://www.youtube.com/watch?v=test123', 'test-bucket', 'test123.mp4')
+      const resultPromise = downloadVideoToS3('https://www.youtube.com/watch?v=test123', S3BucketName('test-bucket'), 'test123.mp4')
 
       await new Promise((resolve) => setTimeout(resolve, 10))
       mockYtdlp.stderr.emit('data', Buffer.from("Sign in to confirm you're not a bot"))
@@ -156,7 +162,7 @@ describe('#Vendor:YouTube', () => {
       mockSpawn.mockReturnValue(mockYtdlp)
       mockUploadDone.mockRejectedValue(new Error('S3 upload failed'))
 
-      const resultPromise = downloadVideoToS3('https://www.youtube.com/watch?v=test123', 'test-bucket', 'test123.mp4')
+      const resultPromise = downloadVideoToS3('https://www.youtube.com/watch?v=test123', S3BucketName('test-bucket'), 'test123.mp4')
 
       await new Promise((resolve) => setTimeout(resolve, 10))
       mockYtdlp.emit('exit', 0)
@@ -169,7 +175,7 @@ describe('#Vendor:YouTube', () => {
       const mockYtdlp = createMockProcess()
       mockSpawn.mockReturnValue(mockYtdlp)
 
-      const resultPromise = downloadVideoToS3('https://www.youtube.com/watch?v=test123', 'test-bucket', 'test123.mp4')
+      const resultPromise = downloadVideoToS3('https://www.youtube.com/watch?v=test123', S3BucketName('test-bucket'), 'test123.mp4')
 
       await new Promise((resolve) => setTimeout(resolve, 10))
       mockYtdlp.emit('error', new Error('spawn ENOENT'))
