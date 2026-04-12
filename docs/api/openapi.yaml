@@ -135,12 +135,13 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Models.InternalServerError"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/Models.ListFilesQuery"
+      parameters:
+        - name: status
+          in: query
+          required: true
+          schema: &a1
+            default: downloaded
+            type: string
   /user:
     delete:
       operationId: deleteUser
@@ -442,48 +443,7 @@ components:
         contents:
           type: array
           items:
-            type: object
-            properties:
-              fileId:
-                type: string
-              key:
-                type: string
-              size:
-                type: number
-              status:
-                type: string
-                enum:
-                  - Queued
-                  - Downloading
-                  - Downloaded
-                  - Failed
-              title:
-                type: string
-              publishDate:
-                type: string
-              authorName:
-                type: string
-              authorUser:
-                type: string
-              contentType:
-                type: string
-              description:
-                type: string
-              url:
-                type: string
-                format: uri
-              duration:
-                type: number
-              uploadDate:
-                type: string
-              viewCount:
-                type: number
-              thumbnailUrl:
-                type: string
-                format: uri
-            required:
-              - fileId
-            additionalProperties: false
+            $ref: "#/components/schemas/Models.File"
         keyCount:
           type: number
       required:
@@ -735,9 +695,7 @@ components:
       $schema: https://json-schema.org/draft/2020-12/schema
       type: object
       properties:
-        status:
-          default: downloaded
-          type: string
+        status: *a1
       required:
         - status
       additionalProperties: false
