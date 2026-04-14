@@ -226,6 +226,16 @@ pnpm run check:conventions  # mantle check --severity HIGH
 npx mantle ci                  # Full local CI
 ```
 
+### OpenAPI & Type Generation
+```bash
+pnpm run generate:openapi            # mantle generate openapi → docs/api/openapi.yaml + docs/api/index.html
+```
+
+- **Spec location**: `docs/api/openapi.yaml` (YAML, `--schema-prefix 'Models.'`) + `docs/api/index.html` (Redoc HTML)
+- **iOS consumer**: `ios-OfflineMediaDownloader/APITypes/Sources/APITypes/openapi.yaml` synced via `Scripts/sync-openapi.sh`
+- **C66**: `mantle generate openapi` is the sole OpenAPI generator
+- After changing Zod schemas in `src/types/api-schema/`, run `pnpm run generate:openapi` then sync to iOS
+
 ### Deployment Commands
 ```bash
 pnpm run deploy:staging        # Deploy to staging (local agents)
