@@ -13,6 +13,7 @@
 
 import fs from 'fs/promises'
 import path from 'path'
+import {Project, SyntaxKind} from 'ts-morph'
 import {fileURLToPath} from 'url'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -141,24 +142,34 @@ async function discoverLambdas(): Promise<LambdaEntry[]> {
 }
 
 /**
- * Discover Entity names dynamically from Drizzle schema
- * Parses src/lib/vendor/Drizzle/schema.ts to find all pgTable definitions
+ * Discover Entity names dynamically from Drizzle schema via ts-morph AST walk.
+ *
+ * Finds all exported VariableDeclarations whose initializer is a CallExpression
+ * to `pgTable`, then extracts the variable name and PascalCases it.
+ *
+ * Replaces the previous regex-based scanner per C1 compiler-API discipline.
  */
 async function discoverEntities(): Promise<string[]> {
   const schemaPath = path.join(projectRoot, 'src', 'db', 'schema.ts')
-  const content = await fs.readFile(schemaPath, 'utf-8')
+  const project = new Project({skipAddingFilesFromTsConfig: true, compilerOptions: {allowJs: true}})
+  const sourceFile = project.addSourceFileAtPath(schemaPath)
 
-  // Match pattern: export const tableName = pgTable('
-  const tableRegex = /export\s+const\s+(\w+)\s*=\s*pgTable\s*\(/g
   const entities: string[] = []
-
-  let match
-  while ((match = tableRegex.exec(content)) !== null) {
-    const varName = match[1]
-    // Convert camelCase to PascalCase (e.g., userFiles -> UserFiles, verification -> Verification)
-    const entityName = varName.charAt(0).toUpperCase() + varName.slice(1)
-    entities.push(entityName)
+  for (const varStmt of sourceFile.getVariableStatements()) {
+    if (!varStmt.isExported()) continue
+    for (const decl of varStmt.getDeclarations()) {
+      const init = decl.getInitializer()
+      if (!init || !init.isKind(SyntaxKind.CallExpression)) continue
+      const callTarget = init.getExpression()
+      if (callTarget.isKind(SyntaxKind.Identifier) && callTarget.getText() === 'pgTable') {
+        const varName = decl.getName()
+        const entityName = varName.charAt(0).toUpperCase() + varName.slice(1)
+        entities.push(entityName)
+      }
+    }
   }
+
+  project.removeSourceFile(sourceFile)
 
   // Map 'verification' table to 'VerificationTokens' for consistency with existing naming
   return entities.map((e) => (e === 'Verification' ? 'VerificationTokens' : e))
