@@ -66,6 +66,7 @@ module "lambda_start_file_upload" {
       YTDLP_SLEEP_REQUESTS = "1"
       YTDLP_SLEEP_INTERVAL = "2"
       YTDLP_MAX_SLEEP_INTERVAL = "5"
+      AWS_SDK_UA_APP_ID = "StartFileUpload"
       CLOUDFRONT_DOMAIN = module.storage_files.cloudfront_domain_name
       SNS_QUEUE_URL = module.queue_SendPushNotification.queue_url
       BUCKET = module.storage_files.bucket_id
