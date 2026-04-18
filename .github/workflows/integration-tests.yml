@@ -34,6 +34,8 @@ jobs:
         run: GIT_SSH_COMMAND="ssh -i ~/.ssh/mantle_deploy_key -o StrictHostKeyChecking=no" git clone --depth 1 --branch "${GITHUB_HEAD_REF:-${GITHUB_REF_NAME:-main}}" git@github.com:j0nathan-ll0yd/mantle.git ../mantle || GIT_SSH_COMMAND="ssh -i ~/.ssh/mantle_deploy_key -o StrictHostKeyChecking=no" git clone --depth 1 --branch main git@github.com:j0nathan-ll0yd/mantle.git ../mantle
 
       - name: Setup pnpm
+        # Pinned to v5 — v6.x silently installs pnpm v11 which cannot parse v10
+        # lockfiles in multi-repo CI (ERR_PNPM_BROKEN_LOCKFILE). See action-setup#225.
         uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320  # v5.0.0
       - name: Setup Node.js
         uses: actions/setup-node@v6
