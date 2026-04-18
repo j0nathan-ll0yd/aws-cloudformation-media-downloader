@@ -75,6 +75,12 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    ignore:
+      # pnpm/action-setup v6.x silently installs pnpm v11 which breaks multi-repo
+      # CI lockfile parsing (ERR_PNPM_BROKEN_LOCKFILE). Verified v6.0.0 and v6.0.2
+      # both fail. See pnpm/action-setup#225, #227, #228.
+      - dependency-name: "pnpm/action-setup"
+        update-types: ["version-update:semver-major"]
     labels:
       - "dependencies"
       - "github-actions"
