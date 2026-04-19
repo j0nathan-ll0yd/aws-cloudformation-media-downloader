@@ -70,8 +70,8 @@ describe('ListFiles Workflow Integration Tests', () => {
     expect(result.statusCode).toBe(200)
     const response = JSON.parse(result.body)
 
-    expect(response.body.keyCount).toBe(2)
-    expect(response.body.contents).toHaveLength(2)
+    expect(response.keyCount).toBe(2)
+    expect(response.contents).toHaveLength(2)
   })
 
   test('should return empty list when user has no files', async () => {
@@ -83,8 +83,8 @@ describe('ListFiles Workflow Integration Tests', () => {
 
     expect(result.statusCode).toBe(200)
     const response = JSON.parse(result.body)
-    expect(response.body.keyCount).toBe(0)
-    expect(response.body.contents).toHaveLength(0)
+    expect(response.keyCount).toBe(0)
+    expect(response.contents).toHaveLength(0)
   })
 
   // Auth enforcement for /files is at the API Gateway authorizer level
@@ -97,9 +97,9 @@ describe('ListFiles Workflow Integration Tests', () => {
     expect(result.statusCode).toBe(200)
     const response = JSON.parse(result.body)
 
-    expect(response.body.keyCount).toBe(1)
-    expect(response.body.contents).toHaveLength(1)
-    expect(response.body.contents[0]).toHaveProperty('fileId')
+    expect(response.keyCount).toBe(1)
+    expect(response.contents).toHaveLength(1)
+    expect(response.contents[0]).toHaveProperty('fileId')
   })
 
   test('should filter out non-Downloaded files', async () => {
@@ -124,9 +124,9 @@ describe('ListFiles Workflow Integration Tests', () => {
     expect(result.statusCode).toBe(200)
     const response = JSON.parse(result.body)
 
-    expect(response.body.keyCount).toBe(2)
-    expect(response.body.contents).toHaveLength(2)
-    expect(response.body.contents.every((f: {status: string}) => f.status === FileStatus.Downloaded)).toBe(true)
+    expect(response.keyCount).toBe(2)
+    expect(response.contents).toHaveLength(2)
+    expect(response.contents.every((f: {status: string}) => f.status === FileStatus.Downloaded)).toBe(true)
   })
 
   test('should handle large batch of files efficiently', async () => {
@@ -145,8 +145,8 @@ describe('ListFiles Workflow Integration Tests', () => {
     expect(result.statusCode).toBe(200)
     const response = JSON.parse(result.body)
 
-    expect(response.body.keyCount).toBe(25)
-    expect(response.body.contents).toHaveLength(25)
+    expect(response.keyCount).toBe(25)
+    expect(response.contents).toHaveLength(25)
   })
 
   test('should return files with full metadata', async () => {
@@ -175,8 +175,8 @@ describe('ListFiles Workflow Integration Tests', () => {
     expect(result.statusCode).toBe(200)
     const response = JSON.parse(result.body)
 
-    expect(response.body.contents).toHaveLength(1)
-    const file = response.body.contents[0]
+    expect(response.contents).toHaveLength(1)
+    const file = response.contents[0]
     expect(file.title).toBe('Full Metadata Video')
     expect(file.authorName).toBe('Test Channel')
     expect(file.size).toBe(10485760)
@@ -195,7 +195,7 @@ describe('ListFiles Workflow Integration Tests', () => {
     expect(result.statusCode).toBe(200)
     const response = JSON.parse(result.body)
 
-    expect(response.body.keyCount).toBe(0)
-    expect(response.body.contents).toHaveLength(0)
+    expect(response.keyCount).toBe(0)
+    expect(response.contents).toHaveLength(0)
   })
 })

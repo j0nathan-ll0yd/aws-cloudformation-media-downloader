@@ -53,13 +53,13 @@ describe('RefreshToken Workflow Integration Tests', () => {
 
     expect(result.statusCode).toBe(200)
     const response = JSON.parse(result.body)
-    expect(response.body.token).toBe(token)
-    expect(response.body.sessionId).toBe(sessionId)
-    expect(response.body.userId).toBe(userId)
+    expect(response.token).toBe(token)
+    expect(response.sessionId).toBe(sessionId)
+    expect(response.userId).toBe(userId)
 
     // Verify expiration was extended (should be ~30 days from now)
     const thirtyDaysFromNow = Date.now() + 29 * 24 * 60 * 60 * 1000 // 29 days minimum
-    expect(new Date(response.body.expiresAt).getTime()).toBeGreaterThan(thirtyDaysFromNow)
+    expect(new Date(response.expiresAt).getTime()).toBeGreaterThan(thirtyDaysFromNow)
 
     // Verify database was updated
     const updatedSession = await getSessionById(sessionId)

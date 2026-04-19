@@ -93,7 +93,7 @@ describe('Database Failure Scenario Tests', () => {
 
       expect(result.statusCode).toBe(200)
       const body = JSON.parse(result.body)
-      expect(body.body.keyCount).toBe(0)
+      expect(body.keyCount).toBe(0)
     })
   })
 
