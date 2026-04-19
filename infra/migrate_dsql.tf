@@ -35,10 +35,31 @@ resource "time_sleep" "wait_for_dsql" {
   create_duration = "60s"
 }
 
+# Initial deploy: data source runs migrations on first cluster creation
 data "aws_lambda_invocation" "run_migration" {
   function_name = module.lambda_migrate_dsql.function_name
   input         = jsonencode({ source = "terraform-deploy" })
   depends_on    = [time_sleep.wait_for_dsql]
+}
+
+# Subsequent deploys: re-invoke when Lambda code or permissions change.
+# Data sources are evaluated during planning (before apply), so code/permission
+# changes aren't picked up by the data source above. This resource triggers
+# during apply when its hash inputs change.
+resource "terraform_data" "rerun_migration" {
+  triggers_replace = sha256(join(",", [
+    filesha256("${path.module}/../build/lambdas/MigrateDSQL/index.mjs"),
+    filesha256("${path.module}/../permissions/permissions.sql")
+  ]))
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      aws lambda invoke --function-name ${module.lambda_migrate_dsql.function_name} --payload '{"source":"terraform-deploy-rerun"}' --cli-binary-format raw-in-base64-out /tmp/mantle-migrate-rerun.json >&2
+      cat /tmp/mantle-migrate-rerun.json >&2
+    EOT
+  }
+
+  depends_on = [module.lambda_migrate_dsql]
 }
 
 output "migration_result" {

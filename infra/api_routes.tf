@@ -15,6 +15,18 @@ resource "aws_api_gateway_resource" "path_feedly" {
   path_part   = "feedly"
 }
 
+resource "aws_api_gateway_resource" "path_files" {
+  rest_api_id = module.api.rest_api_id
+  parent_id   = module.api.rest_api_root_resource_id
+  path_part   = "files"
+}
+
+resource "aws_api_gateway_resource" "path_files_file_id" {
+  rest_api_id = module.api.rest_api_id
+  parent_id   = aws_api_gateway_resource.path_files.id
+  path_part   = "{fileId}"
+}
+
 resource "aws_api_gateway_resource" "path_user" {
   rest_api_id = module.api.rest_api_id
   parent_id   = module.api.rest_api_root_resource_id

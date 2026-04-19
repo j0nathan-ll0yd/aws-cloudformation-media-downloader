@@ -72,6 +72,11 @@ output "files_get_function_arn" {
   value       = module.lambda_files_get.function_arn
 }
 
+output "files_by_id_delete_function_arn" {
+  description = "ARN of the FilesByIdDelete Lambda function"
+  value       = module.lambda_files_by_id_delete.function_arn
+}
+
 output "user_delete_function_arn" {
   description = "ARN of the UserDelete Lambda function"
   value       = module.lambda_user_delete.function_arn
