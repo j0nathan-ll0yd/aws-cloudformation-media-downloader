@@ -1,6 +1,6 @@
 -- Per-Lambda PostgreSQL roles with fine-grained table permissions
 -- Auto-generated from @RequiresTable decorators
--- Generated at: 2026-04-06T15:52:03.099Z
+-- Generated at: 2026-04-19T01:13:53.855Z
 
 -- CREATE ROLES
 
@@ -8,6 +8,7 @@ CREATE ROLE lambda_api_gateway_authorizer WITH LOGIN;
 CREATE ROLE lambda_device_register WITH LOGIN;
 CREATE ROLE lambda_feedly_webhook WITH LOGIN;
 CREATE ROLE lambda_file_helpers WITH LOGIN;
+CREATE ROLE lambda_files_file_id_delete WITH LOGIN;
 CREATE ROLE lambda_files_get WITH LOGIN;
 CREATE ROLE lambda_prune_devices WITH LOGIN;
 CREATE ROLE lambda_s3_object_created WITH LOGIN;
@@ -36,6 +37,11 @@ GRANT INSERT, SELECT ON user_files TO lambda_feedly_webhook;
 
 -- FileHelpers
 GRANT INSERT, SELECT, UPDATE ON files TO lambda_file_helpers;
+
+-- Files[fileId]Delete
+GRANT DELETE, SELECT ON file_downloads TO lambda_files_file_id_delete;
+GRANT DELETE, SELECT ON files TO lambda_files_file_id_delete;
+GRANT DELETE, SELECT ON user_files TO lambda_files_file_id_delete;
 
 -- FilesGet
 GRANT SELECT ON files TO lambda_files_get;
@@ -98,6 +104,7 @@ AWS IAM GRANT lambda_api_gateway_authorizer TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:r
 AWS IAM GRANT lambda_device_register TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-DeviceRegister';
 AWS IAM GRANT lambda_feedly_webhook TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-FeedlyWebhook';
 AWS IAM GRANT lambda_file_helpers TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-FileHelpers';
+AWS IAM GRANT lambda_files_file_id_delete TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-Files-fileIdDelete';
 AWS IAM GRANT lambda_files_get TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-FilesGet';
 AWS IAM GRANT lambda_prune_devices TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-PruneDevices';
 AWS IAM GRANT lambda_s3_object_created TO 'arn:aws:iam::${AWS_ACCOUNT_ID}:role/${RESOURCE_PREFIX}-S3ObjectCreated';

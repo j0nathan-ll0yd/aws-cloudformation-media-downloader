@@ -29,7 +29,7 @@ module "lambda_file_delete" {
   api_gateway_enabled = true
 
   environment_variables = merge(local.common_lambda_env, {
-    DSQL_ROLE_NAME = local.lambda_dsql_roles["FileDelete"].role_name
+    DSQL_ROLE_NAME = local.lambda_dsql_roles["Files[fileId]Delete"].role_name
     DSQL_ENDPOINT  = module.database.cluster_endpoint
     DSQL_REGION    = module.core.region
     BUCKET         = module.storage_files.bucket_id

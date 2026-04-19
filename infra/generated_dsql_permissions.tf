@@ -3,7 +3,7 @@
 
 # Auto-generated from @RequiresTable decorators
 # Do not edit manually - run: mantle generate permissions
-# Generated at: 2026-04-06T15:52:03.099Z
+# Generated at: 2026-04-19T01:13:53.855Z
 
 locals {
   lambda_dsql_roles = {
@@ -31,12 +31,12 @@ locals {
       role_name      = "lambda_file_helpers"
       requires_admin = false
     }
-    "FileDelete" = {
-      role_name      = "lambda_file_delete"
-      requires_admin = false
-    }
     "FilesGet" = {
       role_name      = "lambda_files_get"
+      requires_admin = false
+    }
+    "Files[fileId]Delete" = {
+      role_name      = "lambda_files_file_id_delete"
       requires_admin = false
     }
     "MigrateDSQL" = {
