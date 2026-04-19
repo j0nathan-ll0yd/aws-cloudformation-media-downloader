@@ -10,7 +10,7 @@
  */
 import {buildValidatedResponse, defineLambda, S3BucketName} from '@mantleframework/core'
 import {deleteObject} from '@mantleframework/aws'
-import {NotFoundError, UnauthorizedError} from '@mantleframework/errors'
+import {NotFoundError} from '@mantleframework/errors'
 import {logError, logInfo} from '@mantleframework/observability'
 import {defineApiHandler, z} from '@mantleframework/validation'
 import {getRequiredEnv} from '@mantleframework/env'
@@ -18,19 +18,13 @@ import {deleteFileCascade} from '#entities/queries'
 
 defineLambda({})
 
+const FileDeletePathSchema = z.object({fileId: z.string()})
 const DeleteFileResponseSchema = z.object({deleted: z.boolean(), fileRemoved: z.boolean()})
 
-const api = defineApiHandler({auth: 'authorizer', operationName: 'FileDelete'})
+const api = defineApiHandler({auth: 'authorizer', pathSchema: FileDeletePathSchema, operationName: 'FileDelete'})
 
-export const handler = api(async ({event, context, userId}) => {
-  if (!userId) {
-    throw new UnauthorizedError('Authentication required')
-  }
-
-  const fileId = event.pathParameters?.fileId
-  if (!fileId) {
-    throw new NotFoundError('Missing fileId path parameter')
-  }
+export const handler = api(async ({context, userId, path}) => {
+  const {fileId} = path
 
   logInfo('Deleting file for user', {userId, fileId})
 

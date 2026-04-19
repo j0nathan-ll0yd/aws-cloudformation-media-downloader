@@ -15,7 +15,7 @@ module "lambda_file_delete" {
 
   function_name      = "FileDelete"
   name_prefix        = module.core.name_prefix
-  source_dir         = "${path.module}/../build/lambdas/FileDelete"
+  source_dir         = "${path.module}/../build/lambdas/Files[fileId]Delete"
   assume_role_policy = module.core.lambda_gateway_assume_role_policy
   xray_policy_arn    = module.core.lambda_xray_policy_arn
   region             = module.core.region
