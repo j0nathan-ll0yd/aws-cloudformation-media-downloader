@@ -56,8 +56,12 @@ async function sendNotificationToDevice(device: Device, messageBody: string, not
   try {
     logInfo(`Sending ${notificationType} to device`, {deviceId: device.deviceId})
 
-    // Route to alert notification for FailureNotification, background for others
-    const publishParams = notificationType === 'FailureNotification'
+    // Route to alert notification for FailureNotification and DownloadReadyNotification,
+    // background for others. DownloadReadyNotification triggers the device download and
+    // MUST be delivered reliably — background pushes are budget-limited (~2-3/hour) and
+    // iOS may silently drop them.
+    const useAlertDelivery = notificationType === 'FailureNotification' || notificationType === 'DownloadReadyNotification'
+    const publishParams = useAlertDelivery
       ? transformToAPNSAlertNotification(messageBody, targetArn)
       : transformToAPNSNotification(messageBody, targetArn)
 

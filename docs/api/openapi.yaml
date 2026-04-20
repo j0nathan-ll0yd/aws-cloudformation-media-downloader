@@ -7,8 +7,9 @@ paths:
     post:
       operationId: postDeviceEvent
       responses:
-        "200":
+        "200": &a1
           description: Successful response
+        "204": *a1
         "400":
           description: Bad request - validation failed or invalid input
           content:
@@ -25,30 +26,19 @@ paths:
     post:
       operationId: postDeviceRegister
       responses:
-        "200":
+        "200": &a2
           description: Successful response
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Models.DeviceRegistrationResponse"
+        "201": *a2
         "400":
           description: Bad request - validation failed or invalid input
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Models.ErrorResponse"
-        "401":
-          description: Unauthorized - authentication required or invalid
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Models.UnauthorizedError"
-        "403":
-          description: Forbidden - authenticated but not authorized for this resource
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Models.ForbiddenError"
         "500":
           description: Internal server error
           content:
@@ -65,12 +55,13 @@ paths:
     post:
       operationId: postFeedlyWebhook
       responses:
-        "200":
+        "200": &a3
           description: Successful response
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Models.WebhookResponse"
+        "202": *a3
         "400":
           description: Bad request - validation failed or invalid input
           content:
@@ -117,18 +108,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Models.ErrorResponse"
-        "401":
-          description: Unauthorized - authentication required or invalid
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Models.UnauthorizedError"
-        "403":
-          description: Forbidden - authenticated but not authorized for this resource
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Models.ForbiddenError"
         "500":
           description: Internal server error
           content:
@@ -139,7 +118,7 @@ paths:
         - name: status
           in: query
           required: true
-          schema: &a1
+          schema: &a7
             default: downloaded
             type: string
   /files/{fileId}:
@@ -186,12 +165,14 @@ paths:
     delete:
       operationId: deleteUser
       responses:
-        "200":
+        "200": &a4
           description: Successful response
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Models.PartialDeletionResponse"
+        "204": *a4
+        "207": *a4
         "400":
           description: Bad request - validation failed or invalid input
           content:
@@ -248,8 +229,9 @@ paths:
     post:
       operationId: postUserLogout
       responses:
-        "200":
+        "200": &a5
           description: Successful response
+        "204": *a5
         "400":
           description: Bad request - validation failed or invalid input
           content:
@@ -340,12 +322,13 @@ paths:
     post:
       operationId: postUserSubscribe
       responses:
-        "200":
+        "200": &a6
           description: Successful response
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Models.SubscriptionResponse"
+        "201": *a6
         "400":
           description: Bad request - validation failed or invalid input
           content:
@@ -735,7 +718,7 @@ components:
       $schema: https://json-schema.org/draft/2020-12/schema
       type: object
       properties:
-        status: *a1
+        status: *a7
       required:
         - status
       additionalProperties: false
