@@ -56,7 +56,7 @@ async function getFilesByUser(userId: string): Promise<File[]> {
 
 const ListFilesQuerySchema = z.object({status: z.string().optional().default('downloaded')})
 
-const api = defineApiHandler({auth: 'authorizer', querySchema: ListFilesQuerySchema, operationName: 'ListFiles'})
+const api = defineApiHandler({auth: 'authorizer-optional', querySchema: ListFilesQuerySchema, operationName: 'ListFiles'})
 export const handler = api(async ({context, userId, userStatus, query}) => {
   if (userStatus === UserStatus.Anonymous) {
     const myResponse = {contents: [getDefaultFile()], keyCount: 1}

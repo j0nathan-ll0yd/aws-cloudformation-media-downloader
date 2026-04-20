@@ -81,7 +81,7 @@ const DeviceRegistrationRequestSchema = z.object({
   systemName: z.string().optional()
 })
 
-const api = defineApiHandler({auth: 'authorizer', schema: DeviceRegistrationRequestSchema, operationName: 'RegisterDevice'})
+const api = defineApiHandler({auth: 'authorizer-optional', schema: DeviceRegistrationRequestSchema, operationName: 'RegisterDevice'})
 export const handler = api(async ({context, userId, userStatus, body}) => {
   verifyPlatformConfiguration()
 
