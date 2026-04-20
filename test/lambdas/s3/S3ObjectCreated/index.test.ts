@@ -4,6 +4,7 @@
  * Tests S3 object creation event processing and push notification dispatch.
  */
 import {beforeEach, describe, expect, it, vi} from 'vitest'
+import type {MockedHandlerModule} from '#test/helpers/handler-test-types'
 
 vi.mock('@mantleframework/core', () => ({defineS3Handler: vi.fn(() => (innerHandler: (...a: unknown[]) => unknown) => innerHandler)}))
 
@@ -48,7 +49,7 @@ vi.mock('#services/notification/transformers',
     }))
   }))
 
-const {handler} = (await import('#lambdas/s3/S3ObjectCreated/index.js')) as any
+const {handler} = (await import('#lambdas/s3/S3ObjectCreated/index.js')) as unknown as MockedHandlerModule
 import {sendMessage} from '@mantleframework/aws'
 import {getFilesByKey, getUserFilesByFileId} from '#entities/queries'
 import {createDownloadReadyNotification} from '#services/notification/transformers'

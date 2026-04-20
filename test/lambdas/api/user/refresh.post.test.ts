@@ -4,6 +4,7 @@
  * Tests token extraction, session validation, and auth error paths.
  */
 import {beforeEach, describe, expect, it, vi} from 'vitest'
+import type {MockedHandlerModule} from '#test/helpers/handler-test-types'
 
 vi.mock('@mantleframework/auth', () => ({extractBearerToken: vi.fn(), validateSession: vi.fn()}))
 
@@ -28,7 +29,7 @@ vi.mock('#domain/auth/authInstance', () => ({getAuthInstance: vi.fn()}))
 
 vi.mock('#types/api-schema', () => ({userLoginResponseSchema: {}}))
 
-const {handler} = (await import('#lambdas/api/user/refresh.post.js')) as any
+const {handler} = (await import('#lambdas/api/user/refresh.post.js')) as unknown as MockedHandlerModule
 import {extractBearerToken, validateSession} from '@mantleframework/auth'
 import {getAuthInstance} from '#domain/auth/authInstance'
 

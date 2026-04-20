@@ -4,6 +4,7 @@
  * Tests push notification delivery to user devices via SNS/APNS.
  */
 import {beforeEach, describe, expect, it, vi} from 'vitest'
+import type {MockedHandlerModule} from '#test/helpers/handler-test-types'
 
 vi.mock('@mantleframework/core',
   () => ({
@@ -56,7 +57,7 @@ vi.mock('#services/notification/endpointCleanup', () => ({cleanupDisabledEndpoin
 
 vi.mock('#types/schemas', () => ({pushNotificationAttributesSchema: {}}))
 
-const {handler} = (await import('#lambdas/sqs/SendPushNotification/index.js')) as any
+const {handler} = (await import('#lambdas/sqs/SendPushNotification/index.js')) as unknown as MockedHandlerModule
 import {publish} from '@mantleframework/aws'
 import {validateSchema} from '@mantleframework/validation'
 import {getDevice, getUserDevicesByUserId} from '#entities/queries'

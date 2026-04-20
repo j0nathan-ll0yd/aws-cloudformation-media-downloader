@@ -4,6 +4,7 @@
  * Tests sign-in flow, session validation, new user name update, and error paths.
  */
 import {beforeEach, describe, expect, it, vi} from 'vitest'
+import type {MockedHandlerModule} from '#test/helpers/handler-test-types'
 
 vi.mock('@mantleframework/auth', () => ({getAuth: vi.fn()}))
 
@@ -38,7 +39,7 @@ vi.mock('#entities/queries', () => ({updateUser: vi.fn()}))
 
 vi.mock('#types/api-schema', () => ({userRegistrationResponseSchema: {}}))
 
-const {handler} = (await import('#lambdas/api/user/register.post.js')) as any
+const {handler} = (await import('#lambdas/api/user/register.post.js')) as unknown as MockedHandlerModule
 import {getAuth} from '@mantleframework/auth'
 import {updateUser} from '#entities/queries'
 import {metrics} from '@mantleframework/observability'

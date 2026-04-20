@@ -5,6 +5,8 @@
  * CRITICAL: This Lambda uses getDrizzleClient() directly, not defineQuery.
  */
 import {beforeEach, describe, expect, it, vi} from 'vitest'
+import type {MockedHandlerModule} from '#test/helpers/handler-test-types'
+import type {CleanupResult} from '#types/lambda'
 
 vi.mock('@mantleframework/core', () => ({defineScheduledHandler: vi.fn(() => (innerHandler: (...a: unknown[]) => unknown) => innerHandler)}))
 
@@ -50,7 +52,7 @@ vi.mock('#types/enums', () => ({DownloadStatus: {Completed: 'Completed', Failed:
 
 vi.mock('#utils/time', () => ({secondsAgo: vi.fn(() => new Date('2024-01-01T00:00:00Z')), TIME: {DAY_SEC: 86400}}))
 
-const {handler} = (await import('#lambdas/scheduled/CleanupExpiredRecords/index.js')) as any
+const {handler} = (await import('#lambdas/scheduled/CleanupExpiredRecords/index.js')) as unknown as MockedHandlerModule<CleanupResult>
 import {getDrizzleClient} from '#db/client'
 import {metrics} from '@mantleframework/observability'
 

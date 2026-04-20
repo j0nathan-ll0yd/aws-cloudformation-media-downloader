@@ -4,6 +4,8 @@
  * Tests device pruning logic based on APNS health checks.
  */
 import {beforeEach, describe, expect, it, vi} from 'vitest'
+import type {MockedHandlerModule} from '#test/helpers/handler-test-types'
+import type {PruneDevicesResult} from '#types/lambda'
 
 vi.mock('@mantleframework/core',
   () => ({defineLambda: vi.fn(), defineScheduledHandler: vi.fn(() => (innerHandler: (...a: unknown[]) => unknown) => innerHandler)}))
@@ -68,7 +70,7 @@ vi.mock('apns2', () => {
   return {ApnsClient: MockApnsClient, Notification: vi.fn(), Priority: {throttled: 5}, PushType: {background: 'background'}}
 })
 
-const {handler} = (await import('#lambdas/scheduled/PruneDevices/index.js')) as any
+const {handler} = (await import('#lambdas/scheduled/PruneDevices/index.js')) as unknown as MockedHandlerModule<PruneDevicesResult>
 import {deleteUserDevicesByDeviceId, getAllDevices} from '#entities/queries'
 import {deleteDevice} from '#services/device/deviceService'
 import {metrics} from '@mantleframework/observability'

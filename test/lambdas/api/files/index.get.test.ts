@@ -4,6 +4,7 @@
  * Tests the toFile helper, anonymous demo mode, status filtering, and sorting.
  */
 import {beforeEach, describe, expect, it, vi} from 'vitest'
+import type {MockedHandlerModule} from '#test/helpers/handler-test-types'
 
 vi.mock('@mantleframework/core',
   () => ({
@@ -44,7 +45,7 @@ vi.mock('#types/api-schema', () => ({fileListResponseSchema: {}}))
 
 vi.mock('#types/enums', () => ({FileStatus: {Queued: 'Queued', Downloading: 'Downloading', Downloaded: 'Downloaded', Failed: 'Failed'}}))
 
-const {handler} = (await import('#lambdas/api/files/index.get.js')) as any
+const {handler} = (await import('#lambdas/api/files/index.get.js')) as unknown as MockedHandlerModule
 import {getFilesForUser} from '#entities/queries'
 import {getDefaultFile} from '#config/constants'
 import {buildValidatedResponse} from '@mantleframework/core'

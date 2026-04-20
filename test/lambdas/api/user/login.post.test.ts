@@ -4,6 +4,7 @@
  * Tests sign-in flow, session retrieval, and error paths.
  */
 import {beforeEach, describe, expect, it, vi} from 'vitest'
+import type {MockedHandlerModule} from '#test/helpers/handler-test-types'
 
 vi.mock('@mantleframework/auth', () => ({getAuth: vi.fn()}))
 
@@ -36,7 +37,7 @@ vi.mock('#db/schema', () => ({accounts: {}, sessions: {}, users: {}, verificatio
 
 vi.mock('#types/api-schema', () => ({userLoginResponseSchema: {}}))
 
-const {handler} = (await import('#lambdas/api/user/login.post.js')) as any
+const {handler} = (await import('#lambdas/api/user/login.post.js')) as unknown as MockedHandlerModule
 import {getAuth} from '@mantleframework/auth'
 
 function createMockAuth(overrides: {signInSocialResult?: object; getSessionResult?: object | null} = {}) {

@@ -4,6 +4,7 @@
  * Tests platform endpoint creation, user device registration, subscription management.
  */
 import {beforeEach, describe, expect, it, vi} from 'vitest'
+import type {MockedHandlerModule} from '#test/helpers/handler-test-types'
 
 vi.mock('@mantleframework/aws', () => ({createPlatformEndpoint: vi.fn(), listSubscriptionsByTopic: vi.fn()}))
 
@@ -51,7 +52,7 @@ vi.mock('#types/api-schema', () => ({deviceRegistrationResponseSchema: {}}))
 
 vi.mock('#utils/platform-config', () => ({verifyPlatformConfiguration: vi.fn()}))
 
-const {handler} = (await import('#lambdas/api/device/register.post.js')) as any
+const {handler} = (await import('#lambdas/api/device/register.post.js')) as unknown as MockedHandlerModule
 import {createPlatformEndpoint, listSubscriptionsByTopic} from '@mantleframework/aws'
 import {upsertDevice, upsertUserDevice} from '#entities/queries'
 import {getUserDevices, subscribeEndpointToTopic, unsubscribeEndpointToTopic} from '#services/device/deviceService'
