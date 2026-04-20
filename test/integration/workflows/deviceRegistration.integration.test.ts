@@ -99,7 +99,7 @@ describe('Device Registration Integration Tests', () => {
 
     expect(result.statusCode).toBe(200)
     const response = JSON.parse(result.body)
-    expect(response.body.endpointArn).toContain('arn:aws:sns')
+    expect(response.endpointArn).toContain('arn:aws:sns')
 
     const device = await getDevice(deviceId)
     expect(device).toBeDefined()

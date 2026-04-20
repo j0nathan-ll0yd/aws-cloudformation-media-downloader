@@ -104,12 +104,12 @@ describe('Auth Flow Integration Tests', () => {
       // Verify response structure
       expect(result.statusCode).toBe(200)
       const response = JSON.parse(result.body)
-      expect(response.body.token).toBeDefined()
-      expect(response.body.token).not.toBe('')
-      expect(response.body.userId).toBeDefined()
+      expect(response.token).toBeDefined()
+      expect(response.token).not.toBe('')
+      expect(response.userId).toBeDefined()
       // Note: sessionId may not be in response (Better Auth doesn't always include it)
       // We verify session creation via database query below
-      expect(new Date(response.body.expiresAt).getTime()).toBeGreaterThan(Date.now())
+      expect(new Date(response.expiresAt).getTime()).toBeGreaterThan(Date.now())
 
       // Verify user was created in database
       const db = await getTestDbAsync()
@@ -158,8 +158,8 @@ describe('Auth Flow Integration Tests', () => {
       // Verify response
       expect(result.statusCode).toBe(200)
       const response = JSON.parse(result.body)
-      expect(response.body.token).toBeDefined()
-      expect(response.body.userId).toBeDefined()
+      expect(response.token).toBeDefined()
+      expect(response.userId).toBeDefined()
       // Note: sessionId may not be in response (Better Auth doesn't always include it)
 
       // Verify user was created with name in database
@@ -287,7 +287,7 @@ describe('Auth Flow Integration Tests', () => {
 
       // Session should have an expiration in the future (30 days from now per config)
       const thirtyDaysFromNow = Date.now() + 29 * 24 * 60 * 60 * 1000 // 29 days to account for timing
-      expect(new Date(response.body.expiresAt).getTime()).toBeGreaterThan(thirtyDaysFromNow)
+      expect(new Date(response.expiresAt).getTime()).toBeGreaterThan(thirtyDaysFromNow)
     })
   })
 })

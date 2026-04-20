@@ -69,8 +69,8 @@ describe('UserSubscribe Workflow Integration Tests', () => {
 
     expect(result.statusCode).toBe(201)
     const response = JSON.parse(result.body)
-    expect(response.body.subscriptionArn).toContain('arn:aws:sns')
-    expect(response.body.subscriptionArn).toContain(testTopicName)
+    expect(response.subscriptionArn).toContain('arn:aws:sns')
+    expect(response.subscriptionArn).toContain(testTopicName)
   })
 
   test('should return 401 for unauthenticated user', async () => {
