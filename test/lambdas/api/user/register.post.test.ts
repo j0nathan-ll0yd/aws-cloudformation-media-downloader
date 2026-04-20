@@ -4,6 +4,8 @@
  * Tests sign-in flow, session validation, new user name update, and error paths.
  */
 import {beforeEach, describe, expect, it, vi} from 'vitest'
+import type {MockedModule} from '#test/helpers/handler-test-types'
+import type * as RegisterMod from '#lambdas/api/user/register.post.js'
 
 vi.mock('@mantleframework/auth', () => ({getAuth: vi.fn()}))
 
@@ -26,7 +28,7 @@ vi.mock('@mantleframework/observability', () => ({logInfo: vi.fn(), metrics: {ad
 
 vi.mock('@mantleframework/validation',
   () => ({
-    defineApiHandler: vi.fn(() => (innerHandler: Function) => innerHandler),
+    defineApiHandler: vi.fn(() => (innerHandler: (...a: unknown[]) => unknown) => innerHandler),
     z: {object: vi.fn(() => ({})), string: vi.fn(() => ({optional: vi.fn(() => ({}))}))}
   }))
 
@@ -38,7 +40,7 @@ vi.mock('#entities/queries', () => ({updateUser: vi.fn()}))
 
 vi.mock('#types/api-schema', () => ({userRegistrationResponseSchema: {}}))
 
-const {handler} = await import('#lambdas/api/user/register.post.js')
+const {handler} = (await import('#lambdas/api/user/register.post.js')) as unknown as MockedModule<typeof RegisterMod>
 import {getAuth} from '@mantleframework/auth'
 import {updateUser} from '#entities/queries'
 import {metrics} from '@mantleframework/observability'

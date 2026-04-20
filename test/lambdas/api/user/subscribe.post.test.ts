@@ -4,6 +4,8 @@
  * Tests subscription creation, auth validation, and platform config check.
  */
 import {beforeEach, describe, expect, it, vi} from 'vitest'
+import type {MockedModule} from '#test/helpers/handler-test-types'
+import type * as SubscribeMod from '#lambdas/api/user/subscribe.post.js'
 
 vi.mock('@mantleframework/core', () => ({buildValidatedResponse: vi.fn((_ctx, code, data) => ({statusCode: code, ...data}))}))
 
@@ -20,7 +22,7 @@ vi.mock('@mantleframework/errors', () => {
 
 vi.mock('@mantleframework/validation',
   () => ({
-    defineApiHandler: vi.fn(() => (innerHandler: Function) => innerHandler),
+    defineApiHandler: vi.fn(() => (innerHandler: (...a: unknown[]) => unknown) => innerHandler),
     z: {object: vi.fn(() => ({})), string: vi.fn(() => ({optional: vi.fn(() => ({}))}))}
   }))
 
@@ -28,7 +30,7 @@ vi.mock('#services/device/deviceService', () => ({subscribeEndpointToTopic: vi.f
 
 vi.mock('#utils/platform-config', () => ({verifyPlatformConfiguration: vi.fn()}))
 
-const {handler} = await import('#lambdas/api/user/subscribe.post.js')
+const {handler} = (await import('#lambdas/api/user/subscribe.post.js')) as unknown as MockedModule<typeof SubscribeMod>
 import {subscribeEndpointToTopic} from '#services/device/deviceService'
 import {verifyPlatformConfiguration} from '#utils/platform-config'
 

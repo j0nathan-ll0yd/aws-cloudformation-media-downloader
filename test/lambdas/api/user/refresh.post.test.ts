@@ -4,6 +4,8 @@
  * Tests token extraction, session validation, and auth error paths.
  */
 import {beforeEach, describe, expect, it, vi} from 'vitest'
+import type {MockedModule} from '#test/helpers/handler-test-types'
+import type * as RefreshMod from '#lambdas/api/user/refresh.post.js'
 
 vi.mock('@mantleframework/auth', () => ({extractBearerToken: vi.fn(), validateSession: vi.fn()}))
 
@@ -22,13 +24,13 @@ vi.mock('@mantleframework/errors', () => {
 
 vi.mock('@mantleframework/observability', () => ({logDebug: vi.fn(), logInfo: vi.fn()}))
 
-vi.mock('@mantleframework/validation', () => ({defineApiHandler: vi.fn(() => (innerHandler: Function) => innerHandler)}))
+vi.mock('@mantleframework/validation', () => ({defineApiHandler: vi.fn(() => (innerHandler: (...a: unknown[]) => unknown) => innerHandler)}))
 
 vi.mock('#domain/auth/authInstance', () => ({getAuthInstance: vi.fn()}))
 
 vi.mock('#types/api-schema', () => ({userLoginResponseSchema: {}}))
 
-const {handler} = await import('#lambdas/api/user/refresh.post.js')
+const {handler} = (await import('#lambdas/api/user/refresh.post.js')) as unknown as MockedModule<typeof RefreshMod>
 import {extractBearerToken, validateSession} from '@mantleframework/auth'
 import {getAuthInstance} from '#domain/auth/authInstance'
 
@@ -54,8 +56,8 @@ describe('RefreshToken Lambda', () => {
     vi.mocked(extractBearerToken).mockReturnValue('my-token')
     vi.mocked(getAuthInstance).mockResolvedValue({} as never)
     vi.mocked(validateSession).mockResolvedValue({
-      session: {id: 'session-1', expiresAt, token: 'my-token', userId: 'user-1', createdAt: new Date(), updatedAt: new Date()},
-      user: {id: 'user-1', email: 'test@example.com', emailVerified: true, name: 'Test', createdAt: new Date(), updatedAt: new Date()}
+      session: {id: 'session-1', expiresAt, token: 'my-token'},
+      user: {id: 'user-1', email: 'test@example.com', emailVerified: true, name: 'Test'}
     })
 
     const result = await handler({event: {headers: {Authorization: 'Bearer my-token'}}, context: {awsRequestId: 'req-1'}, userId: 'user-1'})
@@ -67,8 +69,8 @@ describe('RefreshToken Lambda', () => {
     vi.mocked(extractBearerToken).mockReturnValue('my-token')
     vi.mocked(getAuthInstance).mockResolvedValue({} as never)
     vi.mocked(validateSession).mockResolvedValue({
-      session: {id: 's-1', expiresAt: new Date(), token: 'my-token', userId: 'user-1', createdAt: new Date(), updatedAt: new Date()},
-      user: {id: 'user-1', email: 'test@example.com', emailVerified: true, name: 'Test', createdAt: new Date(), updatedAt: new Date()}
+      session: {id: 's-1', expiresAt: new Date(), token: 'my-token'},
+      user: {id: 'user-1', email: 'test@example.com', emailVerified: true, name: 'Test'}
     })
 
     await handler({event: {headers: {authorization: 'Bearer my-token'}}, context: {awsRequestId: 'req-1'}, userId: 'user-1'})

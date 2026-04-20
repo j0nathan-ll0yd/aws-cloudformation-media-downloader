@@ -4,20 +4,15 @@
  * Tests device pruning logic based on APNS health checks.
  */
 import {beforeEach, describe, expect, it, vi} from 'vitest'
+import type {MockedModule} from '#test/helpers/handler-test-types'
+import type * as PruneMod from '#lambdas/scheduled/PruneDevices/index.js'
 
-vi.mock('@mantleframework/core', () => ({
-  defineLambda: vi.fn(),
-  defineScheduledHandler: vi.fn(() => (innerHandler: Function) => innerHandler)
-}))
+vi.mock('@mantleframework/core',
+  () => ({defineLambda: vi.fn(), defineScheduledHandler: vi.fn(() => (innerHandler: (...a: unknown[]) => unknown) => innerHandler)}))
 
 vi.mock('@mantleframework/env', () => ({
   getRequiredEnv: vi.fn((key: string) => {
-    const envs: Record<string, string> = {
-      APNS_TEAM: 'TEAM123',
-      APNS_KEY_ID: 'KEY123',
-      APNS_SIGNING_KEY: 'signing-key',
-      APNS_DEFAULT_TOPIC: 'com.app.test'
-    }
+    const envs: Record<string, string> = {APNS_TEAM: 'TEAM123', APNS_KEY_ID: 'KEY123', APNS_SIGNING_KEY: 'signing-key', APNS_DEFAULT_TOPIC: 'com.app.test'}
     return envs[key] ?? 'mock-value'
   }),
   getOptionalEnv: vi.fn((_key: string, defaultVal: string) => defaultVal)
@@ -34,21 +29,19 @@ vi.mock('@mantleframework/errors', () => {
   return {UnexpectedError}
 })
 
-vi.mock('@mantleframework/observability', () => ({
-  addMetadata: vi.fn(),
-  endSpan: vi.fn(),
-  logDebug: vi.fn(),
-  logError: vi.fn(),
-  logInfo: vi.fn(),
-  metrics: {addMetric: vi.fn()},
-  MetricUnit: {Count: 'Count'},
-  startSpan: vi.fn(() => ({}))
-}))
+vi.mock('@mantleframework/observability',
+  () => ({
+    addMetadata: vi.fn(),
+    endSpan: vi.fn(),
+    logDebug: vi.fn(),
+    logError: vi.fn(),
+    logInfo: vi.fn(),
+    metrics: {addMetric: vi.fn()},
+    MetricUnit: {Count: 'Count'},
+    startSpan: vi.fn(() => ({}))
+  }))
 
-vi.mock('#entities/queries', () => ({
-  deleteUserDevicesByDeviceId: vi.fn(),
-  getAllDevices: vi.fn()
-}))
+vi.mock('#entities/queries', () => ({deleteUserDevicesByDeviceId: vi.fn(), getAllDevices: vi.fn()}))
 
 vi.mock('#errors/custom-errors', () => ({
   Apns2Error: class Apns2Error extends Error {
@@ -74,21 +67,23 @@ vi.mock('apns2', () => {
   class MockApnsClient {
     send = mockApnsSend
   }
-  return {
-    ApnsClient: MockApnsClient,
-    Notification: vi.fn(),
-    Priority: {throttled: 5},
-    PushType: {background: 'background'}
-  }
+  return {ApnsClient: MockApnsClient, Notification: vi.fn(), Priority: {throttled: 5}, PushType: {background: 'background'}}
 })
 
-const {handler} = await import('#lambdas/scheduled/PruneDevices/index.js')
+const {handler} = (await import('#lambdas/scheduled/PruneDevices/index.js')) as unknown as MockedModule<typeof PruneMod>
 import {deleteUserDevicesByDeviceId, getAllDevices} from '#entities/queries'
 import {deleteDevice} from '#services/device/deviceService'
 import {metrics} from '@mantleframework/observability'
 
 describe('PruneDevices Lambda', () => {
-  const mockDevice = {deviceId: 'dev-1', name: 'iPhone', token: 'apns-token', systemVersion: '17.0', systemName: 'iOS', endpointArn: 'arn:aws:sns:endpoint/dev-1'}
+  const mockDevice = {
+    deviceId: 'dev-1',
+    name: 'iPhone',
+    token: 'apns-token',
+    systemVersion: '17.0',
+    systemName: 'iOS',
+    endpointArn: 'arn:aws:sns:endpoint/dev-1'
+  }
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -141,7 +136,7 @@ describe('PruneDevices Lambda', () => {
     expect(result.devicesChecked).toBe(1)
     expect(result.devicesPruned).toBe(0)
     expect(result.errors).toHaveLength(1)
-    expect(result.errors[0]).toContain('Failed to properly remove device dev-1')
+    expect((result.errors as string[])[0]).toContain('Failed to properly remove device dev-1')
   })
 
   it('should throw UnexpectedError for non-APNS errors', async () => {
@@ -157,7 +152,9 @@ describe('PruneDevices Lambda', () => {
     let callCount = 0
     mockApnsSend.mockImplementation(() => {
       callCount++
-      if (callCount === 1) return Promise.resolve({})
+      if (callCount === 1) {
+        return Promise.resolve({})
+      }
       return Promise.reject({reason: 'Unregistered', statusCode: 410})
     })
     vi.mocked(deleteUserDevicesByDeviceId).mockResolvedValue(undefined as never)

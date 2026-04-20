@@ -4,6 +4,8 @@
  * Tests the toFile helper, anonymous demo mode, status filtering, and sorting.
  */
 import {beforeEach, describe, expect, it, vi} from 'vitest'
+import type {MockedModule} from '#test/helpers/handler-test-types'
+import type * as ListFilesMod from '#lambdas/api/files/index.get.js'
 
 vi.mock('@mantleframework/core',
   () => ({
@@ -17,7 +19,7 @@ vi.mock('@mantleframework/observability', () => ({logDebug: vi.fn(), metrics: {a
 
 vi.mock('@mantleframework/validation',
   () => ({
-    defineApiHandler: vi.fn(() => (innerHandler: Function) => innerHandler),
+    defineApiHandler: vi.fn(() => (innerHandler: (...a: unknown[]) => unknown) => innerHandler),
     z: {object: vi.fn(() => ({optional: vi.fn(() => ({default: vi.fn()}))})), string: vi.fn(() => ({optional: vi.fn(() => ({default: vi.fn()}))}))}
   }))
 
@@ -44,7 +46,7 @@ vi.mock('#types/api-schema', () => ({fileListResponseSchema: {}}))
 
 vi.mock('#types/enums', () => ({FileStatus: {Queued: 'Queued', Downloading: 'Downloading', Downloaded: 'Downloaded', Failed: 'Failed'}}))
 
-const {handler} = await import('#lambdas/api/files/index.get.js')
+const {handler} = (await import('#lambdas/api/files/index.get.js')) as unknown as MockedModule<typeof ListFilesMod>
 import {getFilesForUser} from '#entities/queries'
 import {getDefaultFile} from '#config/constants'
 import {buildValidatedResponse} from '@mantleframework/core'
@@ -77,11 +79,11 @@ describe('ListFiles Lambda', () => {
 
       const result = await handler({context: {awsRequestId: 'req-1'}, userId: 'user-1', userStatus: 'Authenticated', query: {status: 'downloaded'}})
 
-      expect(result.contents[0].url).toBeUndefined()
-      expect(result.contents[0].duration).toBeUndefined()
-      expect(result.contents[0].uploadDate).toBeUndefined()
-      expect(result.contents[0].viewCount).toBeUndefined()
-      expect(result.contents[0].thumbnailUrl).toBeUndefined()
+      expect((result.contents as Record<string, unknown>[])[0]!.url).toBeUndefined()
+      expect((result.contents as Record<string, unknown>[])[0]!.duration).toBeUndefined()
+      expect((result.contents as Record<string, unknown>[])[0]!.uploadDate).toBeUndefined()
+      expect((result.contents as Record<string, unknown>[])[0]!.viewCount).toBeUndefined()
+      expect((result.contents as Record<string, unknown>[])[0]!.thumbnailUrl).toBeUndefined()
     })
 
     it('should preserve non-null optional fields', async () => {
@@ -105,11 +107,11 @@ describe('ListFiles Lambda', () => {
 
       const result = await handler({context: {awsRequestId: 'req-1'}, userId: 'user-1', userStatus: 'Authenticated', query: {status: 'downloaded'}})
 
-      expect(result.contents[0].url).toBe('https://cdn.example.com/abc123.mp4')
-      expect(result.contents[0].duration).toBe(300)
-      expect(result.contents[0].uploadDate).toBe('20240101')
-      expect(result.contents[0].viewCount).toBe(5000)
-      expect(result.contents[0].thumbnailUrl).toBe('https://i.ytimg.com/vi/abc123/maxresdefault.jpg')
+      expect((result.contents as Record<string, unknown>[])[0]!.url).toBe('https://cdn.example.com/abc123.mp4')
+      expect((result.contents as Record<string, unknown>[])[0]!.duration).toBe(300)
+      expect((result.contents as Record<string, unknown>[])[0]!.uploadDate).toBe('20240101')
+      expect((result.contents as Record<string, unknown>[])[0]!.viewCount).toBe(5000)
+      expect((result.contents as Record<string, unknown>[])[0]!.thumbnailUrl).toBe('https://i.ytimg.com/vi/abc123/maxresdefault.jpg')
     })
 
     it('should cast status to File status type', async () => {
@@ -133,7 +135,7 @@ describe('ListFiles Lambda', () => {
 
       const result = await handler({context: {awsRequestId: 'req-1'}, userId: 'user-1', userStatus: 'Authenticated', query: {status: 'all'}})
 
-      expect(result.contents[0].status).toBe('Queued')
+      expect((result.contents as Record<string, unknown>[])[0]!.status).toBe('Queued')
     })
   })
 
@@ -191,7 +193,7 @@ describe('ListFiles Lambda', () => {
       const result = await handler({context: {awsRequestId: 'req-1'}, userId: 'user-1', userStatus: 'Authenticated', query: {status: 'downloaded'}})
 
       expect(result.contents).toHaveLength(1)
-      expect(result.contents[0].status).toBe('Downloaded')
+      expect((result.contents as Record<string, unknown>[])[0]!.status).toBe('Downloaded')
       expect(result.keyCount).toBe(1)
     })
 
@@ -210,7 +212,7 @@ describe('ListFiles Lambda', () => {
       const result = await handler({context: {awsRequestId: 'req-1'}, userId: 'user-1', userStatus: 'Authenticated', query: {}})
 
       expect(result.contents).toHaveLength(1)
-      expect(result.contents[0].status).toBe('Downloaded')
+      expect((result.contents as Record<string, unknown>[])[0]!.status).toBe('Downloaded')
     })
   })
 
@@ -255,8 +257,8 @@ describe('ListFiles Lambda', () => {
 
       const result = await handler({context: {awsRequestId: 'req-1'}, userId: 'user-1', userStatus: 'Authenticated', query: {status: 'downloaded'}})
 
-      expect(result.contents[0].fileId).toBe('new')
-      expect(result.contents[1].fileId).toBe('old')
+      expect((result.contents as Record<string, unknown>[])[0]!.fileId).toBe('new')
+      expect((result.contents as Record<string, unknown>[])[1]!.fileId).toBe('old')
     })
   })
 

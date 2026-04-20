@@ -4,6 +4,8 @@
  * Tests event logging, metrics, and tracing span management.
  */
 import {beforeEach, describe, expect, it, vi} from 'vitest'
+import type {MockedModule} from '#test/helpers/handler-test-types'
+import type * as EventMod from '#lambdas/api/device/event.post.js'
 
 vi.mock('@mantleframework/core', () => ({buildValidatedResponse: vi.fn((_ctx, code) => ({statusCode: code}))}))
 
@@ -17,9 +19,9 @@ vi.mock('@mantleframework/observability',
     startSpan: vi.fn(() => 'mock-span')
   }))
 
-vi.mock('@mantleframework/validation', () => ({defineApiHandler: vi.fn(() => (innerHandler: Function) => innerHandler)}))
+vi.mock('@mantleframework/validation', () => ({defineApiHandler: vi.fn(() => (innerHandler: (...a: unknown[]) => unknown) => innerHandler)}))
 
-const {handler} = await import('#lambdas/api/device/event.post.js')
+const {handler} = (await import('#lambdas/api/device/event.post.js')) as unknown as MockedModule<typeof EventMod>
 import {addAnnotation, endSpan, logInfo, metrics, startSpan} from '@mantleframework/observability'
 
 describe('DeviceEvent Lambda', () => {

@@ -4,6 +4,8 @@
  * Tests token extraction, session expiry, and auth error paths.
  */
 import {beforeEach, describe, expect, it, vi} from 'vitest'
+import type {MockedModule} from '#test/helpers/handler-test-types'
+import type * as LogoutMod from '#lambdas/api/user/logout.post.js'
 
 vi.mock('@mantleframework/auth', () => ({expireSession: vi.fn(), extractBearerToken: vi.fn()}))
 
@@ -22,13 +24,13 @@ vi.mock('@mantleframework/errors', () => {
 
 vi.mock('@mantleframework/observability', () => ({logDebug: vi.fn(), logInfo: vi.fn()}))
 
-vi.mock('@mantleframework/validation', () => ({defineApiHandler: vi.fn(() => (innerHandler: Function) => innerHandler)}))
+vi.mock('@mantleframework/validation', () => ({defineApiHandler: vi.fn(() => (innerHandler: (...a: unknown[]) => unknown) => innerHandler)}))
 
 vi.mock('#db/client', () => ({getDrizzleClient: vi.fn()}))
 
 vi.mock('#domain/auth/authInstance', () => ({getAuthInstance: vi.fn()}))
 
-const {handler} = await import('#lambdas/api/user/logout.post.js')
+const {handler} = (await import('#lambdas/api/user/logout.post.js')) as unknown as MockedModule<typeof LogoutMod>
 import {expireSession, extractBearerToken} from '@mantleframework/auth'
 import {getAuthInstance} from '#domain/auth/authInstance'
 import {getDrizzleClient} from '#db/client'

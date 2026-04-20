@@ -5,35 +5,34 @@
  * CRITICAL: This Lambda uses getDrizzleClient() directly, not defineQuery.
  */
 import {beforeEach, describe, expect, it, vi} from 'vitest'
+import type {MockedModule} from '#test/helpers/handler-test-types'
+import type * as CleanupMod from '#lambdas/scheduled/CleanupExpiredRecords/index.js'
 
-vi.mock('@mantleframework/core', () => ({
-  defineScheduledHandler: vi.fn(() => (innerHandler: Function) => innerHandler)
-}))
+vi.mock('@mantleframework/core', () => ({defineScheduledHandler: vi.fn(() => (innerHandler: (...a: unknown[]) => unknown) => innerHandler)}))
 
-vi.mock('@mantleframework/observability', () => ({
-  addMetadata: vi.fn(),
-  endSpan: vi.fn(),
-  logDebug: vi.fn(),
-  logError: vi.fn(),
-  logInfo: vi.fn(),
-  metrics: {addMetric: vi.fn()},
-  MetricUnit: {Count: 'Count'},
-  startSpan: vi.fn(() => ({}))
-}))
+vi.mock('@mantleframework/observability',
+  () => ({
+    addMetadata: vi.fn(),
+    endSpan: vi.fn(),
+    logDebug: vi.fn(),
+    logError: vi.fn(),
+    logInfo: vi.fn(),
+    metrics: {addMetric: vi.fn()},
+    MetricUnit: {Count: 'Count'},
+    startSpan: vi.fn(() => ({}))
+  }))
 
-vi.mock('@mantleframework/database/orm', () => ({
-  and: vi.fn((...args: unknown[]) => ({type: 'and', conditions: args})),
-  eq: vi.fn((col: unknown, val: unknown) => ({type: 'eq', col, val})),
-  lt: vi.fn((col: unknown, val: unknown) => ({type: 'lt', col, val})),
-  or: vi.fn((...args: unknown[]) => ({type: 'or', conditions: args}))
-}))
+vi.mock('@mantleframework/database/orm',
+  () => ({
+    and: vi.fn((...args: unknown[]) => ({type: 'and', conditions: args})),
+    eq: vi.fn((col: unknown, val: unknown) => ({type: 'eq', col, val})),
+    lt: vi.fn((col: unknown, val: unknown) => ({type: 'lt', col, val})),
+    or: vi.fn((...args: unknown[]) => ({type: 'or', conditions: args}))
+  }))
 
 // Create chainable mock for Drizzle client
 function createChainableMock(returnValue: unknown[] = []) {
-  const chain = {
-    returning: vi.fn(() => Promise.resolve(returnValue)),
-    where: vi.fn(() => chain)
-  }
+  const chain = {returning: vi.fn(() => Promise.resolve(returnValue)), where: vi.fn(() => chain)}
   const deleteMethod = vi.fn(() => chain)
   return {db: {delete: deleteMethod}, chain, deleteMethod}
 }
@@ -42,20 +41,18 @@ const drizzleMock = createChainableMock()
 
 vi.mock('#db/client', () => ({getDrizzleClient: vi.fn(() => Promise.resolve(drizzleMock.db))}))
 
-vi.mock('#db/schema', () => ({
-  fileDownloads: {fileId: 'fileId', status: 'status', updatedAt: 'updatedAt'},
-  sessions: {id: 'id', expiresAt: 'expiresAt'},
-  verification: {id: 'id', expiresAt: 'expiresAt'}
-}))
+vi.mock('#db/schema',
+  () => ({
+    fileDownloads: {fileId: 'fileId', status: 'status', updatedAt: 'updatedAt'},
+    sessions: {id: 'id', expiresAt: 'expiresAt'},
+    verification: {id: 'id', expiresAt: 'expiresAt'}
+  }))
 
 vi.mock('#types/enums', () => ({DownloadStatus: {Completed: 'Completed', Failed: 'Failed'}}))
 
-vi.mock('#utils/time', () => ({
-  secondsAgo: vi.fn(() => new Date('2024-01-01T00:00:00Z')),
-  TIME: {DAY_SEC: 86400}
-}))
+vi.mock('#utils/time', () => ({secondsAgo: vi.fn(() => new Date('2024-01-01T00:00:00Z')), TIME: {DAY_SEC: 86400}}))
 
-const {handler} = await import('#lambdas/scheduled/CleanupExpiredRecords/index.js')
+const {handler} = (await import('#lambdas/scheduled/CleanupExpiredRecords/index.js')) as unknown as MockedModule<typeof CleanupMod>
 import {getDrizzleClient} from '#db/client'
 import {metrics} from '@mantleframework/observability'
 
@@ -77,8 +74,12 @@ describe('CleanupExpiredRecords Lambda', () => {
     let callCount = 0
     vi.mocked(getDrizzleClient).mockImplementation(() => {
       callCount++
-      if (callCount === 1) return Promise.resolve(fileDownloadsMock.db as never)
-      if (callCount === 2) return Promise.resolve(sessionsMock.db as never)
+      if (callCount === 1) {
+        return Promise.resolve(fileDownloadsMock.db as never)
+      }
+      if (callCount === 2) {
+        return Promise.resolve(sessionsMock.db as never)
+      }
       return Promise.resolve(verificationMock.db as never)
     })
 
@@ -111,7 +112,9 @@ describe('CleanupExpiredRecords Lambda', () => {
     let callCount = 0
     vi.mocked(getDrizzleClient).mockImplementation(() => {
       callCount++
-      if (callCount === 1) return Promise.resolve(failingMock.db as never)
+      if (callCount === 1) {
+        return Promise.resolve(failingMock.db as never)
+      }
       return Promise.resolve(successMock.db as never)
     })
 
@@ -121,7 +124,7 @@ describe('CleanupExpiredRecords Lambda', () => {
     expect(result.sessionsDeleted).toBe(1)
     expect(result.verificationTokensDeleted).toBe(1)
     expect(result.errors).toHaveLength(1)
-    expect(result.errors[0]).toContain('FileDownloads cleanup failed')
+    expect((result.errors as string[])[0]).toContain('FileDownloads cleanup failed')
   })
 
   it('should continue cleanup when sessions fails', async () => {
@@ -133,8 +136,12 @@ describe('CleanupExpiredRecords Lambda', () => {
     let callCount = 0
     vi.mocked(getDrizzleClient).mockImplementation(() => {
       callCount++
-      if (callCount === 1) return Promise.resolve(successMock.db as never)
-      if (callCount === 2) return Promise.resolve(failingMock.db as never)
+      if (callCount === 1) {
+        return Promise.resolve(successMock.db as never)
+      }
+      if (callCount === 2) {
+        return Promise.resolve(failingMock.db as never)
+      }
       return Promise.resolve(verifyMock.db as never)
     })
 
@@ -144,7 +151,7 @@ describe('CleanupExpiredRecords Lambda', () => {
     expect(result.sessionsDeleted).toBe(0)
     expect(result.verificationTokensDeleted).toBe(1)
     expect(result.errors).toHaveLength(1)
-    expect(result.errors[0]).toContain('Sessions cleanup failed')
+    expect((result.errors as string[])[0]).toContain('Sessions cleanup failed')
   })
 
   it('should continue cleanup when verification fails', async () => {
@@ -156,8 +163,12 @@ describe('CleanupExpiredRecords Lambda', () => {
     let callCount = 0
     vi.mocked(getDrizzleClient).mockImplementation(() => {
       callCount++
-      if (callCount === 1) return Promise.resolve(successMock.db as never)
-      if (callCount === 2) return Promise.resolve(sessionMock.db as never)
+      if (callCount === 1) {
+        return Promise.resolve(successMock.db as never)
+      }
+      if (callCount === 2) {
+        return Promise.resolve(sessionMock.db as never)
+      }
       return Promise.resolve(failingMock.db as never)
     })
 
@@ -167,7 +178,7 @@ describe('CleanupExpiredRecords Lambda', () => {
     expect(result.sessionsDeleted).toBe(1)
     expect(result.verificationTokensDeleted).toBe(0)
     expect(result.errors).toHaveLength(1)
-    expect(result.errors[0]).toContain('Verification cleanup failed')
+    expect((result.errors as string[])[0]).toContain('Verification cleanup failed')
   })
 
   it('should record errors for all failures but not throw', async () => {

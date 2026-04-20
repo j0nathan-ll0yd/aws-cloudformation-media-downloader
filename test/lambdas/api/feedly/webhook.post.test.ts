@@ -4,6 +4,8 @@
  * Tests auth validation, video ID extraction, idempotency, and error paths.
  */
 import {beforeEach, describe, expect, it, vi} from 'vitest'
+import type {MockedModule} from '#test/helpers/handler-test-types'
+import type * as WebhookMod from '#lambdas/api/feedly/webhook.post.js'
 
 vi.mock('@mantleframework/aws', () => ({sendMessage: vi.fn()}))
 
@@ -40,11 +42,18 @@ vi.mock('@mantleframework/resilience', () => {
     registerLambdaContext = vi.fn()
     constructor() {}
   }
-  return {createIdempotencyStore: vi.fn(() => ({})), IdempotencyConfig: MockIdempotencyConfig, makeIdempotent: vi.fn((fn: Function) => fn)}
+  return {
+    createIdempotencyStore: vi.fn(() => ({})),
+    IdempotencyConfig: MockIdempotencyConfig,
+    makeIdempotent: vi.fn((fn: (...a: unknown[]) => unknown) => fn)
+  }
 })
 
 vi.mock('@mantleframework/validation',
-  () => ({defineApiHandler: vi.fn(() => (innerHandler: Function) => innerHandler), z: {object: vi.fn(() => ({})), string: vi.fn(() => ({}))}}))
+  () => ({
+    defineApiHandler: vi.fn(() => (innerHandler: (...a: unknown[]) => unknown) => innerHandler),
+    z: {object: vi.fn(() => ({})), string: vi.fn(() => ({}))}
+  }))
 
 vi.mock('#domain/user/userFileService', () => ({associateFileToUser: vi.fn()}))
 
@@ -63,7 +72,7 @@ vi.mock('#types/enums',
     ResponseStatus: {Dispatched: 'Dispatched', Accepted: 'Accepted', Initiated: 'Initiated'}
   }))
 
-const {handler} = await import('#lambdas/api/feedly/webhook.post.js')
+const {handler} = (await import('#lambdas/api/feedly/webhook.post.js')) as unknown as MockedModule<typeof WebhookMod>
 import {getVideoID} from '#services/youtube/youtube'
 import {createFile, createFileDownload, getFile} from '#entities/queries'
 import {associateFileToUser} from '#domain/user/userFileService'
@@ -90,7 +99,7 @@ describe('WebhookFeedly Lambda', () => {
 
   it('should emit DownloadRequested event for new file', async () => {
     vi.mocked(associateFileToUser).mockResolvedValue(undefined as never)
-    vi.mocked(getFile).mockResolvedValue(undefined)
+    vi.mocked(getFile).mockResolvedValue(null as never)
     vi.mocked(createFile).mockResolvedValue(undefined as never)
     vi.mocked(createFileDownload).mockResolvedValue(undefined as never)
     vi.mocked(emitEvent).mockResolvedValue(undefined as never)
@@ -173,7 +182,7 @@ describe('WebhookFeedly Lambda', () => {
 
   it('should track WebhookReceived and WebhookProcessed metrics', async () => {
     vi.mocked(associateFileToUser).mockResolvedValue(undefined as never)
-    vi.mocked(getFile).mockResolvedValue(undefined)
+    vi.mocked(getFile).mockResolvedValue(null as never)
     vi.mocked(createFile).mockResolvedValue(undefined as never)
     vi.mocked(createFileDownload).mockResolvedValue(undefined as never)
     vi.mocked(emitEvent).mockResolvedValue(undefined as never)
@@ -191,7 +200,7 @@ describe('WebhookFeedly Lambda', () => {
 
   it('should handle associateFileToUser failure gracefully', async () => {
     vi.mocked(associateFileToUser).mockRejectedValue(new Error('DB error'))
-    vi.mocked(getFile).mockResolvedValue(undefined)
+    vi.mocked(getFile).mockResolvedValue(null as never)
     vi.mocked(createFile).mockResolvedValue(undefined as never)
     vi.mocked(createFileDownload).mockResolvedValue(undefined as never)
     vi.mocked(emitEvent).mockResolvedValue(undefined as never)
@@ -209,7 +218,7 @@ describe('WebhookFeedly Lambda', () => {
 
   it('should extract videoID from article URL', async () => {
     vi.mocked(associateFileToUser).mockResolvedValue(undefined as never)
-    vi.mocked(getFile).mockResolvedValue(undefined)
+    vi.mocked(getFile).mockResolvedValue(null as never)
     vi.mocked(createFile).mockResolvedValue(undefined as never)
     vi.mocked(createFileDownload).mockResolvedValue(undefined as never)
     vi.mocked(emitEvent).mockResolvedValue(undefined as never)
