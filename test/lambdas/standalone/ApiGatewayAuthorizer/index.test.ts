@@ -4,7 +4,8 @@
  * Tests API key validation, session token extraction, and policy generation.
  */
 import {beforeEach, describe, expect, it, vi} from 'vitest'
-import type {MockedAuthorizerModule} from '#test/helpers/handler-test-types'
+import type {MockedModule} from '#test/helpers/handler-test-types'
+import type * as AuthorizerMod from '#lambdas/standalone/ApiGatewayAuthorizer/index.js'
 
 vi.mock('@mantleframework/aws', () => ({getApiKeys: vi.fn(), getUsage: vi.fn(), getUsagePlans: vi.fn()}))
 
@@ -54,7 +55,7 @@ vi.mock('#domain/auth/sessionService', () => ({validateSessionToken: vi.fn()}))
 
 vi.mock('#errors/custom-errors', () => ({providerFailureErrorMessage: 'AWS request failed'}))
 
-const {handler, generateAllow} = (await import('#lambdas/standalone/ApiGatewayAuthorizer/index.js')) as unknown as MockedAuthorizerModule
+const {handler, generateAllow} = (await import('#lambdas/standalone/ApiGatewayAuthorizer/index.js')) as unknown as MockedModule<typeof AuthorizerMod>
 import {getApiKeys, getUsage, getUsagePlans} from '@mantleframework/aws'
 import {validateSessionToken} from '#domain/auth/sessionService'
 import {getOptionalEnv} from '@mantleframework/env'
@@ -83,8 +84,8 @@ describe('ApiGatewayAuthorizer Lambda', () => {
       const result = generateAllow('user-1', methodArn)
 
       expect(result.principalId).toBe('user-1')
-      expect(result.policyDocument.Statement[0]!.Effect).toBe('Allow')
-      expect(result.policyDocument.Statement[0]!.Resource).toBe(methodArn)
+      expect((result.policyDocument as {Statement: {Effect: string; Resource: string}[]}).Statement[0]!.Effect).toBe('Allow')
+      expect((result.policyDocument as {Statement: {Effect: string; Resource: string}[]}).Statement[0]!.Resource).toBe(methodArn)
       expect(result.policyDocument.Version).toBe('2012-10-17')
     })
 

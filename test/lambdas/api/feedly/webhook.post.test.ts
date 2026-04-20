@@ -4,7 +4,8 @@
  * Tests auth validation, video ID extraction, idempotency, and error paths.
  */
 import {beforeEach, describe, expect, it, vi} from 'vitest'
-import type {MockedHandlerModule} from '#test/helpers/handler-test-types'
+import type {MockedModule} from '#test/helpers/handler-test-types'
+import type * as WebhookMod from '#lambdas/api/feedly/webhook.post.js'
 
 vi.mock('@mantleframework/aws', () => ({sendMessage: vi.fn()}))
 
@@ -71,7 +72,7 @@ vi.mock('#types/enums',
     ResponseStatus: {Dispatched: 'Dispatched', Accepted: 'Accepted', Initiated: 'Initiated'}
   }))
 
-const {handler} = (await import('#lambdas/api/feedly/webhook.post.js')) as unknown as MockedHandlerModule
+const {handler} = (await import('#lambdas/api/feedly/webhook.post.js')) as unknown as MockedModule<typeof WebhookMod>
 import {getVideoID} from '#services/youtube/youtube'
 import {createFile, createFileDownload, getFile} from '#entities/queries'
 import {associateFileToUser} from '#domain/user/userFileService'

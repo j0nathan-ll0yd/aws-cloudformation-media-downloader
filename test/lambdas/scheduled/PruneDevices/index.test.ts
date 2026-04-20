@@ -4,8 +4,8 @@
  * Tests device pruning logic based on APNS health checks.
  */
 import {beforeEach, describe, expect, it, vi} from 'vitest'
-import type {MockedHandlerModule} from '#test/helpers/handler-test-types'
-import type {PruneDevicesResult} from '#types/lambda'
+import type {MockedModule} from '#test/helpers/handler-test-types'
+import type * as PruneMod from '#lambdas/scheduled/PruneDevices/index.js'
 
 vi.mock('@mantleframework/core',
   () => ({defineLambda: vi.fn(), defineScheduledHandler: vi.fn(() => (innerHandler: (...a: unknown[]) => unknown) => innerHandler)}))
@@ -70,7 +70,7 @@ vi.mock('apns2', () => {
   return {ApnsClient: MockApnsClient, Notification: vi.fn(), Priority: {throttled: 5}, PushType: {background: 'background'}}
 })
 
-const {handler} = (await import('#lambdas/scheduled/PruneDevices/index.js')) as unknown as MockedHandlerModule<PruneDevicesResult>
+const {handler} = (await import('#lambdas/scheduled/PruneDevices/index.js')) as unknown as MockedModule<typeof PruneMod>
 import {deleteUserDevicesByDeviceId, getAllDevices} from '#entities/queries'
 import {deleteDevice} from '#services/device/deviceService'
 import {metrics} from '@mantleframework/observability'
@@ -136,7 +136,7 @@ describe('PruneDevices Lambda', () => {
     expect(result.devicesChecked).toBe(1)
     expect(result.devicesPruned).toBe(0)
     expect(result.errors).toHaveLength(1)
-    expect(result.errors[0]).toContain('Failed to properly remove device dev-1')
+    expect((result.errors as string[])[0]).toContain('Failed to properly remove device dev-1')
   })
 
   it('should throw UnexpectedError for non-APNS errors', async () => {

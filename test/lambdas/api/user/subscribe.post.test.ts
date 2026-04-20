@@ -4,7 +4,8 @@
  * Tests subscription creation, auth validation, and platform config check.
  */
 import {beforeEach, describe, expect, it, vi} from 'vitest'
-import type {MockedHandlerModule} from '#test/helpers/handler-test-types'
+import type {MockedModule} from '#test/helpers/handler-test-types'
+import type * as SubscribeMod from '#lambdas/api/user/subscribe.post.js'
 
 vi.mock('@mantleframework/core', () => ({buildValidatedResponse: vi.fn((_ctx, code, data) => ({statusCode: code, ...data}))}))
 
@@ -29,7 +30,7 @@ vi.mock('#services/device/deviceService', () => ({subscribeEndpointToTopic: vi.f
 
 vi.mock('#utils/platform-config', () => ({verifyPlatformConfiguration: vi.fn()}))
 
-const {handler} = (await import('#lambdas/api/user/subscribe.post.js')) as unknown as MockedHandlerModule
+const {handler} = (await import('#lambdas/api/user/subscribe.post.js')) as unknown as MockedModule<typeof SubscribeMod>
 import {subscribeEndpointToTopic} from '#services/device/deviceService'
 import {verifyPlatformConfiguration} from '#utils/platform-config'
 

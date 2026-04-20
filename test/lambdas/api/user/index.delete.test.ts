@@ -4,7 +4,8 @@
  * Tests cascade deletion ordering, partial failures, and GitHub issue creation on error.
  */
 import {beforeEach, describe, expect, it, vi} from 'vitest'
-import type {MockedHandlerModule} from '#test/helpers/handler-test-types'
+import type {MockedModule} from '#test/helpers/handler-test-types'
+import type * as UserDeleteMod from '#lambdas/api/user/index.delete.js'
 
 vi.mock('@mantleframework/core', () => ({buildValidatedResponse: vi.fn((_ctx, code, data) => ({statusCode: code, ...data})), defineLambda: vi.fn()}))
 
@@ -42,7 +43,7 @@ vi.mock('#integrations/github/issueService', () => ({createFailedUserDeletionIss
 
 vi.mock('#services/device/deviceService', () => ({deleteDevice: vi.fn(), getUserDevices: vi.fn()}))
 
-const {handler} = (await import('#lambdas/api/user/index.delete.js')) as unknown as MockedHandlerModule
+const {handler} = (await import('#lambdas/api/user/index.delete.js')) as unknown as MockedModule<typeof UserDeleteMod>
 import {deleteUser, deleteUserDevicesByUserId, deleteUserFilesByUserId, getDevicesBatch} from '#entities/queries'
 import {createFailedUserDeletionIssue} from '#integrations/github/issueService'
 import {deleteDevice, getUserDevices} from '#services/device/deviceService'

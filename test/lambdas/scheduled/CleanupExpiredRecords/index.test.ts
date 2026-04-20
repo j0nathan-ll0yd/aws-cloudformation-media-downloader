@@ -5,8 +5,8 @@
  * CRITICAL: This Lambda uses getDrizzleClient() directly, not defineQuery.
  */
 import {beforeEach, describe, expect, it, vi} from 'vitest'
-import type {MockedHandlerModule} from '#test/helpers/handler-test-types'
-import type {CleanupResult} from '#types/lambda'
+import type {MockedModule} from '#test/helpers/handler-test-types'
+import type * as CleanupMod from '#lambdas/scheduled/CleanupExpiredRecords/index.js'
 
 vi.mock('@mantleframework/core', () => ({defineScheduledHandler: vi.fn(() => (innerHandler: (...a: unknown[]) => unknown) => innerHandler)}))
 
@@ -52,7 +52,7 @@ vi.mock('#types/enums', () => ({DownloadStatus: {Completed: 'Completed', Failed:
 
 vi.mock('#utils/time', () => ({secondsAgo: vi.fn(() => new Date('2024-01-01T00:00:00Z')), TIME: {DAY_SEC: 86400}}))
 
-const {handler} = (await import('#lambdas/scheduled/CleanupExpiredRecords/index.js')) as unknown as MockedHandlerModule<CleanupResult>
+const {handler} = (await import('#lambdas/scheduled/CleanupExpiredRecords/index.js')) as unknown as MockedModule<typeof CleanupMod>
 import {getDrizzleClient} from '#db/client'
 import {metrics} from '@mantleframework/observability'
 
@@ -124,7 +124,7 @@ describe('CleanupExpiredRecords Lambda', () => {
     expect(result.sessionsDeleted).toBe(1)
     expect(result.verificationTokensDeleted).toBe(1)
     expect(result.errors).toHaveLength(1)
-    expect(result.errors[0]).toContain('FileDownloads cleanup failed')
+    expect((result.errors as string[])[0]).toContain('FileDownloads cleanup failed')
   })
 
   it('should continue cleanup when sessions fails', async () => {
@@ -151,7 +151,7 @@ describe('CleanupExpiredRecords Lambda', () => {
     expect(result.sessionsDeleted).toBe(0)
     expect(result.verificationTokensDeleted).toBe(1)
     expect(result.errors).toHaveLength(1)
-    expect(result.errors[0]).toContain('Sessions cleanup failed')
+    expect((result.errors as string[])[0]).toContain('Sessions cleanup failed')
   })
 
   it('should continue cleanup when verification fails', async () => {
@@ -178,7 +178,7 @@ describe('CleanupExpiredRecords Lambda', () => {
     expect(result.sessionsDeleted).toBe(1)
     expect(result.verificationTokensDeleted).toBe(0)
     expect(result.errors).toHaveLength(1)
-    expect(result.errors[0]).toContain('Verification cleanup failed')
+    expect((result.errors as string[])[0]).toContain('Verification cleanup failed')
   })
 
   it('should record errors for all failures but not throw', async () => {

@@ -4,7 +4,8 @@
  * Tests cascade deletion, S3 cleanup, not-found errors, and S3 failure resilience.
  */
 import {beforeEach, describe, expect, it, vi} from 'vitest'
-import type {MockedHandlerModule} from '#test/helpers/handler-test-types'
+import type {MockedModule} from '#test/helpers/handler-test-types'
+import type * as FileDeleteMod from '#lambdas/api/files/[fileId]/index.delete.js'
 
 vi.mock('@mantleframework/core',
   () => ({
@@ -38,7 +39,7 @@ vi.mock('@mantleframework/env', () => ({getRequiredEnv: vi.fn(() => 'test-bucket
 
 vi.mock('#entities/queries', () => ({deleteFileCascade: vi.fn()}))
 
-const {handler} = (await import('#lambdas/api/files/[fileId]/index.delete.js')) as unknown as MockedHandlerModule
+const {handler} = (await import('#lambdas/api/files/[fileId]/index.delete.js')) as unknown as MockedModule<typeof FileDeleteMod>
 import {deleteFileCascade} from '#entities/queries'
 import {deleteObject} from '@mantleframework/aws'
 import {logError, logInfo} from '@mantleframework/observability'
