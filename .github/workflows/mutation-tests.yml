@@ -20,8 +20,39 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup SSH for mantle checkout
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.MANTLE_DEPLOY_KEY }}" > ~/.ssh/mantle_deploy_key
+          chmod 600 ~/.ssh/mantle_deploy_key
+          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+      - name: Checkout mantle framework
+        run: GIT_SSH_COMMAND="ssh -i ~/.ssh/mantle_deploy_key -o StrictHostKeyChecking=no" git clone --depth 1 --branch "${GITHUB_HEAD_REF:-${GITHUB_REF_NAME:-main}}" git@github.com:j0nathan-ll0yd/mantle.git ../mantle || GIT_SSH_COMMAND="ssh -i ~/.ssh/mantle_deploy_key -o StrictHostKeyChecking=no" git clone --depth 1 --branch main git@github.com:j0nathan-ll0yd/mantle.git ../mantle
+
       - uses: ./.github/actions/setup-node-pnpm
+
+      - name: Install mantle dependencies
+        working-directory: ../mantle
+        run: pnpm install --frozen-lockfile
+      - name: Build mantle packages
+        working-directory: ../mantle
+        run: pnpm build
+      - name: Refresh bin links after mantle build
+        run: pnpm install
+
       - uses: ./.github/actions/setup-homebrew-tools
+
+      - name: Setup SOPS
+        uses: ./.github/actions/setup-sops
+
+      - name: Decrypt YouTube cookies
+        env:
+          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+        run: |
+          echo "$SOPS_AGE_KEY" > /tmp/age-key.txt
+          export SOPS_AGE_KEY_FILE=/tmp/age-key.txt
+          sops decrypt --output-type binary \
+            layers/yt-dlp/cookies/youtube-cookies.enc > layers/yt-dlp/cookies/youtube-cookies.txt
 
       - name: Setup reports directory
         run: mkdir -p reports/mutation
