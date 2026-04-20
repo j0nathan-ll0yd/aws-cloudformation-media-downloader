@@ -2,30 +2,40 @@ import {beforeEach, describe, expect, test, vi} from 'vitest'
 import type {Device} from '#types/domainModels'
 
 // Use vi.hoisted() to define mocks before vi.mock hoists
-const {mockIssuesCreate, mockIssuesListForRepo, mockIssuesCreateComment, MockOctokit, mockRenderGithubIssueTemplate} = vi.hoisted(() => {
+const {mockIssuesCreate, mockIssuesListForRepo, mockIssuesCreateComment, mockIssuesUpdate, MockOctokit, mockRenderGithubIssueTemplate} = vi.hoisted(() => {
   const mockIssuesCreate = vi.fn<(params: object) => Promise<{status: number; data: {id: number; number: number; html_url: string}}>>()
   const mockIssuesListForRepo = vi.fn<
     (params: object) => Promise<{data: Array<{number: number; title: string; labels: Array<{name: string}>}>}>
   >()
   const mockIssuesCreateComment = vi.fn<(params: object) => Promise<{data: {id: number}}>>()
+  const mockIssuesUpdate = vi.fn<(params: object) => Promise<{data: {number: number}}>>()
 
   class MockOctokit {
-    public rest: {issues: {create: typeof mockIssuesCreate; listForRepo: typeof mockIssuesListForRepo; createComment: typeof mockIssuesCreateComment}}
+    public rest: {
+      issues: {
+        create: typeof mockIssuesCreate
+        listForRepo: typeof mockIssuesListForRepo
+        createComment: typeof mockIssuesCreateComment
+        update: typeof mockIssuesUpdate
+      }
+    }
     constructor() {
-      this.rest = {issues: {create: mockIssuesCreate, listForRepo: mockIssuesListForRepo, createComment: mockIssuesCreateComment}}
+      this.rest = {issues: {create: mockIssuesCreate, listForRepo: mockIssuesListForRepo, createComment: mockIssuesCreateComment, update: mockIssuesUpdate}}
     }
   }
 
   const mockRenderGithubIssueTemplate = vi.fn<(templateName: string, data: object) => string>()
   mockRenderGithubIssueTemplate.mockImplementation((templateName: string) => `Rendered template: ${templateName}`)
 
-  return {mockIssuesCreate, mockIssuesListForRepo, mockIssuesCreateComment, MockOctokit, mockRenderGithubIssueTemplate}
+  return {mockIssuesCreate, mockIssuesListForRepo, mockIssuesCreateComment, mockIssuesUpdate, MockOctokit, mockRenderGithubIssueTemplate}
 })
 
 vi.mock('@octokit/rest', () => ({Octokit: MockOctokit}))
 vi.mock('#integrations/github/templates.js', () => ({renderGithubIssueTemplate: mockRenderGithubIssueTemplate}))
 
-const {createFailedUserDeletionIssue, createVideoDownloadFailureIssue, createCookieExpirationIssue} = await import('#integrations/github/issueService.js')
+const {createFailedUserDeletionIssue, createVideoDownloadFailureIssue, createCookieExpirationIssue, closeCookieExpirationIssueIfResolved} = await import(
+  '#integrations/github/issueService.js'
+)
 
 describe('#Util:GithubHelper', () => {
   beforeEach(() => {
@@ -237,6 +247,71 @@ describe('#Util:GithubHelper', () => {
       const response = await createCookieExpirationIssue(fileId, fileUrl, error)
 
       expect(response).toBeNull()
+    })
+  })
+
+  describe('#closeCookieExpirationIssueIfResolved', () => {
+    test('should close existing cookie issue and add comment', async () => {
+      mockIssuesListForRepo.mockResolvedValue({data: [{number: 55, title: 'Cookie issue', labels: []}]})
+      mockIssuesCreateComment.mockResolvedValue({data: {id: 999}})
+      mockIssuesUpdate.mockResolvedValue({data: {number: 55}})
+
+      await closeCookieExpirationIssueIfResolved()
+
+      expect(mockIssuesCreateComment).toHaveBeenCalledWith(
+        expect.objectContaining({issue_number: 55, body: expect.stringContaining('Automatically Resolved')})
+      )
+      expect(mockIssuesUpdate).toHaveBeenCalledWith(expect.objectContaining({issue_number: 55, state: 'closed'}))
+    })
+
+    test('should do nothing when no existing cookie issue found', async () => {
+      mockIssuesListForRepo.mockResolvedValue({data: []})
+
+      await closeCookieExpirationIssueIfResolved()
+
+      expect(mockIssuesCreateComment).not.toHaveBeenCalled()
+      expect(mockIssuesUpdate).not.toHaveBeenCalled()
+    })
+
+    test('should not throw when GitHub API fails', async () => {
+      mockIssuesListForRepo.mockRejectedValue(new Error('API down'))
+
+      await expect(closeCookieExpirationIssueIfResolved()).resolves.toBeUndefined()
+    })
+  })
+
+  describe('#createFailedUserDeletionIssue edge cases', () => {
+    test('should create issue with empty devices array', async () => {
+      mockIssuesCreate.mockResolvedValue({status: 201, data: {id: 1, number: 50, html_url: 'https://github.com/owner/repo/issues/50'}})
+
+      const response = await createFailedUserDeletionIssue('user-empty', [], new Error('Cascade failed'), 'req-456')
+
+      expect(response).not.toBeNull()
+      expect(response?.issueNumber).toEqual(50)
+      expect(response?.isDuplicate).toBe(false)
+    })
+
+    test('should handle error with no stack trace', async () => {
+      const error = new Error('No stack')
+      error.stack = undefined
+      mockIssuesCreate.mockResolvedValue({status: 201, data: {id: 2, number: 51, html_url: 'https://github.com/owner/repo/issues/51'}})
+
+      const response = await createFailedUserDeletionIssue('user-nostack', [], error, 'req-789')
+
+      expect(response).not.toBeNull()
+      expect(mockRenderGithubIssueTemplate).toHaveBeenCalledWith('user-deletion-failure', expect.objectContaining({errorStack: 'No stack trace available'}))
+    })
+
+    test('should handle comment failure on duplicate gracefully', async () => {
+      mockIssuesListForRepo.mockResolvedValue({data: [{number: 60, title: 'Existing', labels: []}]})
+      mockIssuesCreateComment.mockRejectedValue(new Error('Comment API error'))
+
+      const response = await createFailedUserDeletionIssue('user-1', [], new Error('fail'), 'req-1')
+
+      // Should still return the duplicate result even if comment fails
+      expect(response).not.toBeNull()
+      expect(response?.issueNumber).toEqual(60)
+      expect(response?.isDuplicate).toBe(true)
     })
   })
 })

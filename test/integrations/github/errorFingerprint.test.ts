@@ -65,6 +65,44 @@ describe('generateErrorFingerprint', () => {
 
       expect(result.summary).toContain('ctx:video-download')
     })
+
+    it('should include all optional fields in summary when all provided', () => {
+      const result = generateErrorFingerprint({
+        errorType: 'CustomError',
+        errorCode: 'E001',
+        stackFrame: 'index.ts',
+        lambdaName: 'MyLambda',
+        context: 'upload'
+      })
+
+      expect(result.summary).toContain('type:CustomError')
+      expect(result.summary).toContain('code:E001')
+      expect(result.summary).toContain('frame:index.ts')
+      expect(result.summary).toContain('lambda:MyLambda')
+      expect(result.summary).toContain('ctx:upload')
+    })
+
+    it('should produce different fingerprint when context differs', () => {
+      const base = {errorType: 'Error', lambdaName: 'Lambda1'}
+      const r1 = generateErrorFingerprint({...base, context: 'ctx-a'})
+      const r2 = generateErrorFingerprint({...base, context: 'ctx-b'})
+
+      expect(r1.fingerprint).not.toBe(r2.fingerprint)
+    })
+
+    it('should produce different fingerprint with and without errorCode', () => {
+      const withCode = generateErrorFingerprint({errorType: 'Error', errorCode: 'E001'})
+      const withoutCode = generateErrorFingerprint({errorType: 'Error'})
+
+      expect(withCode.fingerprint).not.toBe(withoutCode.fingerprint)
+    })
+
+    it('should produce different fingerprint with and without stackFrame', () => {
+      const withFrame = generateErrorFingerprint({errorType: 'Error', stackFrame: 'file.ts'})
+      const withoutFrame = generateErrorFingerprint({errorType: 'Error'})
+
+      expect(withFrame.fingerprint).not.toBe(withoutFrame.fingerprint)
+    })
   })
 })
 
@@ -144,6 +182,37 @@ describe('extractFingerprintFromError', () => {
       // Should have some stack frame (may vary by environment)
       // Just verify we get something or undefined
       expect(typeof input.stackFrame === 'string' || input.stackFrame === undefined).toBe(true)
+    })
+
+    it('should handle error with no stack trace', () => {
+      const error = new Error('test')
+      error.stack = undefined
+      const input = extractFingerprintFromError(error)
+
+      expect(input.stackFrame).toBeUndefined()
+    })
+
+    it('should skip node_modules frames', () => {
+      const error = new Error('test')
+      error.stack = `Error: test
+    at node_modules/some-lib/index.js:10:5
+    at myFunction (src/handler.ts:42:10)`
+      const input = extractFingerprintFromError(error)
+
+      // Should skip the node_modules frame and get the app frame
+      expect(input.stackFrame).toBeDefined()
+      expect(input.stackFrame).not.toContain('node_modules')
+    })
+
+    it('should skip node:internal frames', () => {
+      const error = new Error('test')
+      error.stack = `Error: test
+    at node:internal/process/task_queues:95:5
+    at myHandler (src/index.ts:10:3)`
+      const input = extractFingerprintFromError(error)
+
+      expect(input.stackFrame).toBeDefined()
+      expect(input.stackFrame).not.toContain('node:internal')
     })
   })
 

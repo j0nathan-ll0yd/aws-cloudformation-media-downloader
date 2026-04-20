@@ -84,7 +84,7 @@ process.env.YTDLP_BINARY_PATH = '/opt/bin/yt-dlp_linux'
 process.env.AWS_REGION = 'us-west-2'
 
 // Import after mocking
-const {downloadVideoToS3, getVideoID, isCookieExpirationError} = await import('#services/youtube/youtube.js')
+const {downloadVideoToS3, getVideoID, isCookieExpirationError, classifyCookieError, isSabrError} = await import('#services/youtube/youtube.js')
 
 describe('#Vendor:YouTube', () => {
   beforeEach(() => {
@@ -222,6 +222,93 @@ describe('#Vendor:YouTube', () => {
 
     test('should throw error for invalid URL', () => {
       expect(() => getVideoID('https://example.com/video')).toThrow('Invalid YouTube URL format')
+    })
+
+    test('should extract video ID from URL with extra query params', () => {
+      expect(getVideoID('https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=120')).toBe('dQw4w9WgXcQ')
+    })
+
+    test('should throw for empty string', () => {
+      expect(() => getVideoID('')).toThrow('Invalid YouTube URL format')
+    })
+
+    test('should throw for non-URL string', () => {
+      expect(() => getVideoID('not-a-url')).toThrow('Invalid YouTube URL format')
+    })
+
+    test('should throw for YouTube URL without video ID', () => {
+      expect(() => getVideoID('https://www.youtube.com/channel/UCtest')).toThrow('Invalid YouTube URL format')
+    })
+  })
+
+  describe('classifyCookieError', () => {
+    test('should classify bot detection errors', () => {
+      expect(classifyCookieError("Sign in to confirm you're not a bot")).toBe('bot_detection')
+      expect(classifyCookieError('This helps protect our community')).toBe('bot_detection')
+      expect(classifyCookieError('bot detection triggered')).toBe('bot_detection')
+      expect(classifyCookieError('confirm your human identity')).toBe('bot_detection')
+      expect(classifyCookieError('confirm you are human please')).toBe('bot_detection')
+    })
+
+    test('should classify cookie expired errors', () => {
+      expect(classifyCookieError('HTTP Error 403: Forbidden')).toBe('cookie_expired')
+      expect(classifyCookieError('cookies have expired')).toBe('cookie_expired')
+      expect(classifyCookieError('session expired, please log in again')).toBe('cookie_expired')
+      expect(classifyCookieError('login required to continue')).toBe('cookie_expired')
+    })
+
+    test('should classify rate limited errors', () => {
+      expect(classifyCookieError('HTTP Error 429')).toBe('rate_limited')
+      expect(classifyCookieError('Too many requests')).toBe('rate_limited')
+      expect(classifyCookieError('rate limit exceeded')).toBe('rate_limited')
+      expect(classifyCookieError('temporarily blocked')).toBe('rate_limited')
+    })
+
+    test('should return null for non-cookie errors', () => {
+      expect(classifyCookieError('Video not available')).toBeNull()
+      expect(classifyCookieError('Network timeout')).toBeNull()
+      expect(classifyCookieError('')).toBeNull()
+    })
+
+    test('should be case-insensitive', () => {
+      expect(classifyCookieError('HTTP ERROR 403')).toBe('cookie_expired')
+      expect(classifyCookieError('TOO MANY REQUESTS')).toBe('rate_limited')
+      expect(classifyCookieError('BOT DETECTION')).toBe('bot_detection')
+    })
+  })
+
+  describe('isSabrError', () => {
+    test('should detect SABR streaming errors', () => {
+      expect(isSabrError('SABR streaming is enforced')).toBe(true)
+      expect(isSabrError('Error: missing a url for format')).toBe(true)
+      expect(isSabrError('Some formats have been skipped')).toBe(true)
+      expect(isSabrError('YouTube is forcing SABR mode')).toBe(true)
+    })
+
+    test('should return false for non-SABR errors', () => {
+      expect(isSabrError('Video unavailable')).toBe(false)
+      expect(isSabrError('HTTP Error 403')).toBe(false)
+      expect(isSabrError('')).toBe(false)
+    })
+
+    test('should be case-insensitive', () => {
+      expect(isSabrError('sabr streaming')).toBe(true)
+      expect(isSabrError('MISSING A URL')).toBe(true)
+    })
+  })
+
+  describe('isCookieExpirationError (extended)', () => {
+    test('should return true for all cookie error categories', () => {
+      // bot_detection
+      expect(isCookieExpirationError("Sign in to confirm you're not a bot")).toBe(true)
+      // cookie_expired
+      expect(isCookieExpirationError('HTTP Error 403')).toBe(true)
+      // rate_limited
+      expect(isCookieExpirationError('HTTP Error 429')).toBe(true)
+    })
+
+    test('should return false for empty string', () => {
+      expect(isCookieExpirationError('')).toBe(false)
     })
   })
 })
