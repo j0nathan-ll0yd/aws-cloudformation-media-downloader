@@ -4,13 +4,16 @@
  *
  * When define*Handler factories are mocked as pass-through, the exported handler
  * is the inner function at runtime but TypeScript sees the outer Lambda signature.
- * These types model the runtime shape for type-safe test assertions.
  *
- * @example
- * ```ts
- * const {handler} = (await import('#lambdas/api/user/subscribe.post.js')) as unknown as MockedHandlerModule
- * ```
+ * Two approaches available:
+ * 1. MockedHandlerModule — permissive (existing tests, allows partial params + custom response props)
+ * 2. MockedModule<T> — fully typed via InnerHandlerOf (new tests with complete params)
  */
+import type {InnerHandlerOf} from '@mantleframework/core'
+
+// ============================================================================
+// Approach 1: Permissive types (for tests that pass partial params)
+// ============================================================================
 
 /**
  * Permissive result type for mocked handler returns.
@@ -48,4 +51,25 @@ interface AuthorizerResult {
 export type MockedAuthorizerModule = {
   handler: MockedHandler<AuthorizerResult>
   generateAllow: (principalId: string, resource: string, usageIdentifierKey?: string, authContext?: Record<string, string>) => AuthorizerResult
+}
+
+// ============================================================================
+// Approach 2: Fully typed via framework BrandedLambda (for new tests)
+// ============================================================================
+
+/**
+ * Extracts inner handler types from a module's exports using the framework's BrandedLambda phantom type.
+ * Requires tests to pass COMPLETE handler params (all required fields of AuthorizedApiParams, etc.).
+ *
+ * @example
+ * ```ts
+ * import type {MockedModule} from '#test/helpers/handler-test-types'
+ * import type * as Mod from '#lambdas/api/user/subscribe.post.js'
+ *
+ * const {handler} = (await import('#lambdas/api/user/subscribe.post.js')) as unknown as MockedModule<typeof Mod>
+ * // handler is fully typed: (params: AuthorizedApiParams<SubscriptionRequest>) => Promise<APIGatewayProxyResult>
+ * ```
+ */
+export type MockedModule<TModule extends Record<string, unknown>> = {
+  [K in keyof TModule]: TModule[K] extends {readonly __innerHandler?: unknown} ? InnerHandlerOf<TModule[K]> : TModule[K]
 }
