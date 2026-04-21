@@ -3,12 +3,12 @@
 
 ## Mantle Convention Enforcement
 
-This is a Mantle framework instance (the original project Mantle was extracted from). All code must conform to 66 convention checks (C1-C66).
+This is a Mantle framework instance (the original project Mantle was extracted from). All code must conform to 78 convention checks (C1-C78).
 
 - **Checks**: Imported above from `~/.claude/principles/mantle-checks.md`
-- **Full principles**: `~/.claude/principles/mantle.md` — the authoritative source for all conventions
+- **Full principles**: `~/.claude/principles/mantle.md` — rationale and deep dives
 - **Reviewer agent**: `~/.claude/agents/mantle-reviewer.md` — auto-reviews code changes via stop hook
-- **Hierarchy**: When this file conflicts with `~/.claude/principles/mantle.md`, mantle.md wins
+- **Hierarchy**: `mantle.md` provides rationale and deep dives; `mantle-checks.md` is the structured enforcement list. On conflicts in check definitions, `mantle-checks.md` wins.
 
 ## Deploy
 
