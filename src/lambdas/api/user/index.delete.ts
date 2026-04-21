@@ -7,41 +7,23 @@
  * Trigger: API Gateway DELETE /user
  * Input: Authenticated user context (userId from authorizer)
  * Output: APIGatewayProxyResult confirming deletion
+ *
+ * @see {@link ../../../services/user/userDeletionService.ts} for deletion helpers
  */
 import {buildValidatedResponse, defineLambda} from '@mantleframework/core'
 import {UnexpectedError} from '@mantleframework/errors'
 import {logDebug, logError} from '@mantleframework/observability'
 import {defineApiHandler, z} from '@mantleframework/validation'
-import {deleteUser as deleteUserRecord, deleteUserDevicesByUserId, deleteUserFilesByUserId, getDevicesBatch} from '#entities/queries'
+import {getDevicesBatch} from '#entities/queries'
 import {providerFailureErrorMessage} from '#errors/custom-errors'
 import {createFailedUserDeletionIssue} from '#integrations/github/issueService'
 import {deleteDevice, getUserDevices} from '#services/device/deviceService'
+import {deleteUser, deleteUserDevicesRelations, deleteUserFiles} from '#services/user/userDeletionService'
 import type {Device} from '#types/domainModels'
 
 const PartialDeletionResponseSchema = z.object({message: z.string(), failedOperations: z.number()})
 
 defineLambda({secrets: {GITHUB_PERSONAL_TOKEN: 'github.issue.token'}})
-
-/** Delete all user-file relationships */
-async function deleteUserFiles(userId: string): Promise<void> {
-  logDebug('deleteUserFiles', {userId})
-  await deleteUserFilesByUserId(userId)
-  logDebug('deleteUserFiles completed')
-}
-
-/** Delete all user-device relationships */
-async function deleteUserDevicesRelations(userId: string): Promise<void> {
-  logDebug('deleteUserDevices', {userId})
-  await deleteUserDevicesByUserId(userId)
-  logDebug('deleteUserDevices completed')
-}
-
-/** Delete user record */
-async function deleteUser(userId: string): Promise<void> {
-  logDebug('deleteUser', {userId})
-  await deleteUserRecord(userId)
-  logDebug('deleteUser completed')
-}
 
 const api = defineApiHandler({auth: 'authorizer', operationName: 'UserDelete'})
 export const handler = api(async ({context, userId}) => {
@@ -53,39 +35,27 @@ export const handler = api(async ({context, userId}) => {
     const deviceIds = userDevices.map((userDevice: {deviceId: string}) => userDevice.deviceId)
     const devices = await getDevicesBatch(deviceIds)
     logDebug('Found devices', {count: devices.length})
-    if (devices.length === 0) {
-      throw new UnexpectedError(providerFailureErrorMessage)
-    }
+    if (devices.length === 0) throw new UnexpectedError(providerFailureErrorMessage)
     deletableDevices.push(...(devices as Device[]))
   }
 
   // Delete children FIRST (correct cascade order), then parent LAST
-  // 1. Delete junction/child tables first
-  const relationResults = await Promise.allSettled([
-    deleteUserFiles(userId),
-    deleteUserDevicesRelations(userId)
-  ])
+  const relationResults = await Promise.allSettled([deleteUserFiles(userId), deleteUserDevicesRelations(userId)])
   logDebug('Promise.allSettled relations', {count: relationResults.length})
 
-  // Check for failures in relations
   const relationFailures = relationResults.filter((r) => r.status === 'rejected')
   if (relationFailures.length > 0) {
     logError('Cascade deletion partial failure (relations)', {failedCount: relationFailures.length})
-    return buildValidatedResponse(context, 207, {
-      message: 'Partial deletion - some child records could not be removed',
-      failedOperations: relationFailures.length
-    }, PartialDeletionResponseSchema)
+    return buildValidatedResponse(context, 207, {message: 'Partial deletion - some child records could not be removed', failedOperations: relationFailures.length}, PartialDeletionResponseSchema)
   }
 
-  // 2. Delete devices (parents of UserDevices)
   const deviceResults = await Promise.allSettled(deletableDevices.map((device) => deleteDevice(device)))
   logDebug('Promise.allSettled devices', {count: deviceResults.length})
 
   const deviceFailures = deviceResults.filter((r) => r.status === 'rejected')
   if (deviceFailures.length > 0) {
     logError('Cascade deletion partial failure (devices)', {failedCount: deviceFailures.length})
-    return buildValidatedResponse(context, 207, {message: 'Partial deletion - some devices could not be removed', failedOperations: deviceFailures.length},
-      PartialDeletionResponseSchema)
+    return buildValidatedResponse(context, 207, {message: 'Partial deletion - some devices could not be removed', failedOperations: deviceFailures.length}, PartialDeletionResponseSchema)
   }
 
   // Delete parent LAST - only if all children succeeded

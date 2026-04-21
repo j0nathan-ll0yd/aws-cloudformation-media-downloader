@@ -88,12 +88,13 @@ describe('SendPushNotification Lambda', () => {
     vi.mocked(publish).mockResolvedValue({MessageId: 'msg-pub-1', $metadata: {}})
   })
 
-  it('should send background notification to a single device', async () => {
+  it('should send alert notification for DownloadReadyNotification (reliable delivery)', async () => {
     await handler(makeRecord())
 
     expect(getUserDevicesByUserId).toHaveBeenCalledWith('user-1')
     expect(getDevice).toHaveBeenCalledWith('dev-1')
-    expect(transformToAPNSNotification).toHaveBeenCalled()
+    // DownloadReadyNotification routes to alert delivery for reliability
+    expect(transformToAPNSAlertNotification).toHaveBeenCalled()
     expect(publish).toHaveBeenCalled()
     expect(metrics.addMetric).toHaveBeenCalledWith('PushNotificationsSent', 'Count', 1)
   })
