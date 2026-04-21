@@ -32,6 +32,7 @@ async function cleanupFileDownloads(): Promise<number> {
   const db = await getDrizzleClient()
   const cutoffTime = secondsAgo(TIME.DAY_SEC)
 
+  // mantle-ignore: grandfathered(C10, #88, expires:2026-07-20)
   const result = await db.delete(fileDownloads).where(
     and(or(eq(fileDownloads.status, DownloadStatus.Completed), eq(fileDownloads.status, DownloadStatus.Failed)), lt(fileDownloads.updatedAt, cutoffTime))
   ).returning({fileId: fileDownloads.fileId})
@@ -48,6 +49,7 @@ async function cleanupSessions(): Promise<number> {
   const db = await getDrizzleClient()
   const now = new Date()
 
+  // mantle-ignore: grandfathered(C10, #88, expires:2026-07-20)
   const result = await db.delete(sessions).where(lt(sessions.expiresAt, now)).returning({id: sessions.id})
 
   return result.length
@@ -62,6 +64,7 @@ async function cleanupVerificationTokens(): Promise<number> {
   const db = await getDrizzleClient()
   const now = new Date()
 
+  // mantle-ignore: grandfathered(C10, #88, expires:2026-07-20)
   const result = await db.delete(verification).where(lt(verification.expiresAt, now)).returning({id: verification.id})
 
   return result.length

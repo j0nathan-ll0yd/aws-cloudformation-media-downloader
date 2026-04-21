@@ -136,7 +136,7 @@ export const upsertUserFile = defineQuery({
  * @param userId - The user's unique identifier
  * @param fileId - The file's unique identifier
  */
-export const deleteUserFile = defineQuery({tables: [{table: userFiles, operations: [DatabaseOperation.Delete]}]},
+export const deleteUserFile = defineQuery({tables: [{table: userFiles, operations: [DatabaseOperation.Select, DatabaseOperation.Delete]}]},
   async function deleteUserFile(db, userId: string, fileId: string): Promise<void> {
     await db.delete(userFiles).where(and(eq(userFiles.userId, userId), eq(userFiles.fileId, fileId)))
   })
@@ -145,7 +145,7 @@ export const deleteUserFile = defineQuery({tables: [{table: userFiles, operation
  * Deletes all file relationships for a user.
  * @param userId - The user's unique identifier
  */
-export const deleteUserFilesByUserId = defineQuery({tables: [{table: userFiles, operations: [DatabaseOperation.Delete]}]},
+export const deleteUserFilesByUserId = defineQuery({tables: [{table: userFiles, operations: [DatabaseOperation.Select, DatabaseOperation.Delete]}]},
   async function deleteUserFilesByUserId(db, userId: string): Promise<void> {
     await db.delete(userFiles).where(eq(userFiles.userId, userId))
   })
@@ -155,7 +155,7 @@ export const deleteUserFilesByUserId = defineQuery({tables: [{table: userFiles, 
  * Uses single query with OR conditions instead of N separate queries.
  * @param keys - Array of userId/fileId pairs to delete
  */
-export const deleteUserFilesBatch = defineQuery({tables: [{table: userFiles, operations: [DatabaseOperation.Delete]}]},
+export const deleteUserFilesBatch = defineQuery({tables: [{table: userFiles, operations: [DatabaseOperation.Select, DatabaseOperation.Delete]}]},
   async function deleteUserFilesBatch(db, keys: Array<{userId: string; fileId: string}>): Promise<void> {
     if (keys.length === 0) {
       return
@@ -300,7 +300,7 @@ export const upsertUserDevice = defineQuery({
  * @param userId - The user's unique identifier
  * @param deviceId - The device's unique identifier
  */
-export const deleteUserDevice = defineQuery({tables: [{table: userDevices, operations: [DatabaseOperation.Delete]}]},
+export const deleteUserDevice = defineQuery({tables: [{table: userDevices, operations: [DatabaseOperation.Select, DatabaseOperation.Delete]}]},
   async function deleteUserDevice(db, userId: string, deviceId: string): Promise<void> {
     await db.delete(userDevices).where(and(eq(userDevices.userId, userId), eq(userDevices.deviceId, deviceId)))
   })
@@ -309,7 +309,7 @@ export const deleteUserDevice = defineQuery({tables: [{table: userDevices, opera
  * Deletes all device relationships for a user.
  * @param userId - The user's unique identifier
  */
-export const deleteUserDevicesByUserId = defineQuery({tables: [{table: userDevices, operations: [DatabaseOperation.Delete]}]},
+export const deleteUserDevicesByUserId = defineQuery({tables: [{table: userDevices, operations: [DatabaseOperation.Select, DatabaseOperation.Delete]}]},
   async function deleteUserDevicesByUserId(db, userId: string): Promise<void> {
     await db.delete(userDevices).where(eq(userDevices.userId, userId))
   })
@@ -318,7 +318,7 @@ export const deleteUserDevicesByUserId = defineQuery({tables: [{table: userDevic
  * Deletes all user relationships for a device.
  * @param deviceId - The device's unique identifier
  */
-export const deleteUserDevicesByDeviceId = defineQuery({tables: [{table: userDevices, operations: [DatabaseOperation.Delete]}]},
+export const deleteUserDevicesByDeviceId = defineQuery({tables: [{table: userDevices, operations: [DatabaseOperation.Select, DatabaseOperation.Delete]}]},
   async function deleteUserDevicesByDeviceId(db, deviceId: string): Promise<void> {
     await db.delete(userDevices).where(eq(userDevices.deviceId, deviceId))
   })

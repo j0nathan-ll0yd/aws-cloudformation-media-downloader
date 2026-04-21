@@ -73,7 +73,7 @@ export const updateUser = defineQuery({tables: [{table: users, operations: [Data
  * Note: Does NOT cascade - call deleteUserCascade for full cleanup.
  * @param id - The user's UUID
  */
-export const deleteUser = defineQuery({tables: [{table: users, operations: [DatabaseOperation.Delete]}]},
+export const deleteUser = defineQuery({tables: [{table: users, operations: [DatabaseOperation.Select, DatabaseOperation.Delete]}]},
   async function deleteUser(db, id: string): Promise<void> {
     await db.delete(users).where(eq(users.id, id))
   })
