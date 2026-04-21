@@ -1,4 +1,4 @@
-@~/.claude/principles/mantle-checks.md
+@~/.claude/principles/mantle-checks-high.md
 @AGENTS.md
 
 ## Mantle Convention Enforcement
