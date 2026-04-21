@@ -32,7 +32,7 @@ const api = defineApiHandler({auth: 'none', schema: RegistrationRequestSchema, o
 export const handler = api(async ({event, context, body}) => {
   // Sign in/Register using Better Auth with ID token from iOS app
   const ipAddress = event.requestContext?.identity?.sourceIp
-  const userAgent = event.headers?.['User-Agent'] || ''
+  const userAgent = event.headers?.['user-agent'] || ''
 
   const auth = await getAuth(getDrizzleClient, {
     secret: getRequiredEnv('AUTH_SECRET'),

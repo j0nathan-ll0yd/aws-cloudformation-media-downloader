@@ -11,7 +11,6 @@
 import {sendMessage} from '@mantleframework/aws'
 import {buildValidatedResponse, emitEvent} from '@mantleframework/core'
 import {getRequiredEnv} from '@mantleframework/env'
-import {UnauthorizedError} from '@mantleframework/errors'
 import {addAnnotation, addMetadata, endSpan, logDebug, logError, logInfo, metrics, MetricUnit, startSpan} from '@mantleframework/observability'
 import {createIdempotencyStore, IdempotencyConfig, makeIdempotent} from '@mantleframework/resilience'
 import {defineApiHandler, z} from '@mantleframework/validation'
@@ -138,10 +137,6 @@ const FeedlyWebhookRequestSchema = z.object({articleURL: z.string()})
 
 const api = defineApiHandler({auth: 'authorizer', schema: FeedlyWebhookRequestSchema, operationName: 'WebhookFeedly'})
 export const handler = api(async ({context, userId, body, metadata}) => {
-  if (!userId) {
-    throw new UnauthorizedError('Authentication required')
-  }
-
   // Track webhook received
   metrics.addMetric('WebhookReceived', MetricUnit.Count, 1)
 

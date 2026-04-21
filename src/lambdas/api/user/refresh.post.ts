@@ -20,13 +20,9 @@ import {userLoginResponseSchema} from '#types/api-schema'
 defineLambda({secrets: {AUTH_SECRET: 'platform.key'}})
 
 const api = defineApiHandler({auth: 'authorizer', operationName: 'RefreshToken'})
-export const handler = api(async ({event, context, userId}) => {
-  if (!userId) {
-    throw new UnauthorizedError('Authentication required')
-  }
-
+export const handler = api(async ({event, context}) => {
   // Extract Bearer token from Authorization header
-  const token = extractBearerToken(event.headers?.['Authorization'] || event.headers?.['authorization'])
+  const token = extractBearerToken(event.headers?.['authorization'])
   if (!token) {
     throw new UnauthorizedError('Missing Authorization header')
   }

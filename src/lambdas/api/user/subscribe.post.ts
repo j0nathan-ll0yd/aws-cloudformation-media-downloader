@@ -9,7 +9,6 @@
  * Output: APIGatewayProxyResult with subscription confirmation
  */
 import {buildValidatedResponse} from '@mantleframework/core'
-import {UnauthorizedError} from '@mantleframework/errors'
 import {defineApiHandler, z} from '@mantleframework/validation'
 import {subscribeEndpointToTopic} from '#services/device/deviceService'
 import {verifyPlatformConfiguration} from '#utils/platform-config'
@@ -19,11 +18,7 @@ const SubscriptionRequestSchema = z.object({endpointArn: z.string(), topicArn: z
 const SubscriptionResponseSchema = z.object({subscriptionArn: z.string().optional()})
 
 const api = defineApiHandler({auth: 'authorizer', schema: SubscriptionRequestSchema, operationName: 'UserSubscribe'})
-export const handler = api(async ({context, userId, body}) => {
-  if (!userId) {
-    throw new UnauthorizedError('Authentication required')
-  }
-
+export const handler = api(async ({context, body}) => {
   verifyPlatformConfiguration()
 
   const subscribeResponse = await subscribeEndpointToTopic(body.endpointArn, body.topicArn)

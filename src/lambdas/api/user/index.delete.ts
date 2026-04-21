@@ -9,7 +9,7 @@
  * Output: APIGatewayProxyResult confirming deletion
  */
 import {buildValidatedResponse, defineLambda} from '@mantleframework/core'
-import {UnauthorizedError, UnexpectedError} from '@mantleframework/errors'
+import {UnexpectedError} from '@mantleframework/errors'
 import {logDebug, logError} from '@mantleframework/observability'
 import {defineApiHandler, z} from '@mantleframework/validation'
 import {deleteUser as deleteUserRecord, deleteUserDevicesByUserId, deleteUserFilesByUserId, getDevicesBatch} from '#entities/queries'
@@ -45,10 +45,6 @@ async function deleteUser(userId: string): Promise<void> {
 
 const api = defineApiHandler({auth: 'authorizer', operationName: 'UserDelete'})
 export const handler = api(async ({context, userId}) => {
-  if (!userId) {
-    throw new UnauthorizedError('Authentication required')
-  }
-
   const deletableDevices: Device[] = []
 
   const userDevices = await getUserDevices(userId)

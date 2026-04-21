@@ -21,12 +21,8 @@ defineLambda({secrets: {AUTH_SECRET: 'platform.key'}})
 
 const api = defineApiHandler({auth: 'authorizer', operationName: 'LogoutUser'})
 export const handler = api(async ({event, context, userId}) => {
-  if (!userId) {
-    throw new UnauthorizedError('Authentication required')
-  }
-
   // Extract Bearer token from Authorization header
-  const token = extractBearerToken(event.headers?.['Authorization'] || event.headers?.['authorization'])
+  const token = extractBearerToken(event.headers?.['authorization'])
   if (!token) {
     throw new UnauthorizedError('Missing Authorization header')
   }
