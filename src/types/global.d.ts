@@ -1,3 +1,4 @@
+// @mantle-ambient: ProcessEnv augmentation for Lambda environment variables
 /**
  * Global Type Declarations
  *
