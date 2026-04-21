@@ -24,15 +24,21 @@ export const handler = authorizer(async ({event, headers, queryStringParameters,
   const span = startSpan('authorize-request')
   addAnnotation(span, 'path', event.path)
 
-  if (!queryStringParameters || !('ApiKey' in queryStringParameters)) denyAuthorization(span, 'No API key found')
+  if (!queryStringParameters || !('ApiKey' in queryStringParameters)) {
+    denyAuthorization(span, 'No API key found')
+  }
 
   const apiKeyValue = queryStringParameters.ApiKey
   const apiKeys = await fetchApiKeys()
   const matchedApiKey = apiKeys.filter((item) => item.value === apiKeyValue)
-  if (matchedApiKey.length === 0) denyAuthorization(span, 'API key is invalid')
+  if (matchedApiKey.length === 0) {
+    denyAuthorization(span, 'API key is invalid')
+  }
 
   const apiKey = matchedApiKey[0]!
-  if (apiKey.enabled === false) denyAuthorization(span, 'API key is disabled')
+  if (apiKey.enabled === false) {
+    denyAuthorization(span, 'API key is disabled')
+  }
 
   const sourceIp = event.requestContext.identity.sourceIp
   if (isRemoteTestRequest(headers as Record<string, string | undefined>, sourceIp)) {
@@ -76,4 +82,4 @@ export const handler = authorizer(async ({event, headers, queryStringParameters,
   return generateAllow(principalId, methodArn, apiKeyValue, {userStatus})
 })
 
-export {generateAllow} from '#services/apiGateway/authorizerService'
+export { generateAllow } from '#services/apiGateway/authorizerService'

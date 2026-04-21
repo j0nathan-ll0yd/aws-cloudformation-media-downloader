@@ -57,7 +57,11 @@ export async function getDevice(deviceId: string): Promise<Device> {
  * @param notificationType - The notification type for routing
  * @returns Result with device ID on success, or error details on failure
  */
-export async function sendNotificationToDevice(device: Device, messageBody: string, notificationType: FileNotificationType): Promise<DeviceNotificationResult> {
+export async function sendNotificationToDevice(
+  device: Device,
+  messageBody: string,
+  notificationType: FileNotificationType
+): Promise<DeviceNotificationResult> {
   const targetArn = device.endpointArn
   if (!targetArn) {
     return err({deviceId: device.deviceId, error: 'No endpoint ARN configured', endpointDisabled: false})

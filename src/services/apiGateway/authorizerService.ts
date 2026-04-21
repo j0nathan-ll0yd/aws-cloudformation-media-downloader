@@ -19,7 +19,12 @@ export function denyAuthorization(span: ReturnType<typeof startSpan>, reason: st
 }
 
 /** Generates an Allow policy for API Gateway authorization. */
-export function generateAllow(principalId: string, resource: string, usageIdentifierKey?: string, authContext: Record<string, string> = {}): APIGatewayAuthorizerResult {
+export function generateAllow(
+  principalId: string,
+  resource: string,
+  usageIdentifierKey?: string,
+  authContext: Record<string, string> = {}
+): APIGatewayAuthorizerResult {
   return {
     context: authContext,
     policyDocument: {Statement: [{Action: 'execute-api:Invoke', Effect: 'Allow', Resource: resource}], Version: '2012-10-17'},
@@ -30,9 +35,13 @@ export function generateAllow(principalId: string, resource: string, usageIdenti
 
 /** Checks if the request is from a reserved IP for remote testing. SECURITY: Disabled in production. */
 export function isRemoteTestRequest(headers: Record<string, string | undefined>, sourceIp: string): boolean {
-  if (getOptionalEnv('NODE_ENV', '') === 'production') return false
+  if (getOptionalEnv('NODE_ENV', '') === 'production') {
+    return false
+  }
   const reservedIp = getOptionalEnv('RESERVED_CLIENT_IP', '')
-  if (!reservedIp) return false
+  if (!reservedIp) {
+    return false
+  }
   const userAgent = headers['User-Agent'] ?? headers['user-agent']
   logDebug('isRemoteTestRequest <=', {reservedIp, userAgent, clientIp: sourceIp})
   return sourceIp === reservedIp && userAgent === 'localhost@lifegames'

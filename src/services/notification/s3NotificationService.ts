@@ -48,11 +48,7 @@ export function logDispatchResults(results: PromiseSettledResult<unknown>[], use
   if (failedResults.length > 0) {
     failedResults.forEach((failure) => {
       const userId = userIds[results.indexOf(failure)]
-      logError('Failed to dispatch notification', {
-        fileId,
-        userId,
-        error: failure.reason instanceof Error ? failure.reason.message : String(failure.reason)
-      })
+      logError('Failed to dispatch notification', {fileId, userId, error: failure.reason instanceof Error ? failure.reason.message : String(failure.reason)})
     })
     logInfo('S3ObjectCreated completed with partial failures', {fileId, totalUsers: userIds.length, succeeded, failed: failedResults.length})
   } else {

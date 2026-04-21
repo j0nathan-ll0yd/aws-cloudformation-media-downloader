@@ -11,7 +11,13 @@ import type {FileNotificationType} from '#types/notificationTypes'
 import {pushNotificationAttributesSchema} from '#types/schemas'
 import {validateSchema} from '@mantleframework/validation'
 import {cleanupDisabledEndpoints} from '#services/notification/endpointCleanup'
-import {getDevice, getDeviceIdsForUser, mapSettledToDeviceResults, processNotificationResults, sendNotificationToDevice} from '#services/notification/pushService'
+import {
+  getDevice,
+  getDeviceIdsForUser,
+  mapSettledToDeviceResults,
+  processNotificationResults,
+  sendNotificationToDevice
+} from '#services/notification/pushService'
 
 const sqs = defineSqsHandler<string>({operationName: 'SendPushNotification', parseBody: false, queue: 'SendPushNotification'})
 
@@ -53,7 +59,9 @@ export const handler = sqs(async (record) => {
     addMetadata(span, 'notificationsFailed', failed.length)
     addMetadata(span, 'disabledEndpoints', disabledEndpoints.length)
 
-    if (failed.length > 0) metrics.addMetric('PushNotificationsFailed', MetricUnit.Count, failed.length)
+    if (failed.length > 0) {
+      metrics.addMetric('PushNotificationsFailed', MetricUnit.Count, failed.length)
+    }
     if (disabledEndpoints.length > 0) {
       metrics.addMetric('DisabledEndpointsDetected', MetricUnit.Count, disabledEndpoints.length)
       const disabledDeviceIds = disabledEndpoints.flatMap((r) => isErr(r) ? [r.error.deviceId] : [])

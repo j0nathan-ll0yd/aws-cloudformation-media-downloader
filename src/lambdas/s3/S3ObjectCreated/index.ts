@@ -40,7 +40,9 @@ export const handler = s3(async (record) => {
     addMetadata(span, 'notificationsSent', succeeded)
     addMetadata(span, 'notificationsFailed', failed)
 
-    if (failed > 0) metrics.addMetric('NotificationsFailed', MetricUnit.Count, failed)
+    if (failed > 0) {
+      metrics.addMetric('NotificationsFailed', MetricUnit.Count, failed)
+    }
     endSpan(span)
   } catch (error) {
     endSpan(span, error as Error)

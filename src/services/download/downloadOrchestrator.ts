@@ -122,7 +122,13 @@ export async function processDownloadRequest(message: ValidatedDownloadQueueMess
   await updateDownloadState(fileId, DownloadStatus.Completed, undefined, existingRetryCount)
 
   // Step 4: Publish completion event
-  const completedDetail: DownloadCompletedDetail = {fileId, correlationId, s3Key: fileName, fileSize: uploadResult.fileSize, completedAt: new Date().toISOString()}
+  const completedDetail: DownloadCompletedDetail = {
+    fileId,
+    correlationId,
+    s3Key: fileName,
+    fileSize: uploadResult.fileSize,
+    completedAt: new Date().toISOString()
+  }
   await emitEvent({detailType: 'DownloadCompleted', detail: completedDetail})
 
   metrics.addMetric('LambdaExecutionSuccess', MetricUnit.Count, 1)

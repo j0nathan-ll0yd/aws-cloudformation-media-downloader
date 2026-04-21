@@ -35,7 +35,9 @@ export const handler = api(async ({context, userId}) => {
     const deviceIds = userDevices.map((userDevice: {deviceId: string}) => userDevice.deviceId)
     const devices = await getDevicesBatch(deviceIds)
     logDebug('Found devices', {count: devices.length})
-    if (devices.length === 0) throw new UnexpectedError(providerFailureErrorMessage)
+    if (devices.length === 0) {
+      throw new UnexpectedError(providerFailureErrorMessage)
+    }
     deletableDevices.push(...(devices as Device[]))
   }
 
@@ -46,7 +48,10 @@ export const handler = api(async ({context, userId}) => {
   const relationFailures = relationResults.filter((r) => r.status === 'rejected')
   if (relationFailures.length > 0) {
     logError('Cascade deletion partial failure (relations)', {failedCount: relationFailures.length})
-    return buildValidatedResponse(context, 207, {message: 'Partial deletion - some child records could not be removed', failedOperations: relationFailures.length}, PartialDeletionResponseSchema)
+    return buildValidatedResponse(context, 207, {
+      message: 'Partial deletion - some child records could not be removed',
+      failedOperations: relationFailures.length
+    }, PartialDeletionResponseSchema)
   }
 
   const deviceResults = await Promise.allSettled(deletableDevices.map((device) => deleteDevice(device)))
@@ -55,7 +60,8 @@ export const handler = api(async ({context, userId}) => {
   const deviceFailures = deviceResults.filter((r) => r.status === 'rejected')
   if (deviceFailures.length > 0) {
     logError('Cascade deletion partial failure (devices)', {failedCount: deviceFailures.length})
-    return buildValidatedResponse(context, 207, {message: 'Partial deletion - some devices could not be removed', failedOperations: deviceFailures.length}, PartialDeletionResponseSchema)
+    return buildValidatedResponse(context, 207, {message: 'Partial deletion - some devices could not be removed', failedOperations: deviceFailures.length},
+      PartialDeletionResponseSchema)
   }
 
   // Delete parent LAST - only if all children succeeded
