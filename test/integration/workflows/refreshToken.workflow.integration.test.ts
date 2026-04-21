@@ -48,7 +48,7 @@ describe('RefreshToken Workflow Integration Tests', () => {
     await insertUser({userId, email: 'refresh@example.com', firstName: 'Refresh'})
     await insertSession({id: sessionId, userId, token, expiresAt: originalExpiry})
 
-    const result = await handler(createMockAPIGatewayProxyEvent({path: '/auth/refresh', httpMethod: 'POST', headers: {Authorization: `Bearer ${token}`}}),
+    const result = await handler(createMockAPIGatewayProxyEvent({path: '/auth/refresh', httpMethod: 'POST', headers: {authorization: `Bearer ${token}`}}),
       mockContext)
 
     expect(result.statusCode).toBe(200)
@@ -77,7 +77,7 @@ describe('RefreshToken Workflow Integration Tests', () => {
 
   test('should return 401 for invalid token format', async () => {
     const result = await handler(
-      createMockAPIGatewayProxyEvent({path: '/auth/refresh', httpMethod: 'POST', headers: {Authorization: 'invalid-token-format'}}),
+      createMockAPIGatewayProxyEvent({path: '/auth/refresh', httpMethod: 'POST', headers: {authorization: 'invalid-token-format'}}),
       mockContext
     )
 
@@ -93,7 +93,7 @@ describe('RefreshToken Workflow Integration Tests', () => {
     await insertUser({userId, email: 'expired@example.com'})
     await insertSession({id: sessionId, userId, token, expiresAt: expiredTime})
 
-    const result = await handler(createMockAPIGatewayProxyEvent({path: '/auth/refresh', httpMethod: 'POST', headers: {Authorization: `Bearer ${token}`}}),
+    const result = await handler(createMockAPIGatewayProxyEvent({path: '/auth/refresh', httpMethod: 'POST', headers: {authorization: `Bearer ${token}`}}),
       mockContext)
 
     expect(result.statusCode).toBe(401)
@@ -103,7 +103,7 @@ describe('RefreshToken Workflow Integration Tests', () => {
     const nonExistentToken = crypto.randomUUID()
 
     const result = await handler(
-      createMockAPIGatewayProxyEvent({path: '/auth/refresh', httpMethod: 'POST', headers: {Authorization: `Bearer ${nonExistentToken}`}}),
+      createMockAPIGatewayProxyEvent({path: '/auth/refresh', httpMethod: 'POST', headers: {authorization: `Bearer ${nonExistentToken}`}}),
       mockContext
     )
 
