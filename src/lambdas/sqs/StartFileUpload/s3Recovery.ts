@@ -16,7 +16,7 @@ import {DownloadStatus, FileStatus} from '#types/enums'
 import {dispatchMetadataNotifications} from '#services/notification/dispatchService'
 import {updateDownloadState} from '#services/download/stateManager'
 import {fetchVideoInfoTraced} from '#services/download/youtubeTracing'
-import {upsertFile} from '../../lambdas/sqs/StartFileUpload/file-helpers'
+import {upsertFile} from './fileHelpers.js'
 
 /**
  * Check if a file already exists in S3 and return its metadata.

@@ -74,38 +74,59 @@ A function stays in the handler file when:
 Examples: input parsing, response formatting, simple transforms, error classification.
 
 #### Tier 2: Extract to Handler-Local File
-A function moves to a sibling file in the handler's directory (for example, `StartFileUpload/helpers.ts`) when:
+A function moves to a sibling file in the handler's directory when:
 - The handler file exceeds 150 lines even with well-organized inline helpers
 - The function is **> 30 lines** of complex logic that benefits from isolated testing
 - The function is still **single-consumer** but obscures the handler's orchestration flow
 
-Examples: complex validation, multi-step transformations, traced operations.
+**Naming conventions for handler-local files:**
+- Use **camelCase** consistent with all other `.ts` files in `src/`: `downloadOrchestrator.ts`, `failureHandler.ts`, `pushHelpers.ts`
+- Use descriptive domain-specific names when multiple files are extracted; avoid generic `helpers.ts` in that case
+- A single generic `helpers.ts` is acceptable when only one file is extracted
+- **Group by cohesion**, not by function count: functions that work on the same concern stay in the same file
+
+**Service graph case (multiple co-located files):**
+When a handler needs an internal service graph (for example, an orchestrator that calls a failure handler and recovery module), ALL files in the graph live in the handler's directory. This keeps the entire feature self-contained:
+
+```text
+src/lambdas/sqs/StartFileUpload/
+  index.ts                    # thin handler (entry point)
+  fileHelpers.ts              # simple helpers
+  downloadOrchestrator.ts     # main workflow
+  failureHandler.ts           # error classification + retry
+  s3Recovery.ts               # S3 check + DB recovery
+```
+
+The rule is simple: **everything related to a single Lambda lives in that Lambda's directory.** Only code consumed by 2+ Lambdas moves to `src/services/`.
+
+Examples: complex validation, multi-step transformations, traced operations, orchestrators, failure handlers, recovery modules.
 
 #### Tier 3: Extract to Shared Service
 A function moves to `src/services/` when:
-- It has **2+ consumers** across different handlers (the Rule of Two)
-- It represents a **domain concept** that multiple features need (for example, notification dispatch, user deletion cascade)
+- It has **2+ consumers** across different Lambda handlers
+- It represents a **domain concept** that multiple features need (for example, notification dispatch)
 - It wraps an **external integration** that multiple handlers share (for example, YouTube API, APNS)
 
-Examples: notification dispatch (used by StartFileUpload + S3ObjectCreated), cascade delete (used by UserDelete + admin endpoints).
+**`src/services/` is exclusively for multi-consumer code.** If you find a service file with only one Lambda consumer, it belongs in that Lambda's directory (Tier 2).
 
-### What This Means for the Current Extraction
+Examples: notification dispatch (used by StartFileUpload + S3ObjectCreated), notification transformers (used by 4 handlers), device service (used by 4 handlers).
 
-The automated extraction in this PR moved some functions to `src/services/` that should have stayed in their handler files (Tier 1) or handler directories (Tier 2). Specifically:
+### Current State (after re-inlining)
 
-**Correctly extracted (Tier 3—multiple consumers or domain services):**
-- `src/services/notification/dispatchService.ts`—notification dispatch used by multiple handlers
-- `src/services/download/failureHandler.ts`—error handling shared across download flows
-- `src/services/download/youtubeTracing.ts`—YouTube integration wrapper
+Single-consumer services have been re-inlined per this ADR. The remaining `src/services/` files are all multi-consumer (2+ Lambda consumers):
 
-**Should be reviewed for possible re-inlining (Tier 1/2—single consumer):**
-- `src/services/auth/registrationService.ts`—only used by register.post
-- `src/services/device/registrationService.ts`—only used by device/register.post
-- `src/services/user/userDeletionService.ts`—only used by user/index.delete
-- `src/services/cleanup/cleanupService.ts`—only used by CleanupExpiredRecords
-- `src/services/auth/tokenService.ts`—only used by logout.post and refresh.post
+**Multi-consumer services (Tier 3, correctly in `src/services/`):**
+- `notification/dispatchService.ts` (3 consumers), `notification/transformers.ts` (4 consumers)
+- `download/stateManager.ts` (3 consumers), `download/youtubeTracing.ts` (2 consumers)
+- `device/deviceService.ts` (4 consumers), `file/fileInitService.ts` (2 consumers)
+- `youtube/youtube.ts` (7 consumers)
 
-These single-consumer extractions are not actively harmful (the code is correct and tested), but they add navigation overhead without reusability benefit. They may be re-inlined in a future cleanup pass if the handler files remain under 150 lines after re-absorption.
+**Pending: download cluster move to handler directory (Tier 2):**
+- `download/downloadOrchestrator.ts` (1 Lambda consumer: StartFileUpload)
+- `download/failureHandler.ts` (1 consumer: downloadOrchestrator)
+- `download/s3Recovery.ts` (1 consumer: downloadOrchestrator)
+
+These form an internal service graph consumed only by StartFileUpload. Per Option A, they should move to `src/lambdas/sqs/StartFileUpload/` as handler-local files. `stateManager.ts` and `youtubeTracing.ts` stay in `src/services/download/` because they have 2+ consumers.
 
 ## Consequences
 

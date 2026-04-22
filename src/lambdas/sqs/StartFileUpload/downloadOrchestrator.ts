@@ -15,11 +15,11 @@ import {DownloadStatus, FileStatus} from '#types/enums'
 import {getRequiredEnv} from '@mantleframework/env'
 import {UnexpectedError} from '@mantleframework/errors'
 import {dispatchDownloadStartedNotifications, dispatchMetadataNotifications} from '#services/notification/dispatchService'
-import {handleDownloadFailure, tryCloseCookieExpirationIssue} from '#services/download/failureHandler'
+import {handleDownloadFailure, tryCloseCookieExpirationIssue} from './failureHandler.js'
 import {updateDownloadState} from '#services/download/stateManager'
-import {checkS3FileExists, recoverFromS3} from '#services/download/s3Recovery'
+import {checkS3FileExists, recoverFromS3} from './s3Recovery.js'
 import {downloadVideoToS3Traced, fetchVideoInfoTraced} from '#services/download/youtubeTracing'
-import {upsertFile} from '../../lambdas/sqs/StartFileUpload/file-helpers'
+import {upsertFile} from './fileHelpers.js'
 
 /**
  * Process a single download request from SQS.

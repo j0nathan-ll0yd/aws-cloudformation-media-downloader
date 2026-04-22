@@ -8,14 +8,14 @@
  * Input: SQSEvent with DownloadQueueMessage records
  * Output: SQSBatchResponse with item failures for retry
  *
- * @see {@link ../../../services/download/downloadOrchestrator.ts} for core processing logic
+ * @see {@link ./downloadOrchestrator.ts} for core processing logic
  */
 import {defineLambda} from '@mantleframework/core'
 import {defineSqsHandler} from '@mantleframework/core'
 import {logError} from '@mantleframework/observability'
 import {downloadQueueMessageSchema, type ValidatedDownloadQueueMessage} from '#types/schemas'
 import {validateSchema} from '@mantleframework/validation'
-import {processDownloadRequest} from '#services/download/downloadOrchestrator'
+import {processDownloadRequest} from './downloadOrchestrator.js'
 
 defineLambda({
   packageType: 'container',
