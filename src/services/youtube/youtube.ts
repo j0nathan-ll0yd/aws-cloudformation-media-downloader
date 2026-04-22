@@ -401,7 +401,7 @@ function parseProgressLine(line: string): {percent?: number; size?: string; spee
  * @param args - Command line arguments
  * @returns Promise that resolves on success, rejects with error details on failure
  */
-function execYtDlp(ytdlpBinaryPath: string, args: string[]): Promise<void> {
+function execYtDlp(ytdlpBinaryPath: string, args: string[], onProgress?: (percent: number) => void): Promise<void> {
   return new Promise((resolve, reject) => {
     const ytdlp = spawn(ytdlpBinaryPath, args, {cwd: '/tmp'})
 
@@ -409,6 +409,7 @@ function execYtDlp(ytdlpBinaryPath: string, args: string[]): Promise<void> {
     let lastLoggedPercent = -25 // Log every 25% progress
     let lastLogTime = Date.now()
     const LOG_INTERVAL_MS = 60000 // Also log at least every 60 seconds
+    let lastDispatchedMilestone = 0 // Track onProgress milestones independently
 
     ytdlp.stderr.on('data', (chunk) => {
       const data = chunk.toString()
@@ -432,13 +433,44 @@ function execYtDlp(ytdlpBinaryPath: string, args: string[]): Promise<void> {
             lastLoggedPercent = Math.floor(progress.percent / 25) * 25
             lastLogTime = now
           }
+
+          // Invoke onProgress at 25% milestones only (exclude 100% — DownloadReadyNotification handles completion)
+          if (onProgress && progress.percent !== undefined && progress.percent < 100) {
+            const milestone = Math.floor(progress.percent / 25) * 25
+            if (milestone > 0 && milestone > lastDispatchedMilestone) {
+              lastDispatchedMilestone = milestone
+              onProgress(milestone)
+            }
+          }
         }
       }
     })
 
-    // Also capture stdout for any output (yt-dlp mostly uses stderr)
+    // Also capture stdout for progress and informational output
+    // yt-dlp 2026.03.17+ with --progress --newline sends progress to stdout
     ytdlp.stdout.on('data', (chunk) => {
-      logDebug('yt-dlp stdout', chunk.toString().trim())
+      const data = chunk.toString()
+      const lines = data.split('\n')
+      for (const line of lines) {
+        const trimmed = line.trim()
+        if (!trimmed) {
+          continue
+        }
+
+        const progress = parseProgressLine(trimmed)
+        if (progress?.percent !== undefined) {
+          // Invoke onProgress at 25% milestones (exclude 100%)
+          if (onProgress && progress.percent < 100) {
+            const milestone = Math.floor(progress.percent / 25) * 25
+            if (milestone > 0 && milestone > lastDispatchedMilestone) {
+              lastDispatchedMilestone = milestone
+              onProgress(milestone)
+            }
+          }
+        } else {
+          logDebug('yt-dlp stdout', trimmed)
+        }
+      }
     })
 
     ytdlp.on('error', (error) => {
@@ -476,7 +508,12 @@ function execYtDlp(ytdlpBinaryPath: string, args: string[]): Promise<void> {
  * @param key - Target S3 object key (e.g., "dQw4w9WgXcQ.mp4")
  * @returns Upload results including file size, S3 URL, and duration
  */
-export async function downloadVideoToS3(uri: string, bucket: S3BucketName, key: string): Promise<{fileSize: number; s3Url: string; duration: number}> {
+export async function downloadVideoToS3(
+  uri: string,
+  bucket: S3BucketName,
+  key: string,
+  options?: {onProgress?: (percent: number) => void}
+): Promise<{fileSize: number; s3Url: string; duration: number}> {
   const ytdlpBinaryPath = getRequiredEnv('YTDLP_BINARY_PATH')
   const tempFile = `/tmp/${key}`
 
@@ -529,7 +566,7 @@ export async function downloadVideoToS3(uri: string, bucket: S3BucketName, key: 
         ]
 
         logDebug('Phase 1: Downloading to temp file', {args: ytdlpArgs, formatSelector})
-        await execYtDlp(ytdlpBinaryPath, ytdlpArgs)
+        await execYtDlp(ytdlpBinaryPath, ytdlpArgs, options?.onProgress)
         logDebug('Phase 1 complete: Download finished', {formatSelector})
 
         // Track which format succeeded

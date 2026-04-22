@@ -60,7 +60,13 @@ export const downloadQueueMessageSchema = z.object({
 
 /** Schema for SQS message attributes used by SendPushNotification */
 export const pushNotificationAttributesSchema = z.object({
-  notificationType: z.enum(['MetadataNotification', 'DownloadStartedNotification', 'DownloadReadyNotification', 'FailureNotification']),
+  notificationType: z.enum([
+    'MetadataNotification',
+    'DownloadStartedNotification',
+    'DownloadReadyNotification',
+    'FailureNotification',
+    'DownloadProgressNotification'
+  ]),
   userId: z.string().min(1, 'userId is required')
 })
 
