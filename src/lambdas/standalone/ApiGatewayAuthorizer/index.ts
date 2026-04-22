@@ -104,4 +104,4 @@ export const handler = authorizer(async ({event, headers, queryStringParameters,
   return generateAllow(principalId, methodArn, apiKeyValue, {userStatus})
 })
 
-export {generateAllow} from './helpers.js'
+export { generateAllow } from './helpers.js'

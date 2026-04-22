@@ -29,7 +29,7 @@ defineLambda({
 })
 
 // Re-export types for external consumers
-export type {PruneDevicesResult} from '#types/lambda'
+export type { PruneDevicesResult } from '#types/lambda'
 
 /** Fetch all devices from the database */
 async function getDevices(): Promise<Device[]> {

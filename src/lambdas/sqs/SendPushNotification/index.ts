@@ -11,13 +11,7 @@ import type {FileNotificationType} from '#types/notificationTypes'
 import {pushNotificationAttributesSchema} from '#types/schemas'
 import {validateSchema} from '@mantleframework/validation'
 import {cleanupDisabledEndpoints} from './endpoint-cleanup-helpers.js'
-import {
-  getDevice,
-  getDeviceIdsForUser,
-  mapSettledToDeviceResults,
-  processNotificationResults,
-  sendNotificationToDevice
-} from './push-helpers.js'
+import {getDevice, getDeviceIdsForUser, mapSettledToDeviceResults, processNotificationResults, sendNotificationToDevice} from './push-helpers.js'
 
 const sqs = defineSqsHandler<string>({operationName: 'SendPushNotification', parseBody: false, queue: 'SendPushNotification'})
 
