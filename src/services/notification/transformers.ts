@@ -57,7 +57,8 @@ export function createMetadataNotification(
     description: truncateDescription(videoInfo.description || ''),
     publishDate: videoInfo.upload_date || (new Date().toISOString().split('T')[0] ?? new Date().toISOString()),
     contentType: 'video/mp4',
-    status: 'pending'
+    status: 'pending',
+    thumbnailUrl: videoInfo.thumbnail || undefined
   }
   return {
     messageBody: JSON.stringify({file, notificationType: 'MetadataNotification'}),
