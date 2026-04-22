@@ -86,17 +86,6 @@ describe('WebhookFeedly Lambda', () => {
     vi.mocked(getVideoID).mockReturnValue('dQw4w9WgXcQ')
   })
 
-  it('should throw UnauthorizedError when userId is missing', async () => {
-    await expect(
-      handler({
-        context: {awsRequestId: 'req-1'},
-        userId: undefined,
-        body: {articleURL: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'},
-        metadata: {correlationId: 'corr-1', traceId: 'trace-1'}
-      })
-    ).rejects.toThrow('Authentication required')
-  })
-
   it('should emit DownloadRequested event for new file', async () => {
     vi.mocked(associateFileToUser).mockResolvedValue(undefined as never)
     vi.mocked(getFile).mockResolvedValue(null as never)

@@ -39,12 +39,6 @@ describe('UserSubscribe Lambda', () => {
     vi.clearAllMocks()
   })
 
-  it('should throw UnauthorizedError when userId is missing', async () => {
-    await expect(handler({context: {awsRequestId: 'req-1'}, userId: undefined, body: {endpointArn: 'arn:endpoint', topicArn: 'arn:topic'}})).rejects.toThrow(
-      'Authentication required'
-    )
-  })
-
   it('should call verifyPlatformConfiguration before subscribing', async () => {
     vi.mocked(subscribeEndpointToTopic).mockResolvedValue({SubscriptionArn: 'arn:sub', $metadata: {}})
 

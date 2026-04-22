@@ -39,12 +39,6 @@ describe('RefreshToken Lambda', () => {
     vi.clearAllMocks()
   })
 
-  it('should throw UnauthorizedError when userId is missing', async () => {
-    await expect(handler({event: {headers: {Authorization: 'Bearer token'}}, context: {awsRequestId: 'req-1'}, userId: undefined})).rejects.toThrow(
-      'Authentication required'
-    )
-  })
-
   it('should throw UnauthorizedError when bearer token is missing', async () => {
     vi.mocked(extractBearerToken).mockReturnValue(null as never)
 

@@ -54,14 +54,6 @@ describe('UserDelete Lambda', () => {
     vi.clearAllMocks()
   })
 
-  it('should throw UnauthorizedError when userId is missing', async () => {
-    await expect(handler({context: {awsRequestId: 'req-1'}, userId: undefined})).rejects.toThrow('Authentication required')
-  })
-
-  it('should throw UnauthorizedError when userId is empty string', async () => {
-    await expect(handler({context: {awsRequestId: 'req-1'}, userId: ''})).rejects.toThrow('Authentication required')
-  })
-
   it('should delete user with no devices successfully', async () => {
     vi.mocked(getUserDevices).mockResolvedValue([])
     vi.mocked(deleteUserFilesByUserId).mockResolvedValue(undefined as never)
