@@ -10,7 +10,12 @@ import {getUserFilesByFileId} from '#entities/queries'
 import {sendMessage} from '@mantleframework/aws'
 import {logDebug, logInfo} from '@mantleframework/observability'
 import {getRequiredEnv} from '@mantleframework/env'
-import {createDownloadStartedNotification, createFailureNotification, createMetadataNotification} from '#services/notification/transformers'
+import {
+  createDownloadProgressNotification,
+  createDownloadStartedNotification,
+  createFailureNotification,
+  createMetadataNotification
+} from '#services/notification/transformers'
 import type {YtDlpVideoInfo} from '#types/youtube'
 
 /**
@@ -46,8 +51,9 @@ export async function dispatchMetadataNotifications(fileId: string, videoInfo: Y
  *
  * @param fileId - The video ID
  * @param videoInfo - Video metadata from yt-dlp
+ * @returns The list of userIds that were notified (for reuse in progress notifications)
  */
-export async function dispatchDownloadStartedNotifications(fileId: string, videoInfo: YtDlpVideoInfo): Promise<void> {
+export async function dispatchDownloadStartedNotifications(fileId: string, videoInfo: YtDlpVideoInfo): Promise<string[]> {
   const queueUrl = getRequiredEnv('SNS_QUEUE_URL')
 
   const userFiles = await getUserFilesByFileId(fileId)
@@ -55,7 +61,7 @@ export async function dispatchDownloadStartedNotifications(fileId: string, video
 
   if (userIds.length === 0) {
     logDebug('No users waiting for file, skipping DownloadStartedNotification')
-    return
+    return []
   }
 
   const results = await Promise.allSettled(userIds.map((userId) => {
@@ -65,6 +71,31 @@ export async function dispatchDownloadStartedNotifications(fileId: string, video
   const failed = results.filter((r) => r.status === 'rejected').length
 
   logInfo('Dispatched DownloadStartedNotifications', {fileId, succeeded: userIds.length - failed, failed})
+  return userIds
+}
+
+/**
+ * Dispatch DownloadProgressNotification to a pre-fetched list of users.
+ * Reuses the userIds from dispatchDownloadStartedNotifications to avoid a DB round-trip per milestone.
+ *
+ * @param fileId - The video ID
+ * @param progressPercent - Milestone percentage (25, 50, or 75)
+ * @param userIds - Pre-fetched list of userIds waiting for this file
+ */
+export async function dispatchDownloadProgressNotifications(fileId: string, progressPercent: number, userIds: string[]): Promise<void> {
+  if (userIds.length === 0) {
+    return
+  }
+
+  const queueUrl = getRequiredEnv('SNS_QUEUE_URL')
+
+  const results = await Promise.allSettled(userIds.map((userId) => {
+    const {messageBody, messageAttributes} = createDownloadProgressNotification(fileId, progressPercent, userId)
+    return sendMessage({QueueUrl: queueUrl, MessageBody: messageBody, MessageAttributes: messageAttributes})
+  }))
+  const failed = results.filter((r) => r.status === 'rejected').length
+
+  logInfo('Dispatched DownloadProgressNotifications', {fileId, percent: progressPercent, succeeded: userIds.length - failed, failed})
 }
 
 /**

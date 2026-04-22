@@ -5,7 +5,13 @@
  * This is an adapter layer that bridges domain models to infrastructure message formats.
  */
 import type {File} from '#types/domainModels'
-import type {DownloadReadyNotification, DownloadStartedNotification, FailureNotification, MetadataNotification} from '#types/notificationTypes'
+import type {
+  DownloadProgressNotification,
+  DownloadReadyNotification,
+  DownloadStartedNotification,
+  FailureNotification,
+  MetadataNotification
+} from '#types/notificationTypes'
 import type {YtDlpVideoInfo} from '#types/youtube'
 import {stringAttribute} from '@mantleframework/aws'
 
@@ -75,6 +81,25 @@ export function createDownloadStartedNotification(
   return {
     messageBody: JSON.stringify({file, notificationType: 'DownloadStartedNotification'}),
     messageAttributes: {userId: stringAttribute(userId), notificationType: stringAttribute('DownloadStartedNotification')}
+  }
+}
+
+/**
+ * Creates DownloadProgressNotification - sent at 25%/50%/75% download milestones
+ * @param fileId - The video ID
+ * @param percent - Download progress percentage (25, 50, or 75)
+ * @param userId - User ID to send notification to
+ * @returns SQS message body and attributes for routing
+ */
+export function createDownloadProgressNotification(
+  fileId: string,
+  percent: number,
+  userId: string
+): {messageBody: string; messageAttributes: Record<string, MessageAttributeValue>} {
+  const file: DownloadProgressNotification = {fileId, progressPercent: percent}
+  return {
+    messageBody: JSON.stringify({file, notificationType: 'DownloadProgressNotification'}),
+    messageAttributes: {userId: stringAttribute(userId), notificationType: stringAttribute('DownloadProgressNotification')}
   }
 }
 

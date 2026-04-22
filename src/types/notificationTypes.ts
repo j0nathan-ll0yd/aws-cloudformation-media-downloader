@@ -13,7 +13,12 @@ import type {Result} from '@mantleframework/core'
  * Discriminated union type for file notification payloads.
  * Used in SQS message attributes to route to appropriate handler.
  */
-export type FileNotificationType = 'MetadataNotification' | 'DownloadReadyNotification' | 'FailureNotification' | 'DownloadStartedNotification'
+export type FileNotificationType =
+  | 'MetadataNotification'
+  | 'DownloadReadyNotification'
+  | 'FailureNotification'
+  | 'DownloadStartedNotification'
+  | 'DownloadProgressNotification'
 
 /**
  * Notification sent when video metadata is fetched but download not yet complete.
@@ -57,6 +62,20 @@ export interface DownloadStartedNotification {
   title: string
   /** YouTube thumbnail URL (if available) */
   thumbnailUrl?: string
+}
+
+/**
+ * Notification sent at 25%/50%/75% download milestones.
+ * Allows iOS app to show server-side download progress.
+ *
+ * Sent by: StartFileUpload Lambda (during yt-dlp download, at 25% intervals)
+ * Received by: iOS app to update progress indicator
+ */
+export interface DownloadProgressNotification {
+  /** YouTube video ID (e.g., 'dQw4w9WgXcQ') */
+  fileId: string
+  /** Download progress percentage (25, 50, or 75) */
+  progressPercent: number
 }
 
 /**

@@ -49,11 +49,12 @@ export async function fetchVideoInfoTraced(fileUrl: string, fileId: string): Pro
 export async function downloadVideoToS3Traced(
   fileUrl: string,
   bucket: S3BucketName,
-  fileName: string
+  fileName: string,
+  onProgress?: (percent: number) => void
 ): Promise<{fileSize: number; s3Url: string; duration: number}> {
   const span = startSpan('yt-dlp-download-to-s3')
   try {
-    const result = await youtubeCircuitBreaker.execute(() => downloadVideoToS3(fileUrl, bucket, fileName)) as {
+    const result = await youtubeCircuitBreaker.execute(() => downloadVideoToS3(fileUrl, bucket, fileName, {onProgress})) as {
       fileSize: number
       s3Url: string
       duration: number

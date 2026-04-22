@@ -14,7 +14,11 @@ import type {ValidatedDownloadQueueMessage} from '#types/schemas'
 import {DownloadStatus, FileStatus} from '#types/enums'
 import {getRequiredEnv} from '@mantleframework/env'
 import {UnexpectedError} from '@mantleframework/errors'
-import {dispatchDownloadStartedNotifications, dispatchMetadataNotifications} from '#services/notification/dispatchService'
+import {
+  dispatchDownloadProgressNotifications,
+  dispatchDownloadStartedNotifications,
+  dispatchMetadataNotifications
+} from '#services/notification/dispatchService'
 import {handleDownloadFailure, tryCloseCookieExpirationIssue} from './failureHandler.js'
 import {updateDownloadState} from '#services/download/stateManager'
 import {checkS3FileExists, recoverFromS3} from './s3Recovery.js'
@@ -80,13 +84,25 @@ export async function processDownloadRequest(message: ValidatedDownloadQueueMess
 
   await dispatchMetadataNotifications(fileId, videoInfo)
   await updateFile(fileId, {status: FileStatus.Downloading})
-  await dispatchDownloadStartedNotifications(fileId, videoInfo)
+
+  // Dispatch DownloadStartedNotification; capture userIds for progress notifications
+  const notifyUserIds = await dispatchDownloadStartedNotifications(fileId, videoInfo)
 
   // Step 2: Download video to S3
   logDebug('downloadVideoToS3 <=', {url: fileUrl, bucket, key: fileName})
   let uploadResult
+  let lastDispatchedPercent = 0
   try {
-    uploadResult = await downloadVideoToS3Traced(fileUrl, bucket, fileName)
+    uploadResult = await downloadVideoToS3Traced(fileUrl, bucket, fileName, (percent) => {
+      if (percent <= lastDispatchedPercent) {
+        return
+      }
+      lastDispatchedPercent = percent
+      // mantle-ignore: C58 — fire-and-forget; Lambda has 900s timeout, progress notifications are advisory
+      dispatchDownloadProgressNotifications(fileId, percent, notifyUserIds).catch((err) => {
+        logDebug('DownloadProgressNotification dispatch failed (non-critical)', {fileId, percent, error: err instanceof Error ? err.message : String(err)})
+      })
+    })
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error))
     const result = await handleDownloadFailure(fileId, fileUrl, err, correlationId, videoInfoResult, existingRetryCount, existingMaxRetries)
