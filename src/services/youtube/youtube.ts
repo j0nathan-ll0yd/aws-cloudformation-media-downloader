@@ -446,9 +446,31 @@ function execYtDlp(ytdlpBinaryPath: string, args: string[], onProgress?: (percen
       }
     })
 
-    // Also capture stdout for any output (yt-dlp mostly uses stderr)
+    // Also capture stdout for progress and informational output
+    // yt-dlp 2026.03.17+ with --progress --newline sends progress to stdout
     ytdlp.stdout.on('data', (chunk) => {
-      logDebug('yt-dlp stdout', chunk.toString().trim())
+      const data = chunk.toString()
+      const lines = data.split('\n')
+      for (const line of lines) {
+        const trimmed = line.trim()
+        if (!trimmed) {
+          continue
+        }
+
+        const progress = parseProgressLine(trimmed)
+        if (progress?.percent !== undefined) {
+          // Invoke onProgress at 25% milestones (exclude 100%)
+          if (onProgress && progress.percent < 100) {
+            const milestone = Math.floor(progress.percent / 25) * 25
+            if (milestone > 0 && milestone > lastDispatchedMilestone) {
+              lastDispatchedMilestone = milestone
+              onProgress(milestone)
+            }
+          }
+        } else {
+          logDebug('yt-dlp stdout', trimmed)
+        }
+      }
     })
 
     ytdlp.on('error', (error) => {
