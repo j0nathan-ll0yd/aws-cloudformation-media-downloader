@@ -37,7 +37,7 @@ This raised a fundamental question: **when should a function be extracted from i
 - **Sandi Metz**: "Duplication is far cheaper than the wrong abstraction." Premature extraction leads to brittle shared code with flags and special cases.
 - **Martin Fowler / Don Roberts (Rule of Three)**: Tolerate duplication twice; extract on the third instance. Single-consumer extraction is premature.
 - **John Ousterhout (A Philosophy of Software Design)**: "Shallow functions" with complex interfaces (many parameters) add overhead without hiding complexity. Prefers fewer, deeper functions.
-- **Kent C. Dodds (AHA Programming)**: "Avoid Hasty Abstractions" — colocate by default, extract only when you feel the pain of duplication.
+- **Kent C. Dodds (AHA Programming)**: "Avoid Hasty Abstractions"—colocate by default, extract only when you feel the pain of duplication.
 
 **3. Cognitive load research supports colocation:**
 
@@ -74,7 +74,7 @@ A function stays in the handler file when:
 Examples: input parsing, response formatting, simple transforms, error classification.
 
 #### Tier 2: Extract to Handler-Local File
-A function moves to a sibling file in the handler's directory (e.g., `StartFileUpload/helpers.ts`) when:
+A function moves to a sibling file in the handler's directory (for example, `StartFileUpload/helpers.ts`) when:
 - The handler file exceeds 150 lines even with well-organized inline helpers
 - The function is **> 30 lines** of complex logic that benefits from isolated testing
 - The function is still **single-consumer** but obscures the handler's orchestration flow
@@ -84,8 +84,8 @@ Examples: complex validation, multi-step transformations, traced operations.
 #### Tier 3: Extract to Shared Service
 A function moves to `src/services/` when:
 - It has **2+ consumers** across different handlers (the Rule of Two)
-- It represents a **domain concept** that multiple features need (e.g., notification dispatch, user deletion cascade)
-- It wraps an **external integration** that multiple handlers share (e.g., YouTube API, APNS)
+- It represents a **domain concept** that multiple features need (for example, notification dispatch, user deletion cascade)
+- It wraps an **external integration** that multiple handlers share (for example, YouTube API, APNS)
 
 Examples: notification dispatch (used by StartFileUpload + S3ObjectCreated), cascade delete (used by UserDelete + admin endpoints).
 
@@ -93,17 +93,17 @@ Examples: notification dispatch (used by StartFileUpload + S3ObjectCreated), cas
 
 The automated extraction in this PR moved some functions to `src/services/` that should have stayed in their handler files (Tier 1) or handler directories (Tier 2). Specifically:
 
-**Correctly extracted (Tier 3 — multiple consumers or domain services):**
-- `src/services/notification/dispatchService.ts` — notification dispatch used by multiple handlers
-- `src/services/download/failureHandler.ts` — error handling shared across download flows
-- `src/services/download/youtubeTracing.ts` — YouTube integration wrapper
+**Correctly extracted (Tier 3—multiple consumers or domain services):**
+- `src/services/notification/dispatchService.ts`—notification dispatch used by multiple handlers
+- `src/services/download/failureHandler.ts`—error handling shared across download flows
+- `src/services/download/youtubeTracing.ts`—YouTube integration wrapper
 
-**Should be reviewed for possible re-inlining (Tier 1/2 — single consumer):**
-- `src/services/auth/registrationService.ts` — only used by register.post
-- `src/services/device/registrationService.ts` — only used by device/register.post
-- `src/services/user/userDeletionService.ts` — only used by user/index.delete
-- `src/services/cleanup/cleanupService.ts` — only used by CleanupExpiredRecords
-- `src/services/auth/tokenService.ts` — only used by logout.post and refresh.post
+**Should be reviewed for possible re-inlining (Tier 1/2—single consumer):**
+- `src/services/auth/registrationService.ts`—only used by register.post
+- `src/services/device/registrationService.ts`—only used by device/register.post
+- `src/services/user/userDeletionService.ts`—only used by user/index.delete
+- `src/services/cleanup/cleanupService.ts`—only used by CleanupExpiredRecords
+- `src/services/auth/tokenService.ts`—only used by logout.post and refresh.post
 
 These single-consumer extractions are not actively harmful (the code is correct and tested), but they add navigation overhead without reusability benefit. They may be re-inlined in a future cleanup pass if the handler files remain under 150 lines after re-absorption.
 
