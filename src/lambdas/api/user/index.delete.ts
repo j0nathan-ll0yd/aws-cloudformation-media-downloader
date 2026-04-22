@@ -7,23 +7,41 @@
  * Trigger: API Gateway DELETE /user
  * Input: Authenticated user context (userId from authorizer)
  * Output: APIGatewayProxyResult confirming deletion
- *
- * @see {@link ../../../services/user/userDeletionService.ts} for deletion helpers
  */
 import {buildValidatedResponse, defineLambda} from '@mantleframework/core'
 import {UnexpectedError} from '@mantleframework/errors'
 import {logDebug, logError} from '@mantleframework/observability'
 import {defineApiHandler, z} from '@mantleframework/validation'
-import {getDevicesBatch} from '#entities/queries'
+import {deleteUser as deleteUserRecord, deleteUserDevicesByUserId, deleteUserFilesByUserId, getDevicesBatch} from '#entities/queries'
 import {providerFailureErrorMessage} from '#errors/custom-errors'
 import {createFailedUserDeletionIssue} from '#integrations/github/issueService'
 import {deleteDevice, getUserDevices} from '#services/device/deviceService'
-import {deleteUser, deleteUserDevicesRelations, deleteUserFiles} from '#services/user/userDeletionService'
 import type {Device} from '#types/domainModels'
 
 const PartialDeletionResponseSchema = z.object({message: z.string(), failedOperations: z.number()})
 
 defineLambda({secrets: {GITHUB_PERSONAL_TOKEN: 'github.issue.token'}})
+
+/** Delete all user-file relationships */
+async function deleteUserFiles(userId: string): Promise<void> {
+  logDebug('deleteUserFiles', {userId})
+  await deleteUserFilesByUserId(userId)
+  logDebug('deleteUserFiles completed')
+}
+
+/** Delete all user-device relationships */
+async function deleteUserDevicesRelations(userId: string): Promise<void> {
+  logDebug('deleteUserDevices', {userId})
+  await deleteUserDevicesByUserId(userId)
+  logDebug('deleteUserDevices completed')
+}
+
+/** Delete user record */
+async function deleteUser(userId: string): Promise<void> {
+  logDebug('deleteUser', {userId})
+  await deleteUserRecord(userId)
+  logDebug('deleteUser completed')
+}
 
 const api = defineApiHandler({auth: 'authorizer', operationName: 'UserDelete'})
 export const handler = api(async ({context, userId}) => {

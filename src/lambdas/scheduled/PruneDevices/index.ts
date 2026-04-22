@@ -7,15 +7,16 @@
  * Trigger: CloudWatch Schedule (daily)
  * Input: ScheduledEvent
  * Output: PruneDevicesResult with deletion counts
- *
- * @see {@link ../../../services/device/pruneService.ts} for APNS health-check logic
  */
-import {deleteUserDevicesByDeviceId} from '#entities/queries'
 import {defineLambda, defineScheduledHandler} from '@mantleframework/core'
-import {addMetadata, endSpan, logError, logInfo, metrics, MetricUnit, startSpan} from '@mantleframework/observability'
-import type {PruneDevicesResult} from '#types/lambda'
+import {getOptionalEnv, getRequiredEnv} from '@mantleframework/env'
+import {UnexpectedError} from '@mantleframework/errors'
+import {addMetadata, endSpan, logDebug, logError, logInfo, metrics, MetricUnit, startSpan} from '@mantleframework/observability'
+import {deleteUserDevicesByDeviceId, getAllDevices} from '#entities/queries'
+import type {Apns2Error} from '#errors/custom-errors'
 import {deleteDevice} from '#services/device/deviceService'
-import {getDevices, isDeviceDisabled} from '#services/device/pruneService'
+import type {Device} from '#types/domainModels'
+import type {ApplePushNotificationResponse, PruneDevicesResult} from '#types/lambda'
 
 defineLambda({
   secrets: {
@@ -28,7 +29,54 @@ defineLambda({
 })
 
 // Re-export types for external consumers
-export type { PruneDevicesResult } from '#types/lambda'
+export type {PruneDevicesResult} from '#types/lambda'
+
+/** Fetch all devices from the database */
+async function getDevices(): Promise<Device[]> {
+  const devices = await getAllDevices()
+  logDebug('getDevices =>', {count: devices.length})
+  return devices as Device[]
+}
+
+/** Send a health-check background push to a device token via APNS */
+async function dispatchHealthCheckNotificationToDeviceToken(token: string): Promise<ApplePushNotificationResponse> {
+  logInfo('dispatchHealthCheckNotificationToDeviceToken')
+  // Dynamic import for ESM compatibility - apns2 is CJS-only
+  const {ApnsClient, Notification, Priority, PushType} = await import('apns2')
+  const client = new ApnsClient({
+    team: getRequiredEnv('APNS_TEAM'),
+    keyId: getRequiredEnv('APNS_KEY_ID'),
+    signingKey: getRequiredEnv('APNS_SIGNING_KEY'),
+    defaultTopic: getRequiredEnv('APNS_DEFAULT_TOPIC'),
+    host: getOptionalEnv('APNS_HOST', 'api.sandbox.push.apple.com')
+  })
+  const healthCheckNotification = new Notification(token, {
+    contentAvailable: true,
+    type: PushType.background,
+    priority: Priority.throttled,
+    aps: {health: 'check'}
+  })
+  try {
+    logDebug('apnProvider.send <=', healthCheckNotification as unknown as Record<string, unknown>)
+    const result = await client.send(healthCheckNotification)
+    logDebug('apnProvider.send =>', result as unknown as Record<string, unknown>)
+    return {statusCode: 200}
+  } catch (err) {
+    logError('apnProvider.send =>', {error: err instanceof Error ? err.message : String(err)})
+    if (err && typeof err === 'object' && 'reason' in err) {
+      const apnsError = err as Apns2Error
+      return {statusCode: Number(apnsError.statusCode), reason: apnsError.reason}
+    } else {
+      throw new UnexpectedError('Unexpected result from APNS')
+    }
+  }
+}
+
+/** Check if a device token is disabled (APNS returns 410) */
+async function isDeviceDisabled(token: string): Promise<boolean> {
+  const apnsResponse = await dispatchHealthCheckNotificationToDeviceToken(token)
+  return apnsResponse.statusCode === 410
+}
 
 const scheduled = defineScheduledHandler({operationName: 'PruneDevices', schedule: {expression: 'rate(1 day)'}, timeout: 300})
 

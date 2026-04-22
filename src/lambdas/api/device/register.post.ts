@@ -7,17 +7,71 @@
  * Trigger: API Gateway POST /device/register
  * Input: DeviceRegistrationRequest with device token
  * Output: APIGatewayProxyResult with device registration
- *
- * @see {@link ../../../services/device/registrationService.ts} for registration helpers
  */
+import {createPlatformEndpoint, listSubscriptionsByTopic} from '@mantleframework/aws'
 import {buildValidatedResponse, UserStatus} from '@mantleframework/core'
 import {getRequiredEnv} from '@mantleframework/env'
+import {ServiceUnavailableError, UnexpectedError} from '@mantleframework/errors'
+import {logDebug} from '@mantleframework/observability'
 import {defineApiHandler, z} from '@mantleframework/validation'
+import {upsertDevice as upsertDeviceRecord, upsertUserDevice} from '#entities/queries'
+import {providerFailureErrorMessage} from '#errors/custom-errors'
 import {getUserDevices, subscribeEndpointToTopic, unsubscribeEndpointToTopic} from '#services/device/deviceService'
-import {createPlatformEndpointFromToken, getSubscriptionArnFromEndpointAndTopic, upsertDevice, upsertUserDevices} from '#services/device/registrationService'
 import {deviceRegistrationResponseSchema} from '#types/api-schema'
 import type {Device} from '#types/domainModels'
 import {verifyPlatformConfiguration} from '#utils/platform-config'
+
+/** Creates platform endpoint from device token */
+async function createPlatformEndpointFromToken(token: string) {
+  const platformApplicationArn = getRequiredEnv('PLATFORM_APPLICATION_ARN')
+  logDebug('createPlatformEndpoint', {platformApplicationArn, token})
+  const response = await createPlatformEndpoint(platformApplicationArn, token)
+  if (!response) {
+    throw new ServiceUnavailableError('AWS failed to respond')
+  }
+  logDebug('createPlatformEndpoint response', {endpointArn: response.EndpointArn})
+  return response
+}
+
+/** Store user-device relationship */
+async function upsertUserDevices(userId: string, deviceId: string) {
+  logDebug('upsertUserDevices', {userId, deviceId})
+  const response = await upsertUserDevice({userId, deviceId})
+  logDebug('upsertUserDevices completed')
+  return response
+}
+
+/** Store device details */
+async function upsertDevice(device: Device) {
+  logDebug('upsertDevice', {deviceId: device.deviceId})
+  const response = await upsertDeviceRecord({
+    deviceId: device.deviceId,
+    endpointArn: device.endpointArn,
+    token: device.token,
+    name: device.name,
+    systemVersion: device.systemVersion,
+    systemName: device.systemName
+  })
+  logDebug('upsertDevice completed')
+  return response
+}
+
+/** Gets subscription ARN for an endpoint */
+async function getSubscriptionArnFromEndpointAndTopic(endpointArn: string, topicArn: string): Promise<string> {
+  logDebug('getSubscriptionArnFromEndpointAndTopic', {endpointArn, topicArn})
+  const listResponse = await listSubscriptionsByTopic(topicArn)
+  logDebug('getSubscriptionArnFromEndpointAndTopic response', {subscriptionCount: listResponse?.Subscriptions?.length ?? 0})
+  if (!listResponse?.Subscriptions) {
+    throw new ServiceUnavailableError(providerFailureErrorMessage)
+  }
+  const result = listResponse.Subscriptions.filter((subscription) => {
+    return subscription.Endpoint === endpointArn
+  })
+  if (!result || result.length === 0 || !result[0]?.SubscriptionArn) {
+    throw new UnexpectedError('Invalid subscription response')
+  }
+  return result[0].SubscriptionArn
+}
 
 const DeviceRegistrationRequestSchema = z.object({
   deviceId: z.string(),

@@ -20,7 +20,7 @@ vi.mock('@mantleframework/core',
     isOk: vi.fn((result: {success: boolean}) => result.success)
   }))
 
-const {cleanupDisabledEndpoint, cleanupDisabledEndpointByDeviceId, cleanupDisabledEndpoints} = await import('#services/notification/endpointCleanup.js')
+const {cleanupDisabledEndpoint, cleanupDisabledEndpointByDeviceId, cleanupDisabledEndpoints} = await import('#lambdas/sqs/SendPushNotification/endpoint-cleanup-helpers.js')
 import {deleteDevice as deleteDeviceRecord, deleteUserDevicesByDeviceId, getDevice} from '#entities/queries'
 import {deleteEndpoint} from '@mantleframework/aws'
 import {logError, logInfo} from '@mantleframework/observability'

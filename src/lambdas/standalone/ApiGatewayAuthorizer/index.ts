@@ -7,15 +7,37 @@
  * Trigger: API Gateway (custom authorizer, REQUEST type)
  */
 import {defineAuthorizerHandler, defineLambda, UserStatus} from '@mantleframework/core'
-import {addAnnotation, addMetadata, endSpan, logInfo, metrics, MetricUnit, startSpan} from '@mantleframework/observability'
+import {addAnnotation, addMetadata, endSpan, logError, logInfo, metrics, MetricUnit, startSpan} from '@mantleframework/observability'
 import {getRequiredEnv} from '@mantleframework/env'
-import {fetchApiKeys, fetchUsageData, fetchUsagePlans} from '#services/apiGateway/keyService'
-import {getUserIdFromAuthenticationHeader} from '#services/auth/tokenService'
-import {denyAuthorization, generateAllow, isRemoteTestRequest} from '#services/apiGateway/authorizerService'
+import {validateSessionToken} from '#domain/auth/sessionService'
+import {fetchApiKeys, fetchUsageData, fetchUsagePlans} from './helpers.js'
+import {denyAuthorization, generateAllow, isRemoteTestRequest} from './helpers.js'
+
 defineLambda({
   secrets: {AUTH_SECRET: 'platform.key'},
   staticEnvVars: {MULTI_AUTHENTICATION_PATH_PARTS: 'device/register,device/event,files', RESERVED_CLIENT_IP: '104.1.88.244'}
 })
+
+/**
+ * Extract userId from an Authorization header containing a Bearer session token.
+ * Returns undefined if the token is invalid or missing.
+ */
+async function getUserIdFromAuthenticationHeader(authorizationHeader: string): Promise<string | undefined> {
+  const bearerRegex = /^Bearer [A-Za-z\d-_=.]+$/
+  if (!authorizationHeader.match(bearerRegex)) {
+    return
+  }
+
+  const keypair = authorizationHeader.split(' ')
+  const token = keypair[1] ?? ''
+  try {
+    const payload = await validateSessionToken(token)
+    return payload.userId
+  } catch (err) {
+    logError('invalid session token <=', {error: err instanceof Error ? err.message : String(err)})
+    return
+  }
+}
 
 const authorizer = defineAuthorizerHandler({operationName: 'ApiGatewayAuthorizer', type: 'request'})
 
@@ -82,4 +104,4 @@ export const handler = authorizer(async ({event, headers, queryStringParameters,
   return generateAllow(principalId, methodArn, apiKeyValue, {userStatus})
 })
 
-export { generateAllow } from '#services/apiGateway/authorizerService'
+export {generateAllow} from './helpers.js'

@@ -54,7 +54,7 @@ vi.mock('#services/notification/transformers',
     transformToAPNSNotification: vi.fn(() => ({Message: 'background', TargetArn: 'arn:test'}))
   }))
 
-vi.mock('#services/notification/endpointCleanup', () => ({cleanupDisabledEndpoints: vi.fn(() => Promise.resolve([]))}))
+vi.mock('#lambdas/sqs/SendPushNotification/endpoint-cleanup-helpers', () => ({cleanupDisabledEndpoints: vi.fn(() => Promise.resolve([]))}))
 
 vi.mock('#types/schemas', () => ({pushNotificationAttributesSchema: {}}))
 
@@ -63,7 +63,7 @@ import {publish} from '@mantleframework/aws'
 import {validateSchema} from '@mantleframework/validation'
 import {getDevice, getUserDevicesByUserId} from '#entities/queries'
 import {transformToAPNSAlertNotification, transformToAPNSNotification} from '#services/notification/transformers'
-import {cleanupDisabledEndpoints} from '#services/notification/endpointCleanup'
+import {cleanupDisabledEndpoints} from '#lambdas/sqs/SendPushNotification/endpoint-cleanup-helpers'
 import {metrics} from '@mantleframework/observability'
 
 describe('SendPushNotification Lambda', () => {
