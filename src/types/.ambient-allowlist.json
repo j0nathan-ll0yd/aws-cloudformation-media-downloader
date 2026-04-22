@@ -1,0 +1,8 @@
+{
+  "files": [
+    {
+      "path": "types/global.d.ts",
+      "reason": "ProcessEnv augmentation for Lambda environment variables"
+    }
+  ]
+}

@@ -90,7 +90,7 @@ export const updateDevice = defineQuery({tables: [{table: devices, operations: [
  * Deletes a device by ID.
  * @param deviceId - The device's unique identifier
  */
-export const deleteDevice = defineQuery({tables: [{table: devices, operations: [DatabaseOperation.Delete]}]},
+export const deleteDevice = defineQuery({tables: [{table: devices, operations: [DatabaseOperation.Select, DatabaseOperation.Delete]}]},
   async function deleteDevice(db, deviceId: string): Promise<void> {
     await db.delete(devices).where(eq(devices.deviceId, deviceId))
   })

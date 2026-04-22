@@ -12,8 +12,7 @@ import {getAuth} from '@mantleframework/auth'
 import {buildValidatedResponse, defineLambda} from '@mantleframework/core'
 import {getRequiredEnv} from '@mantleframework/env'
 import {UnexpectedError} from '@mantleframework/errors'
-import {logInfo} from '@mantleframework/observability'
-import {metrics, MetricUnit} from '@mantleframework/observability'
+import {logInfo, metrics, MetricUnit} from '@mantleframework/observability'
 import {defineApiHandler, z} from '@mantleframework/validation'
 import {getDrizzleClient} from '#db/client'
 import {accounts, sessions, users, verification} from '#db/schema'
@@ -26,14 +25,18 @@ defineLambda({
   staticEnvVars: {APPLE_APP_BUNDLE_IDENTIFIER: 'lifegames.OfflineMediaDownloader'}
 })
 
-const RegistrationRequestSchema = z.object({idToken: z.string(), firstName: z.string().optional(), lastName: z.string().optional()})
+/** Result of a successful sign-in/registration */
+interface AuthRegistrationResult {
+  token: string
+  userId: string
+  sessionId: string
+  expiresAt: string | Date
+  isNewUser: boolean
+  user: SignInSocialTokenResult['user']
+}
 
-const api = defineApiHandler({auth: 'none', schema: RegistrationRequestSchema, operationName: 'RegisterUser'})
-export const handler = api(async ({event, context, body}) => {
-  // Sign in/Register using Better Auth with ID token from iOS app
-  const ipAddress = event.requestContext?.identity?.sourceIp
-  const userAgent = event.headers?.['User-Agent'] || ''
-
+/** Sign in or register a user via Better Auth with Apple ID token */
+async function signInWithApple(idToken: string, ipAddress: string | undefined, userAgent: string): Promise<AuthRegistrationResult> {
   const auth = await getAuth(getDrizzleClient, {
     secret: getRequiredEnv('AUTH_SECRET'),
     baseURL: getRequiredEnv('AUTH_BASE_URL'),
@@ -46,51 +49,62 @@ export const handler = api(async ({event, context, body}) => {
       }
     }
   })
+
   const rawResult = await auth.api.signInSocial({
     headers: {'user-agent': userAgent, 'x-forwarded-for': ipAddress || ''},
-    body: {provider: 'apple', idToken: {token: body.idToken}}
+    body: {provider: 'apple', idToken: {token: idToken}}
   })
 
-  // signInSocial returns { token, user } in the ID token flow (no redirect)
   const result = rawResult as SignInSocialTokenResult
-
-  // signInSocial only returns { token, user } — no session metadata.
-  // Use bearer plugin's getSession to retrieve session metadata via Authorization header.
   const sessionResult = await auth.api.getSession({headers: new Headers({Authorization: `Bearer ${result.token}`})}) as GetSessionResult | null
 
   if (!sessionResult?.session) {
     throw new UnexpectedError('signInSocial succeeded but getSession returned null — is bearer plugin enabled?')
   }
 
-  const session = sessionResult.session
-
-  // Check if this is a new user and update with name from iOS app
   const isNewUser = !result.user?.createdAt || Date.now() - new Date(result.user.createdAt).getTime() < 5000
 
-  if (isNewUser && (body.firstName || body.lastName)) {
-    const fullName = [body.firstName, body.lastName].filter(Boolean).join(' ')
-    await updateUser(result.user.id, {name: fullName, firstName: body.firstName || '', lastName: body.lastName || ''})
+  return {
+    token: result.token,
+    userId: result.user.id,
+    sessionId: sessionResult.session.id,
+    expiresAt: sessionResult.session.expiresAt,
+    isNewUser,
+    user: result.user
+  }
+}
 
-    logInfo('RegisterUser: Updated new user with name from iOS app', {userId: result.user.id, hasFirstName: !!body.firstName, hasLastName: !!body.lastName})
+const RegistrationRequestSchema = z.object({idToken: z.string(), firstName: z.string().optional(), lastName: z.string().optional()})
+
+const api = defineApiHandler({auth: 'none', schema: RegistrationRequestSchema, operationName: 'RegisterUser'})
+export const handler = api(async ({event, context, body}) => {
+  const ipAddress = event.requestContext?.identity?.sourceIp
+  const userAgent = event.headers?.['user-agent'] || ''
+
+  const result = await signInWithApple(body.idToken, ipAddress, userAgent)
+
+  if (result.isNewUser && (body.firstName || body.lastName)) {
+    const fullName = [body.firstName, body.lastName].filter(Boolean).join(' ')
+    await updateUser(result.userId, {name: fullName, firstName: body.firstName || '', lastName: body.lastName || ''})
+    logInfo('RegisterUser: Updated new user with name from iOS app', {userId: result.userId, hasFirstName: !!body.firstName, hasLastName: !!body.lastName})
   }
 
-  // Track new user registrations separately
-  if (isNewUser) {
+  if (result.isNewUser) {
     metrics.addMetric('NewUserRegistration', MetricUnit.Count, 1)
   }
 
   logInfo('RegisterUser: Better Auth sign-in/registration successful', {
-    userId: result.user.id,
+    userId: result.userId,
     sessionToken: 'present',
-    sessionId: session.id.substring(0, 8),
-    expiresAt: session.expiresAt,
-    isNewUser
+    sessionId: result.sessionId.substring(0, 8),
+    expiresAt: result.expiresAt,
+    isNewUser: result.isNewUser
   })
 
   return buildValidatedResponse(context, 200, {
     token: result.token,
-    expiresAt: new Date(session.expiresAt).toISOString(),
-    sessionId: session.id,
-    userId: result.user.id
+    expiresAt: new Date(result.expiresAt).toISOString(),
+    sessionId: result.sessionId,
+    userId: result.userId
   }, userRegistrationResponseSchema)
 })

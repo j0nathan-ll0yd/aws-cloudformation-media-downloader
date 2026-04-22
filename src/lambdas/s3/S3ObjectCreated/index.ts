@@ -8,17 +8,16 @@
  * Input: S3Event with object creation records
  * Output: void (processes all records, logs errors)
  */
-import {getFilesByKey, getUserFilesByFileId} from '#entities/queries'
 import {sendMessage} from '@mantleframework/aws'
-
 import {defineS3Handler} from '@mantleframework/core'
-import {addAnnotation, addMetadata, endSpan, logDebug, logError, logInfo, metrics, MetricUnit, startSpan} from '@mantleframework/observability'
-import type {File} from '#types/domainModels'
-import {createDownloadReadyNotification} from '#services/notification/transformers'
-import {NotFoundError} from '@mantleframework/errors'
 import {getRequiredEnv} from '@mantleframework/env'
+import {NotFoundError} from '@mantleframework/errors'
+import {addAnnotation, addMetadata, endSpan, logDebug, logError, logInfo, metrics, MetricUnit, startSpan} from '@mantleframework/observability'
+import {getFilesByKey, getUserFilesByFileId} from '#entities/queries'
+import {createDownloadReadyNotification} from '#services/notification/transformers'
+import type {File} from '#types/domainModels'
 
-// Get file by S3 object key
+/** Get file by S3 object key */
 async function getFileByFilename(fileName: string): Promise<File> {
   logDebug('query file by key <=', {fileName})
   const files = await getFilesByKey(fileName)
@@ -30,7 +29,7 @@ async function getFileByFilename(fileName: string): Promise<File> {
   }
 }
 
-// Get user IDs who have requested a given file
+/** Get user IDs who have requested a given file */
 async function getUsersOfFile(file: File): Promise<string[]> {
   logDebug('query users by fileId <=', {fileId: file.fileId})
   const userFiles = await getUserFilesByFileId(file.fileId)
@@ -38,19 +37,30 @@ async function getUsersOfFile(file: File): Promise<string[]> {
   return userFiles.map((userFile) => userFile.userId)
 }
 
-/**
- * Dispatches DownloadReadyNotification to a user via SQS.
- *
- * @param file - The DynamoDBFile that is now ready to download
- * @param userId - The UUID of the user
- * @returns Promise from sending the SQS message
- * @notExported
- */
+/** Dispatches DownloadReadyNotification to a user via SQS */
 function dispatchFileNotificationToUser(file: File, userId: string) {
   const {messageBody, messageAttributes} = createDownloadReadyNotification(file, userId)
   const sendMessageParams = {MessageBody: messageBody, MessageAttributes: messageAttributes, QueueUrl: getRequiredEnv('SNS_QUEUE_URL')}
   logDebug('sendMessage <=', sendMessageParams)
   return sendMessage(sendMessageParams)
+}
+
+/** Log results of notification dispatch and emit metrics */
+function logDispatchResults(results: PromiseSettledResult<unknown>[], userIds: string[], fileId: string): {succeeded: number; failed: number} {
+  const succeeded = results.filter((r) => r.status === 'fulfilled').length
+  const failedResults = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected')
+
+  if (failedResults.length > 0) {
+    failedResults.forEach((failure) => {
+      const userId = userIds[results.indexOf(failure)]
+      logError('Failed to dispatch notification', {fileId, userId, error: failure.reason instanceof Error ? failure.reason.message : String(failure.reason)})
+    })
+    logInfo('S3ObjectCreated completed with partial failures', {fileId, totalUsers: userIds.length, succeeded, failed: failedResults.length})
+  } else {
+    logInfo('All notifications dispatched successfully', {fileId, userCount: userIds.length})
+  }
+
+  return {succeeded, failed: failedResults.length}
 }
 
 const s3 = defineS3Handler({operationName: 'S3ObjectCreated', trigger: 'direct', bucket: 'files'})
@@ -72,40 +82,15 @@ export const handler = s3(async (record) => {
       return
     }
 
-    // Use allSettled to continue processing even if some notifications fail
     const results = await Promise.allSettled(userIds.map((userId) => dispatchFileNotificationToUser(file, userId)))
+    const {succeeded, failed} = logDispatchResults(results, userIds, file.fileId)
 
-    // Track results for observability
-    const succeeded = results.filter((r) => r.status === 'fulfilled')
-    const failed = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected')
+    metrics.addMetric('NotificationsSent', MetricUnit.Count, succeeded)
+    addMetadata(span, 'notificationsSent', succeeded)
+    addMetadata(span, 'notificationsFailed', failed)
 
-    // Emit CloudWatch metrics
-    metrics.addMetric('NotificationsSent', MetricUnit.Count, succeeded.length)
-    addMetadata(span, 'notificationsSent', succeeded.length)
-    addMetadata(span, 'notificationsFailed', failed.length)
-
-    if (failed.length > 0) {
-      metrics.addMetric('NotificationsFailed', MetricUnit.Count, failed.length)
-
-      // Log each failure with userId for debugging
-      failed.forEach((failure) => {
-        // Find the original userId by matching the index in the results array
-        const userId = userIds[results.indexOf(failure)]
-        logError('Failed to dispatch notification', {
-          fileId: file.fileId,
-          userId,
-          error: failure.reason instanceof Error ? failure.reason.message : String(failure.reason)
-        })
-      })
-
-      logInfo('S3ObjectCreated completed with partial failures', {
-        fileId: file.fileId,
-        totalUsers: userIds.length,
-        succeeded: succeeded.length,
-        failed: failed.length
-      })
-    } else {
-      logInfo('All notifications dispatched successfully', {fileId: file.fileId, userCount: userIds.length})
+    if (failed > 0) {
+      metrics.addMetric('NotificationsFailed', MetricUnit.Count, failed)
     }
     endSpan(span)
   } catch (error) {

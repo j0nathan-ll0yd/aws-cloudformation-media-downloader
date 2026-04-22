@@ -9,7 +9,7 @@
  * Output: APIGatewayProxyResult confirming deletion
  */
 import {buildValidatedResponse, defineLambda} from '@mantleframework/core'
-import {UnauthorizedError, UnexpectedError} from '@mantleframework/errors'
+import {UnexpectedError} from '@mantleframework/errors'
 import {logDebug, logError} from '@mantleframework/observability'
 import {defineApiHandler, z} from '@mantleframework/validation'
 import {deleteUser as deleteUserRecord, deleteUserDevicesByUserId, deleteUserFilesByUserId, getDevicesBatch} from '#entities/queries'
@@ -45,10 +45,6 @@ async function deleteUser(userId: string): Promise<void> {
 
 const api = defineApiHandler({auth: 'authorizer', operationName: 'UserDelete'})
 export const handler = api(async ({context, userId}) => {
-  if (!userId) {
-    throw new UnauthorizedError('Authentication required')
-  }
-
   const deletableDevices: Device[] = []
 
   const userDevices = await getUserDevices(userId)
@@ -64,14 +60,9 @@ export const handler = api(async ({context, userId}) => {
   }
 
   // Delete children FIRST (correct cascade order), then parent LAST
-  // 1. Delete junction/child tables first
-  const relationResults = await Promise.allSettled([
-    deleteUserFiles(userId),
-    deleteUserDevicesRelations(userId)
-  ])
+  const relationResults = await Promise.allSettled([deleteUserFiles(userId), deleteUserDevicesRelations(userId)])
   logDebug('Promise.allSettled relations', {count: relationResults.length})
 
-  // Check for failures in relations
   const relationFailures = relationResults.filter((r) => r.status === 'rejected')
   if (relationFailures.length > 0) {
     logError('Cascade deletion partial failure (relations)', {failedCount: relationFailures.length})
@@ -81,7 +72,6 @@ export const handler = api(async ({context, userId}) => {
     }, PartialDeletionResponseSchema)
   }
 
-  // 2. Delete devices (parents of UserDevices)
   const deviceResults = await Promise.allSettled(deletableDevices.map((device) => deleteDevice(device)))
   logDebug('Promise.allSettled devices', {count: deviceResults.length})
 

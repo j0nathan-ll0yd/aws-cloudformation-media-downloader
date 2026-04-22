@@ -89,7 +89,7 @@ export const updateSession = defineQuery({tables: [{table: sessions, operations:
  * Deletes a session by ID.
  * @param id - The session's unique identifier
  */
-export const deleteSession = defineQuery({tables: [{table: sessions, operations: [DatabaseOperation.Delete]}]},
+export const deleteSession = defineQuery({tables: [{table: sessions, operations: [DatabaseOperation.Select, DatabaseOperation.Delete]}]},
   async function deleteSession(db, id: string): Promise<void> {
     await db.delete(sessions).where(eq(sessions.id, id))
   })
@@ -98,7 +98,7 @@ export const deleteSession = defineQuery({tables: [{table: sessions, operations:
  * Deletes all sessions for a user.
  * @param userId - The user's unique identifier
  */
-export const deleteSessionsByUserId = defineQuery({tables: [{table: sessions, operations: [DatabaseOperation.Delete]}]},
+export const deleteSessionsByUserId = defineQuery({tables: [{table: sessions, operations: [DatabaseOperation.Select, DatabaseOperation.Delete]}]},
   async function deleteSessionsByUserId(db, userId: string): Promise<void> {
     await db.delete(sessions).where(eq(sessions.userId, userId))
   })
@@ -106,7 +106,7 @@ export const deleteSessionsByUserId = defineQuery({tables: [{table: sessions, op
 /**
  * Deletes expired sessions.
  */
-export const deleteExpiredSessions = defineQuery({tables: [{table: sessions, operations: [DatabaseOperation.Delete]}]},
+export const deleteExpiredSessions = defineQuery({tables: [{table: sessions, operations: [DatabaseOperation.Select, DatabaseOperation.Delete]}]},
   async function deleteExpiredSessions(db): Promise<void> {
     await db.delete(sessions).where(lt(sessions.expiresAt, new Date()))
   })
@@ -151,7 +151,7 @@ export const createAccount = defineQuery({tables: [{table: accounts, operations:
  * Deletes an account by ID.
  * @param id - The account's unique identifier
  */
-export const deleteAccount = defineQuery({tables: [{table: accounts, operations: [DatabaseOperation.Delete]}]},
+export const deleteAccount = defineQuery({tables: [{table: accounts, operations: [DatabaseOperation.Select, DatabaseOperation.Delete]}]},
   async function deleteAccount(db, id: string): Promise<void> {
     await db.delete(accounts).where(eq(accounts.id, id))
   })
@@ -160,7 +160,7 @@ export const deleteAccount = defineQuery({tables: [{table: accounts, operations:
  * Deletes all accounts for a user.
  * @param userId - The user's unique identifier
  */
-export const deleteAccountsByUserId = defineQuery({tables: [{table: accounts, operations: [DatabaseOperation.Delete]}]},
+export const deleteAccountsByUserId = defineQuery({tables: [{table: accounts, operations: [DatabaseOperation.Select, DatabaseOperation.Delete]}]},
   async function deleteAccountsByUserId(db, userId: string): Promise<void> {
     await db.delete(accounts).where(eq(accounts.userId, userId))
   })
@@ -195,7 +195,7 @@ export const createVerification = defineQuery({tables: [{table: verification, op
  * Deletes a verification token by ID.
  * @param id - The verification token's unique identifier
  */
-export const deleteVerification = defineQuery({tables: [{table: verification, operations: [DatabaseOperation.Delete]}]},
+export const deleteVerification = defineQuery({tables: [{table: verification, operations: [DatabaseOperation.Select, DatabaseOperation.Delete]}]},
   async function deleteVerification(db, id: string): Promise<void> {
     await db.delete(verification).where(eq(verification.id, id))
   })
@@ -203,7 +203,7 @@ export const deleteVerification = defineQuery({tables: [{table: verification, op
 /**
  * Deletes expired verification tokens.
  */
-export const deleteExpiredVerifications = defineQuery({tables: [{table: verification, operations: [DatabaseOperation.Delete]}]},
+export const deleteExpiredVerifications = defineQuery({tables: [{table: verification, operations: [DatabaseOperation.Select, DatabaseOperation.Delete]}]},
   async function deleteExpiredVerifications(db): Promise<void> {
     await db.delete(verification).where(lt(verification.expiresAt, new Date()))
   })

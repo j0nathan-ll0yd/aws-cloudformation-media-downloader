@@ -30,11 +30,11 @@ import {accounts, fileDownloads, files, sessions, userDevices, userFiles, users}
  */
 export const deleteUserCascade = defineQuery({
   tables: [
-    {table: userFiles, operations: [DatabaseOperation.Delete]},
-    {table: userDevices, operations: [DatabaseOperation.Delete]},
-    {table: sessions, operations: [DatabaseOperation.Delete]},
-    {table: accounts, operations: [DatabaseOperation.Delete]},
-    {table: users, operations: [DatabaseOperation.Delete]}
+    {table: userFiles, operations: [DatabaseOperation.Select, DatabaseOperation.Delete]},
+    {table: userDevices, operations: [DatabaseOperation.Select, DatabaseOperation.Delete]},
+    {table: sessions, operations: [DatabaseOperation.Select, DatabaseOperation.Delete]},
+    {table: accounts, operations: [DatabaseOperation.Select, DatabaseOperation.Delete]},
+    {table: users, operations: [DatabaseOperation.Select, DatabaseOperation.Delete]}
   ],
   transaction: true
 }, async function deleteUserCascade(tx, userId: string): Promise<void> {
@@ -56,8 +56,8 @@ export const deleteUserCascade = defineQuery({
  */
 export const deleteUserRelationships = defineQuery({
   tables: [
-    {table: userFiles, operations: [DatabaseOperation.Delete]},
-    {table: userDevices, operations: [DatabaseOperation.Delete]}
+    {table: userFiles, operations: [DatabaseOperation.Select, DatabaseOperation.Delete]},
+    {table: userDevices, operations: [DatabaseOperation.Select, DatabaseOperation.Delete]}
   ],
   transaction: true
 }, async function deleteUserRelationships(tx, userId: string): Promise<void> {
@@ -73,8 +73,8 @@ export const deleteUserRelationships = defineQuery({
  */
 export const deleteUserAuthRecords = defineQuery({
   tables: [
-    {table: sessions, operations: [DatabaseOperation.Delete]},
-    {table: accounts, operations: [DatabaseOperation.Delete]}
+    {table: sessions, operations: [DatabaseOperation.Select, DatabaseOperation.Delete]},
+    {table: accounts, operations: [DatabaseOperation.Select, DatabaseOperation.Delete]}
   ],
   transaction: true
 }, async function deleteUserAuthRecords(tx, userId: string): Promise<void> {

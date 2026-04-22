@@ -133,7 +133,7 @@ export const updateFile = defineQuery({tables: [{table: files, operations: [Data
  * Deletes a file by ID.
  * @param fileId - The file's unique identifier
  */
-export const deleteFile = defineQuery({tables: [{table: files, operations: [DatabaseOperation.Delete]}]},
+export const deleteFile = defineQuery({tables: [{table: files, operations: [DatabaseOperation.Select, DatabaseOperation.Delete]}]},
   async function deleteFile(db, fileId: string): Promise<void> {
     await db.delete(files).where(eq(files.fileId, fileId))
   })
@@ -211,7 +211,7 @@ export const updateFileDownload = defineQuery({tables: [{table: fileDownloads, o
  * Deletes a file download record by file ID.
  * @param fileId - The file's unique identifier
  */
-export const deleteFileDownload = defineQuery({tables: [{table: fileDownloads, operations: [DatabaseOperation.Delete]}]},
+export const deleteFileDownload = defineQuery({tables: [{table: fileDownloads, operations: [DatabaseOperation.Select, DatabaseOperation.Delete]}]},
   async function deleteFileDownload(db, fileId: string): Promise<void> {
     await db.delete(fileDownloads).where(eq(fileDownloads.fileId, fileId))
   })

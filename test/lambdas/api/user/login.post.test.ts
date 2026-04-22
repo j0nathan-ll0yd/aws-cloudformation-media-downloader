@@ -118,7 +118,7 @@ describe('LoginUser Lambda', () => {
     vi.mocked(getAuth).mockResolvedValue(mockAuth as never)
 
     await handler({
-      event: {requestContext: {identity: {sourceIp: '10.0.0.1'}}, headers: {'User-Agent': 'MediaDownloader/1.0'}},
+      event: {requestContext: {identity: {sourceIp: '10.0.0.1'}}, headers: {'user-agent': 'MediaDownloader/1.0'}},
       context: {awsRequestId: 'req-1'},
       body: {idToken: 'test-id-token'}
     })

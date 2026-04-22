@@ -50,7 +50,7 @@ describe('LogoutUser Workflow Integration Tests', () => {
     expect(sessionBefore).not.toBeNull()
     expect(sessionBefore!.expiresAt.getTime()).toBeGreaterThan(Date.now())
 
-    const result = await handler(createMockAPIGatewayProxyEvent({path: '/auth/logout', httpMethod: 'POST', headers: {Authorization: `Bearer ${token}`}}),
+    const result = await handler(createMockAPIGatewayProxyEvent({path: '/auth/logout', httpMethod: 'POST', headers: {authorization: `Bearer ${token}`}}),
       mockContext)
 
     expect(result.statusCode).toBe(204)
@@ -71,7 +71,7 @@ describe('LogoutUser Workflow Integration Tests', () => {
 
   test('should return 401 for invalid token format', async () => {
     const result = await handler(
-      createMockAPIGatewayProxyEvent({path: '/auth/logout', httpMethod: 'POST', headers: {Authorization: 'invalid-token-format'}}),
+      createMockAPIGatewayProxyEvent({path: '/auth/logout', httpMethod: 'POST', headers: {authorization: 'invalid-token-format'}}),
       mockContext
     )
 
@@ -87,7 +87,7 @@ describe('LogoutUser Workflow Integration Tests', () => {
     await insertUser({userId, email: 'expired@example.com'})
     await insertSession({id: sessionId, userId, token, expiresAt: expiredTime})
 
-    const result = await handler(createMockAPIGatewayProxyEvent({path: '/auth/logout', httpMethod: 'POST', headers: {Authorization: `Bearer ${token}`}}),
+    const result = await handler(createMockAPIGatewayProxyEvent({path: '/auth/logout', httpMethod: 'POST', headers: {authorization: `Bearer ${token}`}}),
       mockContext)
 
     expect(result.statusCode).toBe(401)
@@ -97,7 +97,7 @@ describe('LogoutUser Workflow Integration Tests', () => {
     const nonExistentToken = crypto.randomUUID()
 
     const result = await handler(
-      createMockAPIGatewayProxyEvent({path: '/auth/logout', httpMethod: 'POST', headers: {Authorization: `Bearer ${nonExistentToken}`}}),
+      createMockAPIGatewayProxyEvent({path: '/auth/logout', httpMethod: 'POST', headers: {authorization: `Bearer ${nonExistentToken}`}}),
       mockContext
     )
 
@@ -115,14 +115,14 @@ describe('LogoutUser Workflow Integration Tests', () => {
 
     // First logout should succeed
     const logoutResult = await handler(
-      createMockAPIGatewayProxyEvent({path: '/auth/logout', httpMethod: 'POST', headers: {Authorization: `Bearer ${token}`}}),
+      createMockAPIGatewayProxyEvent({path: '/auth/logout', httpMethod: 'POST', headers: {authorization: `Bearer ${token}`}}),
       mockContext
     )
     expect(logoutResult.statusCode).toBe(204)
 
     // Second logout with same token should fail (session already invalidated)
     const secondResult = await handler(
-      createMockAPIGatewayProxyEvent({path: '/auth/logout', httpMethod: 'POST', headers: {Authorization: `Bearer ${token}`}}),
+      createMockAPIGatewayProxyEvent({path: '/auth/logout', httpMethod: 'POST', headers: {authorization: `Bearer ${token}`}}),
       mockContext
     )
     expect(secondResult.statusCode).toBe(401)

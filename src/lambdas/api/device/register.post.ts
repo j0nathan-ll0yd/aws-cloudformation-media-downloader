@@ -88,25 +88,20 @@ export const handler = api(async ({context, userId, userStatus, body}) => {
   const platformEndpoint = await createPlatformEndpointFromToken(body.token)
   const pushNotificationTopicArn = getRequiredEnv('PUSH_NOTIFICATION_TOPIC_ARN')
   const device = {...body, endpointArn: platformEndpoint.EndpointArn} as Device
-  // Store the device details, regardless of user status
   await upsertDevice(device)
 
   /* c8 ignore else */
   if (userStatus === UserStatus.Authenticated && userId) {
-    // Store the device details associated with the user
     await upsertUserDevices(userId, body.deviceId)
-    // Determine if the user already exists
     const userDevices = await getUserDevices(userId)
     if (userDevices.length === 1) {
       return buildValidatedResponse(context, 200, {endpointArn: device.endpointArn}, deviceRegistrationResponseSchema)
     } else {
-      // Confirm the subscription, and unsubscribe
       const subscriptionArn = await getSubscriptionArnFromEndpointAndTopic(device.endpointArn, pushNotificationTopicArn)
       await unsubscribeEndpointToTopic(subscriptionArn)
       return buildValidatedResponse(context, 201, {endpointArn: platformEndpoint.EndpointArn}, deviceRegistrationResponseSchema)
     }
   } else if (userStatus === UserStatus.Anonymous) {
-    // If the user hasn't registered; add them to the unregistered topic
     await subscribeEndpointToTopic(device.endpointArn, pushNotificationTopicArn)
   }
 

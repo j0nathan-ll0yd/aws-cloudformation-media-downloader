@@ -8,15 +8,15 @@
  * Input: ScheduledEvent
  * Output: PruneDevicesResult with deletion counts
  */
-import {deleteUserDevicesByDeviceId, getAllDevices} from '#entities/queries'
 import {defineLambda, defineScheduledHandler} from '@mantleframework/core'
-import {addMetadata, endSpan, logDebug, logError, logInfo, metrics, MetricUnit, startSpan} from '@mantleframework/observability'
-import type {Device} from '#types/domainModels'
-import type {ApplePushNotificationResponse, PruneDevicesResult} from '#types/lambda'
-import {deleteDevice} from '#services/device/deviceService'
 import {getOptionalEnv, getRequiredEnv} from '@mantleframework/env'
 import {UnexpectedError} from '@mantleframework/errors'
-import {Apns2Error} from '#errors/custom-errors'
+import {addMetadata, endSpan, logDebug, logError, logInfo, metrics, MetricUnit, startSpan} from '@mantleframework/observability'
+import {deleteUserDevicesByDeviceId, getAllDevices} from '#entities/queries'
+import type {Apns2Error} from '#errors/custom-errors'
+import {deleteDevice} from '#services/device/deviceService'
+import type {Device} from '#types/domainModels'
+import type {ApplePushNotificationResponse, PruneDevicesResult} from '#types/lambda'
 
 defineLambda({
   secrets: {
@@ -31,18 +31,14 @@ defineLambda({
 // Re-export types for external consumers
 export type { PruneDevicesResult } from '#types/lambda'
 
-// Get all devices
+/** Fetch all devices from the database */
 async function getDevices(): Promise<Device[]> {
   const devices = await getAllDevices()
   logDebug('getDevices =>', {count: devices.length})
   return devices as Device[]
 }
 
-async function isDeviceDisabled(token: string): Promise<boolean> {
-  const apnsResponse = await dispatchHealthCheckNotificationToDeviceToken(token)
-  return apnsResponse.statusCode === 410
-}
-
+/** Send a health-check background push to a device token via APNS */
 async function dispatchHealthCheckNotificationToDeviceToken(token: string): Promise<ApplePushNotificationResponse> {
   logInfo('dispatchHealthCheckNotificationToDeviceToken')
   // Dynamic import for ESM compatibility - apns2 is CJS-only
@@ -76,14 +72,17 @@ async function dispatchHealthCheckNotificationToDeviceToken(token: string): Prom
   }
 }
 
+/** Check if a device token is disabled (APNS returns 410) */
+async function isDeviceDisabled(token: string): Promise<boolean> {
+  const apnsResponse = await dispatchHealthCheckNotificationToDeviceToken(token)
+  return apnsResponse.statusCode === 410
+}
+
 const scheduled = defineScheduledHandler({operationName: 'PruneDevices', schedule: {expression: 'rate(1 day)'}, timeout: 300})
 
 export const handler = scheduled(async (): Promise<PruneDevicesResult> => {
-  // Track prune devices run
   metrics.addMetric('PruneDevicesRun', MetricUnit.Count, 1)
-
   const span = startSpan('prune-devices-cleanup')
-
   const result: PruneDevicesResult = {devicesChecked: 0, devicesPruned: 0, errors: []}
 
   const devices = await getDevices()
@@ -94,26 +93,18 @@ export const handler = scheduled(async (): Promise<PruneDevicesResult> => {
     logInfo('Verifying device', {deviceId})
     if (await isDeviceDisabled(device.token)) {
       try {
-        // Delete UserDevices junction records first (children before parent)
         await deleteUserDevicesByDeviceId(deviceId)
-
-        // Then delete the Device itself
         await deleteDevice(device)
-
         result.devicesPruned++
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
         const errorMessage = `Failed to properly remove device ${deviceId}: ${message}`
         logError(errorMessage, {deviceId})
         result.errors.push(errorMessage)
-        // Severe alarm needed: device orphaned in DynamoDB after cascade delete failure
-        // Should trigger manual intervention to delete device record with ID and requestId
-        // Tracking: Monitor CloudWatch for orphaned device cleanup patterns
       }
     }
   }
 
-  // Track devices pruned
   metrics.addMetric('DevicesPruned', MetricUnit.Count, result.devicesPruned)
   addMetadata(span, 'devicesChecked', result.devicesChecked)
   addMetadata(span, 'devicesPruned', result.devicesPruned)
