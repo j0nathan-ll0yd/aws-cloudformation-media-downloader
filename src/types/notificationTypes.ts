@@ -46,6 +46,8 @@ export interface MetadataNotification {
   contentType: string
   /** Status indicator for iOS app (always 'pending' for this notification type) */
   status: 'pending'
+  /** YouTube thumbnail URL (if available) */
+  thumbnailUrl?: string
 }
 
 /**
