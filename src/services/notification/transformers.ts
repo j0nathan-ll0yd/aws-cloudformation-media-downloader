@@ -171,21 +171,33 @@ export function transformToAPNSNotification(messageBody: string, targetArn: stri
 
 /**
  * Transform SQS message body (JSON) to APNS alert push notification
- * Used for FailureNotification types that require user attention
+ * Used for FailureNotification and DownloadReadyNotification types that require user attention
  * @param messageBody - JSON string containing file and notificationType
  * @param targetArn - SNS endpoint ARN for the device
  * @returns SNS PublishInput for APNS alert notification
  */
 export function transformToAPNSAlertNotification(messageBody: string, targetArn: string): PublishCommandInput {
   const payload = JSON.parse(messageBody)
-  const file = payload.file as FailureNotification
+  const notificationType = payload.notificationType as string
 
-  // Construct user-friendly alert message
-  const title = 'Download Failed'
-  const subtitle = file.title || file.fileId
-  const body = file.retryExhausted
-    ? `Failed after multiple attempts: ${file.errorMessage}`
-    : `Unable to download: ${file.errorMessage}`
+  let title: string
+  let subtitle: string
+  let body: string
+
+  if (notificationType === 'DownloadReadyNotification') {
+    const file = payload.file as DownloadReadyNotification
+    title = 'Download Ready'
+    subtitle = file.key
+    body = 'Your file is ready to play.'
+  } else {
+    // FailureNotification
+    const file = payload.file as FailureNotification
+    title = 'Download Failed'
+    subtitle = file.title || file.fileId
+    body = file.retryExhausted
+      ? `Failed after multiple attempts: ${file.errorMessage}`
+      : `Unable to download: ${file.errorMessage}`
+  }
 
   return {
     Message: JSON.stringify({
