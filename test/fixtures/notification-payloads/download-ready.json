@@ -1,0 +1,9 @@
+{
+  "notificationType": "DownloadReadyNotification",
+  "file": {
+    "fileId": "dQw4w9WgXcQ",
+    "key": "dQw4w9WgXcQ.mp4",
+    "size": 15728640,
+    "url": "https://d1example.cloudfront.net/videos/dQw4w9WgXcQ.mp4"
+  }
+}
