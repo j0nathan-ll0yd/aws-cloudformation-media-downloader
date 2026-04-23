@@ -5,13 +5,14 @@
  * This is an adapter layer that bridges domain models to infrastructure message formats.
  */
 import type {File} from '#types/domainModels'
-import type {
-  DownloadProgressNotification,
-  DownloadReadyNotification,
-  DownloadStartedNotification,
-  FailureNotification,
-  MetadataNotification
-} from '#types/notificationTypes'
+import type {DownloadReadyNotification, FailureNotification} from '#types/notificationTypes'
+import {
+  downloadProgressPayloadSchema,
+  downloadReadyPayloadSchema,
+  downloadStartedPayloadSchema,
+  failurePayloadSchema,
+  metadataPayloadSchema
+} from '#types/notification-schemas'
 import type {YtDlpVideoInfo} from '#types/youtube'
 import {stringAttribute} from '@mantleframework/aws'
 
@@ -48,7 +49,7 @@ export function createMetadataNotification(
   videoInfo: YtDlpVideoInfo,
   userId: string
 ): {messageBody: string; messageAttributes: Record<string, MessageAttributeValue>} {
-  const file: MetadataNotification = {
+  const file = metadataPayloadSchema.parse({
     fileId,
     key: `${fileId}.mp4`,
     title: videoInfo.title || '',
@@ -59,7 +60,7 @@ export function createMetadataNotification(
     contentType: 'video/mp4',
     status: 'pending',
     thumbnailUrl: videoInfo.thumbnail || undefined
-  }
+  })
   return {
     messageBody: JSON.stringify({file, notificationType: 'MetadataNotification'}),
     messageAttributes: {userId: stringAttribute(userId), notificationType: stringAttribute('MetadataNotification')}
@@ -78,7 +79,7 @@ export function createDownloadStartedNotification(
   videoInfo: YtDlpVideoInfo,
   userId: string
 ): {messageBody: string; messageAttributes: Record<string, MessageAttributeValue>} {
-  const file: DownloadStartedNotification = {fileId, title: videoInfo.title || '', thumbnailUrl: videoInfo.thumbnail}
+  const file = downloadStartedPayloadSchema.parse({fileId, title: videoInfo.title || '', thumbnailUrl: videoInfo.thumbnail})
   return {
     messageBody: JSON.stringify({file, notificationType: 'DownloadStartedNotification'}),
     messageAttributes: {userId: stringAttribute(userId), notificationType: stringAttribute('DownloadStartedNotification')}
@@ -97,7 +98,7 @@ export function createDownloadProgressNotification(
   percent: number,
   userId: string
 ): {messageBody: string; messageAttributes: Record<string, MessageAttributeValue>} {
-  const file: DownloadProgressNotification = {fileId, progressPercent: percent}
+  const file = downloadProgressPayloadSchema.parse({fileId, progressPercent: percent})
   return {
     messageBody: JSON.stringify({file, notificationType: 'DownloadProgressNotification'}),
     messageAttributes: {userId: stringAttribute(userId), notificationType: stringAttribute('DownloadProgressNotification')}
@@ -114,7 +115,7 @@ export function createDownloadReadyNotification(
   dbFile: File,
   userId: string
 ): {messageBody: string; messageAttributes: Record<string, MessageAttributeValue>} {
-  const file: DownloadReadyNotification = {fileId: dbFile.fileId, key: dbFile.key, size: dbFile.size, url: dbFile.url!}
+  const file = downloadReadyPayloadSchema.parse({fileId: dbFile.fileId, key: dbFile.key, size: dbFile.size, url: dbFile.url})
   return {
     messageBody: JSON.stringify({file, notificationType: 'DownloadReadyNotification'}),
     messageAttributes: {userId: stringAttribute(userId), notificationType: stringAttribute('DownloadReadyNotification')}
@@ -139,7 +140,7 @@ export function createFailureNotification(
   userId: string,
   title?: string
 ): {messageBody: string; messageAttributes: Record<string, MessageAttributeValue>} {
-  const file: FailureNotification = {fileId, title, errorCategory, errorMessage, retryExhausted}
+  const file = failurePayloadSchema.parse({fileId, title, errorCategory, errorMessage, retryExhausted})
   return {
     messageBody: JSON.stringify({file, notificationType: 'FailureNotification'}),
     messageAttributes: {userId: stringAttribute(userId), notificationType: stringAttribute('FailureNotification')}
