@@ -2,7 +2,7 @@ name: Documentation
 
 on:
   pull_request:
-    branches: [master, main]
+    branches: [main]
     paths:
       - 'docs/wiki/**/*.md'
       - '.vale.ini'

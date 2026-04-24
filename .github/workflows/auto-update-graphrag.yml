@@ -3,7 +3,7 @@ name: Auto-Update GraphRAG
 on:
   push:
     branches:
-      - master
+      - main
     paths:
       - 'src/lambdas/**'
       - 'src/entities/**'

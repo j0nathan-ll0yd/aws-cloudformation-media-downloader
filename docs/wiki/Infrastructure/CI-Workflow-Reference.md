@@ -8,11 +8,11 @@ Complete reference for all GitHub Actions workflows in the project.
 |----------|---------|----------|---------|
 | `unit-tests.yml` | push, PR | - | TypeSpec, types, lint, unit tests |
 | `integration-tests.yml` | push, PR | - | LocalStack + PostgreSQL integration tests |
-| `agent-compliance.yml` | push, PR to master | - | MCP convention validation |
+| `agent-compliance.yml` | push, PR to main | - | MCP convention validation |
 | `mutation-tests.yml` | schedule | Sun 6 AM UTC | Stryker mutation testing |
 | `dependency-check.yml` | push, PR | - | Architectural boundary validation |
-| `auto-update-graphrag.yml` | push to master | - | Knowledge graph regeneration |
-| `sync-wiki.yml` | push to master | - | GitHub Wiki synchronization |
+| `auto-update-graphrag.yml` | push to main | - | Knowledge graph regeneration |
+| `sync-wiki.yml` | push to main | - | GitHub Wiki synchronization |
 | `update-yt-dlp.yml` | schedule | Sun 2 AM UTC | yt-dlp binary updates |
 | `check-upstream-issues.yml` | schedule | Daily | Monitor upstream dependencies |
 
@@ -24,7 +24,7 @@ Complete reference for all GitHub Actions workflows in the project.
 
 **Triggers**:
 - Push to any branch
-- Pull request to master
+- Pull request to main
 
 **Steps**:
 1. TypeSpec compilation check
@@ -54,7 +54,7 @@ Complete reference for all GitHub Actions workflows in the project.
 
 **Triggers**:
 - Push to any branch
-- Pull request to master
+- Pull request to main
 
 **Services Started**:
 - LocalStack (AWS service emulation)
@@ -79,8 +79,8 @@ Complete reference for all GitHub Actions workflows in the project.
 **Purpose**: Validate code against project conventions.
 
 **Triggers**:
-- Push to master/main
-- Pull request to master/main
+- Push to main
+- Pull request to main
 
 **Validation**:
 - Runs `pnpm run check:conventions`
@@ -122,8 +122,8 @@ Complete reference for all GitHub Actions workflows in the project.
 **Purpose**: Validate architectural boundaries.
 
 **Triggers**:
-- Push to main/master/develop
-- Pull request to main/master/develop
+- Push to main/develop
+- Pull request to main/develop
 
 **Checks**:
 - Circular dependencies
@@ -142,7 +142,7 @@ Complete reference for all GitHub Actions workflows in the project.
 **Purpose**: Keep knowledge graph in sync with codebase.
 
 **Triggers**:
-- Push to master with changes to:
+- Push to main with changes to:
   - `src/lambdas/**`
   - `src/entities/**`
   - `src/lib/vendor/**`
@@ -152,7 +152,7 @@ Complete reference for all GitHub Actions workflows in the project.
 **Behavior**:
 1. Runs `pnpm run graphrag:extract`
 2. Commits updated `knowledge-graph.json` if changed
-3. Pushes commit to master
+3. Pushes commit to main
 
 ---
 
@@ -161,7 +161,7 @@ Complete reference for all GitHub Actions workflows in the project.
 **Purpose**: Synchronize docs/wiki to GitHub Wiki.
 
 **Triggers**:
-- Push to master/main with changes to:
+- Push to main with changes to:
   - `docs/wiki/**`
   - `.github/scripts/sync-wiki.sh`
   - `.github/scripts/generate-sidebar.sh`

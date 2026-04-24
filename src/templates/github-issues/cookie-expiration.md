@@ -38,7 +38,7 @@ git commit -m "chore(cookies): refresh YouTube session cookies"
 git push
 ```
 
-Production deploys automatically on merge to master. For staging:
+Production deploys automatically on merge to main. For staging:
 ```bash
 npx mantle build && pnpm run deploy:staging
 ```

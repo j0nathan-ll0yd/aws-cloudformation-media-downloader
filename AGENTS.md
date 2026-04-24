@@ -242,7 +242,7 @@ pnpm run deploy:staging        # Deploy to staging (local agents)
 pnpm run deploy:production     # Deploy to production (manual, or auto via GitHub Actions)
 ```
 
-**Note**: Production deployments auto-trigger on merge to master via GitHub Actions.
+**Note**: Production deployments auto-trigger on merge to main via GitHub Actions.
 
 ### Infrastructure Verification
 ```bash

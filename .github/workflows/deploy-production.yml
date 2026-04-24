@@ -3,7 +3,7 @@ name: Deploy to Production
 on:
   # push trigger disabled — re-enable after production deploys are ready
   # push:
-  #   branches: [master, main]
+  #   branches: [main]
   #   paths:
   #     - 'infra/**'
   #     - 'src/**'
