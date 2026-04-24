@@ -4,21 +4,30 @@
  * Defines the payload structures for iOS push notifications sent via APNS.
  * These notifications inform the iOS app about file download progress.
  *
+ * TypeScript interfaces are derived from Zod schemas in notification-schemas.ts.
+ * Edit the schemas there — these types are inferred automatically.
+ *
  * @see SendPushNotification Lambda for delivery implementation
+ * @see notification-schemas.ts for Zod schema definitions
  * @see {@link https://github.com/j0nathan-ll0yd/mantle-OfflineMediaDownloader/wiki/iOS/Push-Notifications | Push Notification Guide}
  */
 import type {Result} from '@mantleframework/core'
+import type {z} from '@mantleframework/validation'
+import type {
+  downloadProgressPayloadSchema,
+  downloadReadyPayloadSchema,
+  downloadStartedPayloadSchema,
+  failurePayloadSchema,
+  metadataPayloadSchema,
+  notificationTypeSchema
+} from '#types/notification-schemas'
 
 /**
  * Discriminated union type for file notification payloads.
+ * Derived from notificationTypeSchema — edit the schema to add new types.
  * Used in SQS message attributes to route to appropriate handler.
  */
-export type FileNotificationType =
-  | 'MetadataNotification'
-  | 'DownloadReadyNotification'
-  | 'FailureNotification'
-  | 'DownloadStartedNotification'
-  | 'DownloadProgressNotification'
+export type FileNotificationType = z.infer<typeof notificationTypeSchema>
 
 /**
  * Notification sent when video metadata is fetched but download not yet complete.
@@ -27,28 +36,7 @@ export type FileNotificationType =
  * Sent by: StartFileUpload Lambda (after yt-dlp fetches video info)
  * Received by: iOS app to update UI with video metadata
  */
-export interface MetadataNotification {
-  /** YouTube video ID (e.g., 'dQw4w9WgXcQ') */
-  fileId: string
-  /** S3 object key (e.g., 'dQw4w9WgXcQ.mp4') */
-  key: string
-  /** Video title from YouTube */
-  title: string
-  /** YouTube channel name */
-  authorName: string
-  /** Normalized channel username for URL construction */
-  authorUser: string
-  /** Video description (may be truncated) */
-  description: string
-  /** ISO 8601 date string of video publish date */
-  publishDate: string
-  /** MIME type, always 'video/mp4' */
-  contentType: string
-  /** Status indicator for iOS app (always 'pending' for this notification type) */
-  status: 'pending'
-  /** YouTube thumbnail URL (if available) */
-  thumbnailUrl?: string
-}
+export type MetadataNotification = z.infer<typeof metadataPayloadSchema>
 
 /**
  * Notification sent when the server begins downloading the video to S3.
@@ -57,14 +45,7 @@ export interface MetadataNotification {
  * Sent by: StartFileUpload Lambda (after metadata fetch, before S3 download)
  * Received by: iOS app to show server-side download progress indicator
  */
-export interface DownloadStartedNotification {
-  /** YouTube video ID (e.g., 'dQw4w9WgXcQ') */
-  fileId: string
-  /** Video title (available since metadata was already fetched) */
-  title: string
-  /** YouTube thumbnail URL (if available) */
-  thumbnailUrl?: string
-}
+export type DownloadStartedNotification = z.infer<typeof downloadStartedPayloadSchema>
 
 /**
  * Notification sent at 25%/50%/75% download milestones.
@@ -73,12 +54,7 @@ export interface DownloadStartedNotification {
  * Sent by: StartFileUpload Lambda (during yt-dlp download, at 25% intervals)
  * Received by: iOS app to update progress indicator
  */
-export interface DownloadProgressNotification {
-  /** YouTube video ID (e.g., 'dQw4w9WgXcQ') */
-  fileId: string
-  /** Download progress percentage (25, 50, or 75) */
-  progressPercent: number
-}
+export type DownloadProgressNotification = z.infer<typeof downloadProgressPayloadSchema>
 
 /**
  * Notification sent when download is complete and file is ready for streaming.
@@ -87,16 +63,7 @@ export interface DownloadProgressNotification {
  * Sent by: S3ObjectCreated Lambda (triggered by S3 upload completion)
  * Received by: iOS app to enable video playback
  */
-export interface DownloadReadyNotification {
-  /** YouTube video ID (e.g., 'dQw4w9WgXcQ') */
-  fileId: string
-  /** S3 object key (e.g., 'dQw4w9WgXcQ.mp4') */
-  key: string
-  /** File size in bytes */
-  size: number
-  /** CloudFront URL for streaming (uses transfer acceleration) */
-  url: string
-}
+export type DownloadReadyNotification = z.infer<typeof downloadReadyPayloadSchema>
 
 /**
  * Notification sent when a download permanently fails.
@@ -105,18 +72,7 @@ export interface DownloadReadyNotification {
  * Sent by: StartFileUpload Lambda (when download fails permanently)
  * Received by: iOS app to display failure alert
  */
-export interface FailureNotification {
-  /** YouTube video ID (e.g., 'dQw4w9WgXcQ') */
-  fileId: string
-  /** Video title (optional, if available from metadata fetch) */
-  title?: string
-  /** Error category (e.g., 'permanent', 'cookie_expired', 'rate_limited') */
-  errorCategory: string
-  /** Human-readable error message */
-  errorMessage: string
-  /** Whether retry attempts have been exhausted */
-  retryExhausted: boolean
-}
+export type FailureNotification = z.infer<typeof failurePayloadSchema>
 
 /**
  * Success payload when a notification is delivered to a device.

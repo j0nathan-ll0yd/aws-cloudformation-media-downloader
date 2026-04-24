@@ -90,6 +90,11 @@ export default defineConfig({
     }
   },
   authorizer: {cacheTtl: 0},
+  openapi: {
+    additionalSchemas: [
+      {source: '#types/notification-schemas', prefix: 'Notifications.'}
+    ]
+  },
   ci: {
     mantleRepo: 'j0nathan-ll0yd/mantle',
     mantleRef: 'main',

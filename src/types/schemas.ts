@@ -1,4 +1,5 @@
 import {z} from '@mantleframework/validation'
+import {notificationTypeSchema} from '#types/notification-schemas'
 
 // YouTube URL regex pattern
 const youtubeUrlPattern = /^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube(?:-nocookie)?\.com|youtu.be))(\/(?:[\w-]+\?v=|embed\/|live\/|v\/)?)([\w-]+)(\S+)?$/
@@ -59,16 +60,7 @@ export const downloadQueueMessageSchema = z.object({
 })
 
 /** Schema for SQS message attributes used by SendPushNotification */
-export const pushNotificationAttributesSchema = z.object({
-  notificationType: z.enum([
-    'MetadataNotification',
-    'DownloadStartedNotification',
-    'DownloadReadyNotification',
-    'FailureNotification',
-    'DownloadProgressNotification'
-  ]),
-  userId: z.string().min(1, 'userId is required')
-})
+export const pushNotificationAttributesSchema = z.object({notificationType: notificationTypeSchema, userId: z.string().min(1, 'userId is required')})
 
 /** Validated DownloadQueueMessage type */
 export type ValidatedDownloadQueueMessage = z.infer<typeof downloadQueueMessageSchema>

@@ -794,3 +794,117 @@ components:
           type: string
       additionalProperties: false
       id: SubscriptionResponse
+    Notifications.DownloadProgressPayload:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      type: object
+      properties:
+        fileId:
+          type: string
+        progressPercent:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+      required:
+        - fileId
+        - progressPercent
+      additionalProperties: false
+    Notifications.DownloadReadyPayload:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      type: object
+      properties:
+        fileId:
+          type: string
+        key:
+          type: string
+        size:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        url:
+          type: string
+          format: uri
+      required:
+        - fileId
+        - key
+        - size
+        - url
+      additionalProperties: false
+    Notifications.DownloadStartedPayload:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      type: object
+      properties:
+        fileId:
+          type: string
+        title:
+          type: string
+        thumbnailUrl:
+          type: string
+      required:
+        - fileId
+        - title
+      additionalProperties: false
+    Notifications.FailurePayload:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      type: object
+      properties:
+        fileId:
+          type: string
+        title:
+          type: string
+        errorCategory:
+          type: string
+        errorMessage:
+          type: string
+        retryExhausted:
+          type: boolean
+      required:
+        - fileId
+        - errorCategory
+        - errorMessage
+        - retryExhausted
+      additionalProperties: false
+    Notifications.MetadataPayload:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      type: object
+      properties:
+        fileId:
+          type: string
+        key:
+          type: string
+        title:
+          type: string
+        authorName:
+          type: string
+        authorUser:
+          type: string
+        description:
+          type: string
+        publishDate:
+          type: string
+        contentType:
+          type: string
+        status:
+          type: string
+          const: pending
+        thumbnailUrl:
+          type: string
+      required:
+        - fileId
+        - key
+        - title
+        - authorName
+        - authorUser
+        - description
+        - publishDate
+        - contentType
+        - status
+      additionalProperties: false
+    Notifications.NotificationType:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      type: string
+      enum:
+        - MetadataNotification
+        - DownloadStartedNotification
+        - DownloadProgressNotification
+        - DownloadReadyNotification
+        - FailureNotification

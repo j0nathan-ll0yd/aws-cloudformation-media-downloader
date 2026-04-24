@@ -1,0 +1,10 @@
+{
+  "notificationType": "FailureNotification",
+  "file": {
+    "fileId": "dQw4w9WgXcQ",
+    "title": "Rick Astley - Never Gonna Give You Up",
+    "errorCategory": "permanent",
+    "errorMessage": "Video is unavailable in your region",
+    "retryExhausted": true
+  }
+}

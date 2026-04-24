@@ -1,0 +1,15 @@
+{
+  "notificationType": "MetadataNotification",
+  "file": {
+    "fileId": "dQw4w9WgXcQ",
+    "key": "dQw4w9WgXcQ.mp4",
+    "title": "Rick Astley - Never Gonna Give You Up",
+    "authorName": "Rick Astley",
+    "authorUser": "rick_astley",
+    "description": "The official video for Never Gonna Give You Up by Rick Astley.",
+    "publishDate": "2009-10-25",
+    "contentType": "video/mp4",
+    "status": "pending",
+    "thumbnailUrl": "https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg"
+  }
+}
