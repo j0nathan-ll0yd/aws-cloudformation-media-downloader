@@ -244,6 +244,13 @@ pnpm run deploy:production     # Deploy to production (manual, or auto via GitHu
 
 **Note**: Production deployments auto-trigger on merge to main via GitHub Actions.
 
+Before running migrations against a live stage, use these validation commands:
+
+```bash
+mantle db migrate --dry-run       # validates pending migrations in a preview schema; reports per-statement DSQL classifications (OK/INDEX/RECREATION/STRIP). No lock acquired, no mutations.
+mantle db clone --stage staging   # clones remote Aurora DSQL to local Docker PostgreSQL (port 5433) via docker-compose.clone.yml for safe local migration testing
+```
+
 ### Infrastructure Verification
 ```bash
 pnpm run deploy:check:staging    # Check staging for drift
