@@ -15,6 +15,8 @@ module "lambda_migrate_dsql" {
   region             = module.core.region
   account_id         = module.core.account_id
   environment        = var.environment
+  log_retention_days = var.log_retention_days
+  log_level          = var.log_level
   tags               = module.core.common_tags
   timeout            = 300
   layers             = [local.adot_layer_arn]

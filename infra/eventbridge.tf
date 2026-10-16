@@ -8,6 +8,11 @@ module "eventbridge" {
   tags             = module.core.common_tags
   enable_dlq       = true
   enable_dlq_alarm = false
+
+  schedule_rule_arns = [
+    module.lambda_cleanup_expired_records.schedule_rule_arn,
+    module.lambda_prune_devices.schedule_rule_arn,
+  ]
 }
 
 # Rule: Route DownloadRequested events to DownloadQueue

@@ -93,6 +93,8 @@ src/lambdas/sqs/StartFileUpload/
   index.ts                    # thin handler (entry point)
   fileHelpers.ts              # simple helpers
   downloadOrchestrator.ts     # main workflow
+  downloadState.ts            # prior retry state lookup
+  fileRecord.ts               # Downloaded File entity builder
   failureHandler.ts           # error classification + retry
   s3Recovery.ts               # S3 check + DB recovery
 ```
@@ -121,12 +123,12 @@ Single-consumer services have been re-inlined per this ADR. The remaining `src/s
 - `device/deviceService.ts` (4 consumers), `file/fileInitService.ts` (2 consumers)
 - `youtube/youtube.ts` (7 consumers)
 
-**Pending: download cluster move to handler directory (Tier 2):**
-- `download/downloadOrchestrator.ts` (1 Lambda consumer: StartFileUpload)
-- `download/failureHandler.ts` (1 consumer: downloadOrchestrator)
-- `download/s3Recovery.ts` (1 consumer: downloadOrchestrator)
+**Done: download cluster moved to handler directory (Tier 2):**
+- `downloadOrchestrator.ts` (1 Lambda consumer: StartFileUpload)
+- `failureHandler.ts` (1 consumer: downloadOrchestrator)
+- `s3Recovery.ts` (1 consumer: downloadOrchestrator)
 
-These form an internal service graph consumed only by StartFileUpload. Per Option A, they should move to `src/lambdas/sqs/StartFileUpload/` as handler-local files. `stateManager.ts` and `youtubeTracing.ts` stay in `src/services/download/` because they have 2+ consumers.
+These form an internal service graph consumed only by StartFileUpload. Per Option A, they live in `src/lambdas/sqs/StartFileUpload/` as handler-local files. `stateManager.ts` and `youtubeTracing.ts` stay in `src/services/download/` because they have 2+ consumers.
 
 ## Consequences
 

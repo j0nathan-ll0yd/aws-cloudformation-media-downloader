@@ -19,6 +19,7 @@ module "lambda_cleanup_expired_records" {
   tags                     = module.core.common_tags
   timeout                  = 60
   schedule_expression      = "cron(0 3 * * ? *)"
+  schedule_dead_letter_arn = module.eventbridge.dlq_arn
   dead_letter_target_arn   = module.eventbridge.dlq_arn
   enable_dead_letter_queue = true
   layers                   = [local.adot_layer_arn]
