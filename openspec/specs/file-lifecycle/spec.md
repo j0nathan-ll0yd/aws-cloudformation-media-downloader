@@ -10,7 +10,8 @@ retries). State transitions are driven by the `StartFileUpload` and `S3ObjectCre
 
 Source of truth for behavior: `src/lambdas/s3/S3ObjectCreated/index.ts` (post-upload notification
 fan-out), `src/lambdas/sqs/StartFileUpload/downloadOrchestrator.ts` (status transitions during
-download), `src/types/enums.ts` (FileStatus values). The `FileStatus` enum and File entity shape are
+download), `src/lambdas/sqs/StartFileUpload/fileRecord.ts` (the Downloaded File entity),
+`src/types/enums.ts` (FileStatus values). The `FileStatus` enum and File entity shape are
 owned by `src/types/enums.ts` and `src/types/domainModels.d.ts` — this spec does NOT restate them.
 
 ## Requirements
