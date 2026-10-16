@@ -19,6 +19,7 @@ module "lambda_prune_devices" {
   tags                     = module.core.common_tags
   timeout                  = 300
   schedule_expression      = "rate(1 day)"
+  schedule_dead_letter_arn = module.eventbridge.dlq_arn
   dead_letter_target_arn   = module.eventbridge.dlq_arn
   enable_dead_letter_queue = true
   layers                   = [local.adot_layer_arn]
