@@ -68,8 +68,8 @@ module "lambda_start_file_upload" {
     YTDLP_MAX_SLEEP_INTERVAL = "5"
     AWS_SDK_UA_APP_ID        = "StartFileUpload"
     BUCKET                   = module.storage_files.bucket_id
-    CLOUDFRONT_DOMAIN        = module.storage_files.cloudfront_domain_name
     SNS_QUEUE_URL            = module.queue_SendPushNotification.queue_url
+    CLOUDFRONT_DOMAIN        = module.storage_files.cloudfront_domain_name
     PATH                     = var.path
     EVENT_BUS_NAME           = local.event_bus_name
     EVENT_SOURCE             = "media-downloader"

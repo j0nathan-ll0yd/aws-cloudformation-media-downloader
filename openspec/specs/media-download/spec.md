@@ -8,6 +8,8 @@ failure, and uses a container image on x86_64 because yt-dlp's native binary req
 architecture (documented exception to C20 per `AGENTS.md`).
 
 Source of truth for behavior: `src/lambdas/sqs/StartFileUpload/downloadOrchestrator.ts`,
+`src/lambdas/sqs/StartFileUpload/downloadState.ts` (prior retry state),
+`src/lambdas/sqs/StartFileUpload/fileRecord.ts` (the Downloaded File entity),
 `src/lambdas/sqs/StartFileUpload/failureHandler.ts`,
 `src/lambdas/sqs/StartFileUpload/index.ts` (`defineLambda` config for architecture and container).
 The `downloadQueueMessageSchema` that validates the SQS body is owned by `src/types/schemas.ts`

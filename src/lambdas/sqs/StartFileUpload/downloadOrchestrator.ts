@@ -5,10 +5,9 @@
  * Coordinates the full download lifecycle: S3 check, video info fetch,
  * S3 upload, metadata update, and event emission.
  */
-import {getFileDownload, updateFile} from '#entities/queries'
-import {CloudFrontDistributionId, emitEvent, isOk, S3BucketName} from '@j0nathan-ll0yd/core'
+import {updateFile} from '#entities/queries'
+import {emitEvent, isOk, S3BucketName} from '@j0nathan-ll0yd/core'
 import {logDebug, logInfo, metrics, MetricUnit} from '@j0nathan-ll0yd/observability'
-import type {File} from '#types/domainModels'
 import type {DownloadCompletedDetail} from '#types/events'
 import type {ValidatedDownloadQueueMessage} from '#types/schemas'
 import {DownloadStatus, FileStatus} from '#types/enums'
@@ -24,6 +23,8 @@ import {updateDownloadState} from '#services/download/stateManager'
 import {checkS3FileExists, recoverFromS3} from './s3Recovery.js'
 import {downloadVideoToS3Traced, fetchVideoInfoTraced} from '#services/download/youtubeTracing'
 import {upsertFile} from './fileHelpers.js'
+import {getExistingDownloadState} from './downloadState.js'
+import {buildDownloadedFile} from './fileRecord.js'
 
 /**
  * Process a single download request from SQS.
@@ -113,24 +114,7 @@ export async function processDownloadRequest(message: ValidatedDownloadQueueMess
   logDebug('downloadVideoToS3 =>', uploadResult)
 
   // Step 3: Update permanent File entity with metadata
-  const cloudfrontDomain = CloudFrontDistributionId(getRequiredEnv('CLOUDFRONT_DOMAIN'))
-  const fileData: File = {
-    fileId: videoInfo.id,
-    key: fileName,
-    size: uploadResult.fileSize,
-    authorName: videoInfo.uploader || 'Unknown',
-    authorUser: (videoInfo.uploader || 'unknown').toLowerCase().replaceAll(/\s+/g, '_'),
-    title: videoInfo.title,
-    description: videoInfo.description || '',
-    publishDate: videoInfo.upload_date || new Date().toISOString(),
-    contentType: 'video/mp4',
-    status: FileStatus.Downloaded,
-    url: `https://${cloudfrontDomain}/${fileName}`,
-    duration: videoInfo.duration,
-    uploadDate: videoInfo.upload_date,
-    viewCount: videoInfo.view_count,
-    thumbnailUrl: videoInfo.thumbnail
-  }
+  const fileData = buildDownloadedFile(videoInfo, fileName, uploadResult.fileSize)
 
   logDebug('upsertFile <=', fileData as unknown as Record<string, unknown>)
   await upsertFile(fileData)
@@ -150,31 +134,4 @@ export async function processDownloadRequest(message: ValidatedDownloadQueueMess
   tryCloseCookieExpirationIssue()
 
   logInfo('Download completed successfully', {fileId, correlationId, fileSize: uploadResult.fileSize})
-}
-
-/**
- * Retrieve existing download state for retry counting.
- * Returns default values if no prior download record exists.
- */
-async function getExistingDownloadState(fileId: string): Promise<{retryCount: number; maxRetries: number}> {
-  logDebug('getFileDownload <=', {fileId})
-  const existingDownload = await getFileDownload(fileId)
-  logDebug('getFileDownload =>', (existingDownload as unknown as Record<string, unknown>) ?? {found: false})
-
-  if (!existingDownload) {
-    return {retryCount: 0, maxRetries: 5}
-  }
-
-  if (existingDownload.lastError) {
-    logInfo('Previous failure state', {
-      fileId,
-      previousStatus: existingDownload.status,
-      previousError: existingDownload.lastError,
-      errorCategory: existingDownload.errorCategory,
-      retryCount: existingDownload.retryCount ?? 0,
-      maxRetries: existingDownload.maxRetries ?? 5
-    })
-  }
-
-  return {retryCount: existingDownload.retryCount ?? 0, maxRetries: existingDownload.maxRetries ?? 5}
 }
