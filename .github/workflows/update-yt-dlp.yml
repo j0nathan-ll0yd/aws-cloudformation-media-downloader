@@ -462,7 +462,7 @@ jobs:
       always() &&
       (needs.check-update.result == 'failure' || needs.check-update.result == 'cancelled' ||
        needs.repin-image.result == 'failure' || needs.repin-image.result == 'cancelled')
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, arm64, node]
     permissions:
       contents: read
       issues: write
