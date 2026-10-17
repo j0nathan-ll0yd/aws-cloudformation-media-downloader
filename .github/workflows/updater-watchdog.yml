@@ -18,6 +18,8 @@ concurrency:
 jobs:
   audit:
     # This monitor must remain independent of the self-hosted fleet it observes.
+    # Recorded exception to the self-hosted-only rule (atlas 0085, owner 2026-10-17):
+    # on the fleet it could not report a fleet outage, the one failure it exists to catch.
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
