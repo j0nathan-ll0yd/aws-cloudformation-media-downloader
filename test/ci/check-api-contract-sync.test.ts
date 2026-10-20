@@ -258,3 +258,16 @@ describe('bin/check-api-contract-sync.sh', () => {
     expect(f.issues()).toEqual([issue(9, `${MARKER}\nold`, 'CLOSED')])
   })
 })
+
+describe('.github/workflows/api-contract-sync.yml', () => {
+  const workflow = readFileSync(resolve(__dirname, '../../.github/workflows/api-contract-sync.yml'), 'utf8')
+
+  test('only a run on main without dry_run writes the issue: the DRY_RUN expression is pinned', () => {
+    // A pull request runs with github.ref refs/pull/N/merge, so the ref test makes it a dry run.
+    const steps = workflow.split(/^ {6}- /m)
+    const runner = steps.filter((step) => step.includes('./bin/check-api-contract-sync.sh'))
+    expect(runner).toHaveLength(1)
+    expect(workflow.match(/^\s*DRY_RUN:.*$/gm)).toHaveLength(1)
+    expect(runner[0]).toContain(`DRY_RUN: \${{ (github.ref != 'refs/heads/main' || inputs.dry_run) && 'true' || 'false' }}\n`)
+  })
+})
