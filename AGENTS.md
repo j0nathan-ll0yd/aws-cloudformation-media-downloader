@@ -23,7 +23,7 @@ AWS Serverless media downloader service built with OpenTofu and TypeScript. Down
 
 ### Project Structure
 
-```
+```text
 .
 ├── config/                # Tool configuration (ESLint rules, dependency-cruiser, repomix, etc.)
 ├── docker/                # Dockerfiles and docker-compose files
@@ -258,6 +258,7 @@ pnpm run generate:openapi            # mantle generate openapi → docs/api/open
 - **iOS consumer**: `ios-OfflineMediaDownloader/APITypes/Sources/APITypes/openapi.yaml` synced via `Scripts/sync-openapi.sh`
 - **C66**: `mantle generate openapi` is the sole OpenAPI generator
 - After changing Zod schemas in `src/types/api-schema/`, run `pnpm run generate:openapi` then sync to iOS
+- **Gates**: `ci.yml` job `OpenAPI Freshness` (`bin/check-openapi-freshness.sh`) fails on a stale `docs/api/openapi.yaml`; `api-contract-sync.yml` (`bin/check-api-contract-sync.sh`) keeps one tracking issue open in this repository while the iOS copy differs
 
 ### Deployment Commands
 

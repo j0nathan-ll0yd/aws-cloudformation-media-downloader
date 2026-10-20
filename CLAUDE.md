@@ -29,7 +29,7 @@ npx mantle deploy --stage production      # deploy to production (prod- prefix)
 pnpm run generate:openapi
 ```
 
-Runs `mantle generate openapi --schema-prefix 'Models.' --output docs/api/openapi.yaml --html docs/api/index.html`, which:
+Runs `generate:openapi:spec` (`mantle generate openapi --schema-prefix 'Models.' --title 'Offline Media Downloader API' --output docs/api/openapi.yaml`) with `--html docs/api/index.html` appended, which:
 
 - Resolves every Zod schema reachable from `defineApiHandler` calls via esbuild bundling
 - Sibling-extracts barrel exports in `src/types/api-schema/schemas.ts` (exposes `Models.File`, `Models.FileStatus`, `Models.Device`, `Models.ErrorResponse`, `Models.UnauthorizedError`, `Models.ForbiddenError`, `Models.InternalServerError`, etc.)
@@ -39,4 +39,4 @@ Runs `mantle generate openapi --schema-prefix 'Models.' --output docs/api/openap
 
 **iOS consumer**: `ios-OfflineMediaDownloader/Scripts/sync-openapi.sh` copies `docs/api/openapi.yaml` into the iOS `APITypes` Swift package, where swift-openapi-generator produces `Components.Schemas.Models_period_File`, etc. The `Schema` suffix is stripped and `Models.` prefix is applied to match TypeSpec-era naming.
 
-**Regenerate after touching**: schemas in `src/types/api-schema/schemas.ts`, request/response schemas on any `defineApiHandler` call, or the `openapi: { ... }` metadata block on any handler. Verify `swift build` in `ios-OfflineMediaDownloader/APITypes/` still succeeds before committing iOS downstream changes.
+**Regenerate after touching**: schemas in `src/types/api-schema/schemas.ts` or `src/types/client-event-schemas.ts`, `src/types/notification-schemas.ts` (the `openapi.additionalSchemas` source in `mantle.config.ts`), request/response schemas on any `defineApiHandler` call, the `openapi: { ... }` metadata block on any handler, or the Mantle CLI, validation or zod version. CI enforces it: the `OpenAPI Freshness` job in `ci.yml` runs `bin/check-openapi-freshness.sh`, which fails when `docs/api/openapi.yaml` differs from `pnpm run generate:openapi:spec` or when the generator writes nothing. After merge, `.github/workflows/api-contract-sync.yml` keeps one tracking issue open in this repository until `ios-OfflineMediaDownloader` syncs the spec. Verify `swift build` in `ios-OfflineMediaDownloader/APITypes/` still succeeds before committing iOS downstream changes.

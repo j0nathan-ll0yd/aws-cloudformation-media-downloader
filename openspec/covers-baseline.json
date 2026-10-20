@@ -6,7 +6,6 @@
     "cross-repo-contract#additive-only-schema-evolution",
     "cross-repo-contract#backend-is-sole-producer-of-openapi",
     "cross-repo-contract#credential-free-openapi-generation",
-    "cross-repo-contract#drift-detection-notifies-ios-repo",
     "media-download#x86-64-architecture-for-yt-dlp"
   ]
 }

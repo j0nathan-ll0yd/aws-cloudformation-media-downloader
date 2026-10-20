@@ -15,6 +15,7 @@ Complete reference for all GitHub Actions workflows in the project.
 | `sync-wiki.yml` | push to main | - | GitHub Wiki synchronization |
 | `update-yt-dlp.yml` | schedule | Sun 2 AM UTC | yt-dlp binary updates |
 | `check-upstream-issues.yml` | schedule | Daily | Monitor upstream dependencies |
+| `api-contract-sync.yml` | push to main, PR (dry run), schedule | Daily 14:17 UTC | Track the iOS copy of the OpenAPI spec in one issue |
 
 ## Workflow Details
 
@@ -213,6 +214,25 @@ Complete reference for all GitHub Actions workflows in the project.
 
 ---
 
+### api-contract-sync.yml
+
+**Purpose**: Compare `docs/api/openapi.yaml` with the copy that `ios-OfflineMediaDownloader` vendors at `APITypes/Sources/APITypes/openapi.yaml`, and keep one tracking issue in this repository in step with the result.
+
+**Triggers**:
+- Push to main that changes `docs/api/openapi.yaml`, `bin/check-api-contract-sync.sh` or the workflow
+- Pull request with the same paths (dry run: prints the decision, writes nothing)
+- Schedule: daily 14:17 UTC
+- Manual dispatch (inputs `ios_ref` and `dry_run`)
+
+**Behavior** (`bin/check-api-contract-sync.sh`):
+1. Files match: closes the tracking issue if it is open
+2. Files differ: creates the tracking issue, or replaces its body and reopens it
+3. Exit 3 means the check could not measure; a red run never means drift
+
+The tracking issue is the lowest-numbered issue that `github-actions[bot]` opened with the `<!-- api-contract-sync:managed -->` marker. The `OpenAPI Freshness` job in `ci.yml` (`bin/check-openapi-freshness.sh`) keeps the committed spec equal to the generator output, so the sync copies a current file.
+
+---
+
 ## Workflow Dependencies
 
 ```
@@ -247,6 +267,7 @@ Some workflows support manual dispatch:
 gh workflow run mutation-tests.yml
 gh workflow run update-yt-dlp.yml
 gh workflow run sync-wiki.yml
+gh workflow run api-contract-sync.yml -f dry_run=true
 ```
 
 ## Troubleshooting
@@ -263,6 +284,12 @@ gh workflow run sync-wiki.yml
 1. Start services locally: `pnpm run localstack:start`
 2. Check health: `pnpm run localstack:health`
 3. Run tests: `pnpm run test:integration`
+
+### OpenAPI Freshness or api-contract-sync failing
+
+1. `OpenAPI Freshness` red: run `pnpm run generate:openapi` and commit `docs/api/`
+2. `api-contract-sync` red: read the `UNMEASURED:` line; it names the input or GitHub call that failed
+3. An open "API contract drift" issue is not a failure: sync the iOS copy with `bash Scripts/sync-openapi.sh` in `ios-OfflineMediaDownloader`
 
 ### dependency-check failing
 

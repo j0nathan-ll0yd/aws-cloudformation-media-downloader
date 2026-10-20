@@ -448,3 +448,56 @@ jobs:
           # `packages: read` permission scopes the workflow token but does NOT place it in a
           # run step's environment. Mirrors mantle ci.yml and design-system ci.yml.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # OpenAPI contract freshness. Seam: anything that changes what `mantle generate openapi`
+  # emits without a regenerated docs/api/openapi.yaml, the file ios-OfflineMediaDownloader
+  # vendors. That includes Mantle CLI, validation and zod bumps, which reach the output
+  # through package.json and pnpm-lock.yaml rather than through schema files, so this job
+  # has no path filter. On 2026-10-17 the committed spec was already stale against
+  # @j0nathan-ll0yd/cli 2.21.0: 13 component schemas missing and 27 `id:` keys extra.
+  # Replaces the gh-aw "Codegen Drift Detector", which never ran green (atlas decision 0162,
+  # item 1). Mirrors mantle-LifegamesPortal ci.yml `openapi-freshness`, plus a delete-first
+  # guard: bin/check-openapi-freshness.sh deletes the committed spec before regenerating,
+  # because `mantle generate openapi` exits 0 WITHOUT writing when it discovers no API
+  # handlers, and regenerating over the committed file would then pass without measuring.
+  # test/ci/check-openapi-freshness.test.ts proves that guard can fail.
+  openapi-freshness:
+    name: OpenAPI Freshness
+    runs-on: [self-hosted, linux, arm64, node]
+    # Required by `mantle check ci-workflows`. The same job in mantle-LifegamesPortal takes
+    # 55 s; the generator alone takes about 24 s here.
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: '.nvmrc'
+      - name: Setup pnpm
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
+      - name: Cache dependencies
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+      - name: Authenticate to GitHub Packages
+        env:
+          NODE_AUTH_TOKEN: ${{ github.token }}
+        run: pnpm config set '//npm.pkg.github.com/:_authToken' "$NODE_AUTH_TOKEN"
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Verify docs/api/openapi.yaml is fresh
+        # `generate:openapi:spec` holds the flags that `generate:openapi` also uses. It skips
+        # the HTML step, which fetches the floating `@redocly/cli@2` with `npx -y` and does not
+        # affect the YAML.
+        run: ./bin/check-openapi-freshness.sh
+      - name: Upload the regenerated spec
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: openapi-regenerated
+          path: docs/api/openapi.yaml
+          if-no-files-found: warn
+          retention-days: 7
