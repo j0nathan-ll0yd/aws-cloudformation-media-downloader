@@ -164,6 +164,19 @@ describe('bin/check-api-contract-sync.sh', () => {
     expect(f.issues()[1]?.state).toBe('CLOSED')
   })
 
+  test('an issue the workflow token opened without the marker is never the tracking issue, open or closed', () => {
+    // The updater-failure and cookie-refresh workflows open issues with the same token, unmarked.
+    const unmarked = [issue(2, 'ffmpeg update workflow failed', 'CLOSED'), issue(3, 'YouTube cookie refresh failed')]
+    const f = fixture(unmarked)
+    expect(f.run('a.yaml', 'a.yaml').status).toBe(0)
+    expect(f.run('b.yaml', 'a.yaml').status).toBe(0)
+    expect(f.run('a.yaml', 'a.yaml').status).toBe(0)
+    expect(f.log()).not.toMatch(/issue (edit|close|reopen) [23] /)
+    expect(f.issues().slice(0, 2)).toEqual(unmarked)
+    expect(managed(f.issues()).map((entry) => entry.number)).toEqual([4])
+    expect(f.issues()[2]?.state).toBe('CLOSED')
+  })
+
   test('unmeasured inputs exit 3, never 0, and mutate nothing', () => {
     const f = fixture()
     writeFileSync(join(f.dir, 'empty.yaml'), '')

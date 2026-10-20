@@ -61,15 +61,17 @@ The freshness gate SHALL fail when the committed `docs/api/openapi.yaml` differs
 check SHALL compare the committed `docs/api/openapi.yaml` with the iOS vendored copy
 (`APITypes/Sources/APITypes/openapi.yaml` in `ios-OfflineMediaDownloader`). While the two differ,
 exactly one open tracking issue in this repository SHALL cite `bash Scripts/sync-openapi.sh` as the
-resolution step. The sync check SHALL edit that issue rather than open another, SHALL close it when
-the files match, and SHALL treat only an issue that the workflow token opened as the tracking issue.
-A check that cannot read either file or the issue list SHALL fail rather than pass.
+resolution step. The sync check SHALL edit that issue rather than open another, and SHALL close it
+when the files match. It SHALL treat as the tracking issue only an issue that the workflow token
+opened and whose body carries the managed marker `<!-- api-contract-sync:managed -->`. A check that
+cannot read either file or the issue list SHALL fail rather than pass.
 
 Verified by `test/ci/check-openapi-freshness.test.ts:1` (the freshness gate passes on an equal
 document, fails and prints the difference on a changed one, and fails when the generator exits 0
 without writing) and `test/ci/check-api-contract-sync.test.ts:1` (the sync check opens one issue
 that cites the sync script, edits it on the next run, closes it on a match, reopens it on renewed
-drift, ignores a marker in an issue another account opened, and exits 3 on unreadable input).
+drift, ignores a marker in an issue another account opened, ignores an unmarked issue the workflow
+token opened, and exits 3 on unreadable input).
 
 #### Scenario: Schema change without a regenerated openapi.yaml
 
