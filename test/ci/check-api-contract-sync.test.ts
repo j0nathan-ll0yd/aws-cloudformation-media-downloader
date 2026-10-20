@@ -191,12 +191,12 @@ describe('bin/check-api-contract-sync.sh', () => {
     expect(f.log()).not.toMatch(MUTATION)
   })
 
-  test('a DRY_RUN value other than "true" or "false", empty included, is refused before any GitHub call', () => {
+  test('a DRY_RUN value other than "true" or "false", empty included, is refused before any GitHub call and names DRY_RUN=true', () => {
     const f = fixture()
     for (const value of ['1', '', 'TRUE']) {
       const result = f.run('b.yaml', 'a.yaml', {DRY_RUN: value})
       expect(result.status).toBe(3)
-      expect(result.stdout).toMatch(/UNMEASURED: DRY_RUN must be/)
+      expect(result.stdout).toContain(`UNMEASURED: DRY_RUN must be "true" or "false", not "${value}". For a dry run, set DRY_RUN=true.`)
     }
     expect(f.log()).toBe('')
   })

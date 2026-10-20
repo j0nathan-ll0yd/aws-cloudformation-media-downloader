@@ -4,6 +4,13 @@
 #
 # Usage: bin/check-api-contract-sync.sh <backend-spec> <vendored-spec>
 #
+# A dry run from a checkout, with ios-OfflineMediaDownloader cloned beside this repository:
+#   DRY_RUN=true ISSUE_REPO=j0nathan-ll0yd/mantle-OfflineMediaDownloader \
+#     BACKEND_LABEL="local @ $(git rev-parse --short=12 HEAD)" \
+#     VENDORED_LABEL="local @ $(git -C ../ios-OfflineMediaDownloader rev-parse --short=12 HEAD)" \
+#     bin/check-api-contract-sync.sh docs/api/openapi.yaml \
+#     ../ios-OfflineMediaDownloader/APITypes/Sources/APITypes/openapi.yaml
+#
 # Environment:
 #   ISSUE_REPO      owner/repo that holds the tracking issue (default: GITHUB_REPOSITORY)
 #   MANAGED_AUTHOR  login that opens the tracking issue, as `gh issue list --json author`
@@ -14,8 +21,9 @@
 #   MANAGED_BY      workflow named in the issue body (optional)
 #   RUN_URL         link to the workflow run (optional)
 #   DRY_RUN         "true" prints every decision and changes nothing; "false" (the default
-#                   when unset) acts. Any other value, empty included, is refused, so a typo
-#                   cannot turn a dry run into writes.
+#                   when unset) acts. Any other value, "1" and empty included, exits 3 before
+#                   any GitHub call, so a typo cannot turn a dry run into writes. For a dry
+#                   run, set DRY_RUN=true.
 #
 # Exit codes:
 #   0  measured: the files match, or the drift is recorded in the tracking issue
@@ -76,7 +84,7 @@ MANAGED_AUTHOR=${MANAGED_AUTHOR:-app/github-actions}
 DRY_RUN_MODE=${DRY_RUN-false}
 case "$DRY_RUN_MODE" in
   true | false) ;;
-  *) unmeasured "DRY_RUN must be \"true\" or \"false\", not \"${DRY_RUN_MODE}\"" ;;
+  *) unmeasured "DRY_RUN must be \"true\" or \"false\", not \"${DRY_RUN_MODE}\". For a dry run, set DRY_RUN=true." ;;
 esac
 MANAGED_BY_TEXT=${MANAGED_BY:-the API contract sync workflow}
 
