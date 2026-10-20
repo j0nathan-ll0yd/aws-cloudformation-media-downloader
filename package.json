@@ -79,7 +79,6 @@
     "test:remote:hook:staging": "./bin/test-hook.sh --env staging",
     "test:remote:list:staging": "./bin/test-list.sh --env staging",
     "test:remote:register:device:staging": "./bin/test-registerDevice.sh --env staging",
-    "update:agents:prs": "./bin/update-agents-prs.sh",
     "update:ffmpeg": "./bin/update-ffmpeg.sh",
     "update:ffmpeg:check": "./bin/update-ffmpeg.sh --check-only",
     "update:ytdlp": "./bin/update-yt-dlp.sh",

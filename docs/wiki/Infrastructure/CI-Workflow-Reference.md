@@ -46,7 +46,6 @@ On 2026-10-20 every other check on this page reported without blocking a merge. 
 | `api-contract-sync.yml` | spec change on `main` or in a pull request; daily 14:17 UTC; manual   | node              | One tracking issue while the iOS copy of the OpenAPI spec differs                                 |
 | `mutation-tests.yml`    | Sunday 06:00 UTC; manual                                              | node              | Stryker mutation testing                                                                          |
 | `sync-wiki.yml`         | push to `main` that changes `docs/wiki/**`; manual                    | base              | Publish `docs/wiki/` to the GitHub Wiki                                                           |
-| `update-agents.yml`     | merged pull request to `main`; manual                                 | node              | Recent pull request list for `AGENTS.md`; never pushes (see below)                                |
 | `update-ffmpeg.yml`     | Monday and Thursday 02:17 UTC; manual                                 | node, image-build | ffmpeg pin update and image repin                                                                 |
 | `update-yt-dlp.yml`     | Sunday 02:23 UTC; manual                                              | node, image-build | yt-dlp pin update and image repin                                                                 |
 | `updater-watchdog.yml`  | daily 03:41 UTC; manual                                               | `ubuntu-latest`   | Issue when an updater has no recent success                                                       |
@@ -158,12 +157,6 @@ The tracking issue is the lowest-numbered issue that `github-actions[bot]` opene
 
 **Behavior**: clones the GitHub Wiki repository, copies `docs/wiki/` into it, generates the sidebar and footer, and pushes. A merged change to this page reaches the public wiki this way.
 
-### update-agents.yml
-
-**Triggers**: a merged pull request to `main`; manual dispatch.
-
-**Behavior**: runs `pnpm run update:agents:prs`, which commits a refreshed list to `AGENTS.md`, then pushes only if the working tree still differs. That commit leaves the tree clean, so runs end with `No changes to push` and nothing reaches `main`.
-
 ### update-ffmpeg.yml and update-yt-dlp.yml
 
 **Triggers**: `update-ffmpeg.yml` Monday and Thursday 02:17 UTC; `update-yt-dlp.yml` Sunday 02:23 UTC; both by manual dispatch.
@@ -192,7 +185,6 @@ Both are manual only; CI never deploys (`mantle.config.ts` `ci.deploy: false`). 
 gh workflow run api-contract-sync.yml -f dry_run=true
 gh workflow run mutation-tests.yml
 gh workflow run sync-wiki.yml
-gh workflow run update-agents.yml
 gh workflow run update-ffmpeg.yml
 gh workflow run update-yt-dlp.yml
 gh workflow run updater-watchdog.yml
