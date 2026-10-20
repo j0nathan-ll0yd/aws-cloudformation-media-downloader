@@ -136,6 +136,16 @@ The timeouts come from measured job durations; the basis is in comments in `ci.y
 
 Only runs on `main` write the issue. A pull request, or a dispatch from another branch, gets a dry run that prints its decisions and writes nothing.
 
+To run the check from a checkout without writing, set `DRY_RUN=true`. Any value other than `true` or `false`, `DRY_RUN=1` included, exits 3 before any GitHub call. With `ios-OfflineMediaDownloader` cloned beside this repository:
+
+```bash
+DRY_RUN=true ISSUE_REPO=j0nathan-ll0yd/mantle-OfflineMediaDownloader \
+  BACKEND_LABEL="local @ $(git rev-parse --short=12 HEAD)" \
+  VENDORED_LABEL="local @ $(git -C ../ios-OfflineMediaDownloader rev-parse --short=12 HEAD)" \
+  bin/check-api-contract-sync.sh docs/api/openapi.yaml \
+  ../ios-OfflineMediaDownloader/APITypes/Sources/APITypes/openapi.yaml
+```
+
 **Behavior** (`bin/check-api-contract-sync.sh`):
 
 1. Files match: closes the tracking issue if it is open
