@@ -489,12 +489,15 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Verify docs/api/openapi.yaml is fresh
+        id: fresh
         # `generate:openapi:spec` holds the flags that `generate:openapi` also uses. It skips
         # the HTML step, which fetches the floating `@redocly/cli@2` with `npx -y` and does not
         # affect the YAML.
         run: ./bin/check-openapi-freshness.sh
       - name: Upload the regenerated spec
-        if: failure()
+        # Only when the check itself failed: after an earlier failure (install, for example)
+        # the file on disk is still the committed spec, not a regenerated one.
+        if: failure() && steps.fresh.conclusion == 'failure'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: openapi-regenerated

@@ -10,6 +10,12 @@ gate keeps the committed document equal to the generator output, and a sync chec
 tracking issue open while the iOS vendored copy differs from it. Schema evolution is additive-only
 so iOS clients built against an older spec continue to parse current payloads.
 
+Where the checks run (workflow wiring, not asserted by the tethered tests): `ci.yml` runs the
+freshness gate on every pull request and every push to `main`, with no path filter, because a
+toolchain bump changes the output without touching a schema file. `api-contract-sync.yml` runs the
+sync check on every push to `main` that changes the committed spec, daily, and on demand. Only runs
+on `main` write the issue; a pull request, or a dispatch from another branch, gets a dry run.
+
 Source of truth for behavior: `package.json` (`generate:openapi:spec` and `generate:openapi`
 scripts), `bin/check-openapi-freshness.sh` (freshness gate, run by `.github/workflows/ci.yml` job
 `openapi-freshness`) and `bin/check-api-contract-sync.sh` (sync check, run by
@@ -58,11 +64,6 @@ exactly one open tracking issue in this repository SHALL cite `bash Scripts/sync
 resolution step. The sync check SHALL edit that issue rather than open another, SHALL close it when
 the files match, and SHALL treat only an issue that the workflow token opened as the tracking issue.
 A check that cannot read either file or the issue list SHALL fail rather than pass.
-
-`ci.yml` runs the freshness gate on every pull request and every push to `main`, with no path
-filter, because a toolchain bump changes the output without touching a schema file.
-`api-contract-sync.yml` runs the sync check on every push to `main` that changes the committed spec,
-daily, and on demand. A pull request that changes the spec gets a dry run that writes nothing.
 
 Verified by `test/ci/check-openapi-freshness.test.ts:1` (the freshness gate passes on an equal
 document, fails and prints the difference on a changed one, and fails when the generator exits 0

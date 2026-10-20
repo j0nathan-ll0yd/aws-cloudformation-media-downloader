@@ -8,8 +8,9 @@ name: API Contract Sync
 #
 # The tracking issue lives in THIS repository, so the job needs no cross-repository
 # credential: GITHUB_TOKEN cannot write issues elsewhere, and it reads the public iOS copy.
-# Pull requests that change the spec get a dry run: the summary shows the issue the merge
-# would open. A red run means the check could not measure (exit 3), never that drift exists.
+# Only runs on main write the issue. Pull requests that change the spec, and dispatches from
+# other branches, get a dry run: the summary shows the issue a merge would open. A red run
+# means the check could not measure (exit 3), never that drift exists.
 
 on:
   push:
@@ -58,6 +59,9 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          # Nothing in this job pushes; GITHUB_TOKEN reaches gh through GH_TOKEN only.
+          persist-credentials: false
       - name: Check out the vendored iOS spec
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
@@ -71,7 +75,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           IOS_REF: ${{ inputs.ios_ref || 'main' }}
-          DRY_RUN: ${{ (github.event_name == 'pull_request' || inputs.dry_run) && 'true' || 'false' }}
+          # Only main writes the issue. A pull request (refs/pull/N/merge) or a dispatch from
+          # any other branch compares an unmerged spec, so it gets a dry run.
+          DRY_RUN: ${{ (github.ref != 'refs/heads/main' || inputs.dry_run) && 'true' || 'false' }}
           MANAGED_BY: '`.github/workflows/api-contract-sync.yml` in mantle-OfflineMediaDownloader'
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |

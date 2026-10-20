@@ -3,7 +3,8 @@
  * Spawns bin/check-openapi-freshness.sh inside a throwaway git repository with a fake `pnpm` on
  * PATH. The fake stands in for `pnpm run generate:openapi:spec`: it writes the committed bytes,
  * different bytes, nothing at all (the generator's exit-0 "no API handlers" path), or fails.
- * The script is copied into the throwaway repository, so it never touches this checkout's spec.
+ * The script is copied into the throwaway repository, so it never touches this checkout's spec,
+ * and every git call runs with the git location variables removed (see isolatedEnv).
  */
 import {spawnSync} from 'node:child_process'
 import type {SpawnSyncReturns} from 'node:child_process'
@@ -17,6 +18,21 @@ type GeneratorMode = 'same' | 'changed' | 'none' | 'fail'
 const script = resolve(__dirname, '../../bin/check-openapi-freshness.sh')
 const COMMITTED = 'openapi: 3.1.0\ninfo:\n  title: Offline Media Downloader API\n  version: 1.0.0\npaths: {}\n'
 const CHANGED = 'openapi: 3.1.0\ninfo:\n  title: Offline Media Downloader API\n  version: 1.0.0\npaths:\n  /files:\n    get: {}\n'
+
+// Git exports these to the commands that hooks, `git rebase -x` and `git bisect run` start. If
+// they were inherited, the throwaway repository's `git init` and `git add` would act on the
+// developer's own repository instead.
+const GIT_LOCATION_VARS = [
+  'GIT_DIR',
+  'GIT_COMMON_DIR',
+  'GIT_WORK_TREE',
+  'GIT_INDEX_FILE',
+  'GIT_OBJECT_DIRECTORY',
+  'GIT_ALTERNATE_OBJECT_DIRECTORIES',
+  'GIT_NAMESPACE',
+  'GIT_PREFIX',
+  'GIT_CEILING_DIRECTORIES'
+]
 
 // A fake pnpm: logs its arguments, then acts as FAKE_PNPM_MODE says.
 const FAKE_PNPM = `#!/usr/bin/env node
@@ -35,8 +51,15 @@ afterAll(() => {
   }
 })
 
+/** The current environment without git location variables, and with no user or system git config. */
+function isolatedEnv(extra: Record<string, string> = {}): NodeJS.ProcessEnv {
+  // spawnSync leaves out every key whose value is undefined, so these reach no child process.
+  const unset = Object.fromEntries(GIT_LOCATION_VARS.map((key) => [key, undefined]))
+  return {...process.env, ...unset, GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1', ...extra}
+}
+
 function git(cwd: string, args: string[]): void {
-  const result = spawnSync('git', ['-c', 'core.hooksPath=/dev/null', ...args], {cwd, encoding: 'utf8'})
+  const result = spawnSync('git', ['-c', 'core.hooksPath=/dev/null', ...args], {cwd, env: isolatedEnv(), encoding: 'utf8'})
   if (result.status !== 0) {
     throw new Error(`git ${args.join(' ')} failed: ${result.stderr}`)
   }
@@ -61,8 +84,9 @@ function fixture({tracked = true}: {tracked?: boolean} = {}) {
     git(repo, ['add', 'docs/api/openapi.yaml'])
   }
   return {
+    git: (args: string[]): void => git(repo, args),
     run(mode: GeneratorMode): SpawnSyncReturns<string> {
-      const env = {...process.env, PATH: `${fakeBin}:${process.env.PATH ?? ''}`, FAKE_PNPM_MODE: mode, FAKE_PNPM_LOG: join(dir, 'pnpm.log')}
+      const env = isolatedEnv({PATH: `${fakeBin}:${process.env.PATH ?? ''}`, FAKE_PNPM_MODE: mode, FAKE_PNPM_LOG: join(dir, 'pnpm.log')})
       return spawnSync('bash', ['bin/check-openapi-freshness.sh'], {cwd: repo, env, encoding: 'utf8'})
     },
     spec: (): string | undefined => (existsSync(specPath) ? readFileSync(specPath, 'utf8') : undefined),
@@ -93,6 +117,7 @@ describe('bin/check-openapi-freshness.sh', () => {
     const result = f.run('none')
     expect(result.status).toBe(1)
     expect(result.stdout).toMatch(/^-paths: \{\}$/m)
+    expect(result.stdout).toMatch(/wrote no docs\/api\/openapi\.yaml/)
     expect(f.spec()).toBeUndefined()
   })
 
@@ -102,11 +127,41 @@ describe('bin/check-openapi-freshness.sh', () => {
     expect(result.status).toBe(7)
   })
 
-  test('an untracked spec fails without running the generator, because git diff cannot see it', () => {
+  test('an untracked spec fails without running the generator, because it has no index blob', () => {
     const f = fixture({tracked: false})
     const result = f.run('same')
     expect(result.status).toBe(1)
     expect(result.stdout).toMatch(/is not tracked by git/)
     expect(f.log()).toBe('')
+  })
+
+  test('a stale spec marked assume-unchanged still fails, because the check compares blob hashes', () => {
+    const f = fixture()
+    f.git(['update-index', '--assume-unchanged', 'docs/api/openapi.yaml'])
+    const result = f.run('changed')
+    expect(result.status).toBe(1)
+    expect(result.stdout).toMatch(/^\+ {2}\/files:$/m)
+  })
+
+  test('an inherited GIT_DIR cannot turn the fixture git calls onto another repository', () => {
+    const decoy = mkdtempSync(join(tmpdir(), 'openapi-freshness-decoy-'))
+    created.push(decoy)
+    git(decoy, ['init', '-q'])
+    const decoyGitDir = join(decoy, '.git')
+    const configBefore = readFileSync(join(decoyGitDir, 'config'), 'utf8')
+    expect(existsSync(join(decoyGitDir, 'index'))).toBe(false)
+    const inherited = process.env.GIT_DIR
+    process.env.GIT_DIR = decoyGitDir
+    try {
+      expect(fixture().run('same').status).toBe(0)
+    } finally {
+      if (inherited === undefined) {
+        delete process.env.GIT_DIR
+      } else {
+        process.env.GIT_DIR = inherited
+      }
+    }
+    expect(readFileSync(join(decoyGitDir, 'config'), 'utf8')).toBe(configBefore)
+    expect(existsSync(join(decoyGitDir, 'index'))).toBe(false)
   })
 })

@@ -220,14 +220,15 @@ Complete reference for all GitHub Actions workflows in the project.
 
 **Triggers**:
 - Push to main that changes `docs/api/openapi.yaml`, `bin/check-api-contract-sync.sh` or the workflow
-- Pull request with the same paths (dry run: prints the decision, writes nothing)
+- Pull request with the same paths (dry run: prints the decision, writes nothing; a manual dispatch from a branch other than main is a dry run too)
 - Schedule: daily 14:17 UTC
 - Manual dispatch (inputs `ios_ref` and `dry_run`)
 
 **Behavior** (`bin/check-api-contract-sync.sh`):
 1. Files match: closes the tracking issue if it is open
 2. Files differ: creates the tracking issue, or replaces its body and reopens it
-3. Exit 3 means the check could not measure; a red run never means drift
+3. Other open managed issues: closes them as duplicates of the tracking issue
+4. Exit 3 means the check could not measure; a red run never means drift
 
 The tracking issue is the lowest-numbered issue that `github-actions[bot]` opened with the `<!-- api-contract-sync:managed -->` marker. The `OpenAPI Freshness` job in `ci.yml` (`bin/check-openapi-freshness.sh`) keeps the committed spec equal to the generator output, so the sync copies a current file.
 

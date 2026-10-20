@@ -25,6 +25,7 @@ const BOT = 'app/github-actions'
 
 // A fake gh: `issue list|create|edit|reopen|close` against a JSON store. Every call is logged.
 // `list` honours --limit like the real gh. FAKE_GH_FAIL=<subcommand> makes that subcommand fail.
+// FAKE_GH_AUTHOR is the login that `create` records (default: the GITHUB_TOKEN bot).
 const FAKE_GH = `#!/usr/bin/env node
 const fs = require('node:fs')
 const args = process.argv.slice(2)
@@ -43,7 +44,8 @@ if (sub === 'list') {
 } else if (sub === 'create') {
   const issues = store()
   const next = Math.max(0, ...issues.map((i) => i.number)) + 1
-  issues.push({number: next, state: 'OPEN', author: {login: '${BOT}'}, body: fs.readFileSync(flag('--body-file'), 'utf8')})
+  const login = process.env.FAKE_GH_AUTHOR || '${BOT}'
+  issues.push({number: next, state: 'OPEN', author: {login}, body: fs.readFileSync(flag('--body-file'), 'utf8')})
   save(issues)
 } else if (sub === 'edit') {
   save(store().map((i) => (i.number === number ? {...i, body: fs.readFileSync(flag('--body-file'), 'utf8')} : i)))
@@ -99,7 +101,7 @@ function fixture(issues: Issue[] = []) {
   }
 }
 
-const managed = (issues: Issue[]) => issues.filter((entry) => entry.author.login === BOT && entry.body.includes(MARKER))
+const managed = (issues: Issue[], login: string = BOT) => issues.filter((entry) => entry.author.login === login && entry.body.includes(MARKER))
 const MUTATION = /issue (create|edit|close|reopen)/
 
 describe('bin/check-api-contract-sync.sh', () => {
@@ -176,11 +178,13 @@ describe('bin/check-api-contract-sync.sh', () => {
     expect(f.log()).not.toMatch(MUTATION)
   })
 
-  test('a DRY_RUN value other than "true" or "false" is refused before any GitHub call', () => {
+  test('a DRY_RUN value other than "true" or "false", empty included, is refused before any GitHub call', () => {
     const f = fixture()
-    const result = f.run('b.yaml', 'a.yaml', {DRY_RUN: '1'})
-    expect(result.status).toBe(3)
-    expect(result.stdout).toMatch(/UNMEASURED: DRY_RUN must be/)
+    for (const value of ['1', '', 'TRUE']) {
+      const result = f.run('b.yaml', 'a.yaml', {DRY_RUN: value})
+      expect(result.status).toBe(3)
+      expect(result.stdout).toMatch(/UNMEASURED: DRY_RUN must be/)
+    }
     expect(f.log()).toBe('')
   })
 
@@ -198,6 +202,29 @@ describe('bin/check-api-contract-sync.sh', () => {
     expect(result.status).toBe(3)
     expect(result.stdout).toMatch(/UNMEASURED: GitHub call failed: gh issue create/)
     expect(f.issues()).toEqual([])
+  })
+
+  test('a personal-token writer in another repository: MANAGED_AUTHOR keeps exactly one issue', () => {
+    const f = fixture()
+    const writer = {ISSUE_REPO: 'j0nathan-ll0yd/ios-OfflineMediaDownloader', MANAGED_AUTHOR: 'j0nathan-ll0yd', FAKE_GH_AUTHOR: 'j0nathan-ll0yd'}
+    expect(f.run('b.yaml', 'a.yaml', writer).status).toBe(0)
+    expect(f.run('b.yaml', 'a.yaml', writer).status).toBe(0)
+    expect(managed(f.issues(), 'j0nathan-ll0yd')).toHaveLength(1)
+    expect(f.log().match(/issue create/g)).toHaveLength(1)
+    expect(f.run('a.yaml', 'a.yaml', writer).status).toBe(0)
+    expect(f.issues()[0]?.state).toBe('CLOSED')
+  })
+
+  test('a diff over the byte budget is cut at a line end, so the body stays valid UTF-8 and under the limit', () => {
+    const f = fixture()
+    const padding = Array.from({length: 2000}, (_, index) => `  x-padding-${index}: caf\u00e9 cr\u00e8me br\u00fbl\u00e9e`).join('\n')
+    writeFileSync(join(f.dir, 'big.yaml'), `${SPEC_A}${padding}\n`)
+    expect(f.run('big.yaml', 'a.yaml').status).toBe(0)
+    const body = f.issues()[0]?.body ?? ''
+    expect(body).toMatch(/\[diff truncated to its first 50000 bytes of \d+, at a line end\]/)
+    expect(body).not.toContain('\uFFFD')
+    expect(body).toMatch(/^\+ {2}x-padding-\d+: caf\u00e9 cr\u00e8me br\u00fbl\u00e9e\n\[diff truncated/m)
+    expect(body.length).toBeLessThan(65536)
   })
 
   test('ISSUE_REPO overrides GITHUB_REPOSITORY as the issue target; neither set is unmeasured', () => {

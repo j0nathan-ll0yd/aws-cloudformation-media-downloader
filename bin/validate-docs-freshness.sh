@@ -20,6 +20,8 @@ echo ""
 cd "$PROJECT_ROOT"
 
 STALE=""
+# Checks that actually compared two timestamps. A SKIP or MISSING branch measures nothing.
+MEASURED=0
 
 # Check 1: TSDoc freshness (docs/source/ vs src/)
 # Skip in CI if docs/source doesn't exist - TSDoc generation is done locally
@@ -37,6 +39,7 @@ if [ -d "docs/source" ]; then
     SRC_MTIME=$(find src -type f -name "*.ts" ! -name "*.test.ts" ! -name "generatedResources.ts" -exec stat -f %m {} \; 2> /dev/null | sort -rn | head -1 || echo "0")
   fi
 
+  MEASURED=$((MEASURED + 1))
   if [ "$SRC_MTIME" -gt "$DOCS_MTIME" ]; then
     echo -e "${YELLOW}STALE${NC}"
     STALE="$STALE\n  - TSDoc (docs/source/) is older than source files"
@@ -73,6 +76,7 @@ elif [ -f "docs/terraform.md" ]; then
     TF_SRC_MTIME=$(find infra -type f -name "*.tf" -exec stat -f %m {} \; 2> /dev/null | sort -rn | head -1 || echo "0")
   fi
 
+  MEASURED=$((MEASURED + 1))
   if [ "$TF_SRC_MTIME" -gt "$TF_DOC_MTIME" ]; then
     echo -e "${YELLOW}STALE${NC}"
     STALE="$STALE\n  - Terraform docs (docs/terraform.md) is older than .tf files"
@@ -95,4 +99,9 @@ if [ -n "$STALE" ]; then
   exit 1
 fi
 
-echo -e "${GREEN}All generated documentation is up to date${NC}"
+# Say what was compared instead of claiming freshness. The exit code stays 0, as before.
+if [ "$MEASURED" -eq 0 ]; then
+  echo -e "${YELLOW}Nothing measured: every check skipped or found no generated output.${NC}"
+  exit 0
+fi
+echo -e "${GREEN}Generated documentation is up to date (${MEASURED} of 2 checks measured)${NC}"

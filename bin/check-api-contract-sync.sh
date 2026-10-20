@@ -6,16 +6,21 @@
 #
 # Environment:
 #   ISSUE_REPO      owner/repo that holds the tracking issue (default: GITHUB_REPOSITORY)
+#   MANAGED_AUTHOR  login that opens the tracking issue, as `gh issue list --json author`
+#                   reports it (default: app/github-actions, the GITHUB_TOKEN identity). Set it
+#                   with ISSUE_REPO when a personal token writes the issue in another repository.
 #   BACKEND_LABEL   backend revision label, for example "main @ 1a2b3c4d5e6f" (required)
 #   VENDORED_LABEL  vendored revision label, for example "main @ 5e6f7a8b9c0d" (required)
 #   MANAGED_BY      workflow named in the issue body (optional)
 #   RUN_URL         link to the workflow run (optional)
-#   DRY_RUN         "true" prints every decision and changes nothing; "false" (the default)
-#                   acts. Any other value is refused, so a typo cannot turn a dry run into writes.
+#   DRY_RUN         "true" prints every decision and changes nothing; "false" (the default
+#                   when unset) acts. Any other value, empty included, is refused, so a typo
+#                   cannot turn a dry run into writes.
 #
 # Exit codes:
 #   0  measured: the files match, or the drift is recorded in the tracking issue
-#   3  UNMEASURED: bad input or a failed GitHub call; never a pass
+#   3  UNMEASURED: bad input or a failed GitHub call; never a pass. A listing that reaches
+#      ISSUE_LIMIT is unmeasured too; narrow the listing before the repository gets there.
 #
 # Dedupe rule: a managed issue is one that MANAGED_AUTHOR opened and whose body carries
 # MARKER. The author check matters because anyone can open an issue in a public repository
@@ -27,12 +32,11 @@
 set -euo pipefail
 
 readonly MARKER='<!-- api-contract-sync:managed -->'
-# The login that `gh issue list --json author` reports for an issue opened with GITHUB_TOKEN.
-readonly MANAGED_AUTHOR='app/github-actions'
 readonly TITLE='API contract drift: iOS APITypes openapi.yaml differs from the backend spec'
 # A listing that reaches this many issues may omit the tracking issue, so it is unmeasured.
 readonly ISSUE_LIMIT=1000
-readonly MAX_DIFF_CHARS=50000
+# GitHub caps an issue body at 65,536 characters; a byte budget stays under it for any text.
+readonly MAX_DIFF_BYTES=50000
 readonly BACKEND_FILE="mantle-OfflineMediaDownloader \`docs/api/openapi.yaml\`"
 readonly VENDORED_FILE="ios-OfflineMediaDownloader \`APITypes/Sources/APITypes/openapi.yaml\`"
 
@@ -67,7 +71,9 @@ ISSUE_REPO=${ISSUE_REPO:-${GITHUB_REPOSITORY:-}}
 [ -n "$ISSUE_REPO" ] || unmeasured "ISSUE_REPO and GITHUB_REPOSITORY are not set"
 [ -n "${BACKEND_LABEL:-}" ] || unmeasured "BACKEND_LABEL is not set"
 [ -n "${VENDORED_LABEL:-}" ] || unmeasured "VENDORED_LABEL is not set"
-DRY_RUN_MODE=${DRY_RUN:-false}
+MANAGED_AUTHOR=${MANAGED_AUTHOR:-app/github-actions}
+# ${DRY_RUN-false}, not ${DRY_RUN:-false}: an empty value is refused below, not read as false.
+DRY_RUN_MODE=${DRY_RUN-false}
 case "$DRY_RUN_MODE" in
   true | false) ;;
   *) unmeasured "DRY_RUN must be \"true\" or \"false\", not \"${DRY_RUN_MODE}\"" ;;
@@ -129,7 +135,7 @@ set -e
 # Lines 1-2 of a single-pair unified diff are the ---/+++ headers.
 ADDED=$(awk 'NR > 2 && /^\+/ { n++ } END { print n + 0 }' "$DIFF_FILE")
 REMOVED=$(awk 'NR > 2 && /^-/ { n++ } END { print n + 0 }' "$DIFF_FILE")
-DIFF_CHARS=$(wc -c < "$DIFF_FILE" | tr -d ' ')
+DIFF_BYTES=$(wc -c < "$DIFF_FILE" | tr -d ' ')
 
 {
   echo "$MARKER"
@@ -151,10 +157,10 @@ DIFF_CHARS=$(wc -c < "$DIFF_FILE" | tr -d ' ')
   echo "<details><summary>Unified diff (vendored to backend)</summary>"
   echo
   echo '````diff'
-  if [ "$DIFF_CHARS" -gt "$MAX_DIFF_CHARS" ]; then
-    head -c "$MAX_DIFF_CHARS" "$DIFF_FILE"
-    echo
-    echo "[diff truncated at ${MAX_DIFF_CHARS} of ${DIFF_CHARS} characters]"
+  if [ "$DIFF_BYTES" -gt "$MAX_DIFF_BYTES" ]; then
+    # Drop the last, possibly partial, line so the cut never splits a line or a character.
+    head -c "$MAX_DIFF_BYTES" "$DIFF_FILE" | sed '$d'
+    echo "[diff truncated to its first ${MAX_DIFF_BYTES} bytes of ${DIFF_BYTES}, at a line end]"
   else
     cat "$DIFF_FILE"
   fi
