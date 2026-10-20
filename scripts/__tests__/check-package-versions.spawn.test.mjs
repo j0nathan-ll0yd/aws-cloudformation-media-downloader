@@ -10,34 +10,19 @@ import {tmpdir} from 'node:os'
 import {basename, dirname, join, resolve} from 'node:path'
 import {after, test} from 'node:test'
 import {fileURLToPath} from 'node:url'
+import {isolatedGitEnv} from '../../test/helpers/git-sandbox.ts'
 
 const scriptsDir = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const wrapperSource = join(scriptsDir, 'check-package-versions.mjs')
 const registry = 'https://npm.pkg.github.com'
 
-// Git exports GIT_DIR and the other location variables to the commands that hooks, `git rebase -x`
-// and `git bisect run` start. Inherited by the fixture's `git init`, a GIT_DIR that points at a
-// linked worktree rewrites that repository's shared config to `core.bare = true`; inherited by the
-// wrapper, it makes `git ls-files` list the outer repository instead of the fixture. Every git call
-// here, direct or through the wrapper, runs without them and without user or system git config.
-// test/helpers/git-sandbox.ts is the TypeScript twin of this list for the vitest suites.
-const GIT_LOCATION_VARS = [
-  'GIT_DIR',
-  'GIT_COMMON_DIR',
-  'GIT_WORK_TREE',
-  'GIT_INDEX_FILE',
-  'GIT_OBJECT_DIRECTORY',
-  'GIT_ALTERNATE_OBJECT_DIRECTORIES',
-  'GIT_NAMESPACE',
-  'GIT_PREFIX',
-  'GIT_CEILING_DIRECTORIES'
-]
-
-/** The current environment without the git location variables; spawnSync drops undefined values. */
-function isolatedGitEnv(extra = {}) {
-  const unset = Object.fromEntries(GIT_LOCATION_VARS.map((key) => [key, undefined]))
-  return {...process.env, ...unset, GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1', ...extra}
-}
+// Git exports GIT_DIR and the other repository-local variables to the commands that hooks,
+// `git rebase -x` and `git bisect run` start. Inherited by the fixture's `git init`, a GIT_DIR that
+// points at a linked worktree rewrites that repository's shared config to `core.bare = true`;
+// inherited by the wrapper, it makes `git ls-files` list the outer repository instead of the
+// fixture. Every git call here, direct or through the wrapper, runs in the environment that
+// test/helpers/git-sandbox.ts builds. Node strips that file's types on import, so this node:test
+// suite and the vitest suites share one implementation, and git itself supplies the list.
 
 const created = []
 after(() => {

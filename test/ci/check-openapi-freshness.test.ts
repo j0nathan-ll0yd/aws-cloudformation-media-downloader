@@ -8,10 +8,11 @@
  */
 import {spawnSync} from 'node:child_process'
 import type {SpawnSyncReturns} from 'node:child_process'
-import {chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from 'node:fs'
+import {createHash} from 'node:crypto'
+import {chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync} from 'node:fs'
 import {tmpdir} from 'node:os'
 import {join, resolve} from 'node:path'
-import {afterAll, describe, expect, test} from 'vitest'
+import {afterAll, describe, expect, test, vi} from 'vitest'
 import {isolatedGitEnv} from '#test/helpers/git-sandbox'
 
 type GeneratorMode = 'same' | 'changed' | 'none' | 'fail'
@@ -42,6 +43,12 @@ function git(cwd: string, args: string[]): void {
   if (result.status !== 0) {
     throw new Error(`git ${args.join(' ')} failed: ${result.stderr}`)
   }
+}
+
+// sha256 of every file under a directory, by relative path, to show that nothing in it changed.
+function snapshot(dir: string): Record<string, string> {
+  const files = readdirSync(dir, {recursive: true, encoding: 'utf8'}).filter((path) => statSync(join(dir, path)).isFile())
+  return Object.fromEntries(files.sort().map((path) => [path, createHash('sha256').update(readFileSync(join(dir, path))).digest('hex')]))
 }
 
 function fixture({tracked = true}: {tracked?: boolean} = {}) {
@@ -122,25 +129,31 @@ describe('bin/check-openapi-freshness.sh', () => {
     expect(result.stdout).toMatch(/^\+ {2}\/files:$/m)
   })
 
-  test('an inherited GIT_DIR cannot turn the fixture git calls onto another repository', () => {
+  test.each([
+    {shape: 'GIT_DIR', exportWorkTree: false},
+    {shape: 'GIT_DIR and GIT_WORK_TREE', exportWorkTree: true}
+  ])('an inherited $shape, as a hook in a linked worktree exports it, cannot reach that repository', ({exportWorkTree}) => {
+    // Every Paseo checkout is a linked worktree. Hooks export its gitdir as GIT_DIR, and some
+    // callers export GIT_WORK_TREE too. A fixture git call that inherited either would act on it.
     const decoy = mkdtempSync(join(tmpdir(), 'openapi-freshness-decoy-'))
     created.push(decoy)
-    git(decoy, ['init', '-q'])
-    const decoyGitDir = join(decoy, '.git')
-    const configBefore = readFileSync(join(decoyGitDir, 'config'), 'utf8')
-    expect(existsSync(join(decoyGitDir, 'index'))).toBe(false)
-    const inherited = process.env.GIT_DIR
-    process.env.GIT_DIR = decoyGitDir
+    const outer = join(decoy, 'outer')
+    const linked = join(decoy, 'linked')
+    mkdirSync(outer)
+    git(outer, ['init', '-q'])
+    git(outer, ['-c', 'user.name=decoy', '-c', 'user.email=decoy@example.invalid', 'commit', '-q', '--allow-empty', '-m', 'decoy'])
+    git(outer, ['worktree', 'add', '-q', linked])
+    const before = snapshot(decoy)
+    vi.stubEnv('GIT_DIR', join(outer, '.git/worktrees/linked'))
+    if (exportWorkTree) {
+      vi.stubEnv('GIT_WORK_TREE', linked)
+    }
     try {
       expect(fixture().run('same').status).toBe(0)
+      expect(fixture().run('changed').status).toBe(1)
     } finally {
-      if (inherited === undefined) {
-        delete process.env.GIT_DIR
-      } else {
-        process.env.GIT_DIR = inherited
-      }
+      vi.unstubAllEnvs()
     }
-    expect(readFileSync(join(decoyGitDir, 'config'), 'utf8')).toBe(configBefore)
-    expect(existsSync(join(decoyGitDir, 'index'))).toBe(false)
+    expect(snapshot(decoy)).toEqual(before)
   })
 })
