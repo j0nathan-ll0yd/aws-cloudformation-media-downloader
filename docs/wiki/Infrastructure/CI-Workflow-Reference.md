@@ -1,306 +1,249 @@
 # CI Workflow Reference
 
-Complete reference for all GitHub Actions workflows in the project.
+Every GitHub Actions workflow in `.github/workflows/`: what starts it, where it runs, and what it checks. The workflow files are the source of truth; each section names its file and jobs.
+
+## Runner Lanes
+
+Every job runs on the self-hosted fleet, except one recorded exception.
+
+| Labels                                          | Used by                                     | Notes                                                                   |
+| ----------------------------------------------- | ------------------------------------------- | ----------------------------------------------------------------------- |
+| `[self-hosted, linux, arm64, node]`             | most jobs                                   | Node 24 image with pnpm, gh, jq, OpenTofu, and SOPS                     |
+| `[self-hosted, linux, arm64, node-integration]` | `integration-tests.yml`                     | Adds LocalStack and PostgreSQL sidecars                                 |
+| `[self-hosted, linux, arm64, base]`             | `pr-ready`, `pr-title.yml`, `sync-wiki.yml` | Ubuntu with git, curl, and jq; no Node                                  |
+| `[self-hosted, linux, arm64, image-build]`      | the two `repin-image` jobs                  | Docker-in-Docker lane for the `StartFileUpload` image                   |
+| `ubuntu-latest`                                 | `updater-watchdog.yml`                      | Recorded exception (atlas decision 0085): it must report a fleet outage |
+
+## Required Status Checks
+
+Ruleset `main-protection` (id 21322405) requires these contexts on `main`, with the branch up to date before merge:
+
+| Context                 | Workflow and job                            |
+| ----------------------- | ------------------------------------------- |
+| `Type Check`            | `ci.yml` `typecheck`                        |
+| `Lint & Format`         | `ci.yml` `lint`                             |
+| `Tests`                 | `ci.yml` `test`                             |
+| `Build`                 | `ci.yml` `build`                            |
+| `Convention Checks`     | `ci.yml` `conventions`                      |
+| `package-version-drift` | `ci.yml` `package-version-drift`            |
+| `Validate Dependencies` | `dependency-check.yml` `dependency-check`   |
+| `integration-tests`     | `integration-tests.yml` `integration-tests` |
+| `pr-ready`              | `pr-checks.yml` `pr-ready`                  |
+
+On 2026-10-20 every other check on this page reported without blocking a merge. Read the live list with `gh api repos/j0nathan-ll0yd/mantle-OfflineMediaDownloader/rulesets/21322405`.
 
 ## Workflow Overview
 
-| Workflow | Trigger | Schedule | Purpose |
-|----------|---------|----------|---------|
-| `unit-tests.yml` | push, PR | - | TypeSpec, types, lint, unit tests |
-| `integration-tests.yml` | push, PR | - | LocalStack + PostgreSQL integration tests |
-| `agent-compliance.yml` | push, PR to main | - | MCP convention validation |
-| `mutation-tests.yml` | schedule | Sun 6 AM UTC | Stryker mutation testing |
-| `dependency-check.yml` | push, PR | - | Architectural boundary validation |
-| `auto-update-graphrag.yml` | push to main | - | Knowledge graph regeneration |
-| `sync-wiki.yml` | push to main | - | GitHub Wiki synchronization |
-| `update-yt-dlp.yml` | schedule | Sun 2 AM UTC | yt-dlp binary updates |
-| `check-upstream-issues.yml` | schedule | Daily | Monitor upstream dependencies |
-| `api-contract-sync.yml` | push to main, PR (dry run), schedule | Daily 14:17 UTC | Track the iOS copy of the OpenAPI spec in one issue |
+| Workflow                | Trigger                                                               | Lane              | Purpose                                                                                           |
+| ----------------------- | --------------------------------------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------- |
+| `ci.yml`                | push to `main`, pull request                                          | node              | Type check, lint, tests, build and pin gates, conventions, version drift, generated-doc freshness |
+| `pr-checks.yml`         | pull request to `main`                                                | node, base        | Quick checks, then `unit-tests.yml` and `integration-tests.yml`; `pr-ready` gates the merge       |
+| `unit-tests.yml`        | push to any branch, pull request to `main`, called by `pr-checks.yml` | node              | Validation, build, GraphRAG check, and unit tests                                                 |
+| `integration-tests.yml` | push to any branch, pull request to `main`, called by `pr-checks.yml` | node-integration  | Integration tests against LocalStack and PostgreSQL                                               |
+| `dependency-check.yml`  | push to `main` or `develop`, pull request                             | node              | Dependency audit and architecture rules                                                           |
+| `pr-title.yml`          | pull request opened, edited, or synchronized                          | base              | Conventional Commits pull request title                                                           |
+| `docs.yml`              | pull request that changes the wiki or the Vale config                 | node              | Vale lint of `docs/wiki/`                                                                         |
+| `api-contract-sync.yml` | spec change on `main` or in a pull request; daily 14:17 UTC; manual   | node              | One tracking issue while the iOS copy of the OpenAPI spec differs                                 |
+| `mutation-tests.yml`    | Sunday 06:00 UTC; manual                                              | node              | Stryker mutation testing                                                                          |
+| `sync-wiki.yml`         | push to `main` that changes `docs/wiki/**`; manual                    | base              | Publish `docs/wiki/` to the GitHub Wiki                                                           |
+| `update-agents.yml`     | merged pull request to `main`; manual                                 | node              | Recent pull request list for `AGENTS.md`; never pushes (see below)                                |
+| `update-ffmpeg.yml`     | Monday and Thursday 02:17 UTC; manual                                 | node, image-build | ffmpeg pin update and image repin                                                                 |
+| `update-yt-dlp.yml`     | Sunday 02:23 UTC; manual                                              | node, image-build | yt-dlp pin update and image repin                                                                 |
+| `updater-watchdog.yml`  | daily 03:41 UTC; manual                                               | `ubuntu-latest`   | Issue when an updater has no recent success                                                       |
+| `deploy-production.yml` | manual                                                                | node              | Production deploy, behind `vars.ENABLE_PRODUCTION_DEPLOY`                                         |
+| `rollback.yml`          | manual                                                                | node              | Redeploy an earlier commit, behind `vars.ENABLE_ROLLBACK`                                         |
 
 ## Workflow Details
 
+### ci.yml
+
+**Triggers**: push to `main` or `master`; pull request to `main` or `master` (opened, synchronize, reopened, ready for review).
+
+| Job                        | Check context                     | Timeout (min) | Runs                                                                |
+| -------------------------- | --------------------------------- | ------------- | ------------------------------------------------------------------- |
+| `typecheck`                | Type Check                        | 25            | `pnpm run typecheck` (source and tests, TypeScript 6)               |
+| `typecheck-ts7`            | Type Check (TS7 native, advisory) | 25            | `pnpm run typecheck:ts7`; `continue-on-error`                       |
+| `lint`                     | Lint & Format                     | 25            | `pnpm lint`, `pnpm format:check`                                    |
+| `test`                     | Tests                             | 25            | `pnpm test`, `pnpm run test:image-drift`                            |
+| `build`                    | Build                             | 25            | `pnpm build:ci`, then the `StartFileUpload` pin gates               |
+| `conventions`              | Convention Checks                 | 25            | `npx mantle check --severity HIGH`                                  |
+| `package-version-drift`    | package-version-drift             | 15            | Self-test, exit-code tests, then the drift check                    |
+| `openapi-freshness`        | OpenAPI Freshness                 | 15            | `bin/check-openapi-freshness.sh`                                    |
+| `terraform-docs-freshness` | Terraform Docs Freshness          | 15            | `bin/install-terraform-docs.sh`, then `bin/check-terraform-docs.sh` |
+
+The timeouts come from measured job durations; the basis is in comments in `ci.yml`.
+
+**Build pin gates**: gate 2a compares the pinned `bundleHash` in `docker/start-file-upload.pin.json` with the bundle this commit builds. Gate 2b fails a pull request that changes `layers/**` or `docker/Dockerfile.download` without a pin update. Gate 2c checks the digest in ECR and runs only when `vars.CI_ECR_DIGEST_GATE` is `true`. See `docker/start-file-upload.pin.README.md`.
+
+**OpenAPI Freshness**: deletes `docs/api/openapi.yaml`, regenerates it with `pnpm run generate:openapi:spec`, and fails on any difference or on a run that writes no file. The generator exits 0 without writing when it finds no API handlers, so the delete comes first.
+
+**Terraform Docs Freshness**: installs terraform-docs at the version and archive checksum that `bin/install-terraform-docs.sh` pins, deletes `docs/terraform.md`, regenerates it by running the `document:terraform` package script's command, and fails on any difference. It refuses a terraform-docs of another version, which would emit different output. It runs that command with `sh`, not `pnpm run`: pnpm 11 installs every dependency before a run when `node_modules` is missing, and this job installs none.
+
+### pr-checks.yml
+
+**Triggers**: pull request to `main` (opened, synchronize, reopened, ready for review). One run at a time per pull request.
+
+**Flow**:
+
+1. `quick-checks`: format check and lint
+2. `full-ci` calls `unit-tests.yml`; `integration` calls `integration-tests.yml`; both wait for `quick-checks`
+3. `pr-ready` always runs and fails unless `full-ci` and `integration` succeeded; it is the required context
+
 ### unit-tests.yml
 
-**Purpose**: Core CI pipeline for every push and PR.
+**Triggers**: push to any branch; pull request to `main`; `workflow_call` from `pr-checks.yml`.
 
-**Triggers**:
-- Push to any branch
-- Pull request to main
+| Job                  | Runs                                                                                                                                                                                          |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `validate`           | Documented scripts exist, doc-code sync, `pnpm audit` (advisory), conventions, OpenSpec drift report (advisory), OpenSpec covers ratchet, environment variables, DSQL migration compatibility |
+| `lint-and-types`     | Build, source and test type checks, ESLint, dprint, ShellCheck (`--severity=error`), ESLint local rule tests, `tofu fmt -check`                                                               |
+| `build-and-validate` | Dependency graph and build, then `pnpm run validate:graphrag`                                                                                                                                 |
+| `test`               | Unit tests with coverage, after `validate`, `lint-and-types`, and `build-and-validate`                                                                                                        |
 
-**Steps**:
-1. TypeSpec compilation check
-2. API documentation generation
-3. API path validation
-4. Lambda bundle build
-5. **Bundle size check** (fails if limits exceeded)
-6. GraphRAG validation
-7. TypeScript type checking (source + tests)
-8. ESLint + dprint format check
-9. ESLint local rule tests
-10. Documentation validation
-11. Convention validation
-12. Unit tests with coverage
-
-**Key Checks**:
-- All Lambda bundles must be under size limits
-- No TypeScript errors
-- No ESLint violations
-- All tests pass
-
----
+**GraphRAG**: `pnpm run validate:graphrag` regenerates `graphrag/knowledge-graph.json` and fails on any difference, so a pull request must commit a current graph. No workflow regenerates or commits the graph after merge.
 
 ### integration-tests.yml
 
-**Purpose**: Full integration tests with LocalStack and PostgreSQL.
+**Triggers**: push to any branch; pull request to `main`; `workflow_call` from `pr-checks.yml`.
 
-**Triggers**:
-- Push to any branch
-- Pull request to main
-
-**Services Started**:
-- LocalStack (AWS service emulation)
-- PostgreSQL (test database)
-
-**Steps**:
-1. Type checking
-2. Lint
-3. Start LocalStack and PostgreSQL containers
-4. Wait for health checks
-5. Run integration tests with coverage
-6. Upload test artifacts
-
-**Environment Variables**:
-- `USE_LOCALSTACK=true`
-- `TEST_DATABASE_URL=postgres://test:test@localhost:5432/media_downloader_test`
-
----
-
-### agent-compliance.yml
-
-**Purpose**: Validate code against project conventions.
-
-**Triggers**:
-- Push to main
-- Pull request to main
-
-**Validation**:
-- Runs `pnpm run check:conventions`
-- Checks 13+ convention rules via AST analysis
-
-**Rules Validated**:
-- AWS SDK encapsulation
-- Entity mock patterns
-- Response helpers
-- Environment variable handling
-- Cascade delete order
-- And more
-
----
-
-### mutation-tests.yml
-
-**Purpose**: Weekly mutation testing to validate test quality.
-
-**Triggers**:
-- Schedule: Sunday 6 AM UTC
-- Manual dispatch
-
-**How It Works**:
-1. Downloads previous incremental state
-2. Runs Stryker mutation testing
-3. Generates mutation score report
-4. Uploads incremental state for next run
-
-**Reports**:
-- Mutation score percentage
-- Killed/Survived/Timeout counts
-- Available as artifact for 30 days
-
----
+**Behavior**: runs on the `node-integration` lane, whose LocalStack (port 4566) and PostgreSQL sidecars the job reaches through `AWS_ENDPOINT_URL` and `TEST_DATABASE_URL`. It runs `pnpm run test:integration --coverage`, retries once on failure, reports flaky tests from the JUnit report, and uploads the results.
 
 ### dependency-check.yml
 
-**Purpose**: Validate architectural boundaries.
+**Triggers**: push to `main` or `develop`; pull request to `main` or `develop`.
 
-**Triggers**:
-- Push to main/develop
-- Pull request to main/develop
+**Validate Dependencies** runs `pnpm audit` (advisory), `.github/scripts/check-upstream-issues.mjs` (stale pnpm overrides) and `pnpm run deps:check` (dependency-cruiser rules). On failure it generates and uploads a dependency report, and on a pull request it also comments.
 
-**Checks**:
-- Circular dependencies
-- Cross-Lambda imports
-- Direct AWS SDK imports (must use vendor wrappers)
-- Entity cross-dependencies
+### pr-title.yml
 
-**On Failure**:
-- Generates dependency report artifact
-- Comments on PR with violation details
+**Behavior**: the pull request title must follow Conventional Commits with one of these types: `feat`, `fix`, `chore`, `refactor`, `test`, `style`, `ci`, `docs`, `perf`, `revert`.
 
----
+### docs.yml
 
-### auto-update-graphrag.yml
+**Triggers**: pull request to `main` that changes `docs/wiki/**/*.md`, `.vale.ini` or `.vale/**`.
 
-**Purpose**: Keep knowledge graph in sync with codebase.
-
-**Triggers**:
-- Push to main with changes to:
-  - `src/lambdas/**`
-  - `src/entities/**`
-  - `src/lib/vendor/**`
-  - `graphrag/metadata.json`
-  - `tsp/**`
-
-**Behavior**:
-1. Runs `pnpm run graphrag:extract`
-2. Commits updated `knowledge-graph.json` if changed
-3. Pushes commit to main
-
----
-
-### sync-wiki.yml
-
-**Purpose**: Synchronize docs/wiki to GitHub Wiki.
-
-**Triggers**:
-- Push to main with changes to:
-  - `docs/wiki/**`
-  - `.github/scripts/sync-wiki.sh`
-  - `.github/scripts/generate-sidebar.sh`
-- Manual dispatch
-
-**Behavior**:
-1. Clones wiki repository
-2. Syncs content from `docs/wiki/`
-3. Generates sidebar navigation
-4. Generates footer with timestamp
-5. Commits and pushes to wiki
-
----
-
-### update-yt-dlp.yml
-
-**Purpose**: Weekly yt-dlp binary updates with verification.
-
-**Triggers**:
-- Schedule: Sunday 2 AM UTC
-- Manual dispatch
-
-**Process**:
-1. Check latest yt-dlp release (excludes pre-releases)
-2. Download and verify SHA256 checksum
-3. Test binary execution
-4. Create branch and PR if update needed
-5. PR includes rollback instructions
-
-**Labels Applied**:
-- `dependencies`
-- `automated`
-- `yt-dlp`
-- `infrastructure`
-
----
-
-### check-upstream-issues.yml
-
-**Purpose**: Monitor upstream dependencies for breaking changes.
-
-**Triggers**:
-- Schedule: Daily
-
-**Monitored**:
-- yt-dlp issues
-- AWS SDK issues
-- Other critical dependencies
-
----
+**Lint Documentation** runs `vale sync` and `vale docs/wiki/` with the styles that `.vale.ini` names.
 
 ### api-contract-sync.yml
 
-**Purpose**: Compare `docs/api/openapi.yaml` with the copy that `ios-OfflineMediaDownloader` vendors at `APITypes/Sources/APITypes/openapi.yaml`, and keep one tracking issue in this repository in step with the result.
+**Purpose**: compare `docs/api/openapi.yaml` with the copy that `ios-OfflineMediaDownloader` vendors at `APITypes/Sources/APITypes/openapi.yaml`, and keep one tracking issue in this repository in step with the result.
 
 **Triggers**:
-- Push to main that changes `docs/api/openapi.yaml`, `bin/check-api-contract-sync.sh` or the workflow
-- Pull request with the same paths (dry run: prints the decision, writes nothing; a manual dispatch from a branch other than main is a dry run too)
+
+- Push to `main` that changes `docs/api/openapi.yaml`, `bin/check-api-contract-sync.sh` or the workflow
+- Pull request with the same paths
 - Schedule: daily 14:17 UTC
 - Manual dispatch (inputs `ios_ref` and `dry_run`)
 
+Only runs on `main` write the issue. A pull request, or a dispatch from another branch, gets a dry run that prints its decisions and writes nothing.
+
 **Behavior** (`bin/check-api-contract-sync.sh`):
+
 1. Files match: closes the tracking issue if it is open
 2. Files differ: creates the tracking issue, or replaces its body and reopens it
 3. Other open managed issues: closes them as duplicates of the tracking issue
 4. Exit 3 means the check could not measure; a red run never means drift
 
-The tracking issue is the lowest-numbered issue that `github-actions[bot]` opened with the `<!-- api-contract-sync:managed -->` marker. The `OpenAPI Freshness` job in `ci.yml` (`bin/check-openapi-freshness.sh`) keeps the committed spec equal to the generator output, so the sync copies a current file.
+The tracking issue is the lowest-numbered issue that `github-actions[bot]` opened with the `<!-- api-contract-sync:managed -->` marker.
 
----
+### mutation-tests.yml
 
-## Workflow Dependencies
+**Triggers**: Sunday 06:00 UTC; manual dispatch.
 
-```
-unit-tests.yml
-├── TypeSpec compilation
-├── Build (generates bundles)
-├── Bundle size check (requires build)
-├── GraphRAG validation
-└── Unit tests
+**Behavior**: builds the project, restores the previous Stryker incremental file, runs mutation tests (`pnpm run test:mutation:incremental`), and uploads the report and the new incremental file. Timeout: 60 minutes.
 
-integration-tests.yml
-├── Type checking
-├── LocalStack (container)
-├── PostgreSQL (container)
-└── Integration tests
+### sync-wiki.yml
 
-dependency-check.yml
-├── Dependency graph generation
-└── Dependency cruiser rules
+**Triggers**: push to `main` that changes `docs/wiki/**`, `.github/scripts/sync-wiki.sh`, `.github/scripts/generate-sidebar.sh` or the workflow; manual dispatch.
 
-auto-update-graphrag.yml
-├── graphrag:extract
-└── Git commit/push
-```
+**Behavior**: clones the GitHub Wiki repository, copies `docs/wiki/` into it, generates the sidebar and footer, and pushes. A merged change to this page reaches the public wiki this way.
+
+### update-agents.yml
+
+**Triggers**: a merged pull request to `main`; manual dispatch.
+
+**Behavior**: runs `pnpm run update:agents:prs`, which commits a refreshed list to `AGENTS.md`, then pushes only if the working tree still differs. That commit leaves the tree clean, so runs end with `No changes to push` and nothing reaches `main`.
+
+### update-ffmpeg.yml and update-yt-dlp.yml
+
+**Triggers**: `update-ffmpeg.yml` Monday and Thursday 02:17 UTC; `update-yt-dlp.yml` Sunday 02:23 UTC; both by manual dispatch.
+
+| Job              | Lane        | Timeout (min) | Runs                                                                                                            |
+| ---------------- | ----------- | ------------- | --------------------------------------------------------------------------------------------------------------- |
+| `check-update`   | node        | 15            | Finds the upstream release, downloads and verifies it, and opens or updates the pin pull request                |
+| `repin-image`    | image-build | 60            | Builds and pushes the `StartFileUpload` image to ECR, then pushes the generated pin commit to that pull request |
+| `notify-failure` | node        | 5             | Opens, or comments on, the `<tool> update workflow failed` issue when `check-update` or `repin-image` failed    |
+
+Merging a pin pull request does not deploy it; `pnpm run check:image-drift` reports a committed pin that staging is not running yet.
+
+### updater-watchdog.yml
+
+**Triggers**: daily 03:41 UTC; manual dispatch.
+
+**Behavior**: runs on `ubuntu-latest`, so that it still reports when the fleet is down. When `update-ffmpeg.yml` has no success in 120 hours or `update-yt-dlp.yml` has none in 216 hours, it fails and opens or edits the issue `Dependency updater schedule watchdog alert`. It closes that issue once both recover.
+
+### deploy-production.yml and rollback.yml
+
+Both are manual only; CI never deploys (`mantle.config.ts` `ci.deploy: false`). `deploy-production.yml` requires the input `confirm` to be `deploy`, and its deploy job runs only when `vars.ENABLE_PRODUCTION_DEPLOY` is `true`. `rollback.yml` takes an `environment` and an optional `commit_sha`, and runs only when `vars.ENABLE_ROLLBACK` is `true`. Both call `npx mantle deploy`, and `mantle.config.ts` `allowedStages` refuses every stage except staging until stage-scoped state lands.
 
 ## Manual Workflow Triggers
 
-Some workflows support manual dispatch:
-
 ```bash
-# Trigger via GitHub CLI
-gh workflow run mutation-tests.yml
-gh workflow run update-yt-dlp.yml
-gh workflow run sync-wiki.yml
 gh workflow run api-contract-sync.yml -f dry_run=true
+gh workflow run mutation-tests.yml
+gh workflow run sync-wiki.yml
+gh workflow run update-agents.yml
+gh workflow run update-ffmpeg.yml
+gh workflow run update-yt-dlp.yml
+gh workflow run updater-watchdog.yml
 ```
+
+Deploys and rollbacks are owner actions; see the Deployment Commands section of `AGENTS.md`.
 
 ## Troubleshooting
 
-### unit-tests failing
+### Type Check, Lint & Format or Tests failing
 
-1. Check TypeScript errors: `pnpm run check-types`
-2. Check lint: `pnpm run lint`
-3. Run tests locally: `pnpm test`
-4. Check bundle sizes: `pnpm run check:bundle-size`
+1. Run `pnpm run typecheck`, `pnpm lint`, `pnpm format:check` and `pnpm test`
+2. `pnpm run precheck` runs the same gates as the pre-push hook
+
+### Build failing at a pin gate
+
+1. Gate 2a or 2b: run `bin/refresh-download-image.sh` on an authorized Docker host to rebuild, push, and repin
+2. See `docker/start-file-upload.pin.README.md`
 
 ### integration-tests failing
 
-1. Start services locally: `pnpm run localstack:start`
-2. Check health: `pnpm run localstack:health`
-3. Run tests: `pnpm run test:integration`
+1. Start the services: `pnpm run localstack:start`
+2. Check them: `pnpm run localstack:health`
+3. Run the tests: `pnpm run test:integration`
+
+### Validate Dependencies failing
+
+1. Run `pnpm run deps:check`
+2. Generate the report: `pnpm run deps:report`
+3. Check for circular dependencies and direct vendor imports
 
 ### OpenAPI Freshness or api-contract-sync failing
 
 1. `OpenAPI Freshness` red: run `pnpm run generate:openapi` and commit `docs/api/`
 2. `api-contract-sync` red: read the `UNMEASURED:` line; it names the input or GitHub call that failed
-3. An open "API contract drift" issue is not a failure: sync the iOS copy with `bash Scripts/sync-openapi.sh` in `ios-OfflineMediaDownloader`
+3. An open `API contract drift` issue is not a failure: sync the iOS copy with `bash Scripts/sync-openapi.sh` in `ios-OfflineMediaDownloader`
 
-### dependency-check failing
+### Terraform Docs Freshness failing
 
-1. Run locally: `pnpm run deps:check`
-2. Generate report: `pnpm run deps:report`
-3. Check for circular dependencies
-4. Ensure vendor wrapper usage
+1. Install the pinned terraform-docs: `bin/install-terraform-docs.sh` takes a target directory; put that directory first on `PATH`
+2. Run `pnpm run document:terraform` and commit `docs/terraform.md`
+3. Run `bin/check-terraform-docs.sh` to confirm
 
-### auto-update-graphrag failing
+### GraphRAG validation failing
 
-1. Run extraction: `pnpm run graphrag:extract`
-2. Check metadata.json syntax
-3. Commit changes manually if needed
+1. Run `npx mantle generate graph && pnpm run validate:graphrag` locally. CI regenerates `build/graph.json` first; a stale local copy gives a wrong graph
+2. If metadata validation fails, make `graphrag/metadata.json` list exactly the Lambdas in `src/lambdas/`, each with a complete entry
+3. Commit the regenerated `graphrag/knowledge-graph.json`
+
+### An updater failure issue is open
+
+1. Open the run that the issue links
+2. `check-update` failures are upstream or network problems; `repin-image` failures are image build or ECR problems
+3. The issue stays open for the next failure to comment on; close it after a successful run
