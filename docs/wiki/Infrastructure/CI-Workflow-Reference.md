@@ -251,6 +251,6 @@ gh workflow run sync-wiki.yml
 
 No workflow regenerates the knowledge graph after merge. The `unit-tests.yml` step "Validate GraphRAG synchronization" (`pnpm run validate:graphrag`) fails when the committed graph is stale.
 
-1. Run `pnpm run validate:graphrag` locally
-2. If metadata validation fails, add the missing Lambda or entity to `graphrag/metadata.json`
+1. Run `npx mantle generate graph && pnpm run validate:graphrag` locally. CI regenerates `build/graph.json` first; a stale local copy gives a wrong graph
+2. If metadata validation fails, make `graphrag/metadata.json` list exactly the Lambdas in `src/lambdas/`, each with a complete entry
 3. Commit the regenerated `graphrag/knowledge-graph.json`

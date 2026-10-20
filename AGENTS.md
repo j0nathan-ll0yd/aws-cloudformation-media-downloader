@@ -118,13 +118,13 @@ The GraphRAG system (`graphrag/`) is **active** and integrated into CI. It uses 
 
 1. The MCP handlers and GraphRAG auto-discover from filesystem
 2. Update `graphrag/metadata.json` with trigger types and purposes
-3. Run `pnpm run graphrag:extract` to regenerate the knowledge graph
-4. Commit `graphrag/knowledge-graph.json` in the same pull request. The required `pr-ready` check runs `pnpm run validate:graphrag` (`unit-tests.yml` job `build-and-validate`), which regenerates the graph and fails on any difference. `unit-tests.yml` also runs on every push to `main`. No workflow regenerates or commits the graph after merge.
+3. Run `npx mantle generate graph && pnpm run graphrag:extract`. `graphrag:extract` reads `build/graph.json`, and `validate:graphrag` regenerates that file only when it is missing, so a stale local copy gives a wrong graph
+4. Commit `graphrag/knowledge-graph.json` in the same pull request. The required `pr-ready` check needs `full-ci`, whose `unit-tests.yml` job `build-and-validate` regenerates `build/graph.json` and then runs `pnpm run validate:graphrag`, which regenerates the graph and fails on any difference. `unit-tests.yml` also runs on every push to `main`. No workflow regenerates or commits the graph after merge.
 
 **When changing Lambda invocation chains:**
 
 1. Update `graphrag/metadata.json` `lambdaInvocations` array
-2. Run `pnpm run graphrag:extract` and commit `graphrag/knowledge-graph.json`
+2. Run `npx mantle generate graph && pnpm run graphrag:extract` and commit `graphrag/knowledge-graph.json`
 
 See [System Diagrams](docs/wiki/Architecture/System-Diagrams.md) for Lambda Trigger Patterns and Data Access Patterns tables.
 
