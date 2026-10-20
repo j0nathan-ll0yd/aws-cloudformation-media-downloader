@@ -119,12 +119,12 @@ The GraphRAG system (`graphrag/`) is **active** and integrated into CI. It uses 
 1. The MCP handlers and GraphRAG auto-discover from filesystem
 2. Update `graphrag/metadata.json` with trigger types and purposes
 3. Run `pnpm run graphrag:extract` to regenerate the knowledge graph
-4. CI will fail if `knowledge-graph.json` is out of date
+4. Commit `graphrag/knowledge-graph.json` in the same pull request. The required `pr-ready` check runs `pnpm run validate:graphrag` (`unit-tests.yml` job `build-and-validate`), which regenerates the graph and fails on any difference. `unit-tests.yml` also runs on every push to `main`. No workflow regenerates or commits the graph after merge.
 
 **When changing Lambda invocation chains:**
 
 1. Update `graphrag/metadata.json` `lambdaInvocations` array
-2. Run `pnpm run graphrag:extract`
+2. Run `pnpm run graphrag:extract` and commit `graphrag/knowledge-graph.json`
 
 See [System Diagrams](docs/wiki/Architecture/System-Diagrams.md) for Lambda Trigger Patterns and Data Access Patterns tables.
 

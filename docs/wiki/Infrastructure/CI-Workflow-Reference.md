@@ -11,7 +11,6 @@ Complete reference for all GitHub Actions workflows in the project.
 | `agent-compliance.yml` | push, PR to main | - | MCP convention validation |
 | `mutation-tests.yml` | schedule | Sun 6 AM UTC | Stryker mutation testing |
 | `dependency-check.yml` | push, PR | - | Architectural boundary validation |
-| `auto-update-graphrag.yml` | push to main | - | Knowledge graph regeneration |
 | `sync-wiki.yml` | push to main | - | GitHub Wiki synchronization |
 | `update-yt-dlp.yml` | schedule | Sun 2 AM UTC | yt-dlp binary updates |
 | `check-upstream-issues.yml` | schedule | Daily | Monitor upstream dependencies |
@@ -137,25 +136,6 @@ Complete reference for all GitHub Actions workflows in the project.
 
 ---
 
-### auto-update-graphrag.yml
-
-**Purpose**: Keep knowledge graph in sync with codebase.
-
-**Triggers**:
-- Push to main with changes to:
-  - `src/lambdas/**`
-  - `src/entities/**`
-  - `src/lib/vendor/**`
-  - `graphrag/metadata.json`
-  - `tsp/**`
-
-**Behavior**:
-1. Runs `pnpm run graphrag:extract`
-2. Commits updated `knowledge-graph.json` if changed
-3. Pushes commit to main
-
----
-
 ### sync-wiki.yml
 
 **Purpose**: Synchronize docs/wiki to GitHub Wiki.
@@ -232,10 +212,6 @@ integration-tests.yml
 dependency-check.yml
 ├── Dependency graph generation
 └── Dependency cruiser rules
-
-auto-update-graphrag.yml
-├── graphrag:extract
-└── Git commit/push
 ```
 
 ## Manual Workflow Triggers
@@ -271,8 +247,10 @@ gh workflow run sync-wiki.yml
 3. Check for circular dependencies
 4. Ensure vendor wrapper usage
 
-### auto-update-graphrag failing
+### GraphRAG validation failing
 
-1. Run extraction: `pnpm run graphrag:extract`
-2. Check metadata.json syntax
-3. Commit changes manually if needed
+No workflow regenerates the knowledge graph after merge. The `unit-tests.yml` step "Validate GraphRAG synchronization" (`pnpm run validate:graphrag`) fails when the committed graph is stale.
+
+1. Run `pnpm run validate:graphrag` locally
+2. If metadata validation fails, add the missing Lambda or entity to `graphrag/metadata.json`
+3. Commit the regenerated `graphrag/knowledge-graph.json`
