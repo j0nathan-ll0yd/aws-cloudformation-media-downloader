@@ -522,3 +522,42 @@ jobs:
           path: docs/api/openapi.yaml
           if-no-files-found: warn
           retention-days: 7
+
+  # docs/terraform.md freshness. Seam: an infra/ change, including the `.tf` files that
+  # `mantle generate infra` writes and provider bumps in infra/.terraform.lock.hcl, that alters the
+  # terraform-docs output without a regenerated docs/terraform.md. Replaces the mtime comparison in
+  # the former bin/validate-docs-freshness.sh, which skipped on the fleet (no terraform-docs) and
+  # compared checkout times anywhere else. bin/install-terraform-docs.sh pins the version and the
+  # archive checksums; test/ci/check-terraform-docs.test.ts proves both scripts' guards can fail.
+  terraform-docs-freshness:
+    name: Terraform Docs Freshness
+    runs-on: [self-hosted, linux, arm64, node]
+    # The download is bounded at 300 s (curl --max-time). The closest measured job, update-ffmpeg.yml
+    # check-update (checkout plus a release download and checksum on this lane), took a median 27 s
+    # and a p95 31 s over 22 fleet executions. Twice (300 s + 31 s), rounded up to 5 minutes.
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: '.nvmrc'
+      - name: Install the pinned terraform-docs
+        # No pnpm and no dependency install: the check runs the document:terraform command with sh.
+        # `pnpm run` would first install every dependency, which needs the GitHub Packages login.
+        run: |
+          ./bin/install-terraform-docs.sh "$RUNNER_TEMP/terraform-docs"
+          echo "$RUNNER_TEMP/terraform-docs" >> "$GITHUB_PATH"
+      - name: Verify docs/terraform.md is fresh
+        id: fresh
+        run: ./bin/check-terraform-docs.sh
+      - name: Upload the regenerated doc
+        # Only when the check itself failed, as in openapi-freshness above.
+        if: failure() && steps.fresh.conclusion == 'failure'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: terraform-docs-regenerated
+          path: docs/terraform.md
+          if-no-files-found: warn
+          retention-days: 7

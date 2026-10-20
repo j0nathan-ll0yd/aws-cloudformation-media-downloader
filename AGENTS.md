@@ -384,7 +384,7 @@ See `package.json` for complete command list (cleanup, integration tests, deploy
 
 - **CI/CD**: GitHub Actions with test pipeline
 - **Local Testing**: LocalStack for AWS service emulation
-- **Documentation**: TSDoc + terraform-docs
+- **Documentation**: TSDoc comments; `docs/terraform.md` from terraform-docs (`pnpm run document:terraform`, version pinned in `bin/install-terraform-docs.sh`, checked by the `ci.yml` job `Terraform Docs Freshness`)
 - **Error Tracking**: Automated GitHub issue creation
 - **Monitoring**: CloudWatch dashboards and alarms
 

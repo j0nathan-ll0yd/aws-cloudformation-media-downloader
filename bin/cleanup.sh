@@ -220,14 +220,12 @@ main() {
 
   # Phase 7: Documentation (skip in check mode)
   if [ "$CHECK_ONLY" = false ]; then
-    log_step $((++STEP)) "Generating source docs..."
-    run_cmd "Source docs generated" pnpm run --silent document-source
-
+    # CI gates both files: ci.yml jobs "Terraform Docs Freshness" and "OpenAPI Freshness".
     log_step $((++STEP)) "Generating Terraform docs..."
-    run_cmd "Terraform docs generated" pnpm run --silent document-terraform
+    run_cmd "Terraform docs generated" pnpm run --silent document:terraform
 
     log_step $((++STEP)) "Generating API docs..."
-    run_cmd "API docs generated" pnpm run --silent document-api
+    run_cmd "API docs generated" pnpm run --silent generate:openapi
   fi
 
   # Phase 8: Context & Knowledge (skip in check mode)

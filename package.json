@@ -88,7 +88,6 @@
     "validate:env-vars": "mantle check env-vars",
     "validate:doc:sync": "./bin/validate-doc-sync.sh",
     "validate:docs": "./bin/validate-docs.sh",
-    "validate:docs:freshness": "./bin/validate-docs-freshness.sh",
     "validate:graphrag": "./bin/validate-graphrag.sh",
     "check:conventions": "mantle check --severity HIGH"
   },

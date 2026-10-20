@@ -33,9 +33,6 @@ jobs:
       - name: Validate documentation sync
         run: pnpm run validate:doc:sync
 
-      - name: Validate docs freshness
-        run: pnpm run validate:docs:freshness
-
       - name: Security audit
         # Non-blocking: surfaces vulnerabilities without failing the build
         continue-on-error: true
