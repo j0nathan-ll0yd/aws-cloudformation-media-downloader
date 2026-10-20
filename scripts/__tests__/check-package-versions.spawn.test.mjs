@@ -7,13 +7,37 @@ import assert from 'node:assert/strict'
 import {spawn, spawnSync} from 'node:child_process'
 import {chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from 'node:fs'
 import {tmpdir} from 'node:os'
-import {dirname, join, resolve} from 'node:path'
+import {basename, dirname, join, resolve} from 'node:path'
 import {after, test} from 'node:test'
 import {fileURLToPath} from 'node:url'
 
 const scriptsDir = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const wrapperSource = join(scriptsDir, 'check-package-versions.mjs')
 const registry = 'https://npm.pkg.github.com'
+
+// Git exports GIT_DIR and the other location variables to the commands that hooks, `git rebase -x`
+// and `git bisect run` start. Inherited by the fixture's `git init`, a GIT_DIR that points at a
+// linked worktree rewrites that repository's shared config to `core.bare = true`; inherited by the
+// wrapper, it makes `git ls-files` list the outer repository instead of the fixture. Every git call
+// here, direct or through the wrapper, runs without them and without user or system git config.
+// test/helpers/git-sandbox.ts is the TypeScript twin of this list for the vitest suites.
+const GIT_LOCATION_VARS = [
+  'GIT_DIR',
+  'GIT_COMMON_DIR',
+  'GIT_WORK_TREE',
+  'GIT_INDEX_FILE',
+  'GIT_OBJECT_DIRECTORY',
+  'GIT_ALTERNATE_OBJECT_DIRECTORIES',
+  'GIT_NAMESPACE',
+  'GIT_PREFIX',
+  'GIT_CEILING_DIRECTORIES'
+]
+
+/** The current environment without the git location variables; spawnSync drops undefined values. */
+function isolatedGitEnv(extra = {}) {
+  const unset = Object.fromEntries(GIT_LOCATION_VARS.map((key) => [key, undefined]))
+  return {...process.env, ...unset, GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1', ...extra}
+}
 
 const created = []
 after(() => {
@@ -89,7 +113,7 @@ function makeRepo({manifests, engine}) {
   // The wrapper enumerates manifests with `git ls-files`, so the fixture has to be a git repo.
   // `--others --exclude-standard` covers untracked files, so nothing needs staging or committing
   // (which would also require a git identity this test has no business assuming).
-  const git = spawnSync('git', ['init', '--quiet'], {cwd: dir, encoding: 'utf8'})
+  const git = spawnSync('git', ['init', '--quiet'], {cwd: dir, encoding: 'utf8', env: isolatedGitEnv()})
   assert.equal(git.status, 0, `git init failed in the fixture: ${git.stderr}`)
 
   mkdirSync(join(dir, 'scripts'), {recursive: true})
@@ -126,7 +150,7 @@ function makeRepo({manifests, engine}) {
   ].join('\n'))
   chmodSync(join(stubDir, 'npx'), 0o755)
 
-  const env = {...process.env, PATH: `${stubDir}:${process.env.PATH ?? ''}`, GITHUB_ACTIONS: 'false'}
+  const env = isolatedGitEnv({PATH: `${stubDir}:${process.env.PATH ?? ''}`, GITHUB_ACTIONS: 'false'})
 
   return {
     dir,
@@ -417,4 +441,55 @@ test('--self-test exits 0 as its own process', () => {
   const result = repo.run(['--self-test'])
   assert.equal(result.status, 0, `${result.stdout}${result.stderr}`)
   assert.match(result.stdout, /known-answer assertions passed/)
+})
+
+test('an inherited GIT_DIR, as a hook exports it, neither rewrites the outer repository nor hides the fixture', () => {
+  // A linked worktree, as every Paseo checkout is. Hooks export GIT_DIR (its gitdir), and some
+  // callers export GIT_WORK_TREE too: the first shape is the one that rewrote core.bare through the
+  // fixture's `git init`; the second is the one that made the wrapper's `git ls-files` list the
+  // outer worktree instead of the fixture.
+  const outer = mkdtempSync(join(tmpdir(), 'pkg-drift-outer-'))
+  const worktree = `${outer}-wt`
+  created.push(outer, worktree)
+  const git = (args) => {
+    const result = spawnSync('git', ['-c', 'core.hooksPath=/dev/null', ...args], {cwd: outer, encoding: 'utf8', env: isolatedGitEnv()})
+    assert.equal(result.status, 0, `git ${args.join(' ')} failed: ${result.stderr}`)
+  }
+  git(['init', '--quiet', '--initial-branch=main'])
+  git(['-c', 'user.name=test', '-c', 'user.email=test@example.com', '-c', 'commit.gpgsign=false', 'commit', '--quiet', '--allow-empty', '-m', 'init'])
+  git(['worktree', 'add', '--quiet', worktree, '-b', 'wt'])
+  const configBefore = readFileSync(join(outer, '.git', 'config'), 'utf8')
+  const linkedGitDir = join(outer, '.git', 'worktrees', basename(worktree))
+
+  const saved = {gitDir: process.env.GIT_DIR, workTree: process.env.GIT_WORK_TREE}
+  for (const exportWorkTree of [false, true]) {
+    process.env.GIT_DIR = linkedGitDir
+    if (exportWorkTree) {
+      process.env.GIT_WORK_TREE = worktree
+    } else {
+      delete process.env.GIT_WORK_TREE
+    }
+    let result
+    try {
+      const repo = makeRepo({
+        manifests: oneRepoPublishesOne,
+        engine: {help: helpWithSubcommand, stdout: JSON.stringify(reportWith({rows: [driftRow]}), null, 2), exitCode: 1}
+      })
+      result = repo.run()
+    } finally {
+      if (saved.gitDir === undefined) {
+        delete process.env.GIT_DIR
+      } else {
+        process.env.GIT_DIR = saved.gitDir
+      }
+      if (saved.workTree === undefined) {
+        delete process.env.GIT_WORK_TREE
+      } else {
+        process.env.GIT_WORK_TREE = saved.workTree
+      }
+    }
+    const shape = exportWorkTree ? 'GIT_DIR + GIT_WORK_TREE' : 'GIT_DIR'
+    assert.equal(readFileSync(join(outer, '.git', 'config'), 'utf8'), configBefore, `${shape}: the outer repository config must not change`)
+    assert.equal(result.status, 1, `${shape}: the wrapper must still measure the fixture and forward its drift\n${result.stdout}${result.stderr}`)
+  }
 })
