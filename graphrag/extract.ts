@@ -11,6 +11,7 @@
  * Semantic metadata (triggers, purposes) is read from graphrag/metadata.json
  */
 
+import {realpathSync} from 'fs'
 import fs from 'fs/promises'
 import path from 'path'
 import {Project, SyntaxKind} from 'ts-morph'
@@ -821,8 +822,12 @@ async function main() {
   }
 }
 
-// Run if executed directly
-if (import.meta.url === `file://${__filename}`) {
+// Run if executed directly. Compare real file system paths: the former check compared
+// import.meta.url, which percent-encodes characters such as spaces, with "file://" plus the
+// decoded __filename, so in such a checkout it was false and main() never ran. realpathSync on
+// both sides also absorbs symlinked directories.
+const entryPoint = process.argv[1]
+if (entryPoint !== undefined && realpathSync(entryPoint) === realpathSync(__filename)) {
   main()
 }
 
