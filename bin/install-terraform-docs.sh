@@ -72,7 +72,10 @@ archive="terraform-docs-${TERRAFORM_DOCS_VERSION}-${platform}.tar.gz"
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
 
-curl -fsSL --connect-timeout 15 --max-time 300 -o "${WORK}/${archive}" "${BASE_URL}/${archive}"
+# A transient failure gets up to 3 retries, each started within 60 s of the first attempt. One
+# transfer takes at most 300 s, and the checksum below still gates whatever arrives.
+curl -fsSL --connect-timeout 15 --max-time 300 --retry 3 --retry-connrefused --retry-max-time 60 \
+  -o "${WORK}/${archive}" "${BASE_URL}/${archive}"
 actual=$(sha256_of "${WORK}/${archive}")
 if [ "$actual" != "$expected" ]; then
   echo "::error::${archive} has sha256 ${actual}, not the pinned ${expected}. Refusing to install it."

@@ -248,7 +248,8 @@ function installFixture() {
       }
       return spawnSync('bash', [installScript, ...args], {env, encoding: 'utf8'})
     },
-    curlCalls: (): number => readFileSync(join(dir, 'fake.log'), 'utf8').split('\n').filter((line) => line.startsWith('curl ')).length
+    curlCalls: (): number => readFileSync(join(dir, 'fake.log'), 'utf8').split('\n').filter((line) => line.startsWith('curl ')).length,
+    curlLog: (): string => readFileSync(join(dir, 'fake.log'), 'utf8').split('\n').filter((line) => line.startsWith('curl ')).join('\n')
   }
 }
 
@@ -275,6 +276,13 @@ describe('bin/install-terraform-docs.sh', () => {
     expect(result.status).toBe(1)
     expect(result.stdout).toMatch(/no pinned checksum for unsupported-unsupported/)
     expect(f.curlCalls()).toBe(0)
+  })
+
+  test('the download retries a transient failure within a bounded window', () => {
+    const f = installFixture()
+    f.run()
+    expect(f.curlCalls()).toBe(1)
+    expect(f.curlLog()).toMatch(/ --max-time 300 --retry 3 --retry-connrefused --retry-max-time 60 /)
   })
 
   test('a failed download fails the install and installs nothing', () => {

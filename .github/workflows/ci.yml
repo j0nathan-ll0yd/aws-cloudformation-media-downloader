@@ -532,9 +532,10 @@ jobs:
   terraform-docs-freshness:
     name: Terraform Docs Freshness
     runs-on: [self-hosted, linux, arm64, node]
-    # The download is bounded at 300 s (curl --max-time). The closest measured job, update-ffmpeg.yml
+    # The download is bounded at 360 s: curl starts a retry only within 60 s (--retry-max-time), and
+    # one transfer takes at most 300 s (--max-time). The closest measured job, update-ffmpeg.yml
     # check-update (checkout plus a release download and checksum on this lane), took a median 27 s
-    # and a p95 31 s over 22 fleet executions. Twice (300 s + 31 s), rounded up to 5 minutes.
+    # and a p95 31 s over 22 fleet executions. Twice (360 s + 31 s), rounded up to 5 minutes.
     timeout-minutes: 15
     permissions:
       contents: read
