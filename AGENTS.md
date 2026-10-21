@@ -23,7 +23,7 @@ AWS Serverless media downloader service built with OpenTofu and TypeScript. Down
 
 ### Project Structure
 
-```
+```text
 .
 ├── config/                # Tool configuration (ESLint rules, dependency-cruiser, repomix, etc.)
 ├── docker/                # Dockerfiles and docker-compose files
@@ -258,6 +258,7 @@ pnpm run generate:openapi            # mantle generate openapi → docs/api/open
 - **iOS consumer**: `ios-OfflineMediaDownloader/APITypes/Sources/APITypes/openapi.yaml` synced via `Scripts/sync-openapi.sh`
 - **C66**: `mantle generate openapi` is the sole OpenAPI generator
 - After changing Zod schemas in `src/types/api-schema/`, run `pnpm run generate:openapi` then sync to iOS
+- **Gates**: `ci.yml` job `OpenAPI Freshness` (`bin/check-openapi-freshness.sh`) fails on a stale `docs/api/openapi.yaml`; `api-contract-sync.yml` (`bin/check-api-contract-sync.sh`) keeps one tracking issue open in this repository while the iOS copy differs
 
 ### Deployment Commands
 
@@ -383,7 +384,7 @@ See `package.json` for complete command list (cleanup, integration tests, deploy
 
 - **CI/CD**: GitHub Actions with test pipeline
 - **Local Testing**: LocalStack for AWS service emulation
-- **Documentation**: TSDoc + terraform-docs
+- **Documentation**: TSDoc comments; `docs/terraform.md` from terraform-docs (`pnpm run document:terraform`, version pinned in `bin/install-terraform-docs.sh`, checked by the `ci.yml` job `Terraform Docs Freshness`)
 - **Error Tracking**: Automated GitHub issue creation
 - **Monitoring**: CloudWatch dashboards and alarms
 

@@ -42,7 +42,8 @@
     "format:bash:check": "shfmt -i 2 -ci -sr -d bin/*.sh",
     "format:check": "dprint check --config config/dprint.json",
     "generate:llms": "cat README.md docs/wiki/**/*.md > docs/llms-full.txt",
-    "generate:openapi": "mantle generate openapi --schema-prefix 'Models.' --title 'Offline Media Downloader API' --output docs/api/openapi.yaml --html docs/api/index.html",
+    "generate:openapi": "pnpm run generate:openapi:spec --html docs/api/index.html",
+    "generate:openapi:spec": "mantle generate openapi --schema-prefix 'Models.' --title 'Offline Media Downloader API' --output docs/api/openapi.yaml",
     "graphrag:extract": "node --import tsx graphrag/extract.ts",
     "graphrag:query": "pnpm dlx tsx graphrag/query.ts",
     "graphrag:validate": "node --import tsx graphrag/validate-metadata.ts",
@@ -87,7 +88,6 @@
     "validate:env-vars": "mantle check env-vars",
     "validate:doc:sync": "./bin/validate-doc-sync.sh",
     "validate:docs": "./bin/validate-docs.sh",
-    "validate:docs:freshness": "./bin/validate-docs-freshness.sh",
     "validate:graphrag": "./bin/validate-graphrag.sh",
     "check:conventions": "mantle check --severity HIGH"
   },

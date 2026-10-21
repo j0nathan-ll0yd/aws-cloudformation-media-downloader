@@ -25,10 +25,18 @@ permissions:
   contents: read
   packages: read
 
+# timeout-minutes on the six jobs below comes from measured execution times: the last 100
+# completed runs of this workflow (2026-08-28 to 2026-10-20) hold 83 executions of each job, all
+# on the fleet. The slowest was Build, 721 s, in run 38703920364, where the shared "Cache
+# dependencies" step stalled while saving the cache. Every job here runs that step, so each gets
+# twice that worst case, rounded up to 5 minutes: 25, the value unit-tests.yml uses for the same
+# setup. No execution in the sample ran past 721 s, and none hung.
 jobs:
   typecheck:
     name: Type Check
     runs-on: [self-hosted, linux, arm64, node]
+    # 83 executions: median 45 s, p95 72 s, slowest 236 s. Basis above.
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
@@ -62,6 +70,8 @@ jobs:
     # this lane is advisory (continue-on-error). See the monorepo TS7 plan (mantle#257).
     continue-on-error: true
     runs-on: [self-hosted, linux, arm64, node]
+    # 83 executions: median 38 s, p95 66 s, slowest 301 s. Basis above the jobs.
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
@@ -91,6 +101,8 @@ jobs:
   lint:
     name: Lint & Format
     runs-on: [self-hosted, linux, arm64, node]
+    # 83 executions: median 47 s, p95 96 s, slowest 289 s. Basis above.
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
@@ -122,6 +134,8 @@ jobs:
   test:
     name: Tests
     runs-on: [self-hosted, linux, arm64, node]
+    # 83 executions: median 41 s, p95 73 s, slowest 283 s. Basis above.
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
@@ -159,6 +173,8 @@ jobs:
   build:
     name: Build
     runs-on: [self-hosted, linux, arm64, node]
+    # 83 executions: median 103 s, p95 130 s, slowest 721 s. Basis above.
+    timeout-minutes: 25
     # id-token: write only takes effect when AWS_ROLE_CI_ECR_READ is set (job stays
     # Docker-free and AWS-free otherwise; gate 2c below no-ops on a missing secret).
     permissions:
@@ -325,6 +341,8 @@ jobs:
   conventions:
     name: Convention Checks
     runs-on: [self-hosted, linux, arm64, node]
+    # 83 executions: median 41 s, p95 67 s, slowest 200 s. Basis above.
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
@@ -448,3 +466,99 @@ jobs:
           # `packages: read` permission scopes the workflow token but does NOT place it in a
           # run step's environment. Mirrors mantle ci.yml and design-system ci.yml.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # OpenAPI contract freshness. Seam: anything that changes what `mantle generate openapi`
+  # emits without a regenerated docs/api/openapi.yaml, the file ios-OfflineMediaDownloader
+  # vendors. That includes Mantle CLI, validation and zod bumps, which reach the output
+  # through package.json and pnpm-lock.yaml rather than through schema files, so this job
+  # has no path filter. On 2026-10-17 the committed spec was already stale against
+  # @j0nathan-ll0yd/cli 2.21.0: 13 component schemas missing and 27 `id:` keys extra.
+  # Replaces the gh-aw "Codegen Drift Detector", which never ran green (atlas decision 0162,
+  # item 1). Mirrors mantle-LifegamesPortal ci.yml `openapi-freshness`, plus a delete-first
+  # guard: bin/check-openapi-freshness.sh deletes the committed spec before regenerating,
+  # because `mantle generate openapi` exits 0 WITHOUT writing when it discovers no API
+  # handlers, and regenerating over the committed file would then pass without measuring.
+  # test/ci/check-openapi-freshness.test.ts proves that guard can fail.
+  openapi-freshness:
+    name: OpenAPI Freshness
+    runs-on: [self-hosted, linux, arm64, node]
+    # Required by `mantle check ci-workflows`. The same job in mantle-LifegamesPortal takes
+    # 55 s; the generator alone takes about 24 s here.
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: '.nvmrc'
+      - name: Setup pnpm
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
+      - name: Cache dependencies
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+      - name: Authenticate to GitHub Packages
+        env:
+          NODE_AUTH_TOKEN: ${{ github.token }}
+        run: pnpm config set '//npm.pkg.github.com/:_authToken' "$NODE_AUTH_TOKEN"
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Verify docs/api/openapi.yaml is fresh
+        id: fresh
+        # `generate:openapi:spec` holds the flags that `generate:openapi` also uses. It skips
+        # the HTML step, which fetches the floating `@redocly/cli@2` with `npx -y` and does not
+        # affect the YAML.
+        run: ./bin/check-openapi-freshness.sh
+      - name: Upload the regenerated spec
+        # Only when the check itself failed: after an earlier failure (install, for example)
+        # the file on disk is still the committed spec, not a regenerated one.
+        if: failure() && steps.fresh.conclusion == 'failure'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: openapi-regenerated
+          path: docs/api/openapi.yaml
+          if-no-files-found: warn
+          retention-days: 7
+
+  # docs/terraform.md freshness. Seam: an infra/ change, including the `.tf` files that
+  # `mantle generate infra` writes and provider bumps in infra/.terraform.lock.hcl, that alters the
+  # terraform-docs output without a regenerated docs/terraform.md. Replaces the mtime comparison in
+  # the former bin/validate-docs-freshness.sh, which skipped on the fleet (no terraform-docs) and
+  # compared checkout times anywhere else. bin/install-terraform-docs.sh pins the version and the
+  # archive checksums; test/ci/check-terraform-docs.test.ts proves both scripts' guards can fail.
+  terraform-docs-freshness:
+    name: Terraform Docs Freshness
+    runs-on: [self-hosted, linux, arm64, node]
+    # The download is bounded at 360 s: curl starts a retry only within 60 s (--retry-max-time), and
+    # one transfer takes at most 300 s (--max-time). The closest measured job, update-ffmpeg.yml
+    # check-update (checkout plus a release download and checksum on this lane), took a median 27 s
+    # and a p95 31 s over 22 fleet executions. Twice (360 s + 31 s), rounded up to 5 minutes.
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: '.nvmrc'
+      - name: Install the pinned terraform-docs
+        # No pnpm and no dependency install: the check runs the document:terraform command with sh.
+        # `pnpm run` would first install every dependency, which needs the GitHub Packages login.
+        run: |
+          ./bin/install-terraform-docs.sh "$RUNNER_TEMP/terraform-docs"
+          echo "$RUNNER_TEMP/terraform-docs" >> "$GITHUB_PATH"
+      - name: Verify docs/terraform.md is fresh
+        id: fresh
+        run: ./bin/check-terraform-docs.sh
+      - name: Upload the regenerated doc
+        # Only when the check itself failed, as in openapi-freshness above.
+        if: failure() && steps.fresh.conclusion == 'failure'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: terraform-docs-regenerated
+          path: docs/terraform.md
+          if-no-files-found: warn
+          retention-days: 7

@@ -505,7 +505,7 @@ main() {
       echo -e "${YELLOW}INCOMPLETE${NC} (warning only)"
     fi
   else
-    echo -e "${YELLOW}SKIPPED${NC} (run pnpm run document-api first)"
+    echo -e "${YELLOW}SKIPPED${NC} (run pnpm run generate:openapi first)"
   fi
 
   # =============================================================================

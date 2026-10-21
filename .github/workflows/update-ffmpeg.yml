@@ -660,6 +660,11 @@ jobs:
       (needs.check-update.result == 'failure' || needs.check-update.result == 'cancelled' ||
        needs.repin-image.result == 'failure' || needs.repin-image.result == 'cancelled')
     runs-on: [self-hosted, linux, arm64, node]
+    # Measured: this job ran 7 times (2026-08-28 to 2026-10-19,
+    # hosted runners before #671), median 5 s, slowest 8 s. The fleet's
+    # equivalent no-checkout job, pr-checks.yml pr-ready, took a median 5 s and at most 16 s over
+    # 83 executions (2026-08-12 to 2026-10-20). Twice 16 s, rounded up to 5 minutes.
+    timeout-minutes: 5
     permissions:
       contents: read
       issues: write

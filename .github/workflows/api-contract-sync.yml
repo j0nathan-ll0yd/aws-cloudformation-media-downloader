@@ -1,0 +1,92 @@
+name: API Contract Sync
+
+# Seam: ios-OfflineMediaDownloader Scripts/sync-openapi.sh, the manual copy of
+# docs/api/openapi.yaml into the iOS APITypes package. Nothing else compares the two files:
+# the iOS "APITypes Build (SPM)" job builds whatever copy is committed, and the "OpenAPI
+# Freshness" job in ci.yml compares this repository's spec only with its own generator.
+# Replaces the never-green gh-aw "Codegen Drift Detector" (atlas decision 0162, item 1).
+#
+# The tracking issue lives in THIS repository, so the job needs no cross-repository
+# credential: GITHUB_TOKEN cannot write issues elsewhere, and it reads the public iOS copy.
+# Only a run on main that compares iOS main writes the issue. Pull requests that change the
+# spec, dispatches from other branches, and dispatches with another ios_ref get a dry run: the
+# summary shows the issue a merge would open. The script enforces this itself, whatever DRY_RUN
+# says. A red run means the check could not measure (exit 3), never that drift exists.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/api/openapi.yaml'
+      - 'bin/check-api-contract-sync.sh'
+      - '.github/workflows/api-contract-sync.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'docs/api/openapi.yaml'
+      - 'bin/check-api-contract-sync.sh'
+      - '.github/workflows/api-contract-sync.yml'
+  schedule:
+    # Daily, off the hour: GitHub may delay or drop start-of-hour schedules. Closes the
+    # issue after the iOS sync lands, and catches edits to the iOS copy.
+    - cron: '17 14 * * *'
+  workflow_dispatch:
+    inputs:
+      ios_ref:
+        description: 'ios-OfflineMediaDownloader ref to compare against'
+        required: false
+        default: 'main'
+        type: string
+      dry_run:
+        description: 'Print every decision; create, edit or close nothing'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  # One queue for runs that may write the issue; pull request dry runs queue per ref.
+  group: ${{ github.event_name == 'pull_request' && format('api-contract-sync-{0}', github.ref) || 'api-contract-sync' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  compare:
+    name: API Contract Sync
+    runs-on: [self-hosted, linux, arm64, node]
+    # One sparse checkout, one issue list and at most three issue writes.
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          # Nothing in this job pushes; GITHUB_TOKEN reaches gh through GH_TOKEN only.
+          persist-credentials: false
+      - name: Check out the vendored iOS spec
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          repository: j0nathan-ll0yd/ios-OfflineMediaDownloader
+          ref: ${{ inputs.ios_ref || 'main' }}
+          path: ios
+          sparse-checkout: APITypes/Sources/APITypes/openapi.yaml
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - name: Compare and update the tracking issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          IOS_REF: ${{ inputs.ios_ref || 'main' }}
+          # Only main writes the issue. A pull request (refs/pull/N/merge) or a dispatch from
+          # any other branch compares an unmerged spec, so it gets a dry run. The script also
+          # forces a dry run when GITHUB_REF is not refs/heads/main or IOS_REF is not main.
+          DRY_RUN: ${{ (github.ref != 'refs/heads/main' || inputs.dry_run) && 'true' || 'false' }}
+          MANAGED_BY: '`.github/workflows/api-contract-sync.yml` in mantle-OfflineMediaDownloader'
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          BACKEND_LABEL="${GITHUB_REF_NAME} @ ${GITHUB_SHA::12}"
+          VENDORED_LABEL="${IOS_REF} @ $(git -C ios rev-parse --short=12 HEAD)"
+          export BACKEND_LABEL VENDORED_LABEL
+          ./bin/check-api-contract-sync.sh \
+            docs/api/openapi.yaml \
+            ios/APITypes/Sources/APITypes/openapi.yaml | tee -a "$GITHUB_STEP_SUMMARY"

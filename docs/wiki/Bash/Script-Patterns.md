@@ -196,10 +196,12 @@ The project has 20+ scripts in `bin/` covering CI, testing, documentation, and m
 
 ### Documentation Scripts
 
-| Script               | Purpose              | Key Features        |
-| -------------------- | -------------------- | ------------------- |
-| `document-api.sh`    | API documentation    | TypeSpec to OpenAPI |
-| `document-source.sh` | Source documentation | TypeDoc generation  |
+| Script                       | Purpose                  | Key Features                                                   |
+| ---------------------------- | ------------------------ | -------------------------------------------------------------- |
+| `check-openapi-freshness.sh` | OpenAPI spec gate        | Regenerates `docs/api/openapi.yaml`; fails on any difference   |
+| `check-terraform-docs.sh`    | Terraform docs gate      | Regenerates `docs/terraform.md` with the pinned terraform-docs |
+| `install-terraform-docs.sh`  | terraform-docs installer | Pinned version; refuses an archive with the wrong sha256       |
+| `check-api-contract-sync.sh` | iOS contract sync check  | Keeps one tracking issue while the iOS copy differs            |
 
 ### Maintenance Scripts
 

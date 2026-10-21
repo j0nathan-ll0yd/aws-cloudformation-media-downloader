@@ -4,17 +4,23 @@
 
 Establish the OMD backend as the single canonical producer of the iOS API contract — the OpenAPI
 document at `docs/api/openapi.yaml` — and ensure the iOS companion (`ios-OfflineMediaDownloader`)
-never silently drifts from that contract after a backend schema change. The document is generated
-credential-free from the committed Zod schemas and handler definitions (`package.json`
-`generate:openapi` script). A drift-detection gate notifies the iOS repository when the committed
-spec falls behind the source. Schema evolution is additive-only so iOS clients built against an
-older spec continue to parse current payloads.
+never silently drifts from that contract. The document is generated credential-free from the
+committed Zod schemas and handler definitions (`package.json` `generate:openapi:spec` script). A CI
+gate keeps the committed document equal to the generator output, and a sync check keeps one
+tracking issue open while the iOS vendored copy differs from it. Schema evolution is additive-only
+so iOS clients built against an older spec continue to parse current payloads.
 
-Source of truth for behavior: `package.json` (`generate:openapi` script),
-`.github/workflows/codegen-drift.md` (drift gate specification),
-`.github/workflows/codegen-drift.lock.yml` (drift gate workflow). The structural contract itself is
-owned by `docs/api/openapi.yaml` — this spec describes behavioral invariants only and does NOT restate
-its field-level shapes.
+Where the checks run (workflow wiring, not asserted by the tethered tests): `ci.yml` runs the
+freshness gate on every pull request and every push to `main`, with no path filter, because a
+toolchain bump changes the output without touching a schema file. `api-contract-sync.yml` runs the
+sync check on every push to `main` that changes the committed spec, daily, and on demand.
+
+Source of truth for behavior: `package.json` (`generate:openapi:spec` and `generate:openapi`
+scripts), `bin/check-openapi-freshness.sh` (freshness gate, run by `.github/workflows/ci.yml` job
+`openapi-freshness`) and `bin/check-api-contract-sync.sh` (sync check, run by
+`.github/workflows/api-contract-sync.yml`). The structural contract itself is owned by
+`docs/api/openapi.yaml` — this spec describes behavioral invariants only and does NOT restate its
+field-level shapes.
 
 ## Requirements
 
@@ -36,9 +42,9 @@ via `bash Scripts/sync-openapi.sh` in `ios-OfflineMediaDownloader`.
 ### Requirement: credential-free-openapi-generation
 
 `mantle generate openapi` SHALL regenerate `docs/api/openapi.yaml` from the committed Zod schemas
-and handler definitions without requiring any AWS credentials. This allows the drift-detection CI
-job (`.github/workflows/codegen-drift.lock.yml`) and local pre-commit workflows to regenerate and
-diff the spec without cloud access.
+and handler definitions without requiring any AWS credentials. This allows the freshness gate
+(`bin/check-openapi-freshness.sh`, run by the `.github/workflows/ci.yml` job `openapi-freshness`)
+and local workflows to regenerate and diff the spec without cloud access.
 
 #### Scenario: Regeneration in a credential-free environment
 
@@ -47,30 +53,56 @@ diff the spec without cloud access.
 - **THEN** it SHALL emit a valid OpenAPI document without querying live AWS infrastructure
 - **AND** the emitted document SHALL be diffable against the committed `docs/api/openapi.yaml`
 
-### Requirement: drift-detection-notifies-ios-repo
+### Requirement: contract-drift-is-gated-and-tracked
 
-The backend CI SHALL detect OpenAPI drift and notify the iOS repository. On every push to `main`
-that touches `src/types/api-schema/` or `src/lambdas/api/` handler files, CI SHALL regenerate the
-expected OpenAPI document and diff it against the committed `docs/api/openapi.yaml`. If the
-documents differ, CI SHALL create a cross-repo GitHub issue in `ios-OfflineMediaDownloader` naming
-the drift and citing `bash Scripts/sync-openapi.sh` as the resolution step
-(`.github/workflows/codegen-drift.md`).
+The freshness gate SHALL fail when the committed `docs/api/openapi.yaml` differs from the output of
+`pnpm run generate:openapi:spec`, and SHALL fail when the generator writes no document. The sync
+check SHALL compare the committed `docs/api/openapi.yaml` with the iOS vendored copy
+(`APITypes/Sources/APITypes/openapi.yaml` in `ios-OfflineMediaDownloader`). While the two differ,
+exactly one open tracking issue in this repository SHALL cite `bash Scripts/sync-openapi.sh` as the
+resolution step. The sync check SHALL edit that issue rather than open another, and SHALL close it
+when the files match. It SHALL treat as the tracking issue only an issue that the workflow token
+opened and whose body carries the managed marker `<!-- api-contract-sync:managed -->`. Only a run
+on `main` that compares the iOS `main` copy SHALL write the issue: a pull request, a dispatch from
+another branch, a dispatch with another `ios_ref`, and a dispatch with `dry_run` set SHALL each get a
+dry run. The sync check SHALL enforce the branch and iOS ref itself, whatever `DRY_RUN` says. A check
+that cannot read either file or the issue list SHALL fail rather than pass.
 
-#### Scenario: Schema change committed without regenerating openapi.yaml
+Verified by `test/ci/check-openapi-freshness.test.ts:1` (the freshness gate passes on an equal
+document, fails and prints the difference on a changed one, and fails when the generator exits 0
+without writing) and `test/ci/check-api-contract-sync.test.ts:1` (the sync check opens one issue
+that cites the sync script, edits it on the next run, closes it on a match, reopens it on renewed
+drift, ignores a marker in an issue another account opened, ignores an unmarked issue the workflow
+token opened, exits 3 on unreadable input, and forces a dry run off `main` or against another iOS
+ref even with `DRY_RUN=false`; it also pins the workflow's dry-run expression and runs the
+workflow step's shell for a pull request, a push to `main`, and two kinds of dispatch).
 
-- **GIVEN** a push to `main` that changes a Zod API schema or handler without updating
-  `docs/api/openapi.yaml`
-- **WHEN** the codegen-drift CI job runs
-- **THEN** the diff SHALL be non-empty and a GitHub issue SHALL be created in
-  `ios-OfflineMediaDownloader`
-- **AND** the issue body SHALL cite `bash Scripts/sync-openapi.sh` as the resolution step
+#### Scenario: Schema change without a regenerated openapi.yaml
 
-#### Scenario: openapi.yaml is current
+- **GIVEN** a pull request that changes a Zod API schema, a handler or the Mantle toolchain without
+  regenerating `docs/api/openapi.yaml`
+- **WHEN** the `openapi-freshness` job runs
+- **THEN** the job SHALL fail and print the difference
 
-- **GIVEN** a push to `main` where `docs/api/openapi.yaml` already reflects the current schemas
-  and handlers
-- **WHEN** the codegen-drift CI job runs
-- **THEN** the diff SHALL be empty and no issue SHALL be created
+#### Scenario: Generator writes no document
+
+- **GIVEN** a generator run that exits 0 without writing `docs/api/openapi.yaml`, for example
+  because it discovers no API handlers
+- **WHEN** the `openapi-freshness` job runs
+- **THEN** the job SHALL fail
+
+#### Scenario: Backend spec changed and the iOS copy is not yet synced
+
+- **GIVEN** the committed `docs/api/openapi.yaml` differs from the iOS vendored copy
+- **WHEN** the sync check runs twice
+- **THEN** exactly one open tracking issue SHALL exist and cite `bash Scripts/sync-openapi.sh`
+- **AND** the second run SHALL edit that issue rather than open another
+
+#### Scenario: iOS copy synced
+
+- **GIVEN** an open tracking issue
+- **WHEN** the sync check finds the committed spec and the iOS vendored copy identical
+- **THEN** it SHALL close the tracking issue
 
 ### Requirement: additive-only-schema-evolution
 
