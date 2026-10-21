@@ -36,10 +36,9 @@ deliberately **not** in CI, because they need live AWS credentials and mutate st
 
 ### Dependency Management
 
-| Script                     | Purpose                          | Usage                        |
-| -------------------------- | -------------------------------- | ---------------------------- |
-| `bin/update-yt-dlp.sh`     | Update yt-dlp binary             | `./bin/update-yt-dlp.sh`     |
-| `bin/update-agents-prs.sh` | Update AGENTS.md with PR history | `./bin/update-agents-prs.sh` |
+| Script                 | Purpose              | Usage                    |
+| ---------------------- | -------------------- | ------------------------ |
+| `bin/update-yt-dlp.sh` | Update yt-dlp binary | `./bin/update-yt-dlp.sh` |
 
 ### Infrastructure
 

@@ -41,9 +41,17 @@ main() {
     pnpm exec mantle generate graph
   fi
 
-  # Generate fresh GraphRAG
+  # Generate fresh GraphRAG. Delete the committed graph first, so that an extraction that exits
+  # 0 without writing fails here instead of comparing equal. Before #674, the entry guard in
+  # graphrag/extract.ts did exactly that under a checkout path that needs percent-encoding (one
+  # with a space, for example).
   echo -e "${BLUE}Step 2/2:${NC} Validating knowledge-graph.json is up to date..."
+  rm -f graphrag/knowledge-graph.json
   pnpm run graphrag:extract
+
+  if [[ ! -f graphrag/knowledge-graph.json ]]; then
+    error "pnpm run graphrag:extract wrote no graphrag/knowledge-graph.json, so the graph was not measured."
+  fi
 
   # Check for differences
   if ! git diff --quiet graphrag/knowledge-graph.json 2> /dev/null; then
@@ -52,7 +60,7 @@ main() {
     echo "Changes detected:"
     git diff --stat graphrag/knowledge-graph.json
     echo ""
-    echo "Please run 'pnpm run graphrag:extract' locally and commit the changes."
+    echo "Please run 'npx mantle generate graph && pnpm run graphrag:extract' locally and commit the changes."
     exit 1
   fi
 

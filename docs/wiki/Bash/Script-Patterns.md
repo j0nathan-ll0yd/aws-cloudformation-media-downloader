@@ -203,11 +203,10 @@ The project has 20+ scripts in `bin/` covering CI, testing, documentation, and m
 
 ### Maintenance Scripts
 
-| Script                 | Purpose          | Key Features                                             |
-| ---------------------- | ---------------- | -------------------------------------------------------- |
-| `update-yt-dlp.sh`     | yt-dlp updates   | Container image VERSION pin (docker/Dockerfile.download) |
-| `update-ffmpeg.sh`     | ffmpeg updates   | Container image VERSION pin (docker/Dockerfile.download) |
-| `update-agents-prs.sh` | AI agent context | PR history for AGENTS.md                                 |
+| Script             | Purpose        | Key Features                                             |
+| ------------------ | -------------- | -------------------------------------------------------- |
+| `update-yt-dlp.sh` | yt-dlp updates | Container image VERSION pin (docker/Dockerfile.download) |
+| `update-ffmpeg.sh` | ffmpeg updates | Container image VERSION pin (docker/Dockerfile.download) |
 
 ---
 
