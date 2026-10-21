@@ -134,9 +134,9 @@ The timeouts come from measured job durations; the basis is in comments in `ci.y
 - Schedule: daily 14:17 UTC
 - Manual dispatch (inputs `ios_ref` and `dry_run`)
 
-Only runs on `main` write the issue. A pull request, or a dispatch from another branch, gets a dry run that prints its decisions and writes nothing.
+Only a run on `main` that compares iOS `main` writes the issue. A pull request, a dispatch from another branch, and a dispatch with another `ios_ref` get a dry run that prints its decisions and writes nothing. The script enforces this itself: unless `GITHUB_REF` is `refs/heads/main` and `IOS_REF` is `main`, it forces a dry run, whatever `DRY_RUN` says, and prints why.
 
-To run the check from a checkout without writing, set `DRY_RUN=true`. Any value other than `true` or `false`, `DRY_RUN=1` included, exits 3 before any GitHub call. With `ios-OfflineMediaDownloader` cloned beside this repository:
+To run the check from a checkout without writing, set `DRY_RUN=true`; a checkout has no `GITHUB_REF`, so the script would force a dry run anyway. Any value other than `true` or `false`, `DRY_RUN=1` included, exits 3 before any GitHub call. With `ios-OfflineMediaDownloader` cloned beside this repository:
 
 ```bash
 DRY_RUN=true ISSUE_REPO=j0nathan-ll0yd/mantle-OfflineMediaDownloader \

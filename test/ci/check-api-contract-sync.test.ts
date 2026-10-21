@@ -6,7 +6,7 @@
  */
 import {spawnSync} from 'node:child_process'
 import type {SpawnSyncReturns} from 'node:child_process'
-import {chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from 'node:fs'
+import {chmodSync, copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from 'node:fs'
 import {tmpdir} from 'node:os'
 import {join, resolve} from 'node:path'
 import {afterAll, describe, expect, test} from 'vitest'
@@ -90,6 +90,10 @@ function fixture(issues: Issue[] = []) {
         FAKE_GH_STORE: join(dir, 'store.json'),
         FAKE_GH_LOG: join(dir, 'gh.log'),
         GITHUB_REPOSITORY: 'j0nathan-ll0yd/mantle-OfflineMediaDownloader',
+        // A run on main against iOS main, the only kind that may write. These also replace the
+        // values that CI sets for this suite's own run, which is a pull request.
+        GITHUB_REF: 'refs/heads/main',
+        IOS_REF: 'main',
         BACKEND_LABEL: 'main @ aaaaaaaaaaaa',
         VENDORED_LABEL: 'main @ bbbbbbbbbbbb',
         ...extraEnv
@@ -257,17 +261,137 @@ describe('bin/check-api-contract-sync.sh', () => {
     expect(f.log()).not.toMatch(MUTATION)
     expect(f.issues()).toEqual([issue(9, `${MARKER}\nold`, 'CLOSED')])
   })
+
+  test.each<{run: string; env: Record<string, string>; reason: string}>([
+    {run: 'a pull request', env: {GITHUB_REF: 'refs/pull/7/merge'}, reason: 'GITHUB_REF is "refs/pull/7/merge", not refs/heads/main'},
+    {run: 'a dispatch from another branch', env: {GITHUB_REF: 'refs/heads/feature'}, reason: 'GITHUB_REF is "refs/heads/feature", not refs/heads/main'},
+    {run: 'a run from a checkout', env: {GITHUB_REF: ''}, reason: 'GITHUB_REF is "", not refs/heads/main'},
+    {run: 'a main run against another iOS ref', env: {IOS_REF: 'feature/x'}, reason: 'IOS_REF is "feature/x", not main'},
+    {run: 'a main run with no IOS_REF', env: {IOS_REF: ''}, reason: 'IOS_REF is "", not main'}
+  ])('$run writes nothing even with DRY_RUN=false: the script forces a dry run', ({env, reason}) => {
+    const tracking = issue(5, `${MARKER}\nold`, 'CLOSED')
+    const f = fixture([tracking])
+    const result = f.run('b.yaml', 'a.yaml', {...env, DRY_RUN: 'false'})
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain(`::notice::Dry run forced: ${reason}.`)
+    expect(result.stdout).toMatch(/DRY RUN: gh issue reopen 5 /)
+    expect(f.log()).not.toMatch(MUTATION)
+    expect(f.issues()).toEqual([tracking])
+  })
+
+  test('a main run against a matching feature-branch iOS copy cannot close the tracking issue', () => {
+    // iOS main may still differ, so only a comparison with iOS main may close the issue.
+    const tracking = issue(5, `${MARKER}\nold`)
+    const f = fixture([tracking])
+    const result = f.run('a.yaml', 'a.yaml', {IOS_REF: 'feature/x', DRY_RUN: 'false'})
+    expect(result.status).toBe(0)
+    expect(result.stdout).toMatch(/DRY RUN: gh issue close 5 /)
+    expect(f.log()).not.toMatch(MUTATION)
+    expect(f.issues()).toEqual([tracking])
+  })
+
+  test('a main run against iOS main with DRY_RUN=false still writes the issue', () => {
+    const f = fixture()
+    const result = f.run('b.yaml', 'a.yaml', {DRY_RUN: 'false'})
+    expect(result.status).toBe(0)
+    expect(result.stdout).not.toContain('Dry run forced')
+    expect(f.log()).toMatch(/issue create/)
+    expect(managed(f.issues())).toHaveLength(1)
+  })
 })
+
+// The fake git answers the one call the workflow step makes: the vendored copy's revision.
+const FAKE_GIT = `#!/bin/sh
+if [ "$*" = "-C ios rev-parse --short=12 HEAD" ]; then echo cccccccccccc; exit 0; fi
+echo "unexpected git call: $*" >&2
+exit 2
+`
 
 describe('.github/workflows/api-contract-sync.yml', () => {
   const workflow = readFileSync(resolve(__dirname, '../../.github/workflows/api-contract-sync.yml'), 'utf8')
+  // The workflow's steps, split at their `- ` lines, and the one step that runs the script.
+  const runner = workflow.split(/^ {6}- /m).filter((step) => step.includes('./bin/check-api-contract-sync.sh'))
 
   test('only a run on main without dry_run writes the issue: the DRY_RUN expression is pinned', () => {
     // A pull request runs with github.ref refs/pull/N/merge, so the ref test makes it a dry run.
-    const steps = workflow.split(/^ {6}- /m)
-    const runner = steps.filter((step) => step.includes('./bin/check-api-contract-sync.sh'))
     expect(runner).toHaveLength(1)
     expect(workflow.match(/^\s*DRY_RUN:.*$/gm)).toHaveLength(1)
     expect(runner[0]).toContain(`DRY_RUN: \${{ (github.ref != 'refs/heads/main' || inputs.dry_run) && 'true' || 'false' }}\n`)
+  })
+
+  // The step's `run: |` block without its YAML indentation, as Actions hands it to bash.
+  function runBlock(): string {
+    const lines = (runner[0] ?? '').split('\n')
+    const start = lines.indexOf('        run: |')
+    if (start === -1) {
+      throw new Error('the runner step has no `run: |` block')
+    }
+    const body: string[] = []
+    for (const line of lines.slice(start + 1)) {
+      if (line !== '' && !line.startsWith(' '.repeat(10))) {
+        break
+      }
+      body.push(line.slice(10))
+    }
+    return body.join('\n')
+  }
+
+  // A checkout shaped like the job's: the script, the backend spec, and a vendored copy that differs.
+  function stepFixture() {
+    const dir = mkdtempSync(join(tmpdir(), 'api-contract-sync-step-'))
+    created.push(dir)
+    const checkout = join(dir, 'checkout')
+    const fakeBin = join(dir, 'fake-bin')
+    for (const path of [join(checkout, 'bin'), join(checkout, 'docs/api'), join(checkout, 'ios/APITypes/Sources/APITypes'), fakeBin]) {
+      mkdirSync(path, {recursive: true})
+    }
+    copyFileSync(script, join(checkout, 'bin/check-api-contract-sync.sh'))
+    chmodSync(join(checkout, 'bin/check-api-contract-sync.sh'), 0o755)
+    writeFileSync(join(checkout, 'docs/api/openapi.yaml'), SPEC_B)
+    writeFileSync(join(checkout, 'ios/APITypes/Sources/APITypes/openapi.yaml'), SPEC_A)
+    writeFileSync(join(fakeBin, 'gh'), FAKE_GH)
+    writeFileSync(join(fakeBin, 'git'), FAKE_GIT)
+    chmodSync(join(fakeBin, 'gh'), 0o755)
+    chmodSync(join(fakeBin, 'git'), 0o755)
+    writeFileSync(join(dir, 'store.json'), '[]')
+    writeFileSync(join(dir, 'gh.log'), '')
+    return {
+      run(env: Record<string, string>): SpawnSyncReturns<string> {
+        const stepEnv = {
+          ...process.env,
+          PATH: `${fakeBin}:${process.env.PATH ?? ''}`,
+          FAKE_GH_STORE: join(dir, 'store.json'),
+          FAKE_GH_LOG: join(dir, 'gh.log'),
+          GITHUB_STEP_SUMMARY: join(dir, 'summary.md'),
+          ...env
+        }
+        return spawnSync('bash', ['--noprofile', '--norc', '-eo', 'pipefail', '-c', runBlock()], {cwd: checkout, env: stepEnv, encoding: 'utf8'})
+      },
+      log: (): string => readFileSync(join(dir, 'gh.log'), 'utf8')
+    }
+  }
+
+  test.each([
+    {run: 'a pull request', ref: 'refs/pull/7/merge', iosRef: 'main', dryRunInput: false, writes: false},
+    {run: 'a push to main', ref: 'refs/heads/main', iosRef: 'main', dryRunInput: false, writes: true},
+    {run: 'a dispatch on main against another iOS ref', ref: 'refs/heads/main', iosRef: 'feature/x', dryRunInput: false, writes: false},
+    {run: 'a dispatch on main with dry_run', ref: 'refs/heads/main', iosRef: 'main', dryRunInput: true, writes: false}
+  ])('the step, run for $run, writes the issue only on main against iOS main', ({ref, iosRef, dryRunInput, writes}) => {
+    const f = stepFixture()
+    const result = f.run({
+      GITHUB_ACTIONS: 'true',
+      GITHUB_REF: ref,
+      GITHUB_REF_NAME: ref.replace(/^refs\/(heads|pull)\//, ''),
+      GITHUB_SHA: 'a'.repeat(40),
+      GITHUB_REPOSITORY: 'j0nathan-ll0yd/mantle-OfflineMediaDownloader',
+      GH_TOKEN: 'not-a-token',
+      IOS_REF: iosRef,
+      // The value the pinned expression gives this run: a dry run off main or with dry_run set.
+      DRY_RUN: ref !== 'refs/heads/main' || dryRunInput ? 'true' : 'false',
+      MANAGED_BY: 'the workflow under test',
+      RUN_URL: 'https://example.invalid/run'
+    })
+    expect(result.status).toBe(0)
+    expect(/issue create/.test(f.log())).toBe(writes)
   })
 })

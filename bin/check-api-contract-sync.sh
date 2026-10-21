@@ -20,10 +20,19 @@
 #   VENDORED_LABEL  vendored revision label, for example "main @ 5e6f7a8b9c0d" (required)
 #   MANAGED_BY      workflow named in the issue body (optional)
 #   RUN_URL         link to the workflow run (optional)
+#   GITHUB_REF      ref of the run; Actions sets it. Only refs/heads/main writes.
+#   IOS_REF         ios-OfflineMediaDownloader ref of the vendored copy; the workflow sets it.
+#                   Only main writes.
 #   DRY_RUN         "true" prints every decision and changes nothing; "false" (the default
 #                   when unset) acts. Any other value, "1" and empty included, exits 3 before
 #                   any GitHub call, so a typo cannot turn a dry run into writes. For a dry
 #                   run, set DRY_RUN=true.
+#
+# Write rule: the script writes only when GITHUB_REF is refs/heads/main, IOS_REF is main and
+# DRY_RUN is false. Any other run is a dry run, whatever DRY_RUN says, and prints why. So a
+# pull request, a dispatch from another branch, a dispatch against another iOS ref and a run
+# from a checkout never write, even if the workflow's DRY_RUN expression or the step's shell
+# sets DRY_RUN=false.
 #
 # Exit codes:
 #   0  measured: the files match, or the drift is recorded in the tracking issue
@@ -86,6 +95,18 @@ case "$DRY_RUN_MODE" in
   true | false) ;;
   *) unmeasured "DRY_RUN must be \"true\" or \"false\", not \"${DRY_RUN_MODE}\". For a dry run, set DRY_RUN=true." ;;
 esac
+# The write rule reads the run's own refs, not DRY_RUN alone (see the header).
+WRITE_BLOCKERS=""
+if [ "${GITHUB_REF:-}" != "refs/heads/main" ]; then
+  WRITE_BLOCKERS="GITHUB_REF is \"${GITHUB_REF:-}\", not refs/heads/main"
+fi
+if [ "${IOS_REF:-}" != "main" ]; then
+  WRITE_BLOCKERS="${WRITE_BLOCKERS:+${WRITE_BLOCKERS}; }IOS_REF is \"${IOS_REF:-}\", not main"
+fi
+if [ -n "$WRITE_BLOCKERS" ] && [ "$DRY_RUN_MODE" = "false" ]; then
+  DRY_RUN_MODE=true
+  echo "::notice::Dry run forced: ${WRITE_BLOCKERS}. Only a run on refs/heads/main against iOS main writes the issue."
+fi
 MANAGED_BY_TEXT=${MANAGED_BY:-the API contract sync workflow}
 
 for spec in "$BACKEND_SPEC" "$VENDORED_SPEC"; do

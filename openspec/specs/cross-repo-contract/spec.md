@@ -63,16 +63,19 @@ exactly one open tracking issue in this repository SHALL cite `bash Scripts/sync
 resolution step. The sync check SHALL edit that issue rather than open another, and SHALL close it
 when the files match. It SHALL treat as the tracking issue only an issue that the workflow token
 opened and whose body carries the managed marker `<!-- api-contract-sync:managed -->`. Only a run
-on `main` SHALL write the issue: a pull request, a dispatch from another branch, and a dispatch with
-`dry_run` set SHALL each get a dry run. A check that cannot read either file or the issue list SHALL
-fail rather than pass.
+on `main` that compares the iOS `main` copy SHALL write the issue: a pull request, a dispatch from
+another branch, a dispatch with another `ios_ref`, and a dispatch with `dry_run` set SHALL each get a
+dry run. The sync check SHALL enforce the branch and iOS ref itself, whatever `DRY_RUN` says. A check
+that cannot read either file or the issue list SHALL fail rather than pass.
 
 Verified by `test/ci/check-openapi-freshness.test.ts:1` (the freshness gate passes on an equal
 document, fails and prints the difference on a changed one, and fails when the generator exits 0
 without writing) and `test/ci/check-api-contract-sync.test.ts:1` (the sync check opens one issue
 that cites the sync script, edits it on the next run, closes it on a match, reopens it on renewed
 drift, ignores a marker in an issue another account opened, ignores an unmarked issue the workflow
-token opened, and exits 3 on unreadable input; it also pins the workflow's dry-run expression).
+token opened, exits 3 on unreadable input, and forces a dry run off `main` or against another iOS
+ref even with `DRY_RUN=false`; it also pins the workflow's dry-run expression and runs the
+workflow step's shell for a pull request, a push to `main`, and two kinds of dispatch).
 
 #### Scenario: Schema change without a regenerated openapi.yaml
 
