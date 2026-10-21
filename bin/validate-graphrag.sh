@@ -41,10 +41,10 @@ main() {
     pnpm exec mantle generate graph
   fi
 
-  # Generate fresh GraphRAG. Delete the committed graph first: graphrag/extract.ts runs main()
-  # only when import.meta.url equals `file://${__filename}`, which is false for a checkout path
-  # that needs percent-encoding (one with a space, for example). It then exits 0 without
-  # writing, and regenerating over the committed file would pass without measuring.
+  # Generate fresh GraphRAG. Delete the committed graph first, so that an extraction that exits
+  # 0 without writing fails here instead of comparing equal. Before #674, the entry guard in
+  # graphrag/extract.ts did exactly that under a checkout path that needs percent-encoding (one
+  # with a space, for example).
   echo -e "${BLUE}Step 2/2:${NC} Validating knowledge-graph.json is up to date..."
   rm -f graphrag/knowledge-graph.json
   pnpm run graphrag:extract
